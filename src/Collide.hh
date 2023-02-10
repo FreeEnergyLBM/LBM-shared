@@ -1,109 +1,87 @@
+#ifndef COLLIDE_HEADER
+#define COLLIDE_HEADER
 #include <string>
 #include <memory>
 #include <utility>
+#include <vector>
+#include <iostream>
+#include "Global.hh"
 
-class LBModel {
-	 
-public:
-    template <typename T>
-    LBModel(T&& obj): object(std::make_shared<Model<T>>(obj)){}
-      
-    double collide() const {
-        return object->collide(); 
-    }
-    void precompute() const{
-        object->precompute();
-    }
-
-    void initialise() const{
-        object->initialise();
-    }
-	
-   struct Concept {
-       virtual ~Concept() {}
-	   virtual double collide() const = 0;
-       virtual void precompute() const = 0;
-       virtual void initialise() const = 0;
-   };
-
-   template< typename T >
-   struct Model : Concept {
-       Model(const T& t) : object(t) {}
-	   double collide() const override {
-		   return object.collide();
-	   }
-       void precompute() const override {
-		   object.precompute();
-	   }
-       void initialise() const override {
-		   object.initialise();
-	   }
-     private:
-       T object;
-   };
-private:
-   std::shared_ptr<const Concept> object;
-};
 
 template<class stencil>
 class CollisionBase{
     public:
 
-        template<int i,int ...d>
-        double computeGamma(const double *velocity) const;
+        double computeGamma(const std::vector<double>& velocity, const int idx) const;
 
-        template<int... i>
-        double computeFirstMoment(const double *distribution,std::index_sequence<i...> sequence) const;
+        double computeFirstMoment(const double *distribution) const;
 
-        template<int d,int... i>
-        double computeSecondMoment(const double *distribution,std::index_sequence<i...> sequence) const;
+        double computeSecondMoment(const double *distribution, const int xyz) const;
 
         double collideSRT(const double& old,const double& equilibrium,const double& tau) const;
 
-        template<int i,int ...xyz>
-        double forceSRT(const double& force,const double* velocity,const double& itau) const;
+        double forceSRT(const std::array<double,stencil::D> force,const std::vector<double>& velocity,const double& itau,const int idx) const;
 
     private:
-        template<int i,int ...d>
-        double computeVelocityFactor(const double *velocity) const;
+
+        double computeVelocityFactor(const std::vector<double>& velocity, const int idx) const;
 
         enum{x=0,y=1,z=2};
+
+        static constexpr auto& ma_Weights=stencil::Weights;
+
+        static constexpr double m_Cs2=stencil::Cs2;
         
 };
 
 template<class stencil>
-template<int i,int ...d>
-double CollisionBase<stencil>::computeGamma(const double *velocity) const{
+double CollisionBase<stencil>::computeGamma(const std::vector<double>& velocity, const int idx) const{
 
-    return stencil::ma_Weights[i]*(1.0+computeVelocityFactor<i,d...>(velocity));
-
-};
-
-template<class stencil>
-template<int i,int ...xyz>
-double CollisionBase<stencil>::computeVelocityFactor(const double *velocity) const{
-
-    constexpr double ci_dot_velocity=((stencil::template ma_Cxyz<xyz>()[i]*velocity[xyz])+...);
-
-    constexpr double velocity_dot_velocity=((velocity[xyz]*velocity[xyz])+...);
-
-    return (ci_dot_velocity)/stencil::m_Cs2+(ci_dot_velocity*ci_dot_velocity)/(2.0*stencil::m_Cs2*stencil::m_Cs2)-(velocity_dot_velocity)/(2.0*stencil::m_Cs2);
+    return ma_Weights[idx]*(1.0+computeVelocityFactor(velocity,idx));
 
 };
 
 template<class stencil>
-template<int... i>
-double CollisionBase<stencil>::computeFirstMoment(const double *distribution,std::index_sequence<i...> sequence) const{
+double CollisionBase<stencil>::computeVelocityFactor(const std::vector<double>& velocity, const int idx) const{
 
-    return ((distribution[i])+...);
+    double ci_dot_velocity=0;
+    double velocity_dot_velocity=0;
+
+    for (int xyz=0;xyz<stencil::D;xyz++){
+        ci_dot_velocity+=(stencil::Ci_xyz(xyz)[idx]*velocity[xyz]);
+        velocity_dot_velocity+=(velocity[xyz]*velocity[xyz]);
+    }
+
+    return (ci_dot_velocity)/m_Cs2
+           +(ci_dot_velocity*ci_dot_velocity)/(2.0*m_Cs2*m_Cs2)
+           -(velocity_dot_velocity)/(2.0*m_Cs2);
+
+};
+
+template<class stencil>
+double CollisionBase<stencil>::computeFirstMoment(const double *distribution) const{
+
+    double firstmoment=0;
+
+    for (int idx=0;idx<stencil::Q;idx++){
+        firstmoment+=distribution[idx];
+    }
+
+    return firstmoment;
 
 }
 
 template<class stencil>
-template<int d,int... i>
-double CollisionBase<stencil>::computeSecondMoment(const double *distribution,std::index_sequence<i...> sequence) const{
 
-    return ((distribution[i]*stencil::template ma_Cxyz<d>[i])+...);
+double CollisionBase<stencil>::computeSecondMoment(const double *distribution,const int xyz) const{
+
+    double secondmoment=0;
+
+    for (int idx=0;idx<stencil::Q;idx++){
+        secondmoment+=(distribution[idx]*stencil::Ci_xyz(xyz)[idx]);
+    }
+
+    return secondmoment;
 
 }
 
@@ -115,11 +93,20 @@ double CollisionBase<stencil>::collideSRT(const double& old,const double& equili
 }
 
 template<class stencil>
-template<int i,int ...xyz>
-double CollisionBase<stencil>::forceSRT(const double& force,const double* velocity,const double& itau) const{
+double CollisionBase<stencil>::forceSRT(const std::array<double,stencil::D> force,const std::vector<double>& velocity,const double& itau,const int idx) const{
 
-    constexpr double ci_dot_velocity=((stencil::template ma_Cxyz<xyz>()[i]*velocity[xyz])+...);
+    double ci_dot_velocity=0;
+    double forceterm=0;
+    double prefactor=(1-DT*itau/2.0)*ma_Weights[idx];
+
+    for (int xyz=0;xyz<stencil::D;xyz++){
+        ci_dot_velocity+=(stencil::Ci_xyz(xyz)[idx]*velocity[xyz]);
+    }
+    for (int xyz=0;xyz<stencil::D;xyz++){
+        forceterm+=prefactor*(((stencil::Ci_xyz(xyz)[idx]-velocity[xyz])/m_Cs2+ci_dot_velocity*stencil::Ci_xyz(xyz)[idx]/(m_Cs2*m_Cs2))*force[xyz]);
+    }
     
-    return (1-DT*itau/2.0)*stencil::ma_Weights[i]*(((stencil::template ma_Cxyz<xyz>()[i]-velocity[xyz])/stencil::m_Cs2+ci_dot_velocity*stencil::template ma_Cxyz<xyz>()[i]/(stencil::m_Cs2*stencil::m_Cs2*force[xyz]))+...);
+    return forceterm;
 
 }
+#endif

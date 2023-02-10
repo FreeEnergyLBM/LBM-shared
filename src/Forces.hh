@@ -1,31 +1,31 @@
+#ifndef FORCES_HEADER
+#define FORCES_HEADER
+#include "Parameters.hh"
 
-template<class stencil>
 class BodyForce{
     public:
-        double compute() const;
-        void precompute() const;
+        double compute(int xyz) const;
+        void precompute();
         double computeDensitySource() const;
-        double computeVelocitySource() const;
+        double computeVelocitySource(int xyz) const;
     private:
-        double magnitude;
+        double magnitude=0.01;
+        Density<double> m_Density;
 };
 
-template<class stencil>
-double BodyForce<stencil>::compute() const{
-    return magnitude*Density;
+double BodyForce::compute(int xyz) const{
+    return (xyz==0)*magnitude*m_Density.getParameter(0);
 }
 
-template<class stencil>
-void BodyForce<stencil>::precompute() const{
-
-}
-
-template<class stencil>
-double BodyForce<stencil>::computeDensitySource() const{
+void BodyForce::precompute(){
     
 }
 
-template<class stencil>
-double BodyForce<stencil>::computeVelocitySource() const{
-    
+double BodyForce::computeDensitySource() const{
+    return 0.0;
 }
+
+double BodyForce::computeVelocitySource(int xyz) const{
+    return +compute(xyz)*DT/2.0;
+}
+#endif
