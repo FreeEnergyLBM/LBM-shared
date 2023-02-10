@@ -30,7 +30,8 @@ struct D2Q9{
     static constexpr int Opposites[Q]={0,2,1,4,3,6,5,8,7};
     static constexpr double Weights[Q]={4.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0};
     template<int idx>
-    static const int CModulus=Ci_x[idx]*Ci_x[idx]+Ci_y[idx]*Ci_y[idx];
+    static constexpr int CModulus=Ci_x[idx]*Ci_x[idx]+Ci_y[idx]*Ci_y[idx];
+
     //static constexpr int CMod[Q]={CMod<0>,CMod<1>,CMod<2>,CMod<3>,CMod<4>,CMod<5>,CMod<6>,CMod<7>,CMod<8>,CMod<9>};
 
     template<int idx>

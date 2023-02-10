@@ -74,7 +74,7 @@ template<class stencil,template<typename givenstencil> class data,class... force
 void SingleComponent<stencil,data,forces...>::precompute(){
     if constexpr (sizeof...(forces)!=0) (std::get<forces&>(mt_Forces).precompute(),...);
     else;
-    std::swap(m_Distribution.getDistribution(0),m_Distribution.getDistribution(0));
+    std::swap(m_Distribution.getDistribution(0),m_Distribution.getDistributionOld(0));
 }
 
 template<class stencil,template<typename givenstencil> class data,class... forces>
@@ -108,7 +108,7 @@ void SingleComponent<stencil,data,forces...>::initialise(){
         
     }
     density[0]=1.0;
-    velocity[x]=0.01;
+    velocity[x]=0.0;
     velocity[y]=0;
     velocity[z]=0;
 
@@ -131,7 +131,7 @@ double SingleComponent<stencil,data,forces...>::computeCollisionQ(const double& 
     std::array<double,stencil::D> forcexyz;
     for(int xyz=0;xyz<stencil::D;xyz++) forcexyz[xyz]=computeModelForce(xyz)+computeForces(xyz);
     
-    return old+CollisionBase<stencil>::collideSRT(old,computeEquilibrium(density,velocity,idx),m_InverseTau)
+    return CollisionBase<stencil>::collideSRT(old,computeEquilibrium(density,velocity,idx),m_InverseTau)
               +CollisionBase<stencil>::forceSRT(forcexyz,velocity,m_InverseTau,idx);
 
 }
@@ -149,7 +149,7 @@ double SingleComponent<stencil,data,forces...>::computeModelForce(int xyz) const
 
 template<class stencil,template<typename givenstencil> class data,class... forces>
 double SingleComponent<stencil,data,forces...>::computeDensity(const double* distribution) const{
-    if constexpr (sizeof...(forces)!=0) CollisionBase<stencil>::computeFirstMoment(distribution)+((std::get<forces&>(mt_Forces).computeDensitySource())+...); //CHANGE THIS SO FIRST/SECOND MOMENT COMPUTATION IS DONE IN DISTRIBUTION
+    if constexpr (sizeof...(forces)!=0) return CollisionBase<stencil>::computeFirstMoment(distribution)+((std::get<forces&>(mt_Forces).computeDensitySource())+...); //CHANGE THIS SO FIRST/SECOND MOMENT COMPUTATION IS DONE IN DISTRIBUTION
     else return CollisionBase<stencil>::computeFirstMoment(distribution);
 }
 

@@ -12,8 +12,11 @@ using SingleComponentWithoutBodyForce=SingleComponent<D2Q9,Data_Placeholder>;
 int main(){
     BodyForce Force;
     SingleComponentWithBodyForce test(Force);
+
     SingleComponentWithoutBodyForce test2;
-    Algorithm<SingleComponentWithoutBodyForce> LBM(test2);
+
+    Algorithm<SingleComponentWithBodyForce> LBM(test);
+    
     LBM.initialise();
     for (int timestep=0;timestep<TIMESTEPS;timestep++){
         LBM.evolve();

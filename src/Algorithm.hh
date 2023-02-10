@@ -14,7 +14,7 @@ class Algorithm{
         void precomputeStep();
         void calculateCollisionStep();
         void calculateMomentaStep();
-        std::tuple<Model&...> mt_Models;
+        std::tuple<Model&...> mt_Models; //CHANGE THIS TO TUPLE OF VECTORS
 };
 
 template<class ...Model>
