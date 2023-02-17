@@ -37,10 +37,10 @@ struct Distribution{
     double& getDistribution(const int k){
         return mv_Distribution[k];
     }
-    vector<double> getDistributionOld() const{
+    vector<double>& getDistributionOld() const{
         return mv_OldDistribution;
     }
-    vector<double> getDistributionOld(){
+    vector<double>& getDistributionOld(){
         return mv_OldDistribution;
     }
     const double* getDistributionOldPointer(const int k) const{

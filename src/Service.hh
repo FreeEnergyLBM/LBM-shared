@@ -9,6 +9,17 @@
 #include <any>
 #include<charconv>
 #include <memory>
+
+template<class model>
+void LBMPrint(model m){
+    std::cout<<"Distributions: "<<std::flush;
+    for(int i=0;i<19;i++)std::cout<<m.getDistribution()[i]<<" "<<std::flush;
+    std::cout<<std::endl;
+    std::cout<<"Density: "<<m.getDensity()<<" "<<std::endl;
+    std::cout<<"Velocity: "<<std::flush;
+    for(int i=0;i<3;i++)std::cout<<m.getVelocity()[i]<<" "<<std::flush;
+    std::cout<<std::endl;
+}
 /*
 class LBModel {
 	 

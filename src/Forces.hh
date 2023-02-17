@@ -1,6 +1,7 @@
 #ifndef FORCES_HEADER
 #define FORCES_HEADER
 #include "Parameters.hh"
+#include<iostream>
 
 class BodyForce{
     public:
@@ -26,6 +27,6 @@ double BodyForce::computeDensitySource() const{
 }
 
 double BodyForce::computeVelocitySource(int xyz) const{
-    return +compute(xyz)*DT/2.0;
+    return +compute(xyz)*DT*0.5/(m_Density.getParameter(0));
 }
 #endif

@@ -1,6 +1,7 @@
 #ifndef ALGORITHM_HEADER
 #define ALGORITHM_HEADER
 #include <tuple>
+#include <iostream>
 
 template<class ...Model>
 class Algorithm{

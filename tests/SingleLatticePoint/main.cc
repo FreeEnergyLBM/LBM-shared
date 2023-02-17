@@ -4,14 +4,16 @@
 #include "../../src/Data.hh"
 #include "../../src/Stencil.hh"
 #include "../../src/Global.hh"
+#include "../../src/Service.hh"
 #include <iostream>
 
-using SingleComponentWithBodyForce=SingleComponent<D2Q9,Data_Placeholder,BodyForce>;
-using SingleComponentWithoutBodyForce=SingleComponent<D2Q9,Data_Placeholder>;
+using SingleComponentWithBodyForce=SingleComponent<D3Q19,Data_Placeholder,BodyForce>;
+using SingleComponentWithoutBodyForce=SingleComponent<D3Q19,Data_Placeholder>;
 
 int main(){
+
     BodyForce Force;
-    SingleComponentWithBodyForce test(Force);
+    SingleComponentWithBodyForce test(Force);//get rid of this
 
     SingleComponentWithoutBodyForce test2;
 
@@ -20,12 +22,11 @@ int main(){
     LBM.initialise();
     for (int timestep=0;timestep<TIMESTEPS;timestep++){
         LBM.evolve();
-        std::cout<<" t="<<timestep<<std::endl;
-        for(int i=0;i<9;i++)std::cout<<test2.getDistribution()[i]<<" "<<std::flush;
+        std::cout<<std::endl<<"############ t="<<timestep<<" ############"<<std::endl;
+        LBMPrint(test2);
     }
-    
+    std::cout<<std::endl;
     
     return 0;
 }
 
-    

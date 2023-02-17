@@ -38,7 +38,7 @@ class SingleComponent:CollisionBase<stencil>{
 
         double computeVelocity(const double* distribution,const double& density, const int xyz) const;
 
-        static constexpr double m_Tau=1.0;
+        static constexpr double m_Tau=0.75;
 
         static constexpr double m_InverseTau=1.0/m_Tau;
 
@@ -74,7 +74,7 @@ template<class stencil,template<typename givenstencil> class data,class... force
 void SingleComponent<stencil,data,forces...>::precompute(){
     if constexpr (sizeof...(forces)!=0) (std::get<forces&>(mt_Forces).precompute(),...);
     else;
-    std::swap(m_Distribution.getDistribution(0),m_Distribution.getDistributionOld(0));
+    m_Distribution.getDistribution().swap(m_Distribution.getDistributionOld());
 }
 
 template<class stencil,template<typename givenstencil> class data,class... forces>
@@ -100,18 +100,17 @@ void SingleComponent<stencil,data,forces...>::initialise(){
 
     double* distribution=m_Distribution.getDistributionPointer(0);
     double* old_distribution=m_Distribution.getDistributionOldPointer(0);
-
-    for (int idx=0;idx<stencil::Q;idx++){
-        double equilibrium=computeEquilibrium(density[0],velocity,idx);
-        distribution[idx]=equilibrium;
-        old_distribution[idx]=equilibrium;
-        
-    }
     density[0]=1.0;
     velocity[x]=0.0;
     velocity[y]=0;
     velocity[z]=0;
+    for (int idx=0;idx<stencil::Q;idx++){
+        double equilibrium=computeEquilibrium(density[0],velocity,idx);
+        distribution[idx]=equilibrium;
+        old_distribution[idx]=equilibrium;        
+    }
 
+    
 }
 
 
