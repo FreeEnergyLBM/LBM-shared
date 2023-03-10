@@ -7,8 +7,9 @@
 #include "../../src/Service.hh"
 #include <iostream>
 
-using SingleComponentWithBodyForce=SingleComponent<D3Q19,Data_Placeholder,BodyForce>;
-using SingleComponentWithoutBodyForce=SingleComponent<D3Q19,Data_Placeholder>;
+using SingleComponentWithBodyForce=SingleComponent<D3Q19,Data1,BodyForce>;
+
+using SingleComponentWithoutBodyForce=SingleComponent<D3Q19,Data1>;
 
 int main(){
 
@@ -17,9 +18,11 @@ int main(){
 
     SingleComponentWithoutBodyForce test2;
 
-    Algorithm<SingleComponentWithBodyForce> LBM(test);
+    Algorithm<SingleComponentWithoutBodyForce> LBM(test2);
     
     LBM.initialise();
+    std::cout<<std::endl<<"############ t="<<-1<<" ############"<<std::endl;
+    LBMPrint(test2);
     for (int timestep=0;timestep<TIMESTEPS;timestep++){
         LBM.evolve();
         std::cout<<std::endl<<"############ t="<<timestep<<" ############"<<std::endl;
@@ -29,4 +32,3 @@ int main(){
     
     return 0;
 }
-

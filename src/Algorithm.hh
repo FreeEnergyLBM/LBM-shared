@@ -16,24 +16,31 @@ class Algorithm{
         void calculateCollisionStep();
         void calculateMomentaStep();
         std::tuple<Model&...> mt_Models; //CHANGE THIS TO TUPLE OF VECTORS
+
 };
 
 template<class ...Model>
 void Algorithm<Model...>::precomputeStep(){
+
     if constexpr (sizeof...(Model)!=0) (std::get<Model&>(mt_Models).precompute(),...);
     else;
+
 }
 
 template<class ...Model>
 void Algorithm<Model...>::calculateCollisionStep(){
+
     if constexpr (sizeof...(Model)!=0) (std::get<Model&>(mt_Models).collide(),...);
     else;
+
 }
 
 template<class ...Model>
 void Algorithm<Model...>::calculateMomentaStep(){
+
     if constexpr (sizeof...(Model)!=0) (std::get<Model&>(mt_Models).computeMomenta(),...);
     else;
+
 }
 
 template<class ...Model>

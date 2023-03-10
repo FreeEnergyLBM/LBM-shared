@@ -1,0 +1,175 @@
+desc: (none)
+cmd: ./wetP
+time_unit: i
+#-----------
+snapshot=0
+#-----------
+time=0
+mem_heap_B=0
+mem_heap_extra_B=0
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=1
+#-----------
+time=6118514
+mem_heap_B=72704
+mem_heap_extra_B=8
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=2
+#-----------
+time=6238988
+mem_heap_B=73744
+mem_heap_extra_B=16
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=3
+#-----------
+time=6246029
+mem_heap_B=74784
+mem_heap_extra_B=24
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=4
+#-----------
+time=6251977
+mem_heap_B=74792
+mem_heap_extra_B=40
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=5
+#-----------
+time=6252090
+mem_heap_B=74816
+mem_heap_extra_B=56
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=6
+#-----------
+time=6253251
+mem_heap_B=74968
+mem_heap_extra_B=72
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=7
+#-----------
+time=6253401
+mem_heap_B=75120
+mem_heap_extra_B=88
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=8
+#-----------
+time=6262693
+mem_heap_B=76144
+mem_heap_extra_B=96
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=9
+#-----------
+time=7073105
+mem_heap_B=76144
+mem_heap_extra_B=96
+mem_stacks_B=0
+heap_tree=peak
+n4: 76144 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 72704 0x54356F9: pool (eh_alloc.cc:123)
+  n1: 72704 0x54356F9: __static_initialization_and_destruction_0 (eh_alloc.cc:262)
+   n1: 72704 0x54356F9: _GLOBAL__sub_I_eh_alloc.cc (eh_alloc.cc:338)
+    n1: 72704 0x4014E09: call_init.part.0 (dl-init.c:72)
+     n1: 72704 0x4014F09: call_init (dl-init.c:118)
+      n1: 72704 0x4014F09: _dl_init (dl-init.c:119)
+       n0: 72704 0x4006019: ??? (in /usr/lib64/ld-2.28.so)
+ n1: 2080 0x5FA6526: __new_exitfn (in /usr/lib64/libc-2.28.so)
+  n2: 2080 0x5FA65CB: __internal_atexit (in /usr/lib64/libc-2.28.so)
+   n1: 1040 0x4E4F168: _GLOBAL__sub_I_mpicxx.cc (in /apps/developers/libraries/openmpi/4.1.1/1/gcc-11.2/lib/libmpi_cxx.so.40.30.0)
+    n1: 1040 0x4014E09: call_init.part.0 (dl-init.c:72)
+     n1: 1040 0x4014F09: call_init (dl-init.c:118)
+      n1: 1040 0x4014F09: _dl_init (dl-init.c:119)
+       n0: 1040 0x4006019: ??? (in /usr/lib64/ld-2.28.so)
+   n1: 1040 0x4E4F533: _GLOBAL__sub_I_mpicxx.cc (in /apps/developers/libraries/openmpi/4.1.1/1/gcc-11.2/lib/libmpi_cxx.so.40.30.0)
+    n1: 1040 0x4014E09: call_init.part.0 (dl-init.c:72)
+     n1: 1040 0x4014F09: call_init (dl-init.c:118)
+      n1: 1040 0x4014F09: _dl_init (dl-init.c:119)
+       n0: 1040 0x4006019: ??? (in /usr/lib64/ld-2.28.so)
+ n1: 1024 0x5FDC15F: _IO_file_doallocate (in /usr/lib64/libc-2.28.so)
+  n1: 1024 0x5FEA00F: _IO_doallocbuf (in /usr/lib64/libc-2.28.so)
+   n1: 1024 0x5FE9277: _IO_file_overflow@@GLIBC_2.2.5 (in /usr/lib64/libc-2.28.so)
+    n1: 1024 0x54BCBB8: sputc (streambuf:439)
+     n1: 1024 0x54BCBB8: sputc (streambuf:429)
+      n1: 1024 0x54BCBB8: std::ostream::put(char) (ostream.tcc:163)
+       n0: 1024 0x400EA8: main (in /nobackup/bzzf67/Test2/TernaryLBM/tests/SingleLatticePoint/wetP)
+ n0: 336 in 1 place, below massif's threshold (1.00%)
+#-----------
+snapshot=10
+#-----------
+time=7073105
+mem_heap_B=75992
+mem_heap_extra_B=80
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=11
+#-----------
+time=7073174
+mem_heap_B=75840
+mem_heap_extra_B=64
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=12
+#-----------
+time=7073243
+mem_heap_B=75816
+mem_heap_extra_B=48
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=13
+#-----------
+time=7073312
+mem_heap_B=75808
+mem_heap_extra_B=32
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=14
+#-----------
+time=7115718
+mem_heap_B=74768
+mem_heap_extra_B=24
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=15
+#-----------
+time=7116666
+mem_heap_B=73728
+mem_heap_extra_B=16
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=16
+#-----------
+time=7120075
+mem_heap_B=1024
+mem_heap_extra_B=8
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=17
+#-----------
+time=7122036
+mem_heap_B=0
+mem_heap_extra_B=0
+mem_stacks_B=0
+heap_tree=empty

@@ -6,17 +6,9 @@
 #include<any>
 #include "Global.hh"
 using namespace std;
-template<class  stencil, template<typename givenstencil> class datatype,int i>
+template<class  stencil,int i>
 struct Distribution{
-    Distribution(){
-        if constexpr (datatype<stencil>::OneArray==true){
-            mv_Distribution.resize(2*stencil::Q*LX*LY*LZ);
-        }
-        else {
-            mv_Distribution.resize(stencil::Q*LX*LY*LZ);
-            mv_OldDistribution.resize(stencil::Q*LX*LY*LZ);
-        }
-    }
+
     static vector<double> mv_Distribution;
     static vector<double> mv_OldDistribution;
     vector<double>& getDistribution() const{
@@ -26,10 +18,10 @@ struct Distribution{
         return mv_Distribution;
     }
     const double* getDistributionPointer(const int k) const{
-        return &mv_Distribution[k];
+        return &mv_Distribution[k*stencil::Q];
     }
     double* getDistributionPointer(const int k){
-        return &mv_Distribution[k];
+        return &mv_Distribution[k*stencil::Q];
     }
     const double& getDistribution(const int k) const{
         return mv_Distribution[k];
@@ -44,10 +36,10 @@ struct Distribution{
         return mv_OldDistribution;
     }
     const double* getDistributionOldPointer(const int k) const{
-        return &mv_OldDistribution[k];
+        return &mv_OldDistribution[k*stencil::Q];
     }
     double* getDistributionOldPointer(const int k){
-        return &mv_OldDistribution[k];
+        return &mv_OldDistribution[k*stencil::Q];
     }
     const double& getDistributionOld(const int k) const{
         return mv_OldDistribution[k];
@@ -55,18 +47,16 @@ struct Distribution{
     double& getDistributionOld(const int k){
         return mv_OldDistribution[k];
     }
-    
-    void iterate();
-    void getNeighbor();
-    void communicate();
-    int offset;
+    virtual int streamIndex(int k,int Q){
+        return 0;
+    };
 };
 
-template<class  stencil, template<typename givenstencil> class datatype,int i>
-vector<double> Distribution<stencil, datatype, i>::mv_Distribution;
+template<class  stencil, int i>
+vector<double> Distribution<stencil, i>::mv_Distribution;
 
-template<class  stencil, template<typename givenstencil> class datatype,int i>
-vector<double> Distribution<stencil, datatype, i>::mv_OldDistribution;
+template<class  stencil, int i>
+vector<double> Distribution<stencil, i>::mv_OldDistribution;
 
 template<class obj,typename T,int num>
 class Parameter{
