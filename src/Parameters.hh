@@ -11,6 +11,7 @@ struct Distribution{
 
     static vector<double> mv_Distribution;
     static vector<double> mv_OldDistribution;
+
     vector<double>& getDistribution() const{
         return mv_Distribution;
     }
@@ -50,6 +51,7 @@ struct Distribution{
     virtual int streamIndex(int k,int Q){
         return 0;
     };
+
 };
 
 template<class  stencil, int i>
@@ -61,9 +63,11 @@ vector<double> Distribution<stencil, i>::mv_OldDistribution;
 template<class obj,typename T,int num>
 class Parameter{
     public:
+
         Parameter(){
-            mv_Parameter.resize(num*LX*LY*LZ);
+            mv_Parameter.resize(num*N);
         }
+
         vector<T>& getParameter() const{
             return mv_Parameter;
         }
@@ -82,8 +86,11 @@ class Parameter{
         T& getParameter(const int k){
             return mv_Parameter[k];
         }
+
     private:
+
         static vector<T> mv_Parameter;
+        
 };
 
 template<class obj,typename T,int num>
@@ -94,6 +101,12 @@ struct Velocity : public Parameter<Velocity<T,stencil>,T,stencil::D>{};
 
 template<typename T>
 struct Density : public Parameter<Density<T>,T,1>{};
+
+template<typename T>
+struct Pressure : public Parameter<Pressure<T>,T,1>{};
+
+template<typename T>
+struct OrderParameter : public Parameter<OrderParameter<T>,T,1>{};
 
 struct SolidLabels : public Parameter<SolidLabels,int,1>{};
 

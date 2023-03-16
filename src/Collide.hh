@@ -22,9 +22,11 @@ class CollisionBase{
 
         double forceSRT(const std::array<double,stencil::D> force,const std::vector<double>& velocity,const double& itau,const int idx) const;
 
+        double computeVelocityFactor(const std::vector<double>& velocity, const int idx) const;
+
     private:
 
-        double computeVelocityFactor(const std::vector<double>& velocity, const int idx) const;
+        
 
         enum{x=0,y=1,z=2};
 

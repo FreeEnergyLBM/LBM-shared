@@ -11,15 +11,38 @@
 #include <memory>
 
 template<class model>
-void LBMPrint(model& m){
+void LBMPrint(model& m){//THIS IS TEMPORARY
     std::cout<<"Distributions: "<<std::flush;
-    for(int i=0;i<19;i++)std::cout<<m.getDistribution()[i*145]<<" "<<std::flush;
+    for(int i=0;i<9;i++)std::cout<<m.getDistribution()[i+9*15]<<" "<<std::flush;
     std::cout<<std::endl;
-    std::cout<<"Density: "<<m.getDensity(145)<<" "<<std::endl;
+    std::cout<<"Density: "<<m.getDensity(15)<<" "<<std::endl;
     std::cout<<"Velocity: "<<std::flush;
-    for(int i=0;i<3;i++)std::cout<<m.getVelocity()[i*145]<<" "<<std::flush;
+    for(int i=0;i<2;i++)std::cout<<m.getVelocity()[15*2+i]<<" "<<std::flush;
     std::cout<<std::endl;
 }
+
+int computeX(const int k)
+{  
+
+  return int(k/(float) (LZ*LY));
+
+
+}
+
+int computeY(const int k)
+{  
+
+  return int((k-computeX(k)*LZ*LY)/(float) LZ);
+
+}
+
+int computeZ(const int k)
+{  
+
+  return k-computeX(k)*LZ*LY-computeY(k)*LZ;
+
+}
+
 /*
 class LBModel {
 	 
