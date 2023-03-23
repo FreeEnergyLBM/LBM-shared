@@ -8,13 +8,21 @@
 template<class traits>
 class Binary:CollisionBase<typename traits::Stencil>{
     public:
-        Binary(auto&... Forces):mt_Forces(Forces...){
+        Binary(typename traits::Forces& forces,typename traits::Boundaries& boundaries):mt_Forces(forces),mt_Boundaries(boundaries){
+            
+        }
+        Binary(typename traits::Forces& forces):mt_Forces(forces),mt_Boundaries(std::tuple<>()){
+            
+        }
+        Binary(typename traits::Boundaries& boundaries):mt_Forces(std::tuple<>()),mt_Boundaries(boundaries){
             
         }
 
         void precompute();
 
         void collide();
+
+        void boundaries();
 
         void initialise();
 
@@ -46,9 +54,9 @@ class Binary:CollisionBase<typename traits::Stencil>{
 
         Velocity<double,typename traits::Stencil> m_Velocity;
 
-        Distribution<typename traits::Stencil,2>& m_Distribution=m_Data.template getDistributionObject();
+        Distribution<typename traits::Stencil,Binary<traits>>& m_Distribution=m_Data.template getDistributionObject();
 
-        typename traits::Data<2> m_Data;
+        typename traits::Data<Binary<traits>> m_Data;
 
         vector<double>& orderparameter=m_OrderParameter.getParameter();
 
@@ -59,6 +67,7 @@ class Binary:CollisionBase<typename traits::Stencil>{
         enum{x=0,y=1,z=2};
 
         typename traits::Forces mt_Forces;
+        typename traits::Boundaries mt_Boundaries;
 
         Geometry m_Geometry;
         
@@ -137,6 +146,25 @@ void Binary<traits>::collide(){
         k = m_Data.iterateFluid(k);
 
     }
+}
+
+template<class traits>
+void Binary<traits>::boundaries(){
+
+    int k=0;
+
+    while(k>=0){
+        if constexpr(std::tuple_size<typename traits::Boundaries>::value!=0){
+            std::apply([this,k](auto&... tests){
+                (tests.compute(this->m_Distribution,k),...);
+            }, mt_Boundaries);
+        }
+        else;
+
+        k = m_Data.iterateFluid(k);
+
+    }
+
 }
 
 template<class traits>

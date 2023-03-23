@@ -5,5 +5,5 @@ class Boundary{
     public:
         void compute();
     private:
-}
+};
 #endif

@@ -43,14 +43,10 @@ int computeZ(const int k)
 
 }
 
-
-template<class stencil,template <typename givenstencil,int id> class data,class... forces>
-struct trait{
-    using Stencil=stencil;  
-    template<int id>
-    using Data=data<Stencil,id> ;
-    typedef std::tuple<forces&...> Forces;
-};
+template<typename... T>
+std::tuple<T...> GenerateTuple(T&&... Force){
+    return std::tuple<T...>(Force...);
+}
 
 
 /*

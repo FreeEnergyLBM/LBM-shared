@@ -19,6 +19,8 @@ class Algorithm{
         
         void calculateCollisionStep();
 
+        void calculateBoundaryStep();
+
         void calculateMomentaStep();
 
         std::tuple<Model&...> mt_Models; //CHANGE THIS TO TUPLE OF VECTORS
@@ -54,6 +56,18 @@ void Algorithm<Model...>::calculateCollisionStep(){
     if constexpr (sizeof...(Model)!=0){
         std::apply([](Model&... tests){
                 (tests.collide(),...);
+            }, mt_Models);
+    }
+    else;
+
+}
+
+template<class ...Model>
+void Algorithm<Model...>::calculateBoundaryStep(){
+    
+    if constexpr (sizeof...(Model)!=0){
+        std::apply([](Model&... tests){
+                (tests.boundaries(),...);
             }, mt_Models);
     }
     else;

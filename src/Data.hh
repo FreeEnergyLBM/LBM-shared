@@ -4,12 +4,11 @@
 #include "Parameters.hh"
 #include "Service.hh"
 
-template<class stencil,int id>
+template<class stencil,class model>
 class Data1{
     private:
 
-        template<int i>
-        struct Distribution_Derived:Distribution<stencil,i>{
+        struct Distribution_Derived:Distribution<stencil,model>{
             
             Distribution_Derived(std::vector<int>& neighbors):mv_DistNeighbors(neighbors){
                 
@@ -17,8 +16,8 @@ class Data1{
                     opposites[idx]=stencil::Ci_xyz(x)[idx]*LZ*LY+stencil::Ci_xyz(y)[idx]*LZ+stencil::Ci_xyz(z)[idx];
                 }
 
-                Distribution<stencil,i>::mv_Distribution.resize(stencil::Q*N);
-                Distribution<stencil,i>::mv_OldDistribution.resize(stencil::Q*N);
+                Distribution<stencil,model>::mv_Distribution.resize(stencil::Q*N);
+                Distribution<stencil,model>::mv_OldDistribution.resize(stencil::Q*N);
                 
             }
 
@@ -46,7 +45,7 @@ class Data1{
 
         enum{x=0,y=1,z=2};
 
-        Distribution_Derived<id> m_Distribution;
+        Distribution_Derived m_Distribution;
 
     public:
 
@@ -68,7 +67,7 @@ class Data1{
 
         std::vector<int>& getNeighbors();
 
-        Distribution_Derived<id>& getDistributionObject(){
+        Distribution_Derived& getDistributionObject(){
 
             return m_Distribution;
 
@@ -80,28 +79,28 @@ class Data1{
 
 };
 
-template<typename stencil,int id>
-void Data1<stencil,id>::stream(){
+template<typename stencil,class model>
+void Data1<stencil,model>::stream(){
 
 }
 
-template<typename stencil,int id>
-std::vector<int>& Data1<stencil,id>::getNeighbors(){
+template<typename stencil,class model>
+std::vector<int>& Data1<stencil,model>::getNeighbors(){
     
     return mv_Neighbors;
 
 }
 
-template<typename stencil,int id>
-int Data1<stencil,id>::iterate(const int k){
+template<typename stencil,class model>
+int Data1<stencil,model>::iterate(const int k){
 
     if (k>=N-1) return -1;
     else return k+1;
 
 }
 
-template<typename stencil,int id>
-int Data1<stencil,id>::iterateFluid(const int k){
+template<typename stencil,class model>
+int Data1<stencil,model>::iterateFluid(const int k){
 
     if (k>=N-1) return -1;
     else if (m_Geometry.isSolid(k+1)) return iterateFluid(k+1);
@@ -109,15 +108,15 @@ int Data1<stencil,id>::iterateFluid(const int k){
 
 }
 
-template<typename stencil,int id>
-int Data1<stencil,id>::getOneNeighbor(const int k,const int Q){
+template<typename stencil,class model>
+int Data1<stencil,model>::getOneNeighbor(const int k,const int Q){
     
     return k+opp[Q];
         
 }
 
-template<typename stencil,int id>
-int Data1<stencil,id>::getOneNeighborPeriodic(const int k,const int Q){
+template<typename stencil,class model>
+int Data1<stencil,model>::getOneNeighborPeriodic(const int k,const int Q){
 
     int neighbor=0;
 
@@ -176,8 +175,8 @@ int Data1<stencil,id>::getOneNeighborPeriodic(const int k,const int Q){
     return k+neighbor;
 }
 
-template<typename stencil,int id>
-void Data1<stencil,id>::generateNeighbors(){
+template<typename stencil,class model>
+void Data1<stencil,model>::generateNeighbors(){
 
     int k=0;
 

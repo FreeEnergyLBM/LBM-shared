@@ -8,13 +8,21 @@
 template<class traits>
 class SingleComponent:CollisionBase<typename traits::Stencil>{
     public:
-        SingleComponent(auto&... Forces):mt_Forces(Forces...){
+        SingleComponent(typename traits::Forces& forces,typename traits::Boundaries& boundaries):mt_Forces(forces),mt_Boundaries(boundaries){
+            
+        }
+        SingleComponent(typename traits::Forces& forces):mt_Forces(forces),mt_Boundaries(std::tuple<>()){
+            
+        }
+        SingleComponent(typename traits::Boundaries& boundaries):mt_Forces(std::tuple<>()),mt_Boundaries(boundaries){
             
         }
 
         void precompute();
 
         void collide();
+
+        void boundaries();
 
         void initialise();
 
@@ -48,9 +56,9 @@ class SingleComponent:CollisionBase<typename traits::Stencil>{
 
         Velocity<double,typename traits::Stencil> m_Velocity;
 
-        Distribution<typename traits::Stencil,1>& m_Distribution=m_Data.template getDistributionObject();
+        Distribution<typename traits::Stencil,SingleComponent<traits>>& m_Distribution=m_Data.template getDistributionObject();
 
-        typename traits::Data<1> m_Data; //MOVE THIS TO BASE
+        typename traits::Data<SingleComponent<traits>> m_Data; //MOVE THIS TO BASE
 
         vector<double>& density=m_Density.getParameter();
 
@@ -60,8 +68,8 @@ class SingleComponent:CollisionBase<typename traits::Stencil>{
 
         enum{x=0,y=1,z=2};
 
-        typename traits::Forces mt_Forces; //MOVE THIS TO BASE
-
+        typename traits::Forces& mt_Forces; //MOVE THIS TO BASE
+        typename traits::Boundaries& mt_Boundaries;
         Geometry m_Geometry;
         
 };
@@ -137,6 +145,25 @@ void SingleComponent<traits>::collide(){
         k = m_Data.iterateFluid(k);
 
     }
+}
+
+template<class traits>
+void SingleComponent<traits>::boundaries(){
+
+    int k=0;
+
+    while(k>=0){
+        if constexpr(std::tuple_size<typename traits::Boundaries>::value!=0){
+            std::apply([this,k](auto&... tests){
+                (tests.compute(this->m_Distribution,k),...);
+            }, mt_Boundaries);
+        }
+        else;
+
+        k = m_Data.iterateFluid(k);
+
+    }
+
 }
 
 template<class traits>

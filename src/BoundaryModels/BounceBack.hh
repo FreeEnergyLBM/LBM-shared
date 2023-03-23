@@ -6,8 +6,8 @@
 
 class BounceBack{
     public:
-
-        double compute(int xyz,int k) const;
+        template <class disttype>
+        double compute(disttype& m_Distribution,int k) const;
 
         void precompute(int k);
 
@@ -19,27 +19,27 @@ class BounceBack{
 
     private:
 
-        Distribution<double>& m_Distribution;
 
 };
 
-double BounceBack::compute(int xyz,int k) const{
+template <class disttype>
+double BounceBack::compute(disttype& m_Distribution,int k) const{
 
 }
 
-void BodyForce::precompute(int k){
+void BounceBack::precompute(int k){
     
 }
 
-void BodyForce::postprocess(int k){
+void BounceBack::postprocess(int k){
     
 }
 
-double BodyForce::computeDensitySource(int k) const{
+double BounceBack::computeDensitySource(int k) const{
 
 }
 
-double BodyForce::computeVelocitySource(int xyz,int k) const{
+double BounceBack::computeVelocitySource(int xyz,int k) const{
 
 }
 #endif

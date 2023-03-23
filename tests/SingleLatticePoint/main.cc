@@ -1,11 +1,13 @@
 #include "../../src/Algorithm.hh"
 #include "../../src/LBModels/Models.hh"
 #include "../../src/Forces/Forces.hh"
+#include "../../src/BoundaryModels/Boundaries.hh"
 #include "../../src/Data.hh"
 #include "../../src/Stencil.hh"
 #include "../../src/Global.hh"
 #include "../../src/Service.hh"
 #include "../../src/Saving.hh"
+
 #include <iostream>
 
 //Code wishlist:
@@ -19,16 +21,6 @@
 // Debugger
 // Sphinx
 
-//USE TRAITS INSTEAD, EG
-//struct trait{
-// typedef D2Q9 Stencil;    
-// typedef Data1 Data;
-// typedef std::tuple<BodyForce> Forces;
-// ...  
-//}
-//
-//SingleComponent<trait> Modelwithtraits; 
-
 //TODO BEFORE HACKATHON
 //BASIC MPI
 //BINARY
@@ -37,15 +29,34 @@
 //CLEANUP (SAVING, EXCEPTIONS etc)
 //CLEANUP OLD CODE
 
+struct traitF{
+    using Stencil=D2Q9;
+    template<class model>
+    using Data=Data1<Stencil,model>;
+    using Boundaries=std::tuple<BounceBack&>;
+    using Forces=std::tuple<BodyForce&>;
+};
+struct traitG{
+    using Stencil=D2Q9;  
+    template<class model>
+    using Data=Data1<Stencil,model>;
+    using Boundaries=std::tuple<BounceBack&>;
+    using Forces=std::tuple<>;
+};
+
 int main(){
     data_dir="data/";
+    
     BodyForce Force;
+    auto ForcesF=GenerateTuple(Force);
+    BounceBack Boundary;
+    auto BoundaryF=GenerateTuple(Boundary);
     //SingleComponent<traits> test(Force,Force);//get rid of this
 
-    SingleComponent<trait<D2Q9,Data1,BodyForce>> test2(Force);
-    Binary<trait<D2Q9,Data1>> test22;
+    SingleComponent<traitF> test2(ForcesF,BoundaryF);
+    Binary<traitG> test22(BoundaryF);
 
-    Algorithm<SingleComponent<trait<D2Q9,Data1,BodyForce>>,Binary<trait<D2Q9,Data1>>> LBM(test2,test22);
+    Algorithm<SingleComponent<traitF>,Binary<traitG>> LBM(test2,test22);
 
     LBM.initialise();
     for (int timestep=0;timestep<=TIMESTEPS;timestep++){

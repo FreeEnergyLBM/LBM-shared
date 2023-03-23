@@ -6,7 +6,7 @@
 #include<any>
 #include "Global.hh"
 using namespace std;
-template<class  stencil,int i>
+template<class  stencil,class model>
 struct Distribution{
 
     static vector<double> mv_Distribution;
@@ -54,11 +54,11 @@ struct Distribution{
 
 };
 
-template<class  stencil, int i>
-vector<double> Distribution<stencil, i>::mv_Distribution;
+template<class  stencil,class model>
+vector<double> Distribution<stencil, model>::mv_Distribution;
 
-template<class  stencil, int i>
-vector<double> Distribution<stencil, i>::mv_OldDistribution;
+template<class  stencil,class model>
+vector<double> Distribution<stencil, model>::mv_OldDistribution;
 
 template<class obj,typename T,int num>
 class Parameter{
