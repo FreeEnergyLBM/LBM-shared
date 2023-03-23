@@ -9,7 +9,7 @@ LIBPATH =
 
 COMP	=	 mpicxx #mpic++ 
 
-DEPS    =       ../../src/Algorithm.hh ../../src/Collide.hh ../../src/Data.hh ../../src/Forces.hh ../../src/Geometry.hh ../../src/Global.hh ../../src/LBModels.hh ../../src/Parameter.hh ../../src/Service.hh ../../src/Stencil.hh # RT_Timer.hh Timer.hh Bool.hh String.hh 
+DEPS    =       ../../src/%.hh ../../src/Forces/%.hh ../../src/GradientStencils%.hh ../../src/LBModels/%.hh ../../src/BoundaryModels/%.hh 
 
 OBJ     =       main.cc
 
