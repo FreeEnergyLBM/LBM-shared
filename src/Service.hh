@@ -10,8 +10,10 @@
 #include<charconv>
 #include <memory>
 
+//Sertive.hh: This will contain some commonly used functions with various uses.
+
 template<class model>
-void LBMPrint(model& m){//THIS IS TEMPORARY
+void LBMPrint(model& m){//THIS IS TEMPORARY SO IGNORE
     std::cout<<"Distributions: "<<std::flush;
     for(int i=0;i<9;i++)std::cout<<m.getDistribution()[i+9*15]<<" "<<std::flush;
     std::cout<<std::endl;
@@ -21,7 +23,10 @@ void LBMPrint(model& m){//THIS IS TEMPORARY
     std::cout<<std::endl;
 }
 
-int computeX(const int k)
+int computeX(const int k) //Compute X direction from a given k, the convention in this code is that
+                          //k will iterate over the z direction first, then increment y by 1 once it reaches LZ,
+                          //then repeat the iteration over z. Once it reaches LY x will be incremented and this
+                          //process continues
 {  
 
   return int(k/(float) (LZ*LY));
@@ -29,14 +34,14 @@ int computeX(const int k)
 
 }
 
-int computeY(const int k)
+int computeY(const int k) //Compute Y direction from a given k, this uses information from the X direction
 {  
 
   return int((k-computeX(k)*LZ*LY)/(float) LZ);
 
 }
 
-int computeZ(const int k)
+int computeZ(const int k) //Compute Y direction from a given k, this uses information from the X and Y directions
 {  
 
   return k-computeX(k)*LZ*LY-computeY(k)*LZ;
@@ -44,10 +49,15 @@ int computeZ(const int k)
 }
 
 template<typename... T>
-std::tuple<T...> GenerateTuple(T&&... Force){
-    return std::tuple<T...>(Force...);
+std::tuple<T...> GenerateTuple(T&&... Objects){ //Returns a tuple from a number of objects passed to it.
+                                                //I've done this in an effort to reduce the number of visible
+                                                //templates in the code but I might get rid of it.
+    return std::tuple<T...>(Objects...);
 }
 
+
+//BELOW: Not currently used implementations of type erasure, recursive template loops, MRT generation and a class
+//instance counter.
 
 /*
 class LBModel {

@@ -5,68 +5,79 @@
 #include "../Data.hh"
 #include <utility>
 
+//FlowField.hh: Contains the details of the LBM model to solve the Navier-Stokes and continuity equation. Each
+//Model is given a "traits" class that contains stencil, data, force and boundary information
+
 template<class traits>
-class SingleComponent:CollisionBase<typename traits::Stencil>{
+class FlowField:CollisionBase<typename traits::Stencil>{ //Inherit from base class to avoid repetition of common
+                                                         //calculations
     public:
-        SingleComponent(typename traits::Forces& forces,typename traits::Boundaries& boundaries):mt_Forces(forces),mt_Boundaries(boundaries){
+        //Constructors to construct tuples of forces and boundaries
+        FlowField(typename traits::Forces& forces,typename traits::Boundaries& boundaries):mt_Forces(forces),mt_Boundaries(boundaries){
             
         }
-        SingleComponent(typename traits::Forces& forces):mt_Forces(forces),mt_Boundaries(std::tuple<>()){
+        FlowField(typename traits::Forces& forces):mt_Forces(forces),mt_Boundaries(std::tuple<>()){
             
         }
-        SingleComponent(typename traits::Boundaries& boundaries):mt_Forces(std::tuple<>()),mt_Boundaries(boundaries){
+        FlowField(typename traits::Boundaries& boundaries):mt_Forces(std::tuple<>()),mt_Boundaries(boundaries){
             
         }
 
-        void precompute();
+        void precompute(); //Perform any necessary computations before collision
 
-        void collide();
+        void collide(); //Collision step
 
-        void boundaries();
+        void boundaries(); //Boundary calculation
 
-        void initialise();
+        void initialise(); //Initialisation step
 
-        void computeMomenta();
+        void computeMomenta(); //Momenta (density, velocity) calculation
 
-        const double& getDensity(int k) const;
+        const double& getDensity(int k) const; //Return density at lattice point k
 
-        const std::vector<double>& getVelocity() const;
+        const std::vector<double>& getVelocity() const; //Return vector of velocity
 
-        const std::vector<double>& getDistribution() const;
+        const std::vector<double>& getDistribution() const; //Return vector of distribution
 
     private:
 
-        double computeEquilibrium(const double& density,const std::vector<double>& velocity, const int idx) const;
+        double computeEquilibrium(const double& density,const std::vector<double>& velocity,
+                                  const int idx) const; //Calculate equilibrium in direction idx with a given
+                                                        //density and velocity
 
-        double computeModelForce(int xyz,int k) const;
+        double computeModelForce(int xyz,int k) const; //Calculate forces specific to the model in direction xyz
 
-        double computeForces(int xyz,int k) const;
+        double computeForces(int xyz,int k) const; //Calculate other forces in direction xyz
 
-        double computeCollisionQ(int k,const double& old,const double& density,const std::vector<double>& velocity,const int idx) const;
+        double computeCollisionQ(int k,const double& old,const double& density,
+                                 const std::vector<double>& velocity,const int idx) const; //Calculate collision
+                                                                                           //at index idx
 
-        double computeDensity(const double* distribution,int k) const;
+        double computeDensity(const double* distribution,int k) const; //Calculate density
 
-        double computeVelocity(const double* distribution,const double& density, const int xyz,int k) const;
+        double computeVelocity(const double* distribution,const double& density,
+                               const int xyz,int k) const; //Calculate velocity
 
-        static constexpr double m_Tau=1.0;
+        static constexpr double m_Tau=1.0; //TEMPORARY relaxation time
 
-        static constexpr double m_InverseTau=1.0/m_Tau;
+        static constexpr double m_InverseTau=1.0/m_Tau; //TEMPORARY inverse relaxation time
 
-        Density<double> m_Density;
+        Density<double> m_Density; //Density
 
-        Velocity<double,typename traits::Stencil> m_Velocity;
+        Velocity<double,typename traits::Stencil> m_Velocity; //Velocity
 
-        Distribution<typename traits::Stencil,SingleComponent<traits>>& m_Distribution=m_Data.template getDistributionObject();
+        Distribution_Base<typename traits::Stencil>& m_Distribution=m_Data.template getDistributionObject();
+            //Distributions
 
-        typename traits::Data<SingleComponent<traits>> m_Data; //MOVE THIS TO BASE
+        typename traits::Data m_Data; //MOVE THIS TO BASE
 
-        vector<double>& density=m_Density.getParameter();
+        vector<double>& density=m_Density.getParameter(); //Reference to vector of densities
 
-        vector<double>& velocity=m_Velocity.getParameter();
+        vector<double>& velocity=m_Velocity.getParameter(); //Reference to vector of velocities
 
-        vector<double>& distribution=m_Distribution.getDistribution();
+        vector<double>& distribution=m_Distribution.getDistribution(); //Reference to vector of distributions
 
-        enum{x=0,y=1,z=2};
+        enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z directions
 
         typename traits::Forces& mt_Forces; //MOVE THIS TO BASE
         typename traits::Boundaries& mt_Boundaries;
@@ -75,51 +86,55 @@ class SingleComponent:CollisionBase<typename traits::Stencil>{
 };
 
 template<class traits>
-const double& SingleComponent<traits>::getDensity(int k) const{
+const double& FlowField<traits>::getDensity(int k) const{
 
-    return density[k];
-
-}
-
-template<class traits>
-const std::vector<double>& SingleComponent<traits>::getVelocity() const{
-
-    return velocity;
+    return density[k]; //Return reference to density at point k
 
 }
 
 template<class traits>
-const std::vector<double>& SingleComponent<traits>::getDistribution() const{
+const std::vector<double>& FlowField<traits>::getVelocity() const{
 
-    return distribution;
+    return velocity; //Return reference to velocity vector
 
 }
 
 template<class traits>
-void SingleComponent<traits>::precompute(){
+const std::vector<double>& FlowField<traits>::getDistribution() const{
+
+    return distribution; //Return reference to distribution vector
+
+}
+
+template<class traits>
+void FlowField<traits>::precompute(){ //Perform necessary calculations before collision
 
     int k=0;
 
-    while(k>=0){
-        if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
-            std::apply([k](auto&... tests){
-                (tests.precompute(k),...);
+    while(k>=0){ //loop over k
+
+        if constexpr(std::tuple_size<typename traits::Forces>::value!=0){ //Check if there is at least one element
+                                                                          //in F
+            std::apply([k](auto&... forces){//See Algorithm.hh for explanation of std::apply
+                (forces.precompute(k),...);
             }, mt_Forces);
         }
         else;
 
-        k = m_Data.iterateFluid(k);
+        k = m_Data.iterateFluid(k); //increment k
 
     }
 
-    m_Distribution.getDistribution().swap(m_Distribution.getDistributionOld());
+    m_Distribution.getDistribution().swap(m_Distribution.getDistributionOld()); //swap old and new distributions
+                                                                                //before collision
 }
 
 template<class traits>
-double SingleComponent<traits>::computeForces(int xyz,int k) const{
+double FlowField<traits>::computeForces(int xyz,int k) const{ //Return the sum of forces
+
     if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
-        return std::apply([xyz,k](auto&... tests){
-                return (tests.compute(xyz,k)+...);
+        return std::apply([xyz,k](auto&... forces){
+                return (forces.compute(xyz,k)+...);
             }, mt_Forces);
     }
     else return 0;
@@ -127,59 +142,62 @@ double SingleComponent<traits>::computeForces(int xyz,int k) const{
 }
 
 template<class traits>
-void SingleComponent<traits>::collide(){
+void FlowField<traits>::collide(){ //Collision step
 
     int k=0;
 
-    while(k>=0){
+    while(k>=0){ //loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
         double* old_distribution=m_Distribution.getDistributionOldPointer(k);
 
-        for (int idx=0;idx<traits::Stencil::Q;idx++){
-
+        for (int idx=0;idx<traits::Stencil::Q;idx++){ //loop over discrete velocity directions
+            //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
+            //"computeCollisionQ"
             m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(k,old_distribution[idx],density[k],velocity,idx);
 
         }
 
-        k = m_Data.iterateFluid(k);
+        k = m_Data.iterateFluid(k); //increment k
 
     }
+    
 }
 
 template<class traits>
-void SingleComponent<traits>::boundaries(){
+void FlowField<traits>::boundaries(){ //Apply the boundary step
 
     int k=0;
 
-    while(k>=0){
-        if constexpr(std::tuple_size<typename traits::Boundaries>::value!=0){
-            std::apply([this,k](auto&... tests){
-                (tests.compute(this->m_Distribution,k),...);
+    while(k>=0){ //loop over k
+        if constexpr(std::tuple_size<typename traits::Boundaries>::value!=0){ //Check if there are any boundary
+                                                                              //models
+            std::apply([this,k](auto&... boundaries){
+                (boundaries.compute(this->m_Distribution,k),...);
             }, mt_Boundaries);
         }
         else;
 
-        k = m_Data.iterateFluid(k);
+        k = m_Data.iterateFluid(k); //increment k
 
     }
 
 }
 
 template<class traits>
-void SingleComponent<traits>::initialise(){
+void FlowField<traits>::initialise(){ //Initialise model
 
-    m_Data.generateNeighbors();
+    m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
     int k=0;
 
-    while(k>=0){
+    while(k>=0){ //loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
         double* old_distribution=m_Distribution.getDistributionOldPointer(k);
 
-        density[k]=1.0;
-        velocity[k*traits::Stencil::D+x]=0.0;
+        density[k]=1.0; //Set density to 1 initially (This will change)
+        velocity[k*traits::Stencil::D+x]=0.0; //0 initial velocity
         velocity[k*traits::Stencil::D+y]=0;
         velocity[k*traits::Stencil::D+z]=0;
 
@@ -187,43 +205,47 @@ void SingleComponent<traits>::initialise(){
 
             double equilibrium=computeEquilibrium(density[k],velocity,idx);
 
-            distribution[idx]=equilibrium;
+            distribution[idx]=equilibrium; //Set distributions to equillibrium
             old_distribution[idx]=equilibrium;        
 
         }
 
-        k = m_Data.iterateFluid(k);
+        k = m_Data.iterateFluid(k); //increment k
 
     }
 }
 
 
 template<class traits>
-void SingleComponent<traits>::computeMomenta(){
+void FlowField<traits>::computeMomenta(){ //Calculate Density and Velocity
 
     int k=0;
 
-    while(k>=0){
+    while(k>=0){ //Loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
 
-        density[k]=computeDensity(distribution,k);
-        velocity[k*traits::Stencil::D+x]=computeVelocity(distribution,density[k],x,k);
+        density[k]=computeDensity(distribution,k); //Calculate density
+        velocity[k*traits::Stencil::D+x]=computeVelocity(distribution,density[k],x,k); //Calculate velocities
         velocity[k*traits::Stencil::D+y]=computeVelocity(distribution,density[k],y,k);
         velocity[k*traits::Stencil::D+z]=computeVelocity(distribution,density[k],z,k);
 
-        k = m_Data.iterateFluid(k);
+        k = m_Data.iterateFluid(k); //increment k
 
     }
 }
 
 template<class traits>
-double SingleComponent<traits>::computeCollisionQ(const int k,const double& old,const double& density,const std::vector<double>& velocity,const int idx) const{
+double FlowField<traits>::computeCollisionQ(const int k,const double& old,const double& density,
+                                            const std::vector<double>& velocity,const int idx) const{
+                                            //Calculate collision step at a given velocity index at point k
 
-    std::array<double,traits::Stencil::D> forcexyz;
+    std::array<double,traits::Stencil::D> forcexyz; //Temporary array storing force in each cartesian direction
 
+    //Force is the sum of model forces and given forces
     for(int xyz=0;xyz<traits::Stencil::D;xyz++) forcexyz[xyz]=computeModelForce(xyz,k)+computeForces(xyz,k);
     
+    //Sum of collision + force contributions
     return CollisionBase<typename traits::Stencil>::collideSRT(old,computeEquilibrium(density,velocity,idx),m_InverseTau)
               +CollisionBase<typename traits::Stencil>::forceSRT(forcexyz,velocity,m_InverseTau,idx);
 
@@ -231,24 +253,27 @@ double SingleComponent<traits>::computeCollisionQ(const int k,const double& old,
 
 
 template<class traits>
-double SingleComponent<traits>::computeEquilibrium(const double& density,const std::vector<double>& velocity,const int idx) const{
+double FlowField<traits>::computeEquilibrium(const double& density,const std::vector<double>& velocity,const int idx) const{
 
-    return density*CollisionBase<typename traits::Stencil>::computeGamma(velocity,idx);
-
-}
-
-template<class traits>
-double SingleComponent<traits>::computeModelForce(int k,int xyz) const{
-
-    return 0.0;
+    return density*CollisionBase<typename traits::Stencil>::computeGamma(velocity,idx); //Equilibrium is density
+                                                                                        //times gamma in this
+                                                                                        //case
 
 }
 
 template<class traits>
-double SingleComponent<traits>::computeDensity(const double* distribution,int k) const{
+double FlowField<traits>::computeModelForce(int k,int xyz) const{
+
+    return 0.0; //No model force in this case
+
+}
+
+template<class traits>
+double FlowField<traits>::computeDensity(const double* distribution,int k) const{ //Density calculation
+    //Density is the sum of distributions plus any source/correction terms
     if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
-        return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution)+std::apply([k](auto&... tests){
-                return (tests.computeDensitySource(k)+...);
+        return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution)+std::apply([k](auto&... forces){
+                return (forces.computeDensitySource(k)+...);
             }, mt_Forces);
     }
     //CHANGE THIS SO FIRST/SECOND MOMENT COMPUTATION IS DONE IN DISTRIBUTION
@@ -257,10 +282,13 @@ double SingleComponent<traits>::computeDensity(const double* distribution,int k)
 }
 
 template<class traits>
-double SingleComponent<traits>::computeVelocity(const double* distribution,const double& density, const int xyz,int k) const{
+double FlowField<traits>::computeVelocity(const double* distribution,const double& density,
+                                          const int xyz,int k) const{ //Velocity calculation in direction xyz
+    //Velocity in direction xyz is sum of distribution times the xyz component of the discrete velocity vector
+    //in each direction plus any source/correction terms
     if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
-        return CollisionBase<typename traits::Stencil>::computeSecondMoment(distribution,xyz)+std::apply([xyz,k](auto&&... tests){
-                return (tests.computeVelocitySource(xyz,k)+...);
+        return CollisionBase<typename traits::Stencil>::computeSecondMoment(distribution,xyz)+std::apply([xyz,k](auto&&... forces){
+                return (forces.computeVelocitySource(xyz,k)+...);
             }, mt_Forces);
     }
     else return CollisionBase<typename traits::Stencil>::computeSecondMoment(distribution,xyz);

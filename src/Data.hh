@@ -4,20 +4,38 @@
 #include "Parameters.hh"
 #include "Service.hh"
 
-template<class stencil,class model>
+//Data.hh: Contains data class that will control how how data is accessed and how stremaing happens. These
+//classes will contain derived distribution classes that will determine memory allocation for the distribution
+//arrays and the streaming indices. The Data class also contains a vector of neighbors for each lattice point in
+//every direction but it might be faster to just recalculate every time this is needed.
+//
+//"Neighbor" refers to the lattice point adjacent to any given latice point in a chosen discrete direction
+//
+//Periodic boundaries work by setting the neighbor of each lattice point at the edges of the domain so that the
+//top of the domain connects to the bottom, the left connects to the right etc.
+
+template<class stencil> //Stencil information is needed as streaming indices and neighbors are determined by the
+                        //velocity vectors
 class Data1{
     private:
 
-        struct Distribution_Derived:Distribution<stencil,model>{
+        struct Distribution_Derived:Distribution_Base<stencil>{ //Distribution class will allocate memory to
+                                                                //distribution arrays and contains the
+                                                                //streamIndex function which is returns the
+                                                                //index of the neighboring lattice point in
+                                                                //the direction Q.
             
-            Distribution_Derived(std::vector<int>& neighbors):mv_DistNeighbors(neighbors){
+            Distribution_Derived(std::vector<int>& neighbors):mv_DistNeighbors(neighbors){ //Initialise mv_DistNeighbors
                 
-                for(int idx=0;idx<stencil::Q;idx++){
+                for(int idx=0;idx<stencil::Q;idx++){ //Calculate the k offset for the neighbors in each direction
                     opposites[idx]=stencil::Ci_xyz(x)[idx]*LZ*LY+stencil::Ci_xyz(y)[idx]*LZ+stencil::Ci_xyz(z)[idx];
                 }
 
-                Distribution<stencil,model>::mv_Distribution.resize(stencil::Q*N);
-                Distribution<stencil,model>::mv_OldDistribution.resize(stencil::Q*N);
+                Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q*N); //Array size is number of
+                                                                                  //directions times number of
+                                                                                  //lattice points
+                Distribution_Base<stencil>::mv_OldDistribution.resize(stencil::Q*N); //Old distributions needed
+                                                                                     //in this case
                 
             }
 
@@ -25,125 +43,140 @@ class Data1{
 
             int streamIndex(const int k,const int Q) override{
 
-                return mv_DistNeighbors[k*stencil::Q+Q];
+                return mv_DistNeighbors[k*stencil::Q+Q]; //Return neighbor of lattice point k in direction Q
 
             }
 
-            std::vector<int>& mv_DistNeighbors;
+            std::vector<int>& mv_DistNeighbors; //Reference to vector containing neighbor information
 
         };
 
-        int getOneNeighbor(const int k,const int Q);
+        int getOneNeighbor(const int k,const int Q); //Return Neighbor of lattice point k in direction Q
 
-        int getOneNeighborPeriodic(const int k,const int Q);
+        int getOneNeighborPeriodic(const int k,const int Q); //Return Neighbor of lattice point k in direction Q
+                                                             //given that k lieas on a periodic boundary
 
-        int opp[stencil::Q];
+        int OppositeOffset[stencil::Q]; //Opposite lattice point offset in each direction
         
-        Geometry m_Geometry;
+        Geometry m_Geometry; //Class containing geometry information (for periodic boundaries)
 
-        std::vector<int> mv_Neighbors;
+        std::vector<int> mv_Neighbors; //Vector containing neighbor information
 
-        enum{x=0,y=1,z=2};
+        enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z
 
-        Distribution_Derived m_Distribution;
+        Distribution_Derived m_Distribution; //Object of distribution
 
     public:
 
-        Data1():m_Distribution(mv_Neighbors){
+        Data1():m_Distribution(mv_Neighbors){ //Construct distribution
 
             for(int idx=0;idx<stencil::Q;idx++){
-                opp[idx]=stencil::Ci_xyz(x)[idx]*LZ*LY+stencil::Ci_xyz(y)[idx]*LZ+stencil::Ci_xyz(z)[idx];
+                OppositeOffset[idx]=stencil::Ci_xyz(x)[idx]*LZ*LY+stencil::Ci_xyz(y)[idx]*LZ+stencil::Ci_xyz(z)[idx];
             }
 
-            mv_Neighbors.resize(stencil::Q*LX*LY*LZ);
+            mv_Neighbors.resize(stencil::Q*LX*LY*LZ); //Allocate memory for neighbors array
 
-            generateNeighbors();
+            generateNeighbors(); //Fill neighbors array
 
         }
 
-        void stream();
+        void stream(); //Optional seperate streaming function
 
-        void generateNeighbors();
+        void generateNeighbors(); //Function to fill neighbor array with neighbor information
 
-        std::vector<int>& getNeighbors();
+        std::vector<int>& getNeighbors(); //Returns the neighbor array
 
         Distribution_Derived& getDistributionObject(){
 
-            return m_Distribution;
+            return m_Distribution; //Returns the distribution object stored in the class
 
         }
 
-        int iterate(int k);
+        int iterate(int k); //Increment k THIS WILL BE CHANGED
 
-        int iterateFluid(int k);
+        int iterateFluid(int k); //Increment k only over fluid THIS WILL BE CHANGED
 
 };
 
-template<typename stencil,class model>
-void Data1<stencil,model>::stream(){
+template<typename stencil>
+void Data1<stencil>::stream(){ //Not used in this data type
 
 }
 
-template<typename stencil,class model>
-std::vector<int>& Data1<stencil,model>::getNeighbors(){
+template<typename stencil>
+std::vector<int>& Data1<stencil>::getNeighbors(){
     
-    return mv_Neighbors;
+    return mv_Neighbors; //Return the vector containing neighbor information.
 
 }
 
-template<typename stencil,class model>
-int Data1<stencil,model>::iterate(const int k){
+template<typename stencil>
+int Data1<stencil>::iterate(const int k){
 
-    if (k>=N-1) return -1;
-    else return k+1;
-
-}
-
-template<typename stencil,class model>
-int Data1<stencil,model>::iterateFluid(const int k){
-
-    if (k>=N-1) return -1;
-    else if (m_Geometry.isSolid(k+1)) return iterateFluid(k+1);
-    else return k+1;
+    if (k>=N-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
+    else return k+1; //Else return k incremented by one
 
 }
 
-template<typename stencil,class model>
-int Data1<stencil,model>::getOneNeighbor(const int k,const int Q){
+template<typename stencil>
+int Data1<stencil>::iterateFluid(const int k){
+
+    if (k>=N-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
+    else if (m_Geometry.isSolid(k+1)) return iterateFluid(k+1); //Else if we are on a solid node, skip this
+                                                                //and try again for the next node
+    else return k+1; //Else return k incremented by one
+
+}
+
+template<typename stencil>
+int Data1<stencil>::getOneNeighbor(const int k,const int Q){
     
-    return k+opp[Q];
+    return k+OppositeOffset[Q]; //The neighbor is the lattice point plus the opposite offset in direction Q
         
 }
 
-template<typename stencil,class model>
-int Data1<stencil,model>::getOneNeighborPeriodic(const int k,const int Q){
+template<typename stencil>
+int Data1<stencil>::getOneNeighborPeriodic(const int k,const int Q){ //This function will calculate the neighbors
+                                                                     //given that "k" lies on a periodic boundary.
+                                                                     //For instance, if we are at the first
+                                                                     //lattice point, some of the adjacent points
+                                                                     //will be on the complete opposite side of
+                                                                     //the lattice so we must account for this.
 
     int neighbor=0;
 
     if(LZ>1){
-        if ((k+1)%(LZ)==0&&stencil::Ci_xyz(z)[Q]>0){
+        if ((k+1)%(LZ)==0&&stencil::Ci_xyz(z)[Q]>0){ //(note that the z direction goes from 0 to LZ-1)
+                                                     //if the next lattice point in the z direction is divisible
+                                                     //by LZ (so we are at z=LZ-1) and we are pointing in the +z
+                                                     //direction
 
-            neighbor+=-(LZ-1);
-
-        }
-        else if ((k)%(LZ)==0&&stencil::Ci_xyz(z)[Q]<0){
-
-            neighbor+=(LZ-1);
+            neighbor+=-(LZ-1); //reduce k by LZ-1 so we are now at z=0
 
         }
-        else if (stencil::Ci_xyz(z)[Q]!=0){
+        else if ((k)%(LZ)==0&&stencil::Ci_xyz(z)[Q]<0){ //if the current lattice point in the z direction is
+                                                        //divisible by LZ (so we are at z=0) and we are pointing
+                                                        //in the -z direction
 
-            neighbor+=stencil::Ci_xyz(z)[Q];
+            neighbor+=(LZ-1); //increase k by LZ-1 so we are now at z=LZ-1
+
+        }
+        else if (stencil::Ci_xyz(z)[Q]!=0){ //Else calculate neighbors normally
+
+            neighbor+=stencil::Ci_xyz(z)[Q]; //For z direction, the neighbor is just +Ci_z[Q]
 
         }
     }
     if(LY>1){
-        if (((k)/(LZ)+1)%(LY)==0&&stencil::Ci_xyz(y)[Q]>0){
+        if (((k)/(LZ)+1)%(LY)==0&&stencil::Ci_xyz(y)[Q]>0){ //(note that the y direction goes from 0 to LY-1)
+                                                            //if the next lattice point in the y direction is
+                                                            //divisible by LY (so we are at z=LY-1) and we are
+                                                            //pointing in the +y direction
 
             neighbor+=-(LZ)*(LY-1);
 
         }
-        else if (((k)/(LZ))%(LY)==0&&stencil::Ci_xyz(y)[Q]<0){
+        else if (((k)/(LZ))%(LY)==0&&stencil::Ci_xyz(y)[Q]<0){ //...
 
             neighbor+=(LZ)*(LY-1);
 
@@ -155,7 +188,7 @@ int Data1<stencil,model>::getOneNeighborPeriodic(const int k,const int Q){
         }
     }
     if(LX>1){
-        if ((k/(LZ)/(LY)+1)%(LX)==0&&stencil::Ci_xyz(x)[Q]>0){
+        if ((k/(LZ)/(LY)+1)%(LX)==0&&stencil::Ci_xyz(x)[Q]>0){ //...
 
             neighbor+=-(LZ)*LY*(LX-1);
 
@@ -172,24 +205,24 @@ int Data1<stencil,model>::getOneNeighborPeriodic(const int k,const int Q){
         }
     }
     
-    return k+neighbor;
+    return k+neighbor; //return k + our neighbor offset
 }
 
-template<typename stencil,class model>
-void Data1<stencil,model>::generateNeighbors(){
+template<typename stencil>
+void Data1<stencil>::generateNeighbors(){ //Loop over all lattice points and calculate the neghbor at each point
 
     int k=0;
 
-    while(k>=0){
+    while(k>=0){ //While look over all lattice points
 
         for(int q=0;q<stencil::Q;q++){
 
-            if(!m_Geometry.isPeriodic(k)) {
+            if(!m_Geometry.isPeriodic(k)) { //If not periodic
 
                 mv_Neighbors[k*stencil::Q+q]=getOneNeighbor(k,q);
                 
             }
-            else {
+            else { //Else if periodic
 
                 mv_Neighbors[k*stencil::Q+q]=getOneNeighborPeriodic(k,q);
 
@@ -197,7 +230,7 @@ void Data1<stencil,model>::generateNeighbors(){
 
         }
 
-        k=iterate(k);
+        k=iterate(k); //Increment k
     }
 }
 #endif
