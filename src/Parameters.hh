@@ -91,7 +91,7 @@ class Parameter{
         T& getParameter(const int idx) const{ //Returns const parameter at index idx
             return mv_Parameter[idx];
         }
-        T& getParameter(const int k){ //Returns const parameter at index idx
+        T& getParameter(const int idx){ //Returns const parameter at index idx
             return mv_Parameter[idx];
         }
 

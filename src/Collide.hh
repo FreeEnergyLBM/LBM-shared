@@ -125,7 +125,7 @@ double CollisionBase<stencil>::forceSRT(const std::array<double,stencil::D> forc
     }
     for (int xyz=0;xyz<stencil::D;xyz++){
         forceterm+=prefactor*(((stencil::Ci_xyz(xyz)[idx]-velocity[xyz])/m_Cs2
-                               +ci_dot_velocity*stencil::Ci_xyz(xyz)[idx]/(m_Cs2*m_Cs2))*force[xyz]) //Force
+                               +ci_dot_velocity*stencil::Ci_xyz(xyz)[idx]/(m_Cs2*m_Cs2))*force[xyz]); //Force
                                                                                                      //Calculation
     }
     
