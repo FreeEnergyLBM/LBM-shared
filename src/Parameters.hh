@@ -156,13 +156,22 @@ void Parameter<obj,T,num>::save(std::string filename,int t){ //Must allocate mem
 
 }
 
-template<typename T,typename stencil>
-struct Velocity : public Parameter<Velocity<T,stencil>,T,stencil::D>{}; //Velocity, with directions D
+template<typename T,int ndim>
+struct Velocity : public Parameter<Velocity<T,ndim>,T,ndim>{}; //Velocity, with directions D
                                                                         //corresponding to the number of cartesian
                                                                         //directions in the stencilUw
 
 template<typename T>
 struct Density : public Parameter<Density<T>,T,1>{}; //Density
+
+template<typename T>
+struct ChemicalPotential : public Parameter<ChemicalPotential<T>,T,1>{}; //Density
+
+template<typename T>
+struct LaplacianOrderParameter : public Parameter<LaplacianOrderParameter<T>,T,1>{}; //Density
+
+template<typename T,int ndim>
+struct GradientOrderParameter : public Parameter<GradientOrderParameter<T,ndim>,T,ndim>{}; //Density
 
 template<typename T>
 struct Pressure : public Parameter<Pressure<T>,T,1>{}; //Presure
@@ -172,5 +181,7 @@ struct OrderParameter : public Parameter<OrderParameter<T>,T,1>{}; //Order param
                                                                    //concentration of the phases
 
 struct SolidLabels : public Parameter<SolidLabels,int,1>{}; //Labelling of geometry
+
+
 
 #endif

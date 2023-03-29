@@ -11,7 +11,7 @@
 //Model is given a "traits" class that contains stencil, data, force and boundary information
 
 template<class traits>
-class FlowField:CollisionBase<typename traits::Stencil>{ //Inherit from base class to avoid repetition of common
+class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from base class to avoid repetition of common
                                                          //calculations
     public:
         //Constructors to construct tuples of forces and boundaries
@@ -30,11 +30,11 @@ class FlowField:CollisionBase<typename traits::Stencil>{ //Inherit from base cla
 
         void precompute(); //Perform any necessary computations before collision
 
-        void collide(); //Collision step
+        virtual void collide(); //Collision step
 
         void boundaries(); //Boundary calculation
 
-        void initialise(); //Initialisation step
+        virtual void initialise(); //Initialisation step
 
         void computeMomenta(); //Momenta (density, velocity) calculation
 
@@ -44,10 +44,13 @@ class FlowField:CollisionBase<typename traits::Stencil>{ //Inherit from base cla
 
         const std::vector<double>& getDistribution() const; //Return vector of distribution
 
+        template<class traits2>
+        friend class FlowFieldBinary;
+
     private:
 
-        double computeEquilibrium(const double& density,const double* velocity,
-                                  const int idx) const; //Calculate equilibrium in direction idx with a given
+        virtual double computeEquilibrium(const double& density,const double* velocity,
+                                  const int idx,const int k) const; //Calculate equilibrium in direction idx with a given
                                                         //density and velocity
 
         double computeModelForce(int xyz,int k) const; //Calculate forces specific to the model in direction xyz
@@ -69,7 +72,7 @@ class FlowField:CollisionBase<typename traits::Stencil>{ //Inherit from base cla
 
         Density<double> m_Density; //Density
 
-        Velocity<double,typename traits::Stencil> m_Velocity; //Velocity
+        Velocity<double,traits::Stencil::D> m_Velocity; //Velocity
 
         Distribution_Base<typename traits::Stencil>& m_Distribution=m_Data.template getDistributionObject();
             //Distributions
@@ -221,7 +224,7 @@ void FlowField<traits>::initialise(){ //Initialise model
 
         for (int idx=0;idx<traits::Stencil::Q;idx++){
 
-            double equilibrium=computeEquilibrium(density[k],&velocity[k*traits::Stencil::D],idx);
+            double equilibrium=computeEquilibrium(density[k],&velocity[k*traits::Stencil::D],idx,k);
 
             distribution[idx]=equilibrium; //Set distributions to equillibrium
             old_distribution[idx]=equilibrium;        
@@ -269,14 +272,14 @@ double FlowField<traits>::computeCollisionQ(const int k,const double& old,const 
     for(int xyz=0;xyz<traits::Stencil::D;xyz++) forcexyz[xyz]=computeModelForce(xyz,k)+computeForces(xyz,k);
     
     //Sum of collision + force contributions
-    return CollisionBase<typename traits::Stencil>::collideSRT(old,computeEquilibrium(density,velocity,idx),m_InverseTau)
+    return CollisionBase<typename traits::Stencil>::collideSRT(old,computeEquilibrium(density,velocity,idx,k),m_InverseTau)
               +CollisionBase<typename traits::Stencil>::forceSRT(forcexyz,velocity,m_InverseTau,idx);
 
 }
 
 
 template<class traits>
-double FlowField<traits>::computeEquilibrium(const double& density,const double* velocity,const int idx) const{
+double FlowField<traits>::computeEquilibrium(const double& density,const double* velocity,const int idx,const int k) const{
 
     return density*CollisionBase<typename traits::Stencil>::computeGamma(velocity,idx); //Equilibrium is density
                                                                                         //times gamma in this

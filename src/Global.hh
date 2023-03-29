@@ -11,12 +11,13 @@ constexpr double CS2=1.0/3.0; //Speed of sound squared
 constexpr int LX=30; //Size of lattice in x direction
 constexpr int LY=30; //Size of lattice in y direction
 constexpr int LZ=1; //Size of lattice in z direction
-constexpr int TIMESTEPS=1000; //Number of timesteps
+constexpr int TIMESTEPS=100000; //Number of timesteps
 int N=LX*LY*LZ; //Number of lattice points
 int LXdiv=LX;
 int MAXNEIGHBORS=0;
 int NUMPROCESSORS=1;
 int CURPROCESSOR=0;
+constexpr int NDIM=2;
 #ifdef PARALLEL
 char* MPIBUFFER;
 int MPIBUFFERSIZE;

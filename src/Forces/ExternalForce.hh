@@ -1,5 +1,5 @@
-#ifndef FORCES_HEADER
-#define FORCES_HEADER
+#ifndef EXFORCE_HEADER
+#define EXFORCE_HEADER
 #include "../Parameters.hh"
 #include<iostream>
 
@@ -22,7 +22,7 @@ class BodyForce{
 
     private:
 
-        double magnitude=0.0001;
+        double magnitude=0.000;//1;
 
         Density<double> m_Density; //Density
 
@@ -51,7 +51,7 @@ double BodyForce::computeDensitySource(int k) const{ //Not necessary
 
 double BodyForce::computeVelocitySource(int xyz,int k) const{ //Need to correct velocity
 
-    return +compute(xyz,k)*DT/(m_Density.getParameter(k));
+    return +compute(xyz,k)*DT/(2.0*m_Density.getParameter(k));
     
 }
 

@@ -16,47 +16,9 @@
 
 template<class stencil,class parallel> //Stencil information is needed as streaming indices and neighbors are determined by the
                         //velocity vectors
-class Data1{
+class Data_Base{
     private:
-
-        struct Distribution_Derived:Distribution_Base<stencil>{ //Distribution class will allocate memory to
-                                                                //distribution arrays and contains the
-                                                                //streamIndex function which is returns the
-                                                                //index of the neighboring lattice point in
-                                                                //the direction Q.
-            
-            Distribution_Derived(std::vector<int>& neighbors):mv_DistNeighbors(neighbors){ //Initialise mv_DistNeighbors
-                
-                for(int idx=0;idx<stencil::Q;idx++){ //Calculate the k offset for the neighbors in each direction
-                    ma_Opposites[idx]=stencil::Opposites[idx];
-                }
-
-                Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q*N); //Array size is number of
-                                                                                  //directions times number of
-                                                                                  //lattice points
-                Distribution_Base<stencil>::mv_OldDistribution.resize(stencil::Q*N); //Old distributions needed
-                                                                                     //in this case
-                
-            }
-
-            int getOpposite(int idx) override{
-
-                return ma_Opposites[idx];
-
-            }
-
-
-            int ma_Opposites[stencil::Q];
-
-            int streamIndex(const int k,const int Q) override{
-
-                return mv_DistNeighbors[k*stencil::Q+Q]; //Return neighbor of lattice point k in direction Q
-
-            }
-
-            std::vector<int>& mv_DistNeighbors; //Reference to vector containing neighbor information
-
-        };
+        
 
         int getOneNeighbor(const int k,const int Q); //Return Neighbor of lattice point k in direction Q
 
@@ -71,19 +33,19 @@ class Data1{
 
         enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z
         parallel m_Parallel;
-        Distribution_Derived m_Distribution; //Object of distribution
+
+        template<class stencil1,class parallel1>
+        friend class Data1;
         
     public:
-
+        using Stencil=stencil;
         template<class parameter>
         void communicate(parameter obj);
-
-        void communicateDistribution();
 
         template<class parameter>
         void initialiseHalos(parameter obj);
 
-        Data1():m_Parallel(),m_Distribution(mv_Neighbors){ //Construct distribution
+        Data_Base():m_Parallel(){ //Construct distribution
 
             for(int idx=0;idx<stencil::Q;idx++){
                 OppositeOffset[idx]=stencil::Ci_xyz(x)[idx]*LZ*LY+stencil::Ci_xyz(y)[idx]*LZ+stencil::Ci_xyz(z)[idx];
@@ -101,12 +63,6 @@ class Data1{
 
         std::vector<int>& getNeighbors(); //Returns the neighbor array
 
-        Distribution_Derived& getDistributionObject(){
-
-            return m_Distribution; //Returns the distribution object stored in the class
-
-        }
-
         int iterate(int k,bool all); //Increment k THIS WILL BE CHANGED
 
         int iterateFluid(int k, bool all); //Increment k only over fluid THIS WILL BE CHANGED
@@ -123,33 +79,26 @@ class Data1{
 
 template<class stencil,class parallel>
 template<class parameter>
-void Data1<stencil,parallel>::communicate(parameter obj){ //Not used in this data type
+void Data_Base<stencil,parallel>::communicate(parameter obj){ //Not used in this data type
 
     parallel::communicate(obj);
 
 }
 
 template<class stencil,class parallel>
-void Data1<stencil,parallel>::communicateDistribution(){ //Not used in this data type
-    
-    parallel::communicateDistribution(m_Distribution);
-    
-}
-
-template<class stencil,class parallel>
-void Data1<stencil,parallel>::stream(){ //Not used in this data type
+void Data_Base<stencil,parallel>::stream(){ //Not used in this data type
 
 }
 
 template<class stencil,class parallel>
-std::vector<int>& Data1<stencil,parallel>::getNeighbors(){
+std::vector<int>& Data_Base<stencil,parallel>::getNeighbors(){
     
     return mv_Neighbors; //Return the vector containing neighbor information.
 
 }
 
 template<class stencil,class parallel>
-int Data1<stencil,parallel>::iterate(const int k,bool all){
+int Data_Base<stencil,parallel>::iterate(const int k,bool all){
 
     if (k>=N-MAXNEIGHBORS*LY*LZ*(!all)-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
     else return k+1; //Else return k incremented by one
@@ -157,7 +106,7 @@ int Data1<stencil,parallel>::iterate(const int k,bool all){
 }
 
 template<class stencil,class parallel>
-int Data1<stencil,parallel>::iterateFluid(const int k,bool all){
+int Data_Base<stencil,parallel>::iterateFluid(const int k,bool all){
 
     if (k>=N-MAXNEIGHBORS*LY*LZ*(!all)-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
     else if (m_Geometry.isSolid(k+1)) return iterateFluid(k+1,all); //Else if we are on a solid node, skip this
@@ -167,7 +116,7 @@ int Data1<stencil,parallel>::iterateFluid(const int k,bool all){
 }
 
 template<class stencil,class parallel>
-int Data1<stencil,parallel>::iterateFluid0(const int k,bool all){
+int Data_Base<stencil,parallel>::iterateFluid0(const int k,bool all){
 
     if (k>=N-MAXNEIGHBORS*LY*LZ*(!all)-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
     else if (m_Geometry.isSolid(k+1)) return iterateFluid(k+1,all); //Else if we are on a solid node, skip this
@@ -177,7 +126,7 @@ int Data1<stencil,parallel>::iterateFluid0(const int k,bool all){
 }
 
 template<class stencil,class parallel>
-int Data1<stencil,parallel>::iterateSolid(const int k,bool all){
+int Data_Base<stencil,parallel>::iterateSolid(const int k,bool all){
 
     if (k>=N-MAXNEIGHBORS*LY*LZ*(!all)-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
     else if (!m_Geometry.isSolid(k+1)) return iterateSolid(k+1,all); //Else if we are on a solid node, skip this
@@ -187,7 +136,7 @@ int Data1<stencil,parallel>::iterateSolid(const int k,bool all){
 }
 
 template<class stencil,class parallel>
-int Data1<stencil,parallel>::iterateSolid0(const int k,bool all){
+int Data_Base<stencil,parallel>::iterateSolid0(const int k,bool all){
 
     if (k>=N-MAXNEIGHBORS*LY*LZ*(!all)-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
     else if (!m_Geometry.isSolid(k+1)) return iterateSolid(k+1,all); //Else if we are on a solid node, skip this
@@ -197,14 +146,14 @@ int Data1<stencil,parallel>::iterateSolid0(const int k,bool all){
 }
 
 template<class stencil,class parallel>
-int Data1<stencil,parallel>::getOneNeighbor(const int k,const int Q){
+int Data_Base<stencil,parallel>::getOneNeighbor(const int k,const int Q){
     
     return k+OppositeOffset[Q]; //The neighbor is the lattice point plus the opposite offset in direction Q
         
 }
 
 template<class stencil,class parallel>
-int Data1<stencil,parallel>::getOneNeighborPeriodic(const int k,const int Q){ //This function will calculate the neighbors
+int Data_Base<stencil,parallel>::getOneNeighborPeriodic(const int k,const int Q){ //This function will calculate the neighbors
                                                                      //given that "k" lies on a periodic boundary.
                                                                      //For instance, if we are at the first
                                                                      //lattice point, some of the adjacent points
@@ -277,7 +226,7 @@ int Data1<stencil,parallel>::getOneNeighborPeriodic(const int k,const int Q){ //
 }
 
 template<class stencil,class parallel>
-void Data1<stencil,parallel>::generateNeighbors(){ //Loop over all lattice points and calculate the neghbor at each point
+void Data_Base<stencil,parallel>::generateNeighbors(){ //Loop over all lattice points and calculate the neghbor at each point
 
     int k=0;
 
@@ -300,5 +249,74 @@ void Data1<stencil,parallel>::generateNeighbors(){ //Loop over all lattice point
 
         k=iterate(k,true); //Increment k
     }
+}
+
+template<class stencil,class parallel> //Stencil information is needed as streaming indices and neighbors are determined by the
+                        //velocity vectors
+class Data1:public Data_Base<stencil,parallel>{
+    private:
+
+        struct Distribution_Derived:public Distribution_Base<stencil>{ //Distribution class will allocate memory to
+                                                                //distribution arrays and contains the
+                                                                //streamIndex function which is returns the
+                                                                //index of the neighboring lattice point in
+                                                                //the direction Q.
+            
+            Distribution_Derived(std::vector<int>& neighbors):mv_DistNeighbors(neighbors){ //Initialise mv_DistNeighbors
+                
+                for(int idx=0;idx<stencil::Q;idx++){ //Calculate the k offset for the neighbors in each direction
+                    ma_Opposites[idx]=stencil::Opposites[idx];
+                }
+
+                Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q*N); //Array size is number of
+                                                                                  //directions times number of
+                                                                                  //lattice points
+                Distribution_Base<stencil>::mv_OldDistribution.resize(stencil::Q*N); //Old distributions needed
+                                                                                     //in this case
+                
+            }
+
+            int getOpposite(int idx) override{
+
+                return ma_Opposites[idx];
+
+            }
+
+
+            int ma_Opposites[stencil::Q];
+
+            int streamIndex(const int k,const int Q) override{
+
+                return mv_DistNeighbors[k*stencil::Q+Q]; //Return neighbor of lattice point k in direction Q
+
+            }
+
+            std::vector<int>& mv_DistNeighbors; //Reference to vector containing neighbor information
+
+        };
+
+        Distribution_Derived m_Distribution; //Object of distribution
+        
+    public:
+
+        void communicateDistribution();
+
+        Data1():m_Distribution(Data_Base<stencil,parallel>::mv_Neighbors){ //Construct distribution
+
+        }
+
+        Distribution_Derived& getDistributionObject(){
+
+            return m_Distribution; //Returns the distribution object stored in the class
+
+        }
+        
+};
+
+template<class stencil,class parallel>
+void Data1<stencil,parallel>::communicateDistribution(){ //Not used in this data type
+    
+    parallel::communicateDistribution(m_Distribution);
+    
 }
 #endif

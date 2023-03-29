@@ -5,6 +5,7 @@ template<int num_neighbors>
 class Parallel{
     public:
         Parallel(){
+#ifdef PARALLEL
             if(MAXNEIGHBORS<num_neighbors) MAXNEIGHBORS=num_neighbors;
 
             if (LX%NUMPROCESSORS==0) {
@@ -17,11 +18,12 @@ class Parallel{
                 LXdiv=((LX-LX%NUMPROCESSORS)/NUMPROCESSORS+2*num_neighbors);
             }
             N=LXdiv*LY*LZ;
+#endif
         }
 };
 
 template<class stencil,int num_neighbors>
-class X_Parallel:Parallel<num_neighbors>{
+class X_Parallel:public Parallel<num_neighbors>{
     public:
 
         X_Parallel();
@@ -62,11 +64,11 @@ void X_Parallel<stencil,num_neighbors>::communicate(parameter& obj){
 
 #ifdef PARALLEL
     
-    //MPI_Bsend(&obj.getParameter()[N*parameter::m_Num],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_RightNeighbor,0,MPI_COMM_WORLD);
-    //MPI_Recv(&obj.getParameter()[0],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_LeftNeighbor,0,MPI_COMM_WORLD,&status);
+    MPI_Bsend(&obj.getParameter()[N*parameter::m_Num-(num_neighbors+1)*LY*LZ],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_RightNeighbor,0,MPI_COMM_WORLD);
+    MPI_Recv(&obj.getParameter()[0],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_LeftNeighbor,0,MPI_COMM_WORLD,&status);
 
-    //MPI_Bsend(&obj.getParameter()[num_neighbors*LY*LZ*parameter::m_Num],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_LeftNeighbor,1,MPI_COMM_WORLD);
-    //MPI_Recv(&obj.getParameter()[N*parameter::m_Num+num_neighbors*LY*LZ*parameter::m_Num],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_RightNeighbor,1,MPI_COMM_WORLD,&status);
+    MPI_Bsend(&obj.getParameter()[num_neighbors*LY*LZ*parameter::m_Num],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_LeftNeighbor,1,MPI_COMM_WORLD);
+    MPI_Recv(&obj.getParameter()[N*parameter::m_Num-num_neighbors*LY*LZ*parameter::m_Num],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_RightNeighbor,1,MPI_COMM_WORLD,&status);
 
 #endif
 

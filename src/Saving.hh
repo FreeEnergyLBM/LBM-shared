@@ -9,7 +9,7 @@ void save(int t){//THIS IS TEMPORARY
     t+10000000000
 	  );
     Density<double> m_Density;
-    Velocity<double,D3Q19> m_Velocity;
+    Velocity<double,NDIM> m_Velocity;
     std::ofstream fs(fdump, std::ios::out | std::ios::binary );
 
     for (int k = 0; k < N; k++ ) { 
