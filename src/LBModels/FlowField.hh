@@ -3,6 +3,8 @@
 #include "../Collide.hh"
 #include "../Parameters.hh"
 #include "../Data.hh"
+#include "../BoundaryModels/Boundaries.hh"
+#include "../Forces/Forces.hh"
 #include <utility>
 
 //FlowField.hh: Contains the details of the LBM model to solve the Navier-Stokes and continuity equation. Each
@@ -13,13 +15,16 @@ class FlowField:CollisionBase<typename traits::Stencil>{ //Inherit from base cla
                                                          //calculations
     public:
         //Constructors to construct tuples of forces and boundaries
-        FlowField(typename traits::Forces& forces,typename traits::Boundaries& boundaries):mt_Forces(forces),mt_Boundaries(boundaries){
+        FlowField(typename traits::Forces& forces,typename traits::Boundaries& boundaries):m_Data(),mt_Forces(forces),mt_Boundaries(boundaries),m_Density(),m_Velocity(){
             
         }
-        FlowField(typename traits::Forces& forces):mt_Forces(forces),mt_Boundaries(std::tuple<>()){
+        FlowField(typename traits::Forces& forces):m_Data(),mt_Forces(forces),mt_Boundaries(std::tuple<>()),m_Density(),m_Velocity(){
             
         }
-        FlowField(typename traits::Boundaries& boundaries):mt_Forces(std::tuple<>()),mt_Boundaries(boundaries){
+        FlowField(typename traits::Boundaries& boundaries):m_Data(),mt_Forces(std::tuple<>()),mt_Boundaries(boundaries),m_Density(),m_Velocity(){
+            
+        }
+        FlowField():m_Data(),mt_Forces(std::tuple<>()),mt_Boundaries(std::tuple<>()),m_Density(),m_Velocity(){
             
         }
 
@@ -41,7 +46,7 @@ class FlowField:CollisionBase<typename traits::Stencil>{ //Inherit from base cla
 
     private:
 
-        double computeEquilibrium(const double& density,const std::vector<double>& velocity,
+        double computeEquilibrium(const double& density,const double* velocity,
                                   const int idx) const; //Calculate equilibrium in direction idx with a given
                                                         //density and velocity
 
@@ -50,7 +55,7 @@ class FlowField:CollisionBase<typename traits::Stencil>{ //Inherit from base cla
         double computeForces(int xyz,int k) const; //Calculate other forces in direction xyz
 
         double computeCollisionQ(int k,const double& old,const double& density,
-                                 const std::vector<double>& velocity,const int idx) const; //Calculate collision
+                                 const double* velocity,const int idx) const; //Calculate collision
                                                                                            //at index idx
 
         double computeDensity(const double* distribution,int k) const; //Calculate density
@@ -69,8 +74,6 @@ class FlowField:CollisionBase<typename traits::Stencil>{ //Inherit from base cla
         Distribution_Base<typename traits::Stencil>& m_Distribution=m_Data.template getDistributionObject();
             //Distributions
 
-        typename traits::Data m_Data; //MOVE THIS TO BASE
-
         vector<double>& density=m_Density.getParameter(); //Reference to vector of densities
 
         vector<double>& velocity=m_Velocity.getParameter(); //Reference to vector of velocities
@@ -79,9 +82,15 @@ class FlowField:CollisionBase<typename traits::Stencil>{ //Inherit from base cla
 
         enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z directions
 
+
+        typename traits::Data m_Data; //MOVE THIS TO BASE
+
         typename traits::Forces& mt_Forces; //MOVE THIS TO BASE
         typename traits::Boundaries& mt_Boundaries;
         Geometry m_Geometry;
+
+
+
         
 };
 
@@ -109,8 +118,8 @@ const std::vector<double>& FlowField<traits>::getDistribution() const{
 template<class traits>
 void FlowField<traits>::precompute(){ //Perform necessary calculations before collision
 
-    int k=0;
-
+    int k=LY*LZ*MAXNEIGHBORS;
+    k = m_Data.iterateFluid0(k,false);
     while(k>=0){ //loop over k
 
         if constexpr(std::tuple_size<typename traits::Forces>::value!=0){ //Check if there is at least one element
@@ -121,7 +130,7 @@ void FlowField<traits>::precompute(){ //Perform necessary calculations before co
         }
         else;
 
-        k = m_Data.iterateFluid(k); //increment k
+        k = m_Data.iterateFluid(k,false); //increment k
 
     }
 
@@ -144,8 +153,8 @@ double FlowField<traits>::computeForces(int xyz,int k) const{ //Return the sum o
 template<class traits>
 void FlowField<traits>::collide(){ //Collision step
 
-    int k=0;
-
+    int k=LY*LZ*MAXNEIGHBORS;
+    k = m_Data.iterateFluid0(k,false);
     while(k>=0){ //loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
@@ -154,13 +163,14 @@ void FlowField<traits>::collide(){ //Collision step
         for (int idx=0;idx<traits::Stencil::Q;idx++){ //loop over discrete velocity directions
             //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
             //"computeCollisionQ"
-            m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(k,old_distribution[idx],density[k],velocity,idx);
-
+            m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(k,old_distribution[idx],density[k],&velocity[k*traits::Stencil::D],idx);
         }
-
-        k = m_Data.iterateFluid(k); //increment k
-
+        
+        k = m_Data.iterateFluid(k,false); //increment k
+        
     }
+    
+    m_Data.communicateDistribution();
     
 }
 
@@ -168,20 +178,27 @@ template<class traits>
 void FlowField<traits>::boundaries(){ //Apply the boundary step
 
     int k=0;
-
+    k = m_Data.iterateSolid0(k,true);
+    
     while(k>=0){ //loop over k
+        
         if constexpr(std::tuple_size<typename traits::Boundaries>::value!=0){ //Check if there are any boundary
                                                                               //models
             std::apply([this,k](auto&... boundaries){
-                (boundaries.compute(this->m_Distribution,k),...);
+                for (int idx=0;idx<traits::Stencil::Q;idx++){
+                    if(!m_Geometry.isSolid(m_Distribution.streamIndex(k,idx))){
+                        (boundaries.compute(this->m_Distribution,k,idx),...);
+                    }
+                }
             }, mt_Boundaries);
+            
         }
         else;
-
-        k = m_Data.iterateFluid(k); //increment k
+        
+        k = m_Data.iterateSolid(k,true); //increment k
 
     }
-
+    
 }
 
 template<class traits>
@@ -189,7 +206,8 @@ void FlowField<traits>::initialise(){ //Initialise model
 
     m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
-    int k=0;
+    int k=LY*LZ*MAXNEIGHBORS;
+    k = m_Data.iterateFluid0(k,false);
 
     while(k>=0){ //loop over k
 
@@ -203,24 +221,25 @@ void FlowField<traits>::initialise(){ //Initialise model
 
         for (int idx=0;idx<traits::Stencil::Q;idx++){
 
-            double equilibrium=computeEquilibrium(density[k],velocity,idx);
+            double equilibrium=computeEquilibrium(density[k],&velocity[k*traits::Stencil::D],idx);
 
             distribution[idx]=equilibrium; //Set distributions to equillibrium
             old_distribution[idx]=equilibrium;        
 
         }
 
-        k = m_Data.iterateFluid(k); //increment k
-
+        k = m_Data.iterateFluid(k,false); //increment k
+        
     }
+    
 }
 
 
 template<class traits>
 void FlowField<traits>::computeMomenta(){ //Calculate Density and Velocity
 
-    int k=0;
-
+    int k=LY*LZ*MAXNEIGHBORS;
+    k = m_Data.iterateFluid0(k,false);
     while(k>=0){ //Loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
@@ -229,15 +248,19 @@ void FlowField<traits>::computeMomenta(){ //Calculate Density and Velocity
         velocity[k*traits::Stencil::D+x]=computeVelocity(distribution,density[k],x,k); //Calculate velocities
         velocity[k*traits::Stencil::D+y]=computeVelocity(distribution,density[k],y,k);
         velocity[k*traits::Stencil::D+z]=computeVelocity(distribution,density[k],z,k);
-
-        k = m_Data.iterateFluid(k); //increment k
+        
+        k = m_Data.iterateFluid(k,false); //increment k
 
     }
+    
+    m_Data.communicate(m_Density);
+    //m_Data.communicate(m_Velocity);
+
 }
 
 template<class traits>
 double FlowField<traits>::computeCollisionQ(const int k,const double& old,const double& density,
-                                            const std::vector<double>& velocity,const int idx) const{
+                                            const double* velocity,const int idx) const{
                                             //Calculate collision step at a given velocity index at point k
 
     std::array<double,traits::Stencil::D> forcexyz; //Temporary array storing force in each cartesian direction
@@ -253,7 +276,7 @@ double FlowField<traits>::computeCollisionQ(const int k,const double& old,const 
 
 
 template<class traits>
-double FlowField<traits>::computeEquilibrium(const double& density,const std::vector<double>& velocity,const int idx) const{
+double FlowField<traits>::computeEquilibrium(const double& density,const double* velocity,const int idx) const{
 
     return density*CollisionBase<typename traits::Stencil>::computeGamma(velocity,idx); //Equilibrium is density
                                                                                         //times gamma in this

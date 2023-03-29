@@ -22,6 +22,9 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
         Binary(typename traits::Boundaries& boundaries):mt_Forces(std::tuple<>()),mt_Boundaries(boundaries){
             
         }
+        Binary():mt_Forces(std::tuple<>()),mt_Boundaries(std::tuple<>()){
+            
+        }
 
         void precompute(); //Perform any necessary computations before collision
 
@@ -41,7 +44,7 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
     private:
 
-        double computeEquilibrium(const double& orderparam,const std::vector<double>& velocity,
+        double computeEquilibrium(const double& orderparam,const double* velocity,
                                   const int idx) const; //Calculate equilibrium in direction idx with a given
                                                         //density and velocity
 
@@ -50,7 +53,7 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
         double computeForces(int xyz,int k) const; //Calculate other forces in direction xyz
 
         double computeCollisionQ(int k,const double& old,const double& orderparam,
-                                 const std::vector<double>& velocity,const int idx) const; //Calculate collision
+                                 const double* velocity,const int idx) const; //Calculate collision
                                                                                            //at index idx
 
         double computeOrderParameter(const double* distribution,int k) const; //Calculate the order parameter
@@ -109,8 +112,8 @@ const std::vector<double>& Binary<traits>::getDistribution() const{
 template<class traits>
 void Binary<traits>::precompute(){
 
-    int k=0;
-
+    int k=LY*LZ*MAXNEIGHBORS;
+    k = m_Data.iterateFluid0(k,false);
     while(k>=0){ //loop over k
 
         if constexpr(std::tuple_size<typename traits::Forces>::value!=0){ //Check if there is at least one element
@@ -121,8 +124,8 @@ void Binary<traits>::precompute(){
         }
         else;
 
-        k = m_Data.iterateFluid(k); //increment k
-
+        k = m_Data.iterateFluid(k,false); //increment k
+        
     }
 
     m_Distribution.getDistribution().swap(m_Distribution.getDistributionOld()); //swap old and new distributions
@@ -144,8 +147,8 @@ double Binary<traits>::computeForces(int xyz,int k) const{
 template<class traits>
 void Binary<traits>::collide(){
 
-    int k=0;
-
+    int k=LY*LZ*MAXNEIGHBORS;
+    k = m_Data.iterateFluid0(k,false);
     while(k>=0){ //loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
@@ -154,33 +157,43 @@ void Binary<traits>::collide(){
         for (int idx=0;idx<traits::Stencil::Q;idx++){ //loop over discrete velocity directions
             //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
             //"computeCollisionQ"
-            m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(k,old_distribution[idx],orderparameter[k],velocity,idx);
-
+            m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(k,old_distribution[idx],orderparameter[k],&velocity[k*traits::Stencil::D],idx);
+            
         }
+        
+        k = m_Data.iterateFluid(k,false); //increment k
 
-        k = m_Data.iterateFluid(k); //increment k
-
+        
     }
+
+    m_Data.communicateDistribution();
+
 }
 
 template<class traits>
 void Binary<traits>::boundaries(){
 
     int k=0;
-
+    k = m_Data.iterateSolid0(k,true);
     while(k>=0){ //loop over k
+
         if constexpr(std::tuple_size<typename traits::Boundaries>::value!=0){ //Check if there are any boundary
                                                                               //models
             std::apply([this,k](auto&... boundaries){
-                (boundaries.compute(this->m_Distribution,k),...);
+                for (int idx=0;idx<traits::Stencil::Q;idx++){
+                    if(!m_Geometry.isSolid(m_Distribution.streamIndex(k,idx))){
+                        (boundaries.compute(this->m_Distribution,k,idx),...);
+                    }
+                }
             }, mt_Boundaries);
+            
         }
         else;
-
-        k = m_Data.iterateFluid(k); //increment k
+        
+        k = m_Data.iterateSolid(k,true); //increment k
 
     }
-
+    
 }
 
 template<class traits>
@@ -188,8 +201,8 @@ void Binary<traits>::initialise(){ //Initialise model
 
     m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
-    int k=0;
-
+    int k=LY*LZ*MAXNEIGHBORS;
+    k = m_Data.iterateFluid0(k,false);
     while(k>=0){ //loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
@@ -199,14 +212,14 @@ void Binary<traits>::initialise(){ //Initialise model
 
         for (int idx=0;idx<traits::Stencil::Q;idx++){
 
-            double equilibrium=computeEquilibrium(orderparameter[k],velocity,idx);
+            double equilibrium=computeEquilibrium(orderparameter[k],&velocity[k*traits::Stencil::D],idx);
 
             distribution[idx]=equilibrium; //Set distributions to equillibrium
             old_distribution[idx]=equilibrium;        
 
         }
 
-        k = m_Data.iterateFluid(k); //increment k
+        k = m_Data.iterateFluid(k,false); //increment k
 
     }
 }
@@ -215,22 +228,25 @@ void Binary<traits>::initialise(){ //Initialise model
 template<class traits>
 void Binary<traits>::computeMomenta(){ //Calculate order parameter
 
-    int k=0;
-
+    int k=LY*LZ*MAXNEIGHBORS;
+    k = m_Data.iterateFluid0(k,false);
     while(k>=0){ //Loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
 
         orderparameter[k]=computeOrderParameter(distribution,k);
 
-        k = m_Data.iterateFluid(k); //increment k
+        k = m_Data.iterateFluid(k,false); //increment k
 
     }
+
+    m_Data.communicate(m_OrderParameter);
+
 }
 
 template<class traits>
 double Binary<traits>::computeCollisionQ(const int k,const double& old,const double& orderparam,
-                                         const std::vector<double>& velocity,const int idx) const{
+                                         const double* velocity,const int idx) const{
                                         //Calculate collision step at a given velocity index at point k
 
     std::array<double,traits::Stencil::D> forcexyz; //Temporary array storing force in each cartesian direction
@@ -246,7 +262,7 @@ double Binary<traits>::computeCollisionQ(const int k,const double& old,const dou
 
 
 template<class traits>
-double Binary<traits>::computeEquilibrium(const double& orderparam,const std::vector<double>& velocity,const int idx) const{
+double Binary<traits>::computeEquilibrium(const double& orderparam,const double* velocity,const int idx) const{
 
     return orderparam*CollisionBase<typename traits::Stencil>::computeGamma(velocity,idx);//Equilibrium is density
                                                                                           //times gamma in this

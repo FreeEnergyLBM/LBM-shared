@@ -7,7 +7,7 @@
 class BounceBack{
     public:
         template <class disttype>
-        double compute(disttype& m_Distribution,int k) const;
+        void compute(disttype& m_Distribution,int k,int idx) const;
 
         void precompute(int k);
 
@@ -23,8 +23,8 @@ class BounceBack{
 };
 
 template <class disttype>
-double BounceBack::compute(disttype& m_Distribution,int k) const{
-
+void BounceBack::compute(disttype& m_Distribution,int k,int idx) const{
+    m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx]=m_Distribution.getDistributionPointer(k)[m_Distribution.getOpposite(idx)];
 }
 
 void BounceBack::precompute(int k){

@@ -5,6 +5,9 @@
 #include<map>
 #include<any>
 #include "Global.hh"
+#include <mpi.h>
+#include <fstream>
+#include <iostream>
 using namespace std;
 
 //Parameters.hh: This file details how macroscopic quantities are stored and interacted with.
@@ -57,6 +60,11 @@ struct Distribution_Base{ //Distribution base class
     virtual int streamIndex(int k,int Q){
         return 0;
     };
+    virtual int getOpposite(int Q){
+        return 0;
+    };
+
+    int m_Q=stencil::Q;
 
 };
 
@@ -95,6 +103,12 @@ class Parameter{
             return mv_Parameter[idx];
         }
 
+        const static int m_Num=num;
+        using ParamType=T;
+
+        static void save(std::string filename,int t);
+    
+
     private:
 
         static vector<T> mv_Parameter; //Static vector (Does not change between objects of the class)
@@ -103,6 +117,44 @@ class Parameter{
 
 template<class obj,typename T,int num>
 vector<T> Parameter<obj,T,num>::mv_Parameter; //Must allocate memory for static vector outside of class
+
+template<class obj,typename T,int num>
+void Parameter<obj,T,num>::save(std::string filename,int t){ //Must allocate memory for static vector outside of class
+
+    char fdump[512];
+    sprintf(fdump, (DATA_DIR+filename+"_t%li.mat").c_str(),t);
+
+#ifdef PARALLEL
+
+    MPI_File fh;
+
+    MPI_File_open(MPI_COMM_SELF, fdump,MPI_MODE_CREATE | MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
+
+    MPI_File_seek(fh,sizeof(double)*CURPROCESSOR*num*(LX*LY*LZ)/NUMPROCESSORS,MPI_SEEK_SET);
+    for (int k = MAXNEIGHBORS*LY*LZ; k < N-MAXNEIGHBORS*LY*LZ; k++ ) { 
+
+        for(int idx=0;idx<num;idx++) MPI_File_write(fh,&mv_Parameter[k*num+idx],1,MPI_DOUBLE,&status);
+        
+    };
+    MPI_File_close(&fh);
+            
+#else
+
+    std::ofstream fs(fdump, std::ios::out | std::ios::binary );
+    
+    fs.seekp(sizeof(double)*CURPROCESSOR*num*(LX*LY*LZ)/NUMPROCESSORS);
+
+    for (int k = MAXNEIGHBORS*LY*LZ; k < N-MAXNEIGHBORS*LY*LZ; k++ ) { 
+
+        for(int idx=0;idx<num;idx++) fs.write((char *)(&mv_Parameter[k*num+idx]), sizeof(double));
+        
+    };
+
+    fs.close();
+
+#endif
+
+}
 
 template<typename T,typename stencil>
 struct Velocity : public Parameter<Velocity<T,stencil>,T,stencil::D>{}; //Velocity, with directions D

@@ -22,7 +22,7 @@ class BodyForce{
 
     private:
 
-        double magnitude=0.001;
+        double magnitude=0.0001;
 
         Density<double> m_Density; //Density
 
@@ -30,7 +30,7 @@ class BodyForce{
 
 double BodyForce::compute(int xyz,int k) const{
 
-    return (xyz==0||xyz==2)*magnitude*m_Density.getParameter(k); //Force is just density multiplied by magnitude
+    return (xyz==0)*magnitude*m_Density.getParameter(k); //Force is just density multiplied by magnitude
                                                                  //in given direction
 
 }
@@ -51,7 +51,7 @@ double BodyForce::computeDensitySource(int k) const{ //Not necessary
 
 double BodyForce::computeVelocitySource(int xyz,int k) const{ //Need to correct velocity
 
-    return +compute(xyz,k)*DT/(m_Density.getParameter(0));
+    return +compute(xyz,k)*DT/(m_Density.getParameter(k));
     
 }
 

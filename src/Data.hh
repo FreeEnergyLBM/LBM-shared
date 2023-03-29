@@ -14,7 +14,7 @@
 //Periodic boundaries work by setting the neighbor of each lattice point at the edges of the domain so that the
 //top of the domain connects to the bottom, the left connects to the right etc.
 
-template<class stencil> //Stencil information is needed as streaming indices and neighbors are determined by the
+template<class stencil,class parallel> //Stencil information is needed as streaming indices and neighbors are determined by the
                         //velocity vectors
 class Data1{
     private:
@@ -28,7 +28,7 @@ class Data1{
             Distribution_Derived(std::vector<int>& neighbors):mv_DistNeighbors(neighbors){ //Initialise mv_DistNeighbors
                 
                 for(int idx=0;idx<stencil::Q;idx++){ //Calculate the k offset for the neighbors in each direction
-                    opposites[idx]=stencil::Ci_xyz(x)[idx]*LZ*LY+stencil::Ci_xyz(y)[idx]*LZ+stencil::Ci_xyz(z)[idx];
+                    ma_Opposites[idx]=stencil::Opposites[idx];
                 }
 
                 Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q*N); //Array size is number of
@@ -39,7 +39,14 @@ class Data1{
                 
             }
 
-            int opposites[stencil::Q];
+            int getOpposite(int idx) override{
+
+                return ma_Opposites[idx];
+
+            }
+
+
+            int ma_Opposites[stencil::Q];
 
             int streamIndex(const int k,const int Q) override{
 
@@ -63,18 +70,26 @@ class Data1{
         std::vector<int> mv_Neighbors; //Vector containing neighbor information
 
         enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z
-
+        parallel m_Parallel;
         Distribution_Derived m_Distribution; //Object of distribution
-
+        
     public:
 
-        Data1():m_Distribution(mv_Neighbors){ //Construct distribution
+        template<class parameter>
+        void communicate(parameter obj);
+
+        void communicateDistribution();
+
+        template<class parameter>
+        void initialiseHalos(parameter obj);
+
+        Data1():m_Parallel(),m_Distribution(mv_Neighbors){ //Construct distribution
 
             for(int idx=0;idx<stencil::Q;idx++){
                 OppositeOffset[idx]=stencil::Ci_xyz(x)[idx]*LZ*LY+stencil::Ci_xyz(y)[idx]*LZ+stencil::Ci_xyz(z)[idx];
             }
 
-            mv_Neighbors.resize(stencil::Q*LX*LY*LZ); //Allocate memory for neighbors array
+            mv_Neighbors.resize(stencil::Q*N); //Allocate memory for neighbors array
 
             generateNeighbors(); //Fill neighbors array
 
@@ -92,51 +107,104 @@ class Data1{
 
         }
 
-        int iterate(int k); //Increment k THIS WILL BE CHANGED
+        int iterate(int k,bool all); //Increment k THIS WILL BE CHANGED
 
-        int iterateFluid(int k); //Increment k only over fluid THIS WILL BE CHANGED
+        int iterateFluid(int k, bool all); //Increment k only over fluid THIS WILL BE CHANGED
+
+        int iterateFluid0(int k, bool all); //Increment k only over fluid THIS WILL BE CHANGED
+
+
+        int iterateSolid(int k, bool all); //Increment k only over solid THIS WILL BE CHANGED
+
+        int iterateSolid0(int k, bool all); //Increment k only over solid THIS WILL BE CHANGED
+
 
 };
 
-template<typename stencil>
-void Data1<stencil>::stream(){ //Not used in this data type
+template<class stencil,class parallel>
+template<class parameter>
+void Data1<stencil,parallel>::communicate(parameter obj){ //Not used in this data type
+
+    parallel::communicate(obj);
 
 }
 
-template<typename stencil>
-std::vector<int>& Data1<stencil>::getNeighbors(){
+template<class stencil,class parallel>
+void Data1<stencil,parallel>::communicateDistribution(){ //Not used in this data type
+    
+    parallel::communicateDistribution(m_Distribution);
+    
+}
+
+template<class stencil,class parallel>
+void Data1<stencil,parallel>::stream(){ //Not used in this data type
+
+}
+
+template<class stencil,class parallel>
+std::vector<int>& Data1<stencil,parallel>::getNeighbors(){
     
     return mv_Neighbors; //Return the vector containing neighbor information.
 
 }
 
-template<typename stencil>
-int Data1<stencil>::iterate(const int k){
+template<class stencil,class parallel>
+int Data1<stencil,parallel>::iterate(const int k,bool all){
 
-    if (k>=N-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
+    if (k>=N-MAXNEIGHBORS*LY*LZ*(!all)-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
     else return k+1; //Else return k incremented by one
 
 }
 
-template<typename stencil>
-int Data1<stencil>::iterateFluid(const int k){
+template<class stencil,class parallel>
+int Data1<stencil,parallel>::iterateFluid(const int k,bool all){
 
-    if (k>=N-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
-    else if (m_Geometry.isSolid(k+1)) return iterateFluid(k+1); //Else if we are on a solid node, skip this
+    if (k>=N-MAXNEIGHBORS*LY*LZ*(!all)-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
+    else if (m_Geometry.isSolid(k+1)) return iterateFluid(k+1,all); //Else if we are on a solid node, skip this
                                                                 //and try again for the next node
     else return k+1; //Else return k incremented by one
 
 }
 
-template<typename stencil>
-int Data1<stencil>::getOneNeighbor(const int k,const int Q){
+template<class stencil,class parallel>
+int Data1<stencil,parallel>::iterateFluid0(const int k,bool all){
+
+    if (k>=N-MAXNEIGHBORS*LY*LZ*(!all)-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
+    else if (m_Geometry.isSolid(k+1)) return iterateFluid(k+1,all); //Else if we are on a solid node, skip this
+                                                                //and try again for the next node
+    else return k; //Else return k incremented by one
+
+}
+
+template<class stencil,class parallel>
+int Data1<stencil,parallel>::iterateSolid(const int k,bool all){
+
+    if (k>=N-MAXNEIGHBORS*LY*LZ*(!all)-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
+    else if (!m_Geometry.isSolid(k+1)) return iterateSolid(k+1,all); //Else if we are on a solid node, skip this
+                                                                //and try again for the next node
+    else return k+1; //Else return k incremented by one
+
+}
+
+template<class stencil,class parallel>
+int Data1<stencil,parallel>::iterateSolid0(const int k,bool all){
+
+    if (k>=N-MAXNEIGHBORS*LY*LZ*(!all)-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
+    else if (!m_Geometry.isSolid(k+1)) return iterateSolid(k+1,all); //Else if we are on a solid node, skip this
+                                                                //and try again for the next node
+    else return k; //Else return k incremented by one
+
+}
+
+template<class stencil,class parallel>
+int Data1<stencil,parallel>::getOneNeighbor(const int k,const int Q){
     
     return k+OppositeOffset[Q]; //The neighbor is the lattice point plus the opposite offset in direction Q
         
 }
 
-template<typename stencil>
-int Data1<stencil>::getOneNeighborPeriodic(const int k,const int Q){ //This function will calculate the neighbors
+template<class stencil,class parallel>
+int Data1<stencil,parallel>::getOneNeighborPeriodic(const int k,const int Q){ //This function will calculate the neighbors
                                                                      //given that "k" lies on a periodic boundary.
                                                                      //For instance, if we are at the first
                                                                      //lattice point, some of the adjacent points
@@ -187,15 +255,15 @@ int Data1<stencil>::getOneNeighborPeriodic(const int k,const int Q){ //This func
 
         }
     }
-    if(LX>1){
-        if ((k/(LZ)/(LY)+1)%(LX)==0&&stencil::Ci_xyz(x)[Q]>0){ //...
+    if(LXdiv>1){
+        if ((k/(LZ)/(LY)+1)%(LXdiv)==0&&stencil::Ci_xyz(x)[Q]>0){ //...
 
-            neighbor+=-(LZ)*LY*(LX-1);
+            neighbor+=-(LZ)*LY*(LXdiv-1);
 
         }
-        else if (((k)/(LZ)/(LY))%(LX)==0&&stencil::Ci_xyz(x)[Q]<0){
+        else if (((k)/(LZ)/(LY))%(LXdiv)==0&&stencil::Ci_xyz(x)[Q]<0){
 
-            neighbor+=(LZ)*LY*(LX-1);
+            neighbor+=(LZ)*LY*(LXdiv-1);
 
         }
         else if (stencil::Ci_xyz(x)[Q]!=0){
@@ -208,8 +276,8 @@ int Data1<stencil>::getOneNeighborPeriodic(const int k,const int Q){ //This func
     return k+neighbor; //return k + our neighbor offset
 }
 
-template<typename stencil>
-void Data1<stencil>::generateNeighbors(){ //Loop over all lattice points and calculate the neghbor at each point
+template<class stencil,class parallel>
+void Data1<stencil,parallel>::generateNeighbors(){ //Loop over all lattice points and calculate the neghbor at each point
 
     int k=0;
 
@@ -230,7 +298,7 @@ void Data1<stencil>::generateNeighbors(){ //Loop over all lattice points and cal
 
         }
 
-        k=iterate(k); //Increment k
+        k=iterate(k,true); //Increment k
     }
 }
 #endif

@@ -14,7 +14,7 @@ template<class stencil> //Stencil is needed for moment calculations
 class CollisionBase{
     public:
 
-        double computeGamma(const std::vector<double>& velocity, const int idx) const; //Gamma is the standard
+        double computeGamma(const double* velocity, const int idx) const; //Gamma is the standard
                                                                                        //equilibrium calculation
                                                                                        //divided by density
 
@@ -28,10 +28,10 @@ class CollisionBase{
         double collideSRT(const double& old,const double& equilibrium,const double& tau) const; //SRT collision
                                                                                                 //step
 
-        double forceSRT(const std::array<double,stencil::D> force,const std::vector<double>& velocity,
+        double forceSRT(const std::array<double,stencil::D> force,const double* velocity,
                         const double& itau,const int idx) const; //SRT force calculation
 
-        double computeVelocityFactor(const std::vector<double>& velocity, const int idx) const; //Second
+        double computeVelocityFactor(const double* velocity, const int idx) const; //Second
                                                                                        //order velocity dependence
                                                                                        //of the equilibrium
                                                                                        //distributions times
@@ -48,7 +48,7 @@ class CollisionBase{
 };
 
 template<class stencil>
-double CollisionBase<stencil>::computeGamma(const std::vector<double>& velocity, const int idx) const{
+double CollisionBase<stencil>::computeGamma(const double* velocity, const int idx) const{
 
     return ma_Weights[idx]*(1.0+computeVelocityFactor(velocity,idx)); //Weights*(1+velocity factor)
                                                                       //This is the standard equilibrium in
@@ -58,7 +58,7 @@ double CollisionBase<stencil>::computeGamma(const std::vector<double>& velocity,
 };
 
 template<class stencil>
-double CollisionBase<stencil>::computeVelocityFactor(const std::vector<double>& velocity, const int idx) const{
+double CollisionBase<stencil>::computeVelocityFactor(const double* velocity, const int idx) const{
     //Sometimes the velocity part of the equilibrium is needed seperately so we do this here
     double ci_dot_velocity=0;
     double velocity_dot_velocity=0;
@@ -97,7 +97,7 @@ double CollisionBase<stencil>::computeSecondMoment(const double *distribution,co
     for (int idx=0;idx<stencil::Q;idx++){
         secondmoment+=(distribution[idx]*stencil::Ci_xyz(xyz)[idx]); //Sum distribution times Ci over Q
     }
-
+    
     return secondmoment; //Return second moment corresponding to velocity in given direction ("xyz")
 
 }
@@ -112,7 +112,7 @@ double CollisionBase<stencil>::collideSRT(const double& old,const double& equili
 
 template<class stencil>
 double CollisionBase<stencil>::forceSRT(const std::array<double,stencil::D> force,
-                                        const std::vector<double>& velocity,const double& itau,
+                                        const double* velocity,const double& itau,
                                         const int idx) const{ //Guo forcing //SEE LITERATURE
 
     double ci_dot_velocity=0;

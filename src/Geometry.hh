@@ -29,14 +29,14 @@ bool Geometry::isPeriodic(int k){
          (k-1)%(LZ-1)==0)&&LZ>1)||
         ((k/(LZ)%(LY-1)==0||
          ((k)/(LZ)-1)%(LY-1)==0)&&LY>1)||
-        (((k/(LZ)/(LY))%(LX-1)==0||
-          ((k)/(LZ)/(LY)-1)%(LX-1)==0||
+        (((k/(LZ)/(LY))%(LXdiv-1)==0||
+          ((k)/(LZ)/(LY)-1)%(LXdiv-1)==0||
           ((k)/(LZ)/(LY)-1)-1<0||
-          ((k)/(LZ)/(LY)-1)+1>LX-1)&&
-         LX>1)||
+          ((k)/(LZ)/(LY)-1)+1>LXdiv-1)&&
+         LXdiv>1)||
         LZ==1||
         LY==1||
-        LX==1) return true; //These conditions just check whether the lattice point is on the edge of the 
+        LXdiv==1) return true; //These conditions just check whether the lattice point is on the edge of the 
                             //simulation domain
     
     else return false;

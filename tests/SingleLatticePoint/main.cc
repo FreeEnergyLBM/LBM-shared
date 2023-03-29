@@ -7,6 +7,8 @@
 #include "../../src/Global.hh"
 #include "../../src/Service.hh"
 #include "../../src/Saving.hh"
+#include "../../src/Parallel.hh"
+#include "../../src/Parameters.hh"
 
 #include <iostream>
 
@@ -38,10 +40,10 @@
 
 //Trait class for FlowField Distribution (Navier-Stokes and continuity solver)
 struct traitFlowField{
-    using Stencil=D2Q9; //Here, D refers to the number of cartesian dimensions
+    using Stencil=D3Q19; //Here, D refers to the number of cartesian dimensions
                         //and Q refers to the number of discrete velocity directions.
                         //This naming convention is standard in LBM.
-    using Data=Data1<Stencil>; //This will change the "Data" implementation, which will essentially
+    using Data=Data1<Stencil,X_Parallel<Stencil,1>>; //This will change the "Data" implementation, which will essentially
                                //govern the access of non-local data
     using Boundaries=std::tuple<BounceBack&>; //This will tell the model which boundaries to apply
     using Forces=std::tuple<BodyForce&>; //This will tell the model which forces to apply
@@ -49,43 +51,56 @@ struct traitFlowField{
 
 //Trait class for PhaseField Distribution (Calculates the interface between components)
 struct traitPhaseField{
-    using Stencil=D2Q9;  
-    using Data=Data1<Stencil>;
+    using Stencil=D3Q19;  
+    using Data=Data1<Stencil,X_Parallel<Stencil,1>>;
     using Boundaries=std::tuple<BounceBack&>;
     using Forces=std::tuple<>;
 };
 
-int main(){
-
-    data_dir="data/"; //TEMPORARY used to save output
+int main(int argc, char **argv){
     
-
+    #ifdef PARALLEL
+    MPI_Init(&argc, &argv);                                            // Initialise parallelisation based on arguments given
+    MPI_Comm_size(MPI_COMM_WORLD, &NUMPROCESSORS);                              // Store number of processors
+    MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
+    Parallel<1> initialise;
+    #endif
+    
+    DATA_DIR="data/"; //TEMPORARY used to save output
+    
     BodyForce o_ForceFlowField; //Create an object of the bodyforce class,
                      //I want people to be able to pass information here through the constructor
-    auto ForcesFlowField=GenerateTuple(o_ForceFlowField); //Generate a tuple of all forces passed to this function
+    auto ForcesFlowField=std::tie(o_ForceFlowField); //Generate a tuple of all forces passed to this function
 
     BounceBack o_BoundaryFlowField; //Create an object of the bounceback class
-    auto BoundaryFlowField=GenerateTuple(o_BoundaryFlowField); //Generate tuple
+    auto BoundaryFlowField=std::tie(o_BoundaryFlowField); //Generate tuple
 
     BounceBack o_BoundaryPhaseField; //Create an object of the bounceback class
-    auto BoundaryPhaseField=GenerateTuple(o_BoundaryPhaseField); //Generate tuple
+    auto BoundaryPhaseField=std::tie(o_BoundaryPhaseField); //Generate tuple
 
 
     FlowField<traitFlowField> o_FlowField(ForcesFlowField,BoundaryFlowField); //Create an object of the FlowField model class
-                                                                      //and pass forces and boundaries to it
+                                                                     //and pass forces and boundaries to it
     Binary<traitPhaseField> o_PhaseField(BoundaryPhaseField);
 
-
+     
     Algorithm<FlowField<traitFlowField>,Binary<traitPhaseField>> LBM(o_FlowField,o_PhaseField);
-    
 
     LBM.initialise(); //Perform necessary initialisation
-
+    
     for (int timestep=0;timestep<=TIMESTEPS;timestep++){
-
+        
         LBM.evolve(); //Evolve one timestep
-
+        
+        if (timestep%1000==0) {
+            Density<double>::save("density",timestep);
+            Velocity<double,D3Q19>::save("velocity",timestep);
+        }
     }
+    
+    #ifdef PARALLEL
+    MPI_Finalize();
+    #endif
     
     return 0;
 }

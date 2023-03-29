@@ -39,11 +39,11 @@ template<class ...Model>
 void Algorithm<Model...>::evolve(){ //See above
 
     precomputeStep();
-
+    
     calculateCollisionStep();
-
+    
     calculateBoundaryStep();
-
+    
     calculateMomentaStep();
     
 }

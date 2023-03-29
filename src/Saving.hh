@@ -11,6 +11,7 @@ void save(int t){//THIS IS TEMPORARY
     Density<double> m_Density;
     Velocity<double,D3Q19> m_Velocity;
     std::ofstream fs(fdump, std::ios::out | std::ios::binary );
+
     for (int k = 0; k < N; k++ ) { 
 
         fs.write((char *)(&m_Density.getParameter(k)), sizeof(double));
