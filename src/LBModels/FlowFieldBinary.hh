@@ -54,7 +54,7 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
 
     int k=LY*LZ*MAXNEIGHBORS;
     k = FlowField<traits>::m_Data.iterateFluid0(k,false);
-    while(k>=0){ //loop over k
+    for (int k=0;k<N;k++){ //loop over k
 
         double* distribution=FlowField<traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution=FlowField<traits>::m_Distribution.getDistributionOldPointer(k);
@@ -64,8 +64,10 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
             //"computeCollisionQ"
             FlowField<traits>::m_Distribution.getDistributionPointer(FlowField<traits>::m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(sum,k,old_distribution[idx],FlowField<traits>::density[k],&FlowField<traits>::velocity[k*traits::Stencil::D],idx);
         }
-        
-        k = FlowField<traits>::m_Data.iterateFluid(k,false); //increment k
+        while(FlowField<traits>::m_Geometry.isSolid(k+1)&&k<N){
+            k++;
+        }
+        //k = FlowField<traits>::m_Data.iterateFluid(k,false); //increment k
         
     }
     
@@ -81,7 +83,7 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
     int k=LY*LZ*MAXNEIGHBORS;
     k = FlowField<traits>::m_Data.iterateFluid0(k,false);
 
-    while(k>=0){ //loop over k
+    for (int k=0;k<N;k++){ //loop over k
 
         double* distribution=FlowField<traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution=FlowField<traits>::m_Distribution.getDistributionOldPointer(k);
@@ -101,8 +103,10 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
             old_distribution[idx]=equilibrium;        
 
         }
-
-        k = FlowField<traits>::m_Data.iterateFluid(k,false); //increment k
+        while(FlowField<traits>::m_Geometry.isSolid(k+1)&&k<N){
+            k++;
+        }
+        //k = FlowField<traits>::m_Data.iterateFluid(k,false); //increment k
         
     }
     

@@ -114,7 +114,7 @@ void Binary<traits>::precompute(){
 
     int k=LY*LZ*MAXNEIGHBORS;
     k = m_Data.iterateFluid0(k,false);
-    while(k>=0){ //loop over k
+    for (int k=0;k<N;k++){ //loop over k
 
         if constexpr(std::tuple_size<typename traits::Forces>::value!=0){ //Check if there is at least one element
                                                                           //in F
@@ -123,8 +123,10 @@ void Binary<traits>::precompute(){
             }, mt_Forces);
         }
         else;
-
-        k = m_Data.iterateFluid(k,false); //increment k
+        while(m_Geometry.isSolid(k+1)&&k<N){
+            k++;
+        }
+        //k = m_Data.iterateFluid(k,false); //increment k
         
     }
 
@@ -149,7 +151,7 @@ void Binary<traits>::collide(){
 
     int k=LY*LZ*MAXNEIGHBORS;
     k = m_Data.iterateFluid0(k,false);
-    while(k>=0){ //loop over k
+    for (int k=0;k<N;k++){ //loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
         double* old_distribution=m_Distribution.getDistributionOldPointer(k);
@@ -161,8 +163,10 @@ void Binary<traits>::collide(){
             m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(sum,k,old_distribution[idx],orderparameter[k],&velocity[k*traits::Stencil::D],idx);
             
         }
-        
-        k = m_Data.iterateFluid(k,false); //increment k
+        while(m_Geometry.isSolid(k+1)&&k<N){
+            k++;
+        }
+        //k = m_Data.iterateFluid(k,false); //increment k
 
         
     }
@@ -176,7 +180,7 @@ void Binary<traits>::boundaries(){
 
     int k=0;
     k = m_Data.iterateSolid0(k,true);
-    while(k>=0){ //loop over k
+    for (int k=0;k<N;k++){ //loop over k
 
         if constexpr(std::tuple_size<typename traits::Boundaries>::value!=0){ //Check if there are any boundary
                                                                               //models
@@ -190,8 +194,10 @@ void Binary<traits>::boundaries(){
             
         }
         else;
-        
-        k = m_Data.iterateSolid(k,true); //increment k
+        while(!m_Geometry.isSolid(k+1)&&k<N){
+            k++;
+        }
+        //k = m_Data.iterateSolid(k,true); //increment k
 
     }
     
@@ -204,7 +210,7 @@ void Binary<traits>::initialise(){ //Initialise model
     
     int k=LY*LZ*MAXNEIGHBORS;
     k = m_Data.iterateFluid0(k,false);
-    while(k>=0){ //loop over k
+    for (int k=0;k<N;k++){ //loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
         double* old_distribution=m_Distribution.getDistributionOldPointer(k);
@@ -224,8 +230,10 @@ void Binary<traits>::initialise(){ //Initialise model
             old_distribution[idx]=equilibrium;        
 
         }
-
-        k = m_Data.iterateFluid(k,false); //increment k
+        while(m_Geometry.isSolid(k+1)&&k<N){
+            k++;
+        }
+        //k = m_Data.iterateFluid(k,false); //increment k
 
     }
 }
@@ -236,13 +244,15 @@ void Binary<traits>::computeMomenta(){ //Calculate order parameter
 
     int k=LY*LZ*MAXNEIGHBORS;
     k = m_Data.iterateFluid0(k,false);
-    while(k>=0){ //Loop over k
+    for (int k=0;k<N;k++){ //Loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
 
         orderparameter[k]=computeOrderParameter(distribution,k);
-
-        k = m_Data.iterateFluid(k,false); //increment k
+        while(m_Geometry.isSolid(k+1)&&k<N){
+            k++;
+        }
+        //k = m_Data.iterateFluid(k,false); //increment k
 
     }
 

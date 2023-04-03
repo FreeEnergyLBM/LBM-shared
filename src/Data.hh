@@ -230,7 +230,7 @@ void Data_Base<stencil,parallel>::generateNeighbors(){ //Loop over all lattice p
 
     int k=0;
 
-    while(k>=0){ //While look over all lattice points
+    for (int k=0;k<N;k++){ //While look over all lattice points
 
         for(int q=0;q<stencil::Q;q++){
 
@@ -247,7 +247,7 @@ void Data_Base<stencil,parallel>::generateNeighbors(){ //Loop over all lattice p
 
         }
 
-        k=iterate(k,true); //Increment k
+        //k=iterate(k,true); //Increment k
     }
 }
 

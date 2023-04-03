@@ -26,7 +26,7 @@ struct traitFlowField{
     using Stencil=D2Q9; //Here, D refers to the number of cartesian dimensions
                         //and Q refers to the number of discrete velocity directions.
                         //This naming convention is standard in LBM.
-    using Parallel=X_Parallel<Stencil,NO_NEIGHBOR>
+    using Parallel=X_Parallel<Stencil,NO_NEIGHBOR>;
     using Data=Data1<Stencil,Parallel>; //This will change the "Data" implementation, which will essentially
                                //govern the access of non-local data
     using Boundaries=std::tuple<BounceBack>; //This will tell the model which boundaries to apply
@@ -36,7 +36,7 @@ struct traitFlowField{
 //Trait class for PhaseField Distribution (Calculates the interface between components)
 struct traitPhaseField{
     using Stencil=D2Q9;  
-    using Parallel=X_Parallel<Stencil,NO_NEIGHBOR>
+    using Parallel=X_Parallel<Stencil,NO_NEIGHBOR>;
     using Data=Data1<Stencil,Parallel>;
     using Boundaries=std::tuple<BounceBack>;
     using Forces=std::tuple<OrderParameterGradients<CentralXYZ<Stencil,Parallel>>>;
