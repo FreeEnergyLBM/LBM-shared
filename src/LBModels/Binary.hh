@@ -59,7 +59,7 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         Velocity<double,NDIM> m_Velocity; //Velocity
 
-        Distribution_Base<typename traits::Stencil>& m_Distribution=m_Data.template getDistributionObject();
+        Distribution_Base<typename traits::Stencil>& m_Distribution=m_Data.getDistributionObject();
             //Distributions
 
         typename traits::Data m_Data; //MOVE THIS TO BASE
@@ -132,7 +132,6 @@ void Binary<traits>::precompute(){
         //k = m_Data.iterateFluid(k,false); //increment k
         
     }
-
     m_Distribution.getDistribution().swap(m_Distribution.getDistributionOld()); //swap old and new distributions
                                                                                 //before collision
 }
@@ -203,12 +202,13 @@ void Binary<traits>::boundaries(){
             
         }
         else;
-        while(!m_Geometry.isSolid(k+1)&&k<N){
-            k++;
-        }
+        //while(!m_Geometry.isSolid(k+1)&&k<N){
+        //    k++;
+        //}
         //k = m_Data.iterateSolid(k,true); //increment k
 
     }
+
     
 }
 

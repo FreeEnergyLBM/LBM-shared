@@ -20,11 +20,13 @@ using namespace std;
 template<class  stencil> //Distribution must know information about the stencil as this determines the size
                          //of the vectors and the data layout
 struct Distribution_Base{ //Distribution base class
+    Distribution_Base(std::vector<int>& neighbors):mv_DistNeighbors(neighbors){
 
+    }
     vector<double> mv_Distribution; //Vector that will store the distribution information
     vector<double> mv_OldDistribution; //Possibly unused vector storing the old distributions (at t_old=t_new-1)
                                        //This is required in the collision step
-
+    std::vector<int>& mv_DistNeighbors; //Reference to vector containing neighbor information
     vector<double>& getDistribution(){ //Get a vector containing the distributions
         return mv_Distribution;
     }

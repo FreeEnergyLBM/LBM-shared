@@ -32,7 +32,8 @@ struct traitFlowField{
     using Data=Data1<Stencil,Parallel>; //This will change the "Data" implementation, which will essentially
                                //govern the access of non-local data
     using Boundaries=std::tuple<BounceBack>; //This will tell the model which boundaries to apply
-    using Forces=std::tuple<BodyForce,ChemicalForce>; //This will tell the model which forces to apply
+    //using Forces=std::tuple<BodyForce,ChemicalForce>; //This will tell the model which forces to apply
+    using Forces=std::tuple<>;
 };
 
 //Trait class for PhaseField Distribution (Calculates the interface between components)
@@ -41,7 +42,8 @@ struct traitPhaseField{
     using Parallel=X_Parallel<Stencil,NO_NEIGHBOR>;
     using Data=Data1<Stencil,Parallel>;
     using Boundaries=std::tuple<BounceBack>;
-    using Forces=std::tuple<OrderParameterGradients<CentralXYZ<Stencil,Parallel>>>;
+    //using Forces=std::tuple<OrderParameterGradients<CentralXYZ<Stencil,Parallel>>>;
+    using Forces=std::tuple<>;
 };
 
 
@@ -69,7 +71,7 @@ int main(int argc, char **argv){
 
         LBM.evolve(); //Evolve one timestep
 
-        if (timestep%1000==0) {
+        if (timestep%SAVEINTERVAL==0) {
             if(CURPROCESSOR==0) std::cout<<"SAVING at timestep "<<timestep<<""<<std::endl;
             Density<double>::save("density",timestep);
             OrderParameter<double>::save("orderparameter",timestep);

@@ -262,8 +262,8 @@ class Data1:public Data_Base<stencil,parallel>{
                                                                 //index of the neighboring lattice point in
                                                                 //the direction Q.
             
-            Distribution_Derived(std::vector<int>& neighbors):mv_DistNeighbors(neighbors){ //Initialise mv_DistNeighbors
-                
+            Distribution_Derived(std::vector<int>& neighbors):Distribution_Base<stencil>(neighbors){ //Initialise mv_DistNeighbors
+                ;
                 for(int idx=0;idx<stencil::Q;idx++){ //Calculate the k offset for the neighbors in each direction
                     ma_Opposites[idx]=stencil::Opposites[idx];
                 }
@@ -287,11 +287,11 @@ class Data1:public Data_Base<stencil,parallel>{
 
             int streamIndex(const int k,const int Q) override{
 
-                return mv_DistNeighbors[k*stencil::Q+Q]; //Return neighbor of lattice point k in direction Q
+                return Distribution_Base<stencil>::mv_DistNeighbors[k*stencil::Q+Q]; //Return neighbor of lattice point k in direction Q
 
             }
 
-            std::vector<int>& mv_DistNeighbors; //Reference to vector containing neighbor information
+            
 
         };
 

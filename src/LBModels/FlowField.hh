@@ -65,7 +65,7 @@ class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from b
 
         Velocity<double,NDIM> m_Velocity; //Velocity
 
-        Distribution_Base<typename traits::Stencil>& m_Distribution=m_Data.template getDistributionObject();
+        Distribution_Base<typename traits::Stencil>& m_Distribution=m_Data.getDistributionObject();
             //Distributions
 
         vector<double>& density=m_Density.getParameter(); //Reference to vector of densities
@@ -200,9 +200,9 @@ void FlowField<traits>::boundaries(){ //Apply the boundary step
             
         }
         else;
-        while(!m_Geometry.isSolid(k+1)&&k<N){
-            k++;
-        }
+        //while(!m_Geometry.isSolid(k+1)&&k<N){
+        //    k++;
+        //}
         //k = m_Data.iterateSolid(k,true); //increment k
 
     }

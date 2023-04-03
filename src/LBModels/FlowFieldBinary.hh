@@ -24,12 +24,11 @@ class FlowFieldBinary:public FlowField<traits>{ //Inherit from base class to avo
         virtual void initialise() override; //Initialisation step
 
     private:
-        virtual double computeEquilibrium(const double& density,const double* velocity,
-                                  const int idx,const int k) const override; //Calculate equilibrium in direction idx with a given
+        double computeEquilibrium(const double& density,const double* velocity,const double& order_parameter,const double& chemical_potential,const int idx,const int k) const; //Calculate equilibrium in direction idx with a given
                                                         //density and velocity
 
-        double computeCollisionQ(double& sum, int k,const double& old,const double& density,
-                                 const double* velocity,const int idx) const; //Calculate collision
+        double computeCollisionQ(double& sum,const int k,const double& old,const double& density,
+                                            const double* velocity,const double& order_parameter,const double& chemical_potential,const int idx) const; //Calculate collision
                                                                                            //at index idx
         
 
@@ -40,9 +39,9 @@ class FlowFieldBinary:public FlowField<traits>{ //Inherit from base class to avo
 };
 
 template<class traits>
-double FlowFieldBinary<traits>::computeEquilibrium(const double& density,const double* velocity,const int idx,const int k) const{
+double FlowFieldBinary<traits>::computeEquilibrium(const double& density,const double* velocity,const double& order_parameter,const double& chemical_potential,const int idx,const int k) const{
 
-    return density*CollisionBase<typename traits::Stencil>::computeGamma(velocity,idx)+traits::Stencil::Weights[idx]*m_OrderParameter.getParameter(k)*m_ChemicalPotential.getParameter(k)/traits::Stencil::Cs2; //Equilibrium is density
+    return density*CollisionBase<typename traits::Stencil>::computeGamma(velocity,idx)+traits::Stencil::Weights[idx]*order_parameter*chemical_potential/traits::Stencil::Cs2; //Equilibrium is density
                                                                                         //times gamma in this
                                                                                         //case
 
@@ -55,23 +54,26 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
     //k = FlowField<traits>::m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
     double CollideStartTime=omp_get_wtime();
-    #pragma omp parallel for schedule( static )
+    //#pragma omp parallel for schedule( static )
+    double* old_distribution=FlowField<traits>::m_Distribution.getDistributionOldPointer(0);
+    double* distribution=FlowField<traits>::m_Distribution.getDistributionPointer(0);
+    double* density_local=&FlowField<traits>::density[0];
+    double* velocity_local=&FlowField<traits>::velocity[0];
+    double* order_parameter_local=&m_OrderParameter.getParameter(0);
+    double* chemical_potential_local=&m_ChemicalPotential.getParameter(0);
+    int* neighbors=&FlowField<traits>::m_Distribution.mv_DistNeighbors[0];
+
+    //#pragma omp target teams distribute parallel for map(to:old_distribution[0:traits::Stencil::Q*N],density_local[0:N],velocity_local[0:N*traits::Stencil::D],neighbors[0:traits::Stencil::Q*N])\
+    //                            map(tofrom:distribution[0:traits::Stencil::Q*N])
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
-        double* distribution=FlowField<traits>::m_Distribution.getDistributionPointer(k);
-        double* old_distribution=FlowField<traits>::m_Distribution.getDistributionOldPointer(k);
         double sum=0;
         for (int idx=traits::Stencil::Q-1;idx>=0;--idx){ //loop over discrete velocity directions
             //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
             //"computeCollisionQ"
-            FlowField<traits>::m_Distribution.getDistributionPointer(FlowField<traits>::m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(sum,k,old_distribution[idx],FlowField<traits>::density[k],&FlowField<traits>::velocity[k*traits::Stencil::D],idx);
-        }
-        //while(FlowField<traits>::m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-        //    k++;
-        //}
-        //k = FlowField<traits>::m_Data.iterateFluid(k,false); //increment k
-        
+            distribution[neighbors[k*traits::Stencil::Q+idx]*traits::Stencil::Q+idx]=computeCollisionQ(sum,k,old_distribution[k*traits::Stencil::Q+idx],density_local[k],&velocity_local[k*traits::Stencil::D],order_parameter_local[k],chemical_potential_local[k],idx);
+        }        
         
     }
     #ifdef OMPPARALLEL
@@ -104,7 +106,7 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
         for (int idx=traits::Stencil::Q-1;idx>=0;idx--){
 
             double equilibrium;
-            if (idx>0) equilibrium=computeEquilibrium(FlowField<traits>::density[k],&FlowField<traits>::velocity[k*traits::Stencil::D],idx,k);
+            if (idx>0) equilibrium=computeEquilibrium(FlowField<traits>::density[k],&FlowField<traits>::velocity[k*traits::Stencil::D],m_OrderParameter.getParameter(k),m_ChemicalPotential.getParameter(k),idx,k);
             else equilibrium=FlowField<traits>::density[k]-sum;
 
             distribution[idx]=equilibrium; //Set distributions to equillibrium
@@ -122,7 +124,7 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
 
 template<class traits>
 double FlowFieldBinary<traits>::computeCollisionQ(double& sum,const int k,const double& old,const double& density,
-                                            const double* velocity,const int idx) const{
+                                            const double* velocity,const double& order_parameter,const double& chemical_potential,const int idx) const{
                                             //Calculate collision step at a given velocity index at point k
 
     std::array<double,traits::Stencil::D> forcexyz; //Temporary array storing force in each cartesian direction
@@ -132,13 +134,13 @@ double FlowFieldBinary<traits>::computeCollisionQ(double& sum,const int k,const 
     
     //Sum of collision + force contributions
     if (idx>0) {
-        double eq=CollisionBase<typename traits::Stencil>::collideSRT(old,computeEquilibrium(density,velocity,idx,k),FlowField<traits>::m_InverseTau)
+        double eq=CollisionBase<typename traits::Stencil>::collideSRT(old,computeEquilibrium(density,velocity,order_parameter,chemical_potential,idx,k),FlowField<traits>::m_InverseTau)
               +CollisionBase<typename traits::Stencil>::forceSRT(forcexyz,velocity,FlowField<traits>::m_InverseTau,idx);
         sum+=eq;
         
         return eq;
     }
-    else return FlowField<traits>::m_Density.getParameter(k)-sum+CollisionBase<typename traits::Stencil>::forceSRT(forcexyz,velocity,FlowField<traits>::m_InverseTau,idx);
+    else return density-sum+CollisionBase<typename traits::Stencil>::forceSRT(forcexyz,velocity,FlowField<traits>::m_InverseTau,idx);
 
 }
 
