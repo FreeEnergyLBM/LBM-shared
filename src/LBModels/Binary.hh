@@ -114,6 +114,7 @@ void Binary<traits>::precompute(){
 
     int k=LY*LZ*MAXNEIGHBORS;
     k = m_Data.iterateFluid0(k,false);
+    
     for (int k=0;k<N;k++){ //loop over k
 
         if constexpr(std::tuple_size<typename traits::Forces>::value!=0){ //Check if there is at least one element
