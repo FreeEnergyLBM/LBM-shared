@@ -63,8 +63,11 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
     double* chemical_potential_local=&m_ChemicalPotential.getParameter(0);
     int* neighbors=&FlowField<traits>::m_Distribution.mv_DistNeighbors[0];
 
-    //#pragma omp target teams distribute parallel for map(to:old_distribution[0:traits::Stencil::Q*N],density_local[0:N],velocity_local[0:N*traits::Stencil::D],neighbors[0:traits::Stencil::Q*N])\
-    //                            map(tofrom:distribution[0:traits::Stencil::Q*N])
+    //#pragma omp target data map(to:old_distribution[0:traits::Stencil::Q*N],density_local[0:N],velocity_local[0:N*traits::Stencil::D],neighbors[0:traits::Stencil::Q*N])\
+                                map(tofrom:distribution[0:traits::Stencil::Q*N])
+    {
+    //#pragma omp target teams distribute parallel for 
+    #pragma omp parallel for
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -77,6 +80,7 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
         
     }
     #ifdef OMPPARALLEL
+    }
     TOTALTIME+=omp_get_wtime()-CollideStartTime;
     #endif
     FlowField<traits>::m_Data.communicateDistribution();
