@@ -42,6 +42,8 @@ struct traitPhaseField{
     using Forces=std::tuple<OrderParameterGradients<CentralXYZ<Stencil,Parallel>>>;
 };
 
+#pragma omp parallel
+
 int main(int argc, char **argv){
     
     #ifdef PARALLEL
@@ -66,13 +68,14 @@ int main(int argc, char **argv){
         
         LBM.evolve(); //Evolve one timestep
         
-        if (timestep%10000==0) {
+        if (timestep%1==0) {
             if(CURPROCESSOR==0) std::cout<<"SAVING at timestep "<<timestep<<""<<std::endl;
             Density<double>::save("density",timestep);
             OrderParameter<double>::save("orderparameter",timestep);
             ChemicalPotential<double>::save("chemicalpotential",timestep);
             Velocity<double,NDIM>::save("velocity",timestep);
         }
+        
     }
     
     #ifdef PARALLEL

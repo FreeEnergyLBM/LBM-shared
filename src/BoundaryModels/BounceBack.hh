@@ -1,7 +1,6 @@
 #ifndef BOUCNEBACK_HEADER
 #define BOUCNEBACK_HEADER
 #include "../Parameters.hh"
-#include "../Boundary.hh"
 #include<iostream>
 
 class BounceBack{

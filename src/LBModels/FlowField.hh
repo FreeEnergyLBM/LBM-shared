@@ -112,9 +112,9 @@ const std::vector<double>& FlowField<traits>::getDistribution() const{
 template<class traits>
 void FlowField<traits>::precompute(){ //Perform necessary calculations before collision
 
-    int k=LY*LZ*MAXNEIGHBORS;
-    k = m_Data.iterateFluid0(k,false);
-    for (int k=0;k<N;k++){ //loop over k
+    
+    //k = m_Data.iterateFluid0(k,false);
+    for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
         if constexpr(std::tuple_size<typename traits::Forces>::value!=0){ //Check if there is at least one element
                                                                           //in F
@@ -123,7 +123,7 @@ void FlowField<traits>::precompute(){ //Perform necessary calculations before co
             }, mt_Forces);
         }
         else;
-        while(m_Geometry.isSolid(k+1)&&k<N){
+        while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
             k++;
         }
         //k = m_Data.iterateFluid(k,false); //increment k
@@ -149,9 +149,9 @@ double FlowField<traits>::computeForces(int xyz,int k) const{ //Return the sum o
 template<class traits>
 void FlowField<traits>::collide(){ //Collision step
 
-    int k=LY*LZ*MAXNEIGHBORS;
-    k = m_Data.iterateFluid0(k,false);
-    for (int k=0;k<N;k++){ //loop over k
+    //int k=LY*LZ*MAXNEIGHBORS;
+    //k = m_Data.iterateFluid0(k,false);
+    for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
         double* old_distribution=m_Distribution.getDistributionOldPointer(k);
@@ -161,7 +161,7 @@ void FlowField<traits>::collide(){ //Collision step
             //"computeCollisionQ"
             m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(k,old_distribution[idx],density[k],&velocity[k*traits::Stencil::D],idx);
         }
-        while(m_Geometry.isSolid(k+1)&&k<N){
+        while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
             k++;
         }
         //k = m_Data.iterateFluid(k,false); //increment k
@@ -175,8 +175,8 @@ void FlowField<traits>::collide(){ //Collision step
 template<class traits>
 void FlowField<traits>::boundaries(){ //Apply the boundary step
 
-    int k=0;
-    k = m_Data.iterateSolid0(k,true);
+    //int k=0;
+    //k = m_Data.iterateSolid0(k,true);
     
     for (int k=0;k<N;k++){ //loop over k
         
@@ -206,10 +206,10 @@ void FlowField<traits>::initialise(){ //Initialise model
 
     m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
-    int k=LY*LZ*MAXNEIGHBORS;
-    k = m_Data.iterateFluid0(k,false);
+    //int k=LY*LZ*MAXNEIGHBORS;
+    //k = m_Data.iterateFluid0(k,false);
 
-    for (int k=0;k<N;k++){ //loop over k
+    for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
         double* old_distribution=m_Distribution.getDistributionOldPointer(k);
@@ -227,7 +227,7 @@ void FlowField<traits>::initialise(){ //Initialise model
             old_distribution[idx]=equilibrium;        
 
         }
-        while(m_Geometry.isSolid(k+1)&&k<N){
+        while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
             k++;
         }
         //k = m_Data.iterateFluid(k,false); //increment k
@@ -240,9 +240,9 @@ void FlowField<traits>::initialise(){ //Initialise model
 template<class traits>
 void FlowField<traits>::computeMomenta(){ //Calculate Density and Velocity
 
-    int k=LY*LZ*MAXNEIGHBORS;
-    k = m_Data.iterateFluid0(k,false);
-    for (int k=0;k<N;k++){ //Loop over k
+    //int k=LY*LZ*MAXNEIGHBORS;
+    //k = m_Data.iterateFluid0(k,false);
+    for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //Loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
 
@@ -250,7 +250,7 @@ void FlowField<traits>::computeMomenta(){ //Calculate Density and Velocity
         velocity[k*traits::Stencil::D+x]=computeVelocity(distribution,density[k],x,k); //Calculate velocities
         velocity[k*traits::Stencil::D+y]=computeVelocity(distribution,density[k],y,k);
         velocity[k*traits::Stencil::D+z]=computeVelocity(distribution,density[k],z,k);
-        while(m_Geometry.isSolid(k+1)&&k<N){
+        while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
             k++;
         }
         //k = m_Data.iterateFluid(k,false); //increment k

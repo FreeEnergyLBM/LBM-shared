@@ -6,6 +6,7 @@
 #include "../BoundaryModels/Boundaries.hh"
 #include "../Forces/Forces.hh"
 #include <utility>
+#include <array>
 
 //FlowField.hh: Contains the details of the LBM model to solve the Navier-Stokes and continuity equation. Each
 //Model is given a "traits" class that contains stencil, data, force and boundary information
@@ -52,9 +53,9 @@ double FlowFieldBinary<traits>::computeEquilibrium(const double& density,const d
 template<class traits>
 void FlowFieldBinary<traits>::collide(){ //Collision step
 
-    int k=LY*LZ*MAXNEIGHBORS;
-    k = FlowField<traits>::m_Data.iterateFluid0(k,false);
-    for (int k=0;k<N;k++){ //loop over k
+    //int k=LY*LZ*MAXNEIGHBORS;
+    //k = FlowField<traits>::m_Data.iterateFluid0(k,false);
+    for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
         double* distribution=FlowField<traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution=FlowField<traits>::m_Distribution.getDistributionOldPointer(k);
@@ -64,7 +65,7 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
             //"computeCollisionQ"
             FlowField<traits>::m_Distribution.getDistributionPointer(FlowField<traits>::m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(sum,k,old_distribution[idx],FlowField<traits>::density[k],&FlowField<traits>::velocity[k*traits::Stencil::D],idx);
         }
-        while(FlowField<traits>::m_Geometry.isSolid(k+1)&&k<N){
+        while(FlowField<traits>::m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
             k++;
         }
         //k = FlowField<traits>::m_Data.iterateFluid(k,false); //increment k
@@ -80,10 +81,10 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
 
     FlowField<traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
-    int k=LY*LZ*MAXNEIGHBORS;
-    k = FlowField<traits>::m_Data.iterateFluid0(k,false);
+    //int k=LY*LZ*MAXNEIGHBORS;
+    //k = FlowField<traits>::m_Data.iterateFluid0(k,false);
 
-    for (int k=0;k<N;k++){ //loop over k
+    for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
         double* distribution=FlowField<traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution=FlowField<traits>::m_Distribution.getDistributionOldPointer(k);
@@ -103,7 +104,7 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
             old_distribution[idx]=equilibrium;        
 
         }
-        while(FlowField<traits>::m_Geometry.isSolid(k+1)&&k<N){
+        while(FlowField<traits>::m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
             k++;
         }
         //k = FlowField<traits>::m_Data.iterateFluid(k,false); //increment k
