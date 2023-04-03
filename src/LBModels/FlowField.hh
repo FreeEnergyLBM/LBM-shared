@@ -115,7 +115,7 @@ void FlowField<traits>::precompute(){ //Perform necessary calculations before co
     
     //k = m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
-    #pragma omp for
+    #pragma omp parallel for schedule( static )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -126,9 +126,9 @@ void FlowField<traits>::precompute(){ //Perform necessary calculations before co
             }, mt_Forces);
         }
         else;
-        while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-            k++;
-        }
+        //while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
+        //    k++;
+        //}
         //k = m_Data.iterateFluid(k,false); //increment k
 
     }
@@ -155,7 +155,7 @@ void FlowField<traits>::collide(){ //Collision step
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
-    #pragma omp for
+    #pragma omp parallel for schedule( static )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -167,9 +167,9 @@ void FlowField<traits>::collide(){ //Collision step
             //"computeCollisionQ"
             m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(k,old_distribution[idx],density[k],&velocity[k*traits::Stencil::D],idx);
         }
-        while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-            k++;
-        }
+        //while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
+        //    k++;
+        //}
         //k = m_Data.iterateFluid(k,false); //increment k
         
     }
@@ -184,7 +184,7 @@ void FlowField<traits>::boundaries(){ //Apply the boundary step
     //int k=0;
     //k = m_Data.iterateSolid0(k,true);
     #ifdef OMPPARALLEL
-    #pragma omp for
+    #pragma omp parallel for schedule( static )
     #endif
     for (int k=0;k<N;k++){ //loop over k
         
@@ -217,7 +217,7 @@ void FlowField<traits>::initialise(){ //Initialise model
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
-    #pragma omp for
+    #pragma omp parallel for schedule( static )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -237,9 +237,9 @@ void FlowField<traits>::initialise(){ //Initialise model
             old_distribution[idx]=equilibrium;        
 
         }
-        while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-            k++;
-        }
+        //while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
+        //    k++;
+        //}
         //k = m_Data.iterateFluid(k,false); //increment k
         
     }
@@ -253,7 +253,7 @@ void FlowField<traits>::computeMomenta(){ //Calculate Density and Velocity
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
-    #pragma omp for
+    #pragma omp parallel for schedule( static )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //Loop over k
 
@@ -263,9 +263,9 @@ void FlowField<traits>::computeMomenta(){ //Calculate Density and Velocity
         velocity[k*traits::Stencil::D+x]=computeVelocity(distribution,density[k],x,k); //Calculate velocities
         velocity[k*traits::Stencil::D+y]=computeVelocity(distribution,density[k],y,k);
         velocity[k*traits::Stencil::D+z]=computeVelocity(distribution,density[k],z,k);
-        while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-            k++;
-        }
+        //while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
+        //    k++;
+        //}
         //k = m_Data.iterateFluid(k,false); //increment k
 
     }

@@ -7,6 +7,7 @@
 #include "../Forces/Forces.hh"
 #include <utility>
 #include <array>
+#include <omp.h>
 
 //FlowField.hh: Contains the details of the LBM model to solve the Navier-Stokes and continuity equation. Each
 //Model is given a "traits" class that contains stencil, data, force and boundary information
@@ -16,9 +17,6 @@ class FlowFieldBinary:public FlowField<traits>{ //Inherit from base class to avo
                                                          //calculations
     
     public:
-        FlowFieldBinary(typename traits::Forces& forces,typename traits::Boundaries& boundaries):FlowField<traits>(forces,boundaries){}
-        FlowFieldBinary(typename traits::Forces& forces):FlowField<traits>(forces){}
-        FlowFieldBinary(typename traits::Boundaries& boundaries):FlowField<traits>(boundaries){}
         FlowFieldBinary():FlowField<traits>(){}
 
         virtual void collide() override; //Collision step
@@ -56,7 +54,8 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = FlowField<traits>::m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
-    #pragma omp for
+    double CollideStartTime=omp_get_wtime();
+    #pragma omp parallel for schedule( static )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -68,13 +67,16 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
             //"computeCollisionQ"
             FlowField<traits>::m_Distribution.getDistributionPointer(FlowField<traits>::m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(sum,k,old_distribution[idx],FlowField<traits>::density[k],&FlowField<traits>::velocity[k*traits::Stencil::D],idx);
         }
-        while(FlowField<traits>::m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-            k++;
-        }
+        //while(FlowField<traits>::m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
+        //    k++;
+        //}
         //k = FlowField<traits>::m_Data.iterateFluid(k,false); //increment k
         
+        
     }
-    
+    #ifdef OMPPARALLEL
+    TOTALTIME+=omp_get_wtime()-CollideStartTime;
+    #endif
     FlowField<traits>::m_Data.communicateDistribution();
     
 }
@@ -87,7 +89,7 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = FlowField<traits>::m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
-    #pragma omp for
+    #pragma omp parallel for schedule( static )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -109,9 +111,9 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
             old_distribution[idx]=equilibrium;        
 
         }
-        while(FlowField<traits>::m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-            k++;
-        }
+        //while(FlowField<traits>::m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
+        //    k++;
+        //}
         //k = FlowField<traits>::m_Data.iterateFluid(k,false); //increment k
         
     }

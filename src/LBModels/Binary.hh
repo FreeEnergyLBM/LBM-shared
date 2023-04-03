@@ -115,7 +115,7 @@ void Binary<traits>::precompute(){
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
-    #pragma omp for
+    #pragma omp parallel for schedule( static )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -126,9 +126,9 @@ void Binary<traits>::precompute(){
             }, mt_Forces);
         }
         else;
-        while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-            k++;
-        }
+        //while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
+        //    k++;
+        //}
         //k = m_Data.iterateFluid(k,false); //increment k
         
     }
@@ -155,7 +155,7 @@ void Binary<traits>::collide(){
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
-    #pragma omp for
+    #pragma omp parallel for schedule( static )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -169,9 +169,9 @@ void Binary<traits>::collide(){
             m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(sum,k,old_distribution[idx],orderparameter[k],&velocity[k*traits::Stencil::D],idx);
             
         }
-        while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-            k++;
-        }
+        //while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
+        //    k++;
+        //}
         //k = m_Data.iterateFluid(k,false); //increment k
 
         
@@ -187,7 +187,7 @@ void Binary<traits>::boundaries(){
     //int k=0;
     //k = m_Data.iterateSolid0(k,true);
     #ifdef OMPPARALLEL
-    #pragma omp for
+    #pragma omp parallel for schedule( static )
     #endif
     for (int k=0;k<N;k++){ //loop over k
 
@@ -220,7 +220,7 @@ void Binary<traits>::initialise(){ //Initialise model
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
-    #pragma omp for
+    #pragma omp parallel for schedule( static )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -242,9 +242,9 @@ void Binary<traits>::initialise(){ //Initialise model
             old_distribution[idx]=equilibrium;        
 
         }
-        while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-            k++;
-        }
+        //while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
+        //    k++;
+        //}
         //k = m_Data.iterateFluid(k,false); //increment k
 
     }
@@ -257,16 +257,16 @@ void Binary<traits>::computeMomenta(){ //Calculate order parameter
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
-    #pragma omp for
+    #pragma omp parallel for schedule( static )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //Loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
 
         orderparameter[k]=computeOrderParameter(distribution,k);
-        while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-            k++;
-        }
+        //while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
+        //    k++;
+        //}
         //k = m_Data.iterateFluid(k,false); //increment k
 
     }

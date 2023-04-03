@@ -63,27 +63,12 @@ int main(int argc, char **argv){
     Binary<traitPhaseField> o_PhaseField;
 
     Algorithm<FlowFieldBinary<traitFlowField>,Binary<traitPhaseField>> LBM(o_FlowField,o_PhaseField);
-    #ifdef OMPPARALLEL
-    #pragma omp parallel
-    {   
-    #endif
+    LBM.initialise(); //Perform necessary initialisation
     
-        LBM.initialise(); //Perform necessary initialisation
-    
-    #ifdef OMPPARALLEL
-    }
-    #endif
     for (int timestep=0;timestep<=TIMESTEPS;timestep++){
-        #ifdef OMPPARALLEL
-        #pragma omp parallel
-        {
-        #endif
 
-            LBM.evolve(); //Evolve one timestep
+        LBM.evolve(); //Evolve one timestep
 
-        #ifdef OMPPARALLEL
-        }
-        #endif
         if (timestep%1000==0) {
             if(CURPROCESSOR==0) std::cout<<"SAVING at timestep "<<timestep<<""<<std::endl;
             Density<double>::save("density",timestep);
@@ -97,6 +82,8 @@ int main(int argc, char **argv){
     #ifdef MPIPARALLEL
     MPI_Finalize();
     #endif
-    
+    #ifdef OMPPARALLEL
+    std::cout<<TOTALTIME<<std::endl;
+    #endif
     return 0;
 }
