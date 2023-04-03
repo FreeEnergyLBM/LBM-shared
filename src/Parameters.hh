@@ -124,7 +124,7 @@ void Parameter<obj,T,num>::save(std::string filename,int t){ //Function to save 
     char fdump[512];
     sprintf(fdump, (DATA_DIR+filename+"_t%li.mat").c_str(),t); //Buffer containing file name and location.
 
-#ifdef PARALLEL //When MPI is used we need a different approach for saving as all nodes are trying to write to the file
+#ifdef MPIPARALLEL //When MPI is used we need a different approach for saving as all nodes are trying to write to the file
 
     MPI_File fh;
 

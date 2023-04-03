@@ -55,6 +55,9 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
 
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = FlowField<traits>::m_Data.iterateFluid0(k,false);
+    #ifdef OMPPARALLEL
+    #pragma omp for
+    #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
         double* distribution=FlowField<traits>::m_Distribution.getDistributionPointer(k);
@@ -83,7 +86,9 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
     
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = FlowField<traits>::m_Data.iterateFluid0(k,false);
-
+    #ifdef OMPPARALLEL
+    #pragma omp for
+    #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
         double* distribution=FlowField<traits>::m_Distribution.getDistributionPointer(k);

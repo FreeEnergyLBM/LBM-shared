@@ -11,6 +11,8 @@
 #include "../../src/Parameters.hh"
 
 #include <iostream>
+#include <omp.h>
+#include <mpi.h>
 
 //TODO BEFORE HACKATHON
 //EXCEPTIONS & CLEANUP
@@ -42,17 +44,17 @@ struct traitPhaseField{
     using Forces=std::tuple<OrderParameterGradients<CentralXYZ<Stencil,Parallel>>>;
 };
 
-#pragma omp parallel
+
 
 int main(int argc, char **argv){
     
-    #ifdef PARALLEL
+    #ifdef MPIPARALLEL
     MPI_Init(&argc, &argv);                                            // Initialise parallelisation based on arguments given
     MPI_Comm_size(MPI_COMM_WORLD, &NUMPROCESSORS);                              // Store number of processors
     MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
     Parallel<NO_NEIGHBOR> initialise;
     #endif
-    
+
     system("mkdir data");
     DATA_DIR="data/"; //TEMPORARY used to save output
 
@@ -61,14 +63,28 @@ int main(int argc, char **argv){
     Binary<traitPhaseField> o_PhaseField;
 
     Algorithm<FlowFieldBinary<traitFlowField>,Binary<traitPhaseField>> LBM(o_FlowField,o_PhaseField);
-
-    LBM.initialise(); //Perform necessary initialisation
+    #ifdef OMPPARALLEL
+    #pragma omp parallel
+    {   
+    #endif
     
+        LBM.initialise(); //Perform necessary initialisation
+    
+    #ifdef OMPPARALLEL
+    }
+    #endif
     for (int timestep=0;timestep<=TIMESTEPS;timestep++){
-        
-        LBM.evolve(); //Evolve one timestep
-        
-        if (timestep%1==0) {
+        #ifdef OMPPARALLEL
+        #pragma omp parallel
+        {
+        #endif
+
+            LBM.evolve(); //Evolve one timestep
+
+        #ifdef OMPPARALLEL
+        }
+        #endif
+        if (timestep%1000==0) {
             if(CURPROCESSOR==0) std::cout<<"SAVING at timestep "<<timestep<<""<<std::endl;
             Density<double>::save("density",timestep);
             OrderParameter<double>::save("orderparameter",timestep);
@@ -78,7 +94,7 @@ int main(int argc, char **argv){
         
     }
     
-    #ifdef PARALLEL
+    #ifdef MPIPARALLEL
     MPI_Finalize();
     #endif
     

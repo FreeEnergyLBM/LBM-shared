@@ -1,7 +1,7 @@
 
 INCS	=	
 
-DEFS    =	   -O2 -Wno-deprecated -Wno-unused-result -Wall -std=c++17  -I.
+DEFS    =	   -O2 -fopenmp -Wno-deprecated -Wno-unused-result -Wall -std=c++17  -I. -DOMPPARALLEL
 
 LIBS	=	-lm
 

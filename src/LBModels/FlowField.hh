@@ -114,6 +114,9 @@ void FlowField<traits>::precompute(){ //Perform necessary calculations before co
 
     
     //k = m_Data.iterateFluid0(k,false);
+    #ifdef OMPPARALLEL
+    #pragma omp for
+    #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
         if constexpr(std::tuple_size<typename traits::Forces>::value!=0){ //Check if there is at least one element
@@ -151,6 +154,9 @@ void FlowField<traits>::collide(){ //Collision step
 
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = m_Data.iterateFluid0(k,false);
+    #ifdef OMPPARALLEL
+    #pragma omp for
+    #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
@@ -177,7 +183,9 @@ void FlowField<traits>::boundaries(){ //Apply the boundary step
 
     //int k=0;
     //k = m_Data.iterateSolid0(k,true);
-    
+    #ifdef OMPPARALLEL
+    #pragma omp for
+    #endif
     for (int k=0;k<N;k++){ //loop over k
         
         if constexpr(std::tuple_size<typename traits::Boundaries>::value!=0){ //Check if there are any boundary
@@ -208,7 +216,9 @@ void FlowField<traits>::initialise(){ //Initialise model
     
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = m_Data.iterateFluid0(k,false);
-
+    #ifdef OMPPARALLEL
+    #pragma omp for
+    #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
@@ -242,6 +252,9 @@ void FlowField<traits>::computeMomenta(){ //Calculate Density and Velocity
 
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = m_Data.iterateFluid0(k,false);
+    #ifdef OMPPARALLEL
+    #pragma omp for
+    #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //Loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
