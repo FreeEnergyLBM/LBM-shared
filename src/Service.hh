@@ -19,17 +19,6 @@
 
 //Sertive.hh: This will contain some commonly used functions with various uses.
 
-template<class model>
-void LBMPrint(model& m){//THIS IS TEMPORARY SO IGNORE
-    std::cout<<"Distributions: "<<std::flush;
-    for(int i=0;i<9;i++)std::cout<<m.getDistribution()[i+9*15]<<" "<<std::flush;
-    std::cout<<std::endl;
-    std::cout<<"Density: "<<m.getDensity(15)<<" "<<std::endl;
-    std::cout<<"Velocity: "<<std::flush;
-    for(int i=0;i<2;i++)std::cout<<m.getVelocity()[15*2+i]<<" "<<std::flush;
-    std::cout<<std::endl;
-}
-
 int computeX(const int k) //Compute X direction from a given k, the convention in this code is that
                           //k will iterate over the z direction first, then increment y by 1 once it reaches LZ,
                           //then repeat the iteration over z. Once it reaches LY x will be incremented and this
@@ -53,13 +42,6 @@ int computeZ(const int k) //Compute Y direction from a given k, this uses inform
 
   return k-computeX(k)*LZ*LY-computeY(k)*LZ;
 
-}
-
-template<typename... T>
-std::tuple<T...> GenerateTuple(T&&... Objects){ //Returns a tuple from a number of objects passed to it.
-                                                //I've done this in an effort to reduce the number of visible
-                                                //templates in the code but I might get rid of it.
-    return std::tuple<T...>(Objects...);
 }
 
 

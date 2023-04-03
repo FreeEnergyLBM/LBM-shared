@@ -15,16 +15,7 @@ class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from b
                                                          //calculations
     public:
         //Constructors to construct tuples of forces and boundaries
-        FlowField(typename traits::Forces& forces,typename traits::Boundaries& boundaries):m_Data(),mt_Forces(forces),mt_Boundaries(boundaries),m_Density(),m_Velocity(){
-            
-        }
-        FlowField(typename traits::Forces& forces):m_Data(),mt_Forces(forces),mt_Boundaries(std::tuple<>()),m_Density(),m_Velocity(){
-            
-        }
-        FlowField(typename traits::Boundaries& boundaries):m_Data(),mt_Forces(std::tuple<>()),mt_Boundaries(boundaries),m_Density(),m_Velocity(){
-            
-        }
-        FlowField():m_Data(),mt_Forces(std::tuple<>()),mt_Boundaries(std::tuple<>()),m_Density(),m_Velocity(){
+        FlowField():mt_Forces(*new typename traits::Forces),mt_Boundaries(*new typename traits::Boundaries){
             
         }
 
@@ -72,7 +63,7 @@ class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from b
 
         Density<double> m_Density; //Density
 
-        Velocity<double,traits::Stencil::D> m_Velocity; //Velocity
+        Velocity<double,NDIM> m_Velocity; //Velocity
 
         Distribution_Base<typename traits::Stencil>& m_Distribution=m_Data.template getDistributionObject();
             //Distributions

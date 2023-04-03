@@ -7,16 +7,21 @@ class Parallel{
         Parallel(){
 #ifdef PARALLEL
             if(MAXNEIGHBORS<num_neighbors) MAXNEIGHBORS=num_neighbors;
-
+        
             if (LX%NUMPROCESSORS==0) {
                 LXdiv=(LX/NUMPROCESSORS+2*num_neighbors);
             }
+            else{
+                throw runtime_error(std::string("Currently, the number of cores must be divisible by the size of the domain in the x direction."));
+            }
+            /*
             else if (CURPROCESSOR<LX%NUMPROCESSORS){
                 LXdiv=((LX-LX%NUMPROCESSORS)/NUMPROCESSORS+1+2*num_neighbors);
             }
             else {
                 LXdiv=((LX-LX%NUMPROCESSORS)/NUMPROCESSORS+2*num_neighbors);
             }
+            */
             N=LXdiv*LY*LZ;
 #endif
         }

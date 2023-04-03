@@ -1,10 +1,10 @@
 #ifndef CXYZGRADIENT_HEADER
 #define CXYZGRADIENT_HEADER
 
-template<class data>
+template<class stencil, class parallel>
 struct CentralXYZ{
 
-    data m_Data;
+    Data_Base<stencil,parallel> m_Data;
 
     template<class parameter>
     inline double computeFirstDerivative(const parameter& val,const int direciton,const int k);
@@ -16,18 +16,18 @@ struct CentralXYZ{
     
 };
 
-template<class data>
+template<class stencil, class parallel>
 template<class parameter>
-double CentralXYZ<data>::computeFirstDerivative(const parameter& val,const int direction,const int k){
+double CentralXYZ<stencil,parallel>::computeFirstDerivative(const parameter& val,const int direction,const int k){
 
     double temp=0;
-    for (int idx=0;idx<data::Stencil::Q;idx++){
+    for (int idx=0;idx<stencil::Q;idx++){
         
-        if((m_Geometry.isSolid(m_Data.getNeighbors()[k*data::Stencil::Q+idx]))){
-            temp+=1.0/data::Stencil::Cs2*data::Stencil::Weights[idx]*data::Stencil::Ci_xyz(direction)[idx]*0.5*(val.getParameter(m_Data.getNeighbors()[k*data::Stencil::Q+data::Stencil::Opposites[idx]]));
+        if((m_Geometry.isSolid(m_Data.getNeighbors()[k*stencil::Q+idx]))){
+            temp+=1.0/stencil::Cs2*stencil::Weights[idx]*stencil::Ci_xyz(direction)[idx]*0.5*(val.getParameter(m_Data.getNeighbors()[k*stencil::Q+stencil::Opposites[idx]]));
         }
         else{
-            temp+=1.0/data::Stencil::Cs2*data::Stencil::Weights[idx]*data::Stencil::Ci_xyz(direction)[idx]*0.5*(val.getParameter(m_Data.getNeighbors()[k*data::Stencil::Q+idx]));
+            temp+=1.0/stencil::Cs2*stencil::Weights[idx]*stencil::Ci_xyz(direction)[idx]*0.5*(val.getParameter(m_Data.getNeighbors()[k*stencil::Q+idx]));
         }
         
     }
@@ -35,14 +35,14 @@ double CentralXYZ<data>::computeFirstDerivative(const parameter& val,const int d
 
 }
 
-template<class data>
+template<class stencil, class parallel>
 template<class parameter>
-double CentralXYZ<data>::computeLaplacian(const parameter& val,const int k){
+double CentralXYZ<stencil,parallel>::computeLaplacian(const parameter& val,const int k){
 
     double temp=0;
-    for (int idx=0;idx<data::Stencil::Q;idx++){
+    for (int idx=0;idx<stencil::Q;idx++){
     
-        if((!m_Geometry.isSolid(m_Data.getNeighbors()[k*data::Stencil::Q+idx]))) temp+=1.0/data::Stencil::Cs2*data::Stencil::Weights[idx]*2*(val.getParameter(m_Data.getNeighbors()[k*data::Stencil::Q+idx])-val.getParameter(k));
+        if((!m_Geometry.isSolid(m_Data.getNeighbors()[k*stencil::Q+idx]))) temp+=1.0/stencil::Cs2*stencil::Weights[idx]*2*(val.getParameter(m_Data.getNeighbors()[k*stencil::Q+idx])-val.getParameter(k));
 
     }
     return temp;

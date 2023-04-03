@@ -19,6 +19,7 @@ using namespace std;
 
 struct D2Q9{ //Most commonly used 2D stencil
     static const int D=2; //Number of cartesian directions
+
     static const int Q=9; //Number of velocity directions
     static constexpr double Cs2=0.33333333333333; //Speed of sound squared
     static constexpr int Ci_x[Q]={0,1,-1,0,0,1,-1,1,-1}; //Vectors of velocity directions
@@ -61,6 +62,7 @@ struct D2Q9{ //Most commonly used 2D stencil
 
 struct D3Q19{ //Most commonly used 3D stencil
     static constexpr int D=3;
+
     static constexpr int Q=19;
     static constexpr double Cs2=0.33333333333333;
     static constexpr int Ci_x[Q]={0,1,-1,0,0,0,0,1,-1,1,-1,0,0,0,0,1,-1,1,-1};

@@ -119,18 +119,18 @@ template<class obj,typename T,int num>
 vector<T> Parameter<obj,T,num>::mv_Parameter; //Must allocate memory for static vector outside of class
 
 template<class obj,typename T,int num>
-void Parameter<obj,T,num>::save(std::string filename,int t){ //Must allocate memory for static vector outside of class
+void Parameter<obj,T,num>::save(std::string filename,int t){ //Function to save parameter stored in this class
 
     char fdump[512];
-    sprintf(fdump, (DATA_DIR+filename+"_t%li.mat").c_str(),t);
+    sprintf(fdump, (DATA_DIR+filename+"_t%li.mat").c_str(),t); //Buffer containing file name and location.
 
-#ifdef PARALLEL
+#ifdef PARALLEL //When MPI is used we need a different approach for saving as all nodes are trying to write to the file
 
     MPI_File fh;
 
-    MPI_File_open(MPI_COMM_SELF, fdump,MPI_MODE_CREATE | MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
+    MPI_File_open(MPI_COMM_SELF, fdump,MPI_MODE_CREATE | MPI_MODE_WRONLY,MPI_INFO_NULL,&fh); //Open the file using mpi in write only mode
 
-    MPI_File_seek(fh,sizeof(double)*CURPROCESSOR*num*(LX*LY*LZ)/NUMPROCESSORS,MPI_SEEK_SET);
+    MPI_File_seek(fh,sizeof(double)*CURPROCESSOR*num*(LX*LY*LZ)/NUMPROCESSORS,MPI_SEEK_SET); //Skip to a certain location in the file, currently
     for (int k = MAXNEIGHBORS*LY*LZ; k < N-MAXNEIGHBORS*LY*LZ; k++ ) { 
 
         for(int idx=0;idx<num;idx++) MPI_File_write(fh,&mv_Parameter[k*num+idx],1,MPI_DOUBLE,&status);
@@ -165,20 +165,20 @@ template<typename T>
 struct Density : public Parameter<Density<T>,T,1>{}; //Density
 
 template<typename T>
-struct ChemicalPotential : public Parameter<ChemicalPotential<T>,T,1>{}; //Density
-
-template<typename T>
-struct LaplacianOrderParameter : public Parameter<LaplacianOrderParameter<T>,T,1>{}; //Density
-
-template<typename T,int ndim>
-struct GradientOrderParameter : public Parameter<GradientOrderParameter<T,ndim>,T,ndim>{}; //Density
-
-template<typename T>
 struct Pressure : public Parameter<Pressure<T>,T,1>{}; //Presure
 
 template<typename T>
 struct OrderParameter : public Parameter<OrderParameter<T>,T,1>{}; //Order parameter representing relative
                                                                    //concentration of the phases
+
+template<typename T>
+struct ChemicalPotential : public Parameter<ChemicalPotential<T>,T,1>{}; //Chemical potential for the multicomponent model
+
+template<typename T>
+struct LaplacianOrderParameter : public Parameter<LaplacianOrderParameter<T>,T,1>{}; //Laplacian of the order parameter
+
+template<typename T,int ndim>
+struct GradientOrderParameter : public Parameter<GradientOrderParameter<T,ndim>,T,ndim>{}; //Directional first order gradients of the order parameter
 
 struct SolidLabels : public Parameter<SolidLabels,int,1>{}; //Labelling of geometry
 

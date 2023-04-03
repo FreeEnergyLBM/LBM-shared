@@ -12,6 +12,7 @@
 
 template<class stencil> //Stencil is needed for moment calculations
 class CollisionBase{
+    static_assert(stencil::D==NDIM,"ERROR: The chosen stencil must match the number of lattice dimensions (NDIM) chosen in Global.hh.");
     public:
 
         double computeGamma(const double* velocity, const int idx) const; //Gamma is the standard

@@ -13,16 +13,7 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
                                                       //calculations
     public:
         //Constructors to construct tuples of forces and boundaries
-        Binary(typename traits::Forces& forces,typename traits::Boundaries& boundaries):mt_Forces(forces),mt_Boundaries(boundaries){
-            
-        }
-        Binary(typename traits::Forces& forces):mt_Forces(forces),mt_Boundaries(std::tuple<>()){
-            
-        }
-        Binary(typename traits::Boundaries& boundaries):mt_Forces(std::tuple<>()),mt_Boundaries(boundaries){
-            
-        }
-        Binary():mt_Forces(std::tuple<>()),mt_Boundaries(std::tuple<>()){
+        Binary():mt_Forces(*new typename traits::Forces),mt_Boundaries(*new typename traits::Boundaries){
             
         }
 
@@ -66,7 +57,7 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         OrderParameter<double> m_OrderParameter; //Order Parameter
 
-        Velocity<double,traits::Stencil::D> m_Velocity; //Velocity
+        Velocity<double,NDIM> m_Velocity; //Velocity
 
         Distribution_Base<typename traits::Stencil>& m_Distribution=m_Data.template getDistributionObject();
             //Distributions
