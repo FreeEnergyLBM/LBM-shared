@@ -1,2 +1,4 @@
 *.out
 *.mat
+tests/SingleLatticePoint/wetP
+tests/SingleLatticePoint/data/*.mat
