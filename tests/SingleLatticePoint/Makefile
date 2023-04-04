@@ -1,7 +1,7 @@
 
 INCS	=	
 
-DEFS    =	   -O2 -fopenmp --offload=-march=gfx90a -Wno-deprecated -Wno-unused-result -Wall -std=c++17  -I. -DOMPPARALLEL
+DEFS    =	   -O2 -fopenmp --offload-arch=gfx90a -Wno-deprecated -Wno-unused-result -Wall -std=c++17  -I. -DOMPPARALLEL
 
 LIBS	=	-lm
 

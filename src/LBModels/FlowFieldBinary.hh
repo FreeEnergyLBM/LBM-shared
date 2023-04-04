@@ -19,25 +19,23 @@ class FlowFieldBinary:public FlowField<traits>{ //Inherit from base class to avo
     public:
         FlowFieldBinary():FlowField<traits>(){}
 
-        virtual void collide() override; //Collision step
+        void collide(); //Collision step
 
         virtual void initialise() override; //Initialisation step
 
     private:
-        double computeEquilibrium(const double& density,const double* velocity,const double& order_parameter,const double& chemical_potential,const int idx,const int k) const; //Calculate equilibrium in direction idx with a given
-                                                        //density and velocity
-
+        #pragma omp begin declare target
+        double computeEquilibrium(const double& density,const double* velocity,const double& order_parameter,const double& chemical_potential,const int idx,const int k) const; //Calculate equilibrium in direction idx with a given//density and velocity
         double computeCollisionQ(double& sum,const int k,const double& old,const double& density,
-                                            const double* velocity,const double& order_parameter,const double& chemical_potential,const int idx) const; //Calculate collision
-                                                                                           //at index idx
-        
+                                            const double* velocity,const double& order_parameter,const double& chemical_potential,const int idx) const; //Calculate collision                                                                             //at index idx
+        #pragma omp end declare target
 
         OrderParameter<double> m_OrderParameter;
         ChemicalPotential<double> m_ChemicalPotential;
         enum{x=0,y=1,z=2};
 
 };
-
+#pragma omp begin declare target
 template<class traits>
 double FlowFieldBinary<traits>::computeEquilibrium(const double& density,const double* velocity,const double& order_parameter,const double& chemical_potential,const int idx,const int k) const{
 
@@ -46,6 +44,7 @@ double FlowFieldBinary<traits>::computeEquilibrium(const double& density,const d
                                                                                         //case
 
 }
+#pragma omp end declare target
 
 template<class traits>
 void FlowFieldBinary<traits>::collide(){ //Collision step
@@ -53,6 +52,7 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = FlowField<traits>::m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
+    //#pragma omp target enter data map(to:FlowField<traits>::m_InverseTau,D2Q9::Ci_x[0:9],D2Q9::Ci_y[0:9],D2Q9::Ci_z[0:9],D2Q9::Weights[0:9])
     double CollideStartTime=omp_get_wtime();
     //#pragma omp parallel for schedule( static )
     double* old_distribution=FlowField<traits>::m_Distribution.getDistributionOldPointer(0);
@@ -63,11 +63,11 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
     double* chemical_potential_local=&m_ChemicalPotential.getParameter(0);
     int* neighbors=&FlowField<traits>::m_Distribution.mv_DistNeighbors[0];
 
-    //#pragma omp target data map(to:old_distribution[0:traits::Stencil::Q*N],density_local[0:N],velocity_local[0:N*traits::Stencil::D],neighbors[0:traits::Stencil::Q*N])\
+    #pragma omp target data map(to:old_distribution[0:traits::Stencil::Q*N],density_local[0:N],velocity_local[0:N*traits::Stencil::D],neighbors[0:traits::Stencil::Q*N])\
                                 map(tofrom:distribution[0:traits::Stencil::Q*N])
     {
-    //#pragma omp target teams distribute parallel for 
-    #pragma omp parallel for
+    #pragma omp target teams distribute parallel for device(0)
+    //#pragma omp parallel for
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -125,13 +125,13 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
     }
     
 }
-
+#pragma omp begin declare target
 template<class traits>
 double FlowFieldBinary<traits>::computeCollisionQ(double& sum,const int k,const double& old,const double& density,
                                             const double* velocity,const double& order_parameter,const double& chemical_potential,const int idx) const{
                                             //Calculate collision step at a given velocity index at point k
-
-    std::array<double,traits::Stencil::D> forcexyz; //Temporary array storing force in each cartesian direction
+    
+    double forcexyz[traits::Stencil::D]; //Temporary array storing force in each cartesian direction
 
     //Force is the sum of model forces and given forces
     for(int xyz=0;xyz<traits::Stencil::D;xyz++) forcexyz[xyz]=FlowField<traits>::computeModelForce(xyz,k)+FlowField<traits>::computeForces(xyz,k);
@@ -147,7 +147,7 @@ double FlowFieldBinary<traits>::computeCollisionQ(double& sum,const int k,const 
     else return density-sum+CollisionBase<typename traits::Stencil>::forceSRT(forcexyz,velocity,FlowField<traits>::m_InverseTau,idx);
 
 }
-
+#pragma omp end declare target
 
 
 #endif

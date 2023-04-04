@@ -280,7 +280,7 @@ double Binary<traits>::computeCollisionQ(double& sum,const int k,const double& o
                                          const double* velocity,const int idx) const{
                                         //Calculate collision step at a given velocity index at point k
     
-    std::array<double,traits::Stencil::D> forcexyz; //Temporary array storing force in each cartesian direction
+    double forcexyz[traits::Stencil::D]; //Temporary array storing force in each cartesian direction
 
     //Force is the sum of model forces and given forces
     for(int xyz=0;xyz< traits::Stencil::D;xyz++) forcexyz[xyz]=computeModelForce(xyz,k)+computeForces(xyz,k);

@@ -16,15 +16,18 @@ using namespace std;
 //LBM collision step "Weights[Q]", the modulus of velocity vectors depending on the direciton "CModulus", a
 //currently not implemented array of MRT moments "Moments[Q]" and a function to calculate MRT relaxation times
 //"MRTWeights()".
-
+#pragma omp begin declare target
 struct D2Q9{ //Most commonly used 2D stencil
+    
     static const int D=2; //Number of cartesian directions
-
+    
     static const int Q=9; //Number of velocity directions
     static constexpr double Cs2=0.33333333333333; //Speed of sound squared
+    
     static constexpr int Ci_x[Q]={0,1,-1,0,0,1,-1,1,-1}; //Vectors of velocity directions
-    static constexpr int Ci_y[Q]={0,0,0,1,-1,1,-1,-1,1}; //There is no convecntion for the ordering of these 
+    static constexpr int Ci_y[Q]={0,0,0,1,-1,1,-1,-1,1}; //There is no convecntion for the ordering of these
     static constexpr int Ci_z[Q]={0,0,0,0,0,0,0,0,0}; //0 array because there is no z direction
+    
     enum{x=0,y=1,z=2};
     static auto Ci_xyz(const int d)->const int(&)[Q]{ //Returns velocity direction vector depending on input d
         if (d==x) {
@@ -41,7 +44,9 @@ struct D2Q9{ //Most commonly used 2D stencil
         }
     }
     static constexpr int Opposites[Q]={0,2,1,4,3,6,5,8,7}; //Opposite vector at a given index
+    
     static constexpr double Weights[Q]={4.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0}; //Lattice weights
+    
     template<int idx>
     static constexpr int CModulus=Ci_x[idx]*Ci_x[idx]+Ci_y[idx]*Ci_y[idx]; //Returns the modulus of the velocity vector at a given index, used for the MRT weight calculation
 
@@ -59,7 +64,7 @@ struct D2Q9{ //Most commonly used 2D stencil
         return {0,1,1,0,1,0,1,invtau,invtau};
     }
 };
-
+#pragma omp end declare target
 struct D3Q19{ //Most commonly used 3D stencil
     static constexpr int D=3;
 
