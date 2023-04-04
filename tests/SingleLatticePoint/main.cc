@@ -58,8 +58,7 @@ int main(int argc, char **argv){
     MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
     Parallel<NO_NEIGHBOR> initialise;
     #endif
-    double test[2]={0.0,0.0};
-    #pragma omp target data map(to:test[0:2])
+
     system("mkdir data");
     DATA_DIR="data/"; //TEMPORARY used to save output
 

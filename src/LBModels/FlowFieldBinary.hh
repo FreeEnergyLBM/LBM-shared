@@ -53,8 +53,7 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
     //k = FlowField<traits>::m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
     //#pragma omp target enter data map(to:FlowField<traits>::m_InverseTau,D2Q9::Ci_x[0:9],D2Q9::Ci_y[0:9],D2Q9::Ci_z[0:9],D2Q9::Weights[0:9])
-    double CollideStartTime=omp_get_wtime();
-    //#pragma omp parallel for schedule( static )
+    
     int QN=traits::Stencil::Q*N;
     int DN=traits::Stencil::D*N;
     double* old_distribution=FlowField<traits>::m_Distribution.getDistributionOldPointer(0);
@@ -66,11 +65,12 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
     double* chemical_potential_local=&m_ChemicalPotential.getParameter(0);
     int* neighbors=&FlowField<traits>::m_Distribution.mv_DistNeighbors[0];
     
-    //#pragma omp target data map(to:test[0:2])//map(to:old_distribution[0:QN],density_local[0:N],velocity_local[0:DN],neighbors[0:QN])\
+    #pragma omp target data map(to:old_distribution[0:QN],density_local[0:N],velocity_local[0:DN],neighbors[0:QN])\
                                 map(tofrom:distribution[0:QN])
-    {
+    
     //#pragma omp target teams distribute parallel for device(0)
-    //#pragma omp parallel for
+    //#pragma omp requires unified shared memory
+    #pragma omp parallel for schedule( static )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -82,11 +82,7 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
         }        
         
     }
-    #ifdef OMPPARALLEL
-    }
-
-    TOTALTIME+=omp_get_wtime()-CollideStartTime;
-    #endif
+    
     FlowField<traits>::m_Data.communicateDistribution();
     
 }
@@ -96,8 +92,6 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
 
     FlowField<traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
-    //int k=LY*LZ*MAXNEIGHBORS;
-    //k = FlowField<traits>::m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( static )
     #endif
@@ -121,10 +115,6 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
             old_distribution[idx]=equilibrium;        
 
         }
-        //while(FlowField<traits>::m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-        //    k++;
-        //}
-        //k = FlowField<traits>::m_Data.iterateFluid(k,false); //increment k
         
     }
     

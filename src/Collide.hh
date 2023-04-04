@@ -20,12 +20,14 @@ class CollisionBase{
                                                                                        //equilibrium calculation
                                                                                        //divided by density
         //#pragma omp end declare target
-        double computeFirstMoment(const double *distribution) const; //Sum distributions over Q to calculate
+        double computeFirstMoment(const double *distribution) const;
+        #pragma omp begin declare target
+        double computeFirstMoment_device(const double *distribution) const; //Sum distributions over Q to calculate
                                                                      //first moment
-
+        #pragma omp end declare target  
         double computeSecondMoment(const double *distribution, const int xyz) const; //Sum distributions*C_i
                                                                                      //over Q to calculate
-                                                                                     //second moment
+                                                                                   //second moment
         //#pragma omp begin declare target
         double collideSRT(const double& old,const double& equilibrium,const double& tau) const; //SRT collision//step
 
@@ -89,9 +91,21 @@ double CollisionBase<stencil>::computeFirstMoment(const double *distribution) co
     return firstmoment; //And return
 
 }
-
+#pragma omp begin declare target
 template<class stencil>
+double CollisionBase<stencil>::computeFirstMoment_device(const double *distribution) const{
 
+    double firstmoment=0;
+
+    for (int idx=0;idx<stencil::Q;idx++){
+        firstmoment+=distribution[idx]; //Sum distribution over Q
+    }
+
+    return firstmoment; //And return
+
+}
+#pragma omp end declare target
+template<class stencil>
 double CollisionBase<stencil>::computeSecondMoment(const double *distribution,const int xyz) const{
 
     double secondmoment=0;

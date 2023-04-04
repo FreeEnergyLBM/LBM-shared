@@ -2,3 +2,5 @@
 *.mat
 tests/SingleLatticePoint/wetP
 tests/SingleLatticePoint/data/*.mat
+tests/SingleLatticePoint/omnitrace-wetP-output
+tests/SingleLatticePoint/omnitrace-wetP.inst-output

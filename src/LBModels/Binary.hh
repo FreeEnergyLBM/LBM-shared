@@ -46,11 +46,14 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
         double computeCollisionQ(double& sum,int k,const double& old,const double& orderparam,
                                  const double* velocity,const int idx) const; //Calculate collision
                                                                                            //at index idx
-
         double computeOrderParameter(const double* distribution,int k) const; //Calculate the order parameter
                                                                               //corresponding to the relative
                                                                               //concentrations of each phase
-
+        #pragma omp begin declare target
+        double computeOrderParameter_device(const double* distribution,int k) const; //Calculate the order parameter
+                                                                              //corresponding to the relative
+                                                                              //concentrations of each phase
+        #pragma omp end declare target
         static constexpr double m_Tau=1.0; //TEMPORARY relaxation time
 
         static constexpr double m_InverseTau=1.0/m_Tau; //TEMPORARY inverse relaxation time
@@ -112,8 +115,6 @@ const std::vector<double>& Binary<traits>::getDistribution() const{
 template<class traits>
 void Binary<traits>::precompute(){
 
-    //int k=LY*LZ*MAXNEIGHBORS;
-    //k = m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( static )
     #endif
@@ -126,10 +127,6 @@ void Binary<traits>::precompute(){
             }, mt_Forces);
         }
         else;
-        //while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-        //    k++;
-        //}
-        //k = m_Data.iterateFluid(k,false); //increment k
         
     }
     m_Distribution.getDistribution().swap(m_Distribution.getDistributionOld()); //swap old and new distributions
@@ -151,8 +148,6 @@ double Binary<traits>::computeForces(int xyz,int k) const{
 template<class traits>
 void Binary<traits>::collide(){
 
-    //int k=LY*LZ*MAXNEIGHBORS;
-    //k = m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( static )
     #endif
@@ -168,11 +163,6 @@ void Binary<traits>::collide(){
             m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(sum,k,old_distribution[idx],orderparameter[k],&velocity[k*traits::Stencil::D],idx);
             
         }
-        //while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-        //    k++;
-        //}
-        //k = m_Data.iterateFluid(k,false); //increment k
-
         
     }
 
@@ -183,8 +173,6 @@ void Binary<traits>::collide(){
 template<class traits>
 void Binary<traits>::boundaries(){
 
-    //int k=0;
-    //k = m_Data.iterateSolid0(k,true);
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( static )
     #endif
@@ -202,10 +190,6 @@ void Binary<traits>::boundaries(){
             
         }
         else;
-        //while(!m_Geometry.isSolid(k+1)&&k<N){
-        //    k++;
-        //}
-        //k = m_Data.iterateSolid(k,true); //increment k
 
     }
 
@@ -217,8 +201,6 @@ void Binary<traits>::initialise(){ //Initialise model
 
     m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
-    //int k=LY*LZ*MAXNEIGHBORS;
-    //k = m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( static )
     #endif
@@ -242,10 +224,6 @@ void Binary<traits>::initialise(){ //Initialise model
             old_distribution[idx]=equilibrium;        
 
         }
-        //while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-        //    k++;
-        //}
-        //k = m_Data.iterateFluid(k,false); //increment k
 
     }
 }
@@ -254,23 +232,30 @@ void Binary<traits>::initialise(){ //Initialise model
 template<class traits>
 void Binary<traits>::computeMomenta(){ //Calculate order parameter
 
-    //int k=LY*LZ*MAXNEIGHBORS;
-    //k = m_Data.iterateFluid0(k,false);
+
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( static )
+
+    int QN=traits::Stencil::Q*N;
+    double* distribution=m_Distribution.getDistributionPointer(0);
+    double* order_parameter_FORTESTING=&orderparameter[0];
+
+    double CollideStartTime=omp_get_wtime();
+
+    #pragma omp target data map(to:distribution[0:QN])\
+                            map(tofrom:order_parameter_FORTESTING[0:N])
+    {
+    #pragma omp target teams distribute parallel for
+    //#pragma omp parallel for schedule( static )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //Loop over k
 
-        double* distribution=m_Distribution.getDistributionPointer(k);
-
-        orderparameter[k]=computeOrderParameter(distribution,k);
-        //while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-        //    k++;
-        //}
-        //k = m_Data.iterateFluid(k,false); //increment k
+        order_parameter_FORTESTING[k]=computeOrderParameter_device(distribution,k);
 
     }
-
+    }
+    #ifdef OMPPARALLEL
+    TOTALTIME+=omp_get_wtime()-CollideStartTime;
+    #endif
     m_Data.communicate(m_OrderParameter);
 
 }
@@ -310,6 +295,21 @@ double Binary<traits>::computeModelForce(int k,int xyz) const{
     return 0;
 }
 
+#pragma omp begin declare target
+template<class traits>
+double Binary<traits>::computeOrderParameter_device(const double* distribution,int k) const{//Order parameter calculation
+    //Order parameter is the sum of distributions plus any source/correction terms
+    if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
+        return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution)+std::apply([k](auto&... tests){
+            return (tests.computeDensitySource(k)+...);
+        }, mt_Forces);
+    }
+    //CHANGE THIS SO FIRST/SECOND MOMENT COMPUTATION IS DONE IN DISTRIBUTION
+    else return CollisionBase<typename traits::Stencil>::computeFirstMoment_device(distribution);
+
+}
+#pragma omp end declare target
+
 template<class traits>
 double Binary<traits>::computeOrderParameter(const double* distribution,int k) const{//Order parameter calculation
     //Order parameter is the sum of distributions plus any source/correction terms
@@ -322,5 +322,4 @@ double Binary<traits>::computeOrderParameter(const double* distribution,int k) c
     else return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution);
 
 }
-
 #endif
