@@ -16,7 +16,7 @@ using namespace std;
 //LBM collision step "Weights[Q]", the modulus of velocity vectors depending on the direciton "CModulus", a
 //currently not implemented array of MRT moments "Moments[Q]" and a function to calculate MRT relaxation times
 //"MRTWeights()".
-#pragma omp begin declare target
+//#pragma omp begin declare target
 struct D2Q9{ //Most commonly used 2D stencil
     
     static const int D=2; //Number of cartesian directions
@@ -40,7 +40,7 @@ struct D2Q9{ //Most commonly used 2D stencil
             return Ci_z;
         }
         else{
-            throw runtime_error(std::string("Error when indexing velocity stencil. Indices must be greater than 0 and less than "+std::to_string(D)));
+            //throw runtime_error(std::string("Error when indexing velocity stencil. Indices must be greater than 0 and less than "+std::to_string(D)));
         }
     }
     static constexpr int Opposites[Q]={0,2,1,4,3,6,5,8,7}; //Opposite vector at a given index
@@ -64,7 +64,7 @@ struct D2Q9{ //Most commonly used 2D stencil
         return {0,1,1,0,1,0,1,invtau,invtau};
     }
 };
-#pragma omp end declare target
+//#pragma omp end declare target
 struct D3Q19{ //Most commonly used 3D stencil
     static constexpr int D=3;
 

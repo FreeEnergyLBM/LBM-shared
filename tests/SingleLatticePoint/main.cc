@@ -24,7 +24,7 @@
 //the data type, a tuple of the boundary types and a tuple of forces to be applied in the model.
 
 //Trait class for FlowField Distribution (Navier-Stokes and continuity solver)
-#pragma omp begin declare target
+
 struct traitFlowField{
     using Stencil=D2Q9; //Here, D refers to the number of cartesian dimensions
                         //and Q refers to the number of discrete velocity directions.
@@ -36,7 +36,7 @@ struct traitFlowField{
     //using Forces=std::tuple<BodyForce,ChemicalForce>; //This will tell the model which forces to apply
     using Forces=std::tuple<>;
 };
-#pragma omp end declare target
+
 
 //Trait class for PhaseField Distribution (Calculates the interface between components)
 struct traitPhaseField{
@@ -58,7 +58,8 @@ int main(int argc, char **argv){
     MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
     Parallel<NO_NEIGHBOR> initialise;
     #endif
-
+    double test[2]={0.0,0.0};
+    #pragma omp target data map(to:test[0:2])
     system("mkdir data");
     DATA_DIR="data/"; //TEMPORARY used to save output
 

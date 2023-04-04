@@ -15,18 +15,18 @@ template<class stencil> //Stencil is needed for moment calculations
 class CollisionBase{
     static_assert(stencil::D==NDIM,"ERROR: The chosen stencil must match the number of lattice dimensions (NDIM) chosen in Global.hh.");
     public:
-        #pragma omp begin declare target
+        //#pragma omp begin declare target
         double computeGamma(const double* velocity, const int idx) const; //Gamma is the standard
                                                                                        //equilibrium calculation
                                                                                        //divided by density
-        #pragma omp end declare target
+        //#pragma omp end declare target
         double computeFirstMoment(const double *distribution) const; //Sum distributions over Q to calculate
                                                                      //first moment
 
         double computeSecondMoment(const double *distribution, const int xyz) const; //Sum distributions*C_i
                                                                                      //over Q to calculate
                                                                                      //second moment
-        #pragma omp begin declare target
+        //#pragma omp begin declare target
         double collideSRT(const double& old,const double& equilibrium,const double& tau) const; //SRT collision//step
 
         double forceSRT(const double force[stencil::D],const double* velocity,
@@ -36,18 +36,18 @@ class CollisionBase{
                                                                                        //order velocity dependence
                                                                                        //of the equilibrium
                                                                                        //distributions times
-        #pragma omp end declare target
+        //#pragma omp end declare target
     private:
 
         enum{x=0,y=1,z=2}; //Indices of x, y, z directions
-        #pragma omp begin declare target
+        //#pragma omp begin declare target
         static constexpr auto& ma_Weights=stencil::Weights; //Reference to stencil weights to shorten code
                                                             //somewhat
 
         static constexpr double m_Cs2=stencil::Cs2; //Again, just to shorten code
-        #pragma omp end declare target
+        //#pragma omp end declare target
 };
-#pragma omp begin declare target
+//#pragma omp begin declare target
 template<class stencil>
 double CollisionBase<stencil>::computeGamma(const double* velocity, const int idx) const{
 
@@ -57,8 +57,8 @@ double CollisionBase<stencil>::computeGamma(const double* velocity, const int id
                                                                       //SEE LITERATURE
 
 };
-#pragma omp end declare target
-#pragma omp begin declare target
+//#pragma omp end declare target
+//#pragma omp begin declare target
 template<class stencil>
 double CollisionBase<stencil>::computeVelocityFactor(const double* velocity, const int idx) const{
     //Sometimes the velocity part of the equilibrium is needed seperately so we do this here
@@ -76,7 +76,7 @@ double CollisionBase<stencil>::computeVelocityFactor(const double* velocity, con
            -(velocity_dot_velocity)/(2.0*m_Cs2);
 
 };
-#pragma omp end declare target
+//#pragma omp end declare target
 template<class stencil>
 double CollisionBase<stencil>::computeFirstMoment(const double *distribution) const{
 
@@ -103,7 +103,7 @@ double CollisionBase<stencil>::computeSecondMoment(const double *distribution,co
     return secondmoment; //Return second moment corresponding to velocity in given direction ("xyz")
 
 }
-#pragma omp begin declare target
+//#pragma omp begin declare target
 template<class stencil>
 double CollisionBase<stencil>::collideSRT(const double& old,const double& equilibrium,const double& itau) const{
 
@@ -111,8 +111,8 @@ double CollisionBase<stencil>::collideSRT(const double& old,const double& equili
                                        //the inverse of the relaxation time
 
 }
-#pragma omp end declare target
-#pragma omp begin declare target
+//#pragma omp end declare target
+//#pragma omp begin declare target
 template<class stencil>
 double CollisionBase<stencil>::forceSRT(const double force[stencil::D],
                                         const double* velocity,const double& itau,
@@ -135,5 +135,5 @@ double CollisionBase<stencil>::forceSRT(const double force[stencil::D],
     return forceterm;
 
 }
-#pragma omp end declare target
+//#pragma omp end declare target
 #endif
