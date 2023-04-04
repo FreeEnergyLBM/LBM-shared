@@ -56,11 +56,11 @@ class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from b
 
         double computeVelocity(const double* distribution,const double& density,
                                const int xyz,int k) const; //Calculate velocity
-        #pragma omp begin declare target
+        //#pragma omp begin declare target
         static constexpr double m_Tau=1.0; //TEMPORARY relaxation time
         
         static constexpr double m_InverseTau=1.0/m_Tau; //TEMPORARY inverse relaxation time
-        #pragma omp end declare target
+        //#pragma omp end declare target
         Density<double> m_Density; //Density
 
         Velocity<double,NDIM> m_Velocity; //Velocity
