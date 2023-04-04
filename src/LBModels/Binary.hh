@@ -46,11 +46,8 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
         double computeCollisionQ(double& sum,int k,const double& old,const double& orderparam,
                                  const double* velocity,const int idx) const; //Calculate collision
                                                                                            //at index idx
-        double computeOrderParameter(const double* distribution,int k) const; //Calculate the order parameter
-                                                                              //corresponding to the relative
-                                                                              //concentrations of each phase
         #pragma omp begin declare target
-        double computeOrderParameter_device(const double* distribution,int k) const; //Calculate the order parameter
+        double computeOrderParameter(const double* distribution,int k) const; //Calculate the order parameter
                                                                               //corresponding to the relative
                                                                               //concentrations of each phase
         #pragma omp end declare target
@@ -239,7 +236,7 @@ void Binary<traits>::computeMomenta(){ //Calculate order parameter
     double* distribution=m_Distribution.getDistributionPointer(0);
     double* order_parameter_FORTESTING=&orderparameter[0];
 
-    double CollideStartTime=omp_get_wtime();
+    
 
     #pragma omp target data map(to:distribution[0:QN])\
                             map(tofrom:order_parameter_FORTESTING[0:N])
@@ -249,13 +246,11 @@ void Binary<traits>::computeMomenta(){ //Calculate order parameter
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //Loop over k
 
-        order_parameter_FORTESTING[k]=computeOrderParameter_device(distribution,k);
+        order_parameter_FORTESTING[k]=computeOrderParameter(distribution,k);
 
     }
     }
-    #ifdef OMPPARALLEL
-    TOTALTIME+=omp_get_wtime()-CollideStartTime;
-    #endif
+    
     m_Data.communicate(m_OrderParameter);
 
 }
@@ -297,20 +292,6 @@ double Binary<traits>::computeModelForce(int k,int xyz) const{
 
 #pragma omp begin declare target
 template<class traits>
-double Binary<traits>::computeOrderParameter_device(const double* distribution,int k) const{//Order parameter calculation
-    //Order parameter is the sum of distributions plus any source/correction terms
-    if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
-        return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution)+std::apply([k](auto&... tests){
-            return (tests.computeDensitySource(k)+...);
-        }, mt_Forces);
-    }
-    //CHANGE THIS SO FIRST/SECOND MOMENT COMPUTATION IS DONE IN DISTRIBUTION
-    else return CollisionBase<typename traits::Stencil>::computeFirstMoment_device(distribution);
-
-}
-#pragma omp end declare target
-
-template<class traits>
 double Binary<traits>::computeOrderParameter(const double* distribution,int k) const{//Order parameter calculation
     //Order parameter is the sum of distributions plus any source/correction terms
     if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
@@ -322,4 +303,5 @@ double Binary<traits>::computeOrderParameter(const double* distribution,int k) c
     else return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution);
 
 }
+#pragma omp end declare target
 #endif

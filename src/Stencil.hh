@@ -18,10 +18,10 @@ using namespace std;
 //"MRTWeights()".
 //#pragma omp begin declare target
 struct D2Q9{ //Most commonly used 2D stencil
+    //#pragma omp begin declare target
+    static constexpr int D=2; //Number of cartesian directions
     
-    static const int D=2; //Number of cartesian directions
-    
-    static const int Q=9; //Number of velocity directions
+    static constexpr int Q=9; //Number of velocity directions
     static constexpr double Cs2=0.33333333333333; //Speed of sound squared
     
     static constexpr int Ci_x[Q]={0,1,-1,0,0,1,-1,1,-1}; //Vectors of velocity directions
@@ -46,7 +46,7 @@ struct D2Q9{ //Most commonly used 2D stencil
     static constexpr int Opposites[Q]={0,2,1,4,3,6,5,8,7}; //Opposite vector at a given index
     
     static constexpr double Weights[Q]={4.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0}; //Lattice weights
-    
+    //#pragma omp end declare target
     template<int idx>
     static constexpr int CModulus=Ci_x[idx]*Ci_x[idx]+Ci_y[idx]*Ci_y[idx]; //Returns the modulus of the velocity vector at a given index, used for the MRT weight calculation
 
@@ -63,8 +63,9 @@ struct D2Q9{ //Most commonly used 2D stencil
     inline static vector<double> MRTWeights(const double& invtau){ //MRT relaxation rates
         return {0,1,1,0,1,0,1,invtau,invtau};
     }
+    
 };
-//#pragma omp end declare target
+//
 struct D3Q19{ //Most commonly used 3D stencil
     static constexpr int D=3;
 
