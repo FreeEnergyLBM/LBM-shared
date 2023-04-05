@@ -1,13 +1,13 @@
 
 INCS	=	
 
-DEFS    =	   -g -O3 -fopenmp --offload-arch=gfx90a -Wno-deprecated -Wno-unused-result -Wall -std=c++17  -I. -DOMPPARALLEL
+DEFS    =	   -g -O3 -fopenmp -Wno-deprecated -Wno-unused-result -Wall -std=c++17  -I. -DOMPPARALLEL -DMPIPARALLEL
 
 LIBS	=	-lm
 
 LIBPATH =
 
-COMP	=	 amdclang++ #mpic++ 
+COMP	=	 mpic++ 
 
 DEPS    =       ../../src/%.hh ../../src/Forces/%.hh ../../src/GradientStencils%.hh ../../src/LBModels/%.hh ../../src/BoundaryModels/%.hh 
 

@@ -65,7 +65,7 @@ class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from b
 
         Velocity<double,NDIM> m_Velocity; //Velocity
 
-        Distribution_Base<typename traits::Stencil>& m_Distribution;
+        typename traits::Data::DistributionData& m_Distribution;
             //Distributions
 
         vector<double>& density=m_Density.getParameter(); //Reference to vector of densities
@@ -169,9 +169,9 @@ void FlowField<traits>::collide(){ //Collision step
         }
         
     }
-    
+    #ifdef MPIPARALLEL
     m_Data.communicateDistribution();
-    
+    #endif
 }
 
 template<class traits>
@@ -265,9 +265,9 @@ void FlowField<traits>::computeMomenta(){ //Calculate Density and Velocity
         //k = m_Data.iterateFluid(k,false); //increment k
 
     }
-    
+    #ifdef MPIPARALLEL
     m_Data.communicate(m_Density);
-    //m_Data.communicate(m_Velocity);
+    #endif
 
 }
 

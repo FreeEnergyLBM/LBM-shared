@@ -49,18 +49,14 @@ double FlowFieldBinary<traits>::computeEquilibrium(const double& density,const d
 template<class traits>
 void FlowFieldBinary<traits>::collide(){ //Collision step
 
-    #ifdef OMPPARALLEL
+    
     int QQ=traits::Stencil::Q;
     int QN=traits::Stencil::Q*N;
     int DN=traits::Stencil::D*N;
     double* old_distribution=FlowField<traits>::m_Distribution.getDistributionOldPointer(0);
-    
     double* distribution=FlowField<traits>::m_Distribution.getDistributionPointer(0);
-    double* density_local=&FlowField<traits>::density[0];
-    double* velocity_local=&FlowField<traits>::velocity[0];
-    double* order_parameter_local=&m_OrderParameter.getParameter(0);
-    double* chemical_potential_local=&m_ChemicalPotential.getParameter(0);
-    int* neighbors=&FlowField<traits>::m_Distribution.mv_DistNeighbors[0];
+
+    #ifdef OMPPARALLEL
     double CollideStartTime=omp_get_wtime();
     #pragma omp parallel for schedule( static )
     #endif
@@ -70,14 +66,16 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
         for (int idx=traits::Stencil::Q-1;idx>=0;--idx){ //loop over discrete velocity directions
             //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
             //"computeCollisionQ"
-            distribution[neighbors[k*traits::Stencil::Q+idx]*traits::Stencil::Q+idx]=computeCollisionQ(sum,k,old_distribution[k*traits::Stencil::Q+idx],density_local[k],&velocity_local[k*traits::Stencil::D],order_parameter_local[k],chemical_potential_local[k],idx);
+            distribution[FlowField<traits>::m_Distribution.streamIndex(k,idx)+idx]=computeCollisionQ(sum,k,old_distribution[k*traits::Stencil::Q+idx],FlowField<traits>::density[k],&FlowField<traits>::velocity[k*traits::Stencil::D],m_OrderParameter.getParameter(k),m_ChemicalPotential.getParameter(k),idx);
         }        
         
     }
     #ifdef OMPPARALLEL
     TOTALTIME+=omp_get_wtime()-CollideStartTime;
     #endif
+    #ifdef MPIPARALLEL
     FlowField<traits>::m_Data.communicateDistribution();
+    #endif
     
 }
 
@@ -132,7 +130,7 @@ double FlowFieldBinary<traits>::computeCollisionQ(double& sum,const int k,const 
         
         return eq;
     }
-    else return density-sum;+CollisionBase<typename traits::Stencil>::forceSRT(forcexyz,velocity,FlowField<traits>::m_InverseTau,idx);
+    else return density-sum+CollisionBase<typename traits::Stencil>::forceSRT(forcexyz,velocity,FlowField<traits>::m_InverseTau,idx);
     
 }
 

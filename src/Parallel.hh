@@ -1,12 +1,13 @@
 #ifndef MPIPARALLEL_HEADER
 #define MPIPARALLEL_HEADER
+#ifdef MPIPARALLEL
 #include <mpi.h>
 
 template<int num_neighbors>
 class Parallel{
     public:
         Parallel(){
-#ifdef MPIPARALLEL
+
             if(MAXNEIGHBORS<num_neighbors) MAXNEIGHBORS=num_neighbors;
         
             if (LX%NUMPROCESSORS==0) {
@@ -24,7 +25,7 @@ class Parallel{
             }
             */
             N=LXdiv*LY*LZ;
-#endif
+
         }
 };
 
@@ -68,15 +69,11 @@ template<class stencil,int num_neighbors>
 template<class parameter>
 void X_Parallel<stencil,num_neighbors>::communicate(parameter& obj){
 
-#ifdef MPIPARALLEL
-    
     MPI_Bsend(&obj.getParameter()[N*parameter::m_Num-(num_neighbors+1)*LY*LZ],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_RightNeighbor,0,MPI_COMM_WORLD);
     MPI_Recv(&obj.getParameter()[0],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_LeftNeighbor,0,MPI_COMM_WORLD,&status);
 
     MPI_Bsend(&obj.getParameter()[num_neighbors*LY*LZ*parameter::m_Num],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_LeftNeighbor,1,MPI_COMM_WORLD);
     MPI_Recv(&obj.getParameter()[N*parameter::m_Num-num_neighbors*LY*LZ*parameter::m_Num],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_RightNeighbor,1,MPI_COMM_WORLD,&status);
-
-#endif
 
 }
 
@@ -84,8 +81,6 @@ template<class stencil,int num_neighbors>
 template<class distribution>
 void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& obj){
 
-#ifdef MPIPARALLEL
-    
     if (CURPROCESSOR<NUMPROCESSORS){
         int leftorright;
         int id=0;
@@ -108,14 +103,10 @@ void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& ob
         
     }
     
-#endif
-    
 }
 
 template<class stencil,int num_neighbors>
 X_Parallel<stencil,num_neighbors>::X_Parallel(){
-
-#ifdef MPIPARALLEL
 
     const int bufSize=LY*LZ*num_neighbors*stencil::Q*8*3+5000;
     
@@ -135,8 +126,10 @@ X_Parallel<stencil,num_neighbors>::X_Parallel(){
     MPI_Type_vector(LZ*LY,1,stencil::Q,mpi_get_type<double>(),&DistributionVector);
     MPI_Type_commit(&DistributionVector);
     
-#endif
-    
 }
+#else
+class No_Parallel{
 
+};
+#endif
 #endif

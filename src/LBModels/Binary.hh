@@ -59,7 +59,7 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         Velocity<double,NDIM> m_Velocity; //Velocity
 
-        Distribution_Base<typename traits::Stencil>& m_Distribution=m_Data.getDistributionObject();
+        typename traits::Data::DistributionData& m_Distribution=m_Data.getDistributionObject();
             //Distributions
 
         typename traits::Data m_Data; //MOVE THIS TO BASE
@@ -162,9 +162,9 @@ void Binary<traits>::collide(){
         }
         
     }
-
+    #ifdef MPIPARALLEL
     m_Data.communicateDistribution();
-
+    #endif
 }
 
 template<class traits>
@@ -229,23 +229,19 @@ void Binary<traits>::initialise(){ //Initialise model
 template<class traits>
 void Binary<traits>::computeMomenta(){ //Calculate order parameter
 
-
-    #ifdef OMPPARALLEL
-
-    int QN=traits::Stencil::Q*N;
     double* distribution=m_Distribution.getDistributionPointer(0);
-    double* order_parameter_FORTESTING=&orderparameter[0];
-
+    #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( static )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //Loop over k
 
-        order_parameter_FORTESTING[k]=computeOrderParameter(distribution,k);
+        orderparameter[k]=computeOrderParameter(distribution,k);
 
     }
-    
+    #ifdef MPIPARALLEL
     m_Data.communicate(m_OrderParameter);
-
+    #endif
+    
 }
 
 template<class traits>

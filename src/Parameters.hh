@@ -5,7 +5,6 @@
 #include<map>
 #include<any>
 #include "Global.hh"
-#include <mpi.h>
 #include <fstream>
 #include <iostream>
 using namespace std;
@@ -59,12 +58,6 @@ struct Distribution_Base{ //Distribution base class
     double& getDistributionOld(const int k){
         return mv_OldDistribution[k];
     }
-    virtual int streamIndex(int k,int Q){
-        return 0;
-    };
-    virtual int getOpposite(int Q){
-        return 0;
-    };
 
     int m_Q=stencil::Q;
 

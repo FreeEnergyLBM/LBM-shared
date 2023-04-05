@@ -9,14 +9,13 @@
 #include <any>
 #include<charconv>
 #include <memory>
-
 #include <cassert>
 #include <complex>
 #include <cstdint>
 #include <type_traits>
-
+#ifdef MPIPARALLEL
 #include <mpi.h>
-
+#endif
 //Sertive.hh: This will contain some commonly used functions with various uses.
 
 int computeX(const int k) //Compute X direction from a given k, the convention in this code is that
@@ -55,6 +54,7 @@ int computeZ(const int k) //Compute Y direction from a given k, this uses inform
  * \tparam  T   The C++ data type used in the MPI function
  * \return  The MPI_Datatype belonging to the template C++ data type T
 */
+#ifdef MPIPARALLEL
 template <typename T>
 [[nodiscard]] constexpr MPI_Datatype mpi_get_type() noexcept {
   MPI_Datatype mpi_type = MPI_DATATYPE_NULL;
@@ -119,7 +119,7 @@ template <typename T>
 
   return mpi_type;    
 }
-
+#endif
 //BELOW: Not currently used implementations of type erasure, recursive template loops, MRT generation and a class
 //instance counter.
 

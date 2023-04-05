@@ -32,6 +32,7 @@ class Data_Base{
         std::vector<int> mv_Neighbors; //Vector containing neighbor information
 
         enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z
+        
         parallel m_Parallel;
 
         template<class stencil1,class parallel1>
@@ -39,12 +40,10 @@ class Data_Base{
         
     public:
         using Stencil=stencil;
+        #ifdef MPIPARALLEL
         template<class parameter>
         void communicate(parameter obj);
-
-        template<class parameter>
-        void initialiseHalos(parameter obj);
-
+        #endif
         Data_Base():m_Parallel(){ //Construct distribution
 
             for(int idx=0;idx<stencil::Q;idx++){
@@ -76,7 +75,7 @@ class Data_Base{
 
 
 };
-
+#ifdef MPIPARALLEL
 template<class stencil,class parallel>
 template<class parameter>
 void Data_Base<stencil,parallel>::communicate(parameter obj){ //Not used in this data type
@@ -84,7 +83,7 @@ void Data_Base<stencil,parallel>::communicate(parameter obj){ //Not used in this
     parallel::communicate(obj);
 
 }
-
+#endif
 template<class stencil,class parallel>
 void Data_Base<stencil,parallel>::stream(){ //Not used in this data type
 
@@ -276,7 +275,7 @@ class Data1:public Data_Base<stencil,parallel>{
                 
             }
 
-            int getOpposite(int idx) override{
+            int getOpposite(int idx){
 
                 return ma_Opposites[idx];
 
@@ -285,7 +284,7 @@ class Data1:public Data_Base<stencil,parallel>{
 
             int ma_Opposites[stencil::Q];
 
-            int streamIndex(const int k,const int Q) override{
+            int streamIndex(const int k,const int Q){ //adds quite a bit of overhead
 
                 return Distribution_Base<stencil>::mv_DistNeighbors[k*stencil::Q+Q]; //Return neighbor of lattice point k in direction Q
 
@@ -298,13 +297,13 @@ class Data1:public Data_Base<stencil,parallel>{
         Distribution_Derived m_Distribution; //Object of distribution
         
     public:
-
+        #ifdef MPIPARALLEL
         void communicateDistribution();
-
+        #endif
         Data1():m_Distribution(Data_Base<stencil,parallel>::mv_Neighbors){ //Construct distribution
 
         }
-
+        using DistributionData=Distribution_Derived;
         Distribution_Derived& getDistributionObject(){
 
             return m_Distribution; //Returns the distribution object stored in the class
@@ -312,11 +311,12 @@ class Data1:public Data_Base<stencil,parallel>{
         }
         
 };
-
+#ifdef MPIPARALLEL
 template<class stencil,class parallel>
 void Data1<stencil,parallel>::communicateDistribution(){ //Not used in this data type
     
     parallel::communicateDistribution(m_Distribution);
     
 }
+#endif
 #endif
