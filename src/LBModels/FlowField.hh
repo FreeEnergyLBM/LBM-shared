@@ -21,7 +21,7 @@ class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from b
 
         void precompute(); //Perform any necessary computations before collision
 
-        //void collide(); //Collision step
+        virtual void collide(); //Collision step
 
         void boundaries(); //Boundary calculation
 
@@ -43,11 +43,11 @@ class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from b
        double computeEquilibrium(const double& density,const double* velocity,
                                   const int idx,const int k) const; //Calculate equilibrium in direction idx with a given
                                                         //density and velocity
-        //#pragma omp begin declare target
+
         double computeModelForce(int xyz,int k) const; //Calculate forces specific to the model in direction xyz
 
         double computeForces(int xyz,int k) const; //Calculate other forces in direction xyz
-        //#pragma omp end declare target
+
         double computeCollisionQ(int k,const double& old,const double& density,
                                  const double* velocity,const int idx) const; //Calculate collision
                                                                                            //at index idx
@@ -56,11 +56,11 @@ class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from b
 
         double computeVelocity(const double* distribution,const double& density,
                                const int xyz,int k) const; //Calculate velocity
-        //#pragma omp begin declare target
+
         static constexpr double m_Tau=1.0; //TEMPORARY relaxation time
         
         static constexpr double m_InverseTau=1.0/m_Tau; //TEMPORARY inverse relaxation time
-        //#pragma omp end declare target
+
         Density<double> m_Density; //Density
 
         Velocity<double,NDIM> m_Velocity; //Velocity
@@ -136,7 +136,7 @@ void FlowField<traits>::precompute(){ //Perform necessary calculations before co
     m_Distribution.getDistribution().swap(m_Distribution.getDistributionOld()); //swap old and new distributions
                                                                                 //before collision
 }
-#pragma omp begin declare target
+
 template<class traits>
 double FlowField<traits>::computeForces(int xyz,int k) const{ //Return the sum of forces
 
@@ -148,8 +148,7 @@ double FlowField<traits>::computeForces(int xyz,int k) const{ //Return the sum o
     else return 0;
 
 }
-#pragma omp end declare target
-/*
+
 template<class traits>
 void FlowField<traits>::collide(){ //Collision step
 
@@ -168,17 +167,13 @@ void FlowField<traits>::collide(){ //Collision step
             //"computeCollisionQ"
             m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(k,old_distribution[idx],density[k],&velocity[k*traits::Stencil::D],idx);
         }
-        //while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
-        //    k++;
-        //}
-        //k = m_Data.iterateFluid(k,false); //increment k
         
     }
     
     m_Data.communicateDistribution();
     
 }
-*/
+
 template<class traits>
 void FlowField<traits>::boundaries(){ //Apply the boundary step
 
@@ -301,14 +296,14 @@ double FlowField<traits>::computeEquilibrium(const double& density,const double*
                                                                                         //case
 
 }
-#pragma omp begin declare target
+
 template<class traits>
 double FlowField<traits>::computeModelForce(int k,int xyz) const{
 
     return 0.0; //No model force in this case
 
 }
-#pragma omp end declare target
+
 template<class traits>
 double FlowField<traits>::computeDensity(const double* distribution,int k) const{ //Density calculation
     //Density is the sum of distributions plus any source/correction terms

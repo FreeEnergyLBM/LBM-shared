@@ -46,11 +46,11 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
         double computeCollisionQ(double& sum,int k,const double& old,const double& orderparam,
                                  const double* velocity,const int idx) const; //Calculate collision
                                                                                            //at index idx
-        #pragma omp begin declare target
+
         double computeOrderParameter(const double* distribution,int k) const; //Calculate the order parameter
                                                                               //corresponding to the relative
                                                                               //concentrations of each phase
-        #pragma omp end declare target
+
         static constexpr double m_Tau=1.0; //TEMPORARY relaxation time
 
         static constexpr double m_InverseTau=1.0/m_Tau; //TEMPORARY inverse relaxation time
@@ -236,19 +236,12 @@ void Binary<traits>::computeMomenta(){ //Calculate order parameter
     double* distribution=m_Distribution.getDistributionPointer(0);
     double* order_parameter_FORTESTING=&orderparameter[0];
 
-    
-
-    #pragma omp target data map(to:distribution[0:QN])\
-                            map(tofrom:order_parameter_FORTESTING[0:N])
-    {
-    #pragma omp target teams distribute parallel for
-    //#pragma omp parallel for schedule( static )
+    #pragma omp parallel for schedule( static )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //Loop over k
 
         order_parameter_FORTESTING[k]=computeOrderParameter(distribution,k);
 
-    }
     }
     
     m_Data.communicate(m_OrderParameter);
@@ -290,7 +283,7 @@ double Binary<traits>::computeModelForce(int k,int xyz) const{
     return 0;
 }
 
-#pragma omp begin declare target
+
 template<class traits>
 double Binary<traits>::computeOrderParameter(const double* distribution,int k) const{//Order parameter calculation
     //Order parameter is the sum of distributions plus any source/correction terms
@@ -303,5 +296,5 @@ double Binary<traits>::computeOrderParameter(const double* distribution,int k) c
     else return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution);
 
 }
-#pragma omp end declare target
+
 #endif
