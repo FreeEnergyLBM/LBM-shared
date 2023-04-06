@@ -22,7 +22,7 @@ class BodyForce{
 
     private:
 
-        double magnitude=0.000;//1;
+        double magnitude=0.00000001;//1;
 
         Density<double> m_Density; //Density
 

@@ -46,7 +46,7 @@ bool Geometry::isSolid(int k){
 
     int yAtCurrentk=computeY(k);
 
-    if (yAtCurrentk<=1||yAtCurrentk>=LY-2) return false; //Change this condition to control where the solid is
+    if (yAtCurrentk<=1||yAtCurrentk>=LY-2) return true; //Change this condition to control where the solid is
     
     else return false;
 

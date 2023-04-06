@@ -9,7 +9,7 @@
 #include "../../src/Service.hh"
 #include "../../src/Parallel.hh"
 #include "../../src/Parameters.hh"
-
+#include <chrono>
 #include <iostream>
 #ifdef OMPPARALLEL
 #include <omp.h>
@@ -68,7 +68,7 @@ int main(int argc, char **argv){
     MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
     Parallel<NO_NEIGHBOR> initialise;
     #endif
-
+    
     system("mkdir data");
     DATA_DIR="data/"; //TEMPORARY used to save output
 
@@ -78,7 +78,7 @@ int main(int argc, char **argv){
 
     Algorithm<FlowFieldBinary<traitFlowField>,Binary<traitPhaseField>> LBM(o_FlowField,o_PhaseField);
     LBM.initialise(); //Perform necessary initialisation
-    
+    auto t0=std::chrono::system_clock::now();
     for (int timestep=0;timestep<=TIMESTEPS;timestep++){
 
         LBM.evolve(); //Evolve one timestep
@@ -92,6 +92,9 @@ int main(int argc, char **argv){
         }
         
     }
+    auto tend=std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_seconds=tend-t0; 
+    std::cout<<elapsed_seconds.count()<<std::endl;
     
     #ifdef MPIPARALLEL
     MPI_Finalize();
@@ -99,5 +102,6 @@ int main(int argc, char **argv){
     #ifdef OMPPARALLEL
     std::cout<<TOTALTIME<<std::endl;
     #endif
+    
     return 0;
 }

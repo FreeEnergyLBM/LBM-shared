@@ -126,6 +126,7 @@ void Binary<traits>::precompute(){
         else;
         
     }
+    //CHECK DATA TYPE NEEDS THIS
     m_Distribution.getDistribution().swap(m_Distribution.getDistributionOld()); //swap old and new distributions
                                                                                 //before collision
 }
@@ -284,7 +285,8 @@ template<class traits>
 double Binary<traits>::computeOrderParameter(const double* distribution,int k) const{//Order parameter calculation
     //Order parameter is the sum of distributions plus any source/correction terms
     if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
-        return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution)+std::apply([k](auto&... tests){
+        return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution)
+        +std::apply([k](auto&... tests){
             return (tests.computeDensitySource(k)+...);
         }, mt_Forces);
     }

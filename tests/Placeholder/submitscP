@@ -1,9 +1,10 @@
 #!/bin/sh
 
 # This job requests number_of_tasks MPI tasks (without OpenMP)
-# SBATCH -n 2
+#SBATCH -n 20
 #SBATCH -t 00:01:00
-# SBATCH -p test
+#SBATCH -p test
 #SBATCH -o ./out/output.%j.out # STDOUT
-
-mpirun -np 2 ./wetP
+# export OMP_NUM_THREADS=10
+mpirun -np 20 ./wetP
+# ./wetP

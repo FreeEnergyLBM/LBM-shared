@@ -68,7 +68,7 @@ MPI_Datatype X_Parallel<stencil,num_neighbors>::DistributionVector;
 template<class stencil,int num_neighbors>
 template<class parameter>
 void X_Parallel<stencil,num_neighbors>::communicate(parameter& obj){
-
+    
     MPI_Bsend(&obj.getParameter()[N*parameter::m_Num-(num_neighbors+1)*LY*LZ],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_RightNeighbor,0,MPI_COMM_WORLD);
     MPI_Recv(&obj.getParameter()[0],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_LeftNeighbor,0,MPI_COMM_WORLD,&status);
 
