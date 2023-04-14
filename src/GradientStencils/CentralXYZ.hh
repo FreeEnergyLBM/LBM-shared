@@ -40,9 +40,10 @@ template<class parameter>
 double CentralXYZ<stencil,parallel>::computeLaplacian(const parameter& val,const int k){
 
     double temp=0;
-    for (int idx=0;idx<stencil::Q;idx++){
+    for (int idx=1;idx<stencil::Q;idx++){
     
         if((!m_Geometry.isSolid(m_Data.getNeighbors()[k*stencil::Q+idx]))) temp+=1.0/stencil::Cs2*stencil::Weights[idx]*2*(val.getParameter(m_Data.getNeighbors()[k*stencil::Q+idx])-val.getParameter(k));
+        else temp+=1.0/stencil::Cs2*stencil::Weights[idx]*2*(val.getParameter(m_Data.getNeighbors()[k*stencil::Q+stencil::Opposites[idx]])-val.getParameter(k));
 
     }
     return temp;

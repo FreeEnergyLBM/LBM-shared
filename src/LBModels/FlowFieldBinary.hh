@@ -66,7 +66,7 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
         for (int idx=traits::Stencil::Q-1;idx>=0;--idx){ //loop over discrete velocity directions
             //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
             //"computeCollisionQ"
-            distribution[FlowField<traits>::m_Distribution.streamIndex(k,idx)+idx]=computeCollisionQ(sum,k,old_distribution[k*traits::Stencil::Q+idx],FlowField<traits>::density[k],&FlowField<traits>::velocity[k*traits::Stencil::D],m_OrderParameter.getParameter(k),m_ChemicalPotential.getParameter(k),idx);
+            FlowField<traits>::m_Distribution.getDistributionPointer(FlowField<traits>::m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(sum,k,old_distribution[k*traits::Stencil::Q+idx],FlowField<traits>::density[k],&FlowField<traits>::velocity[k*traits::Stencil::D],m_OrderParameter.getParameter(k),m_ChemicalPotential.getParameter(k),idx);
         }        
         
     }

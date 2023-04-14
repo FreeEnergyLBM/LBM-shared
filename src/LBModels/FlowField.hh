@@ -188,7 +188,7 @@ void FlowField<traits>::boundaries(){ //Apply the boundary step
                                                                               //models
             std::apply([this,k](auto&... boundaries){
                 for (int idx=0;idx<traits::Stencil::Q;idx++){
-                    if(!m_Geometry.isSolid(m_Distribution.streamIndex(k,idx))){
+                    if(m_Geometry.isSolid(k)&&!m_Geometry.isSolid(m_Distribution.streamIndex(k,idx))){
                         (boundaries.compute(this->m_Distribution,k,idx),...);
                     }
                 }
@@ -258,7 +258,7 @@ void FlowField<traits>::computeMomenta(){ //Calculate Density and Velocity
         density[k]=computeDensity(distribution,k); //Calculate density
         velocity[k*traits::Stencil::D+x]=computeVelocity(distribution,density[k],x,k); //Calculate velocities
         velocity[k*traits::Stencil::D+y]=computeVelocity(distribution,density[k],y,k);
-        velocity[k*traits::Stencil::D+z]=computeVelocity(distribution,density[k],z,k);
+        if constexpr (NDIM==3)velocity[k*traits::Stencil::D+z]=computeVelocity(distribution,density[k],z,k);
         //while(m_Geometry.isSolid(k+1)&&k<N-MAXNEIGHBORS*LY*LZ){
         //    k++;
         //}

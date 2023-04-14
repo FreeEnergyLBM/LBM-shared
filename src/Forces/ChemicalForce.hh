@@ -39,7 +39,7 @@ class ChemicalForce{
 
 double ChemicalForce::compute(int xyz,int k) const{
 
-    return m_ChemicalPotential.getParameter(k)*m_GradOrderParameter.getParameterPointer(k)[xyz];
+    return 0;//m_ChemicalPotential.getParameter(k)*m_GradOrderParameter.getParameterPointer(k)[xyz];
 
 }
 

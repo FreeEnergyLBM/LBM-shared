@@ -157,7 +157,7 @@ void Binary<traits>::collide(){
         for (int idx=traits::Stencil::Q-1;idx>=0;--idx){ //loop over discrete velocity directions
             //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
             //"computeCollisionQ"
-            
+            //std::cout<<m_Distribution.streamIndex(k,idx)<<std::endl;
             m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(sum,k,old_distribution[idx],orderparameter[k],&velocity[k*traits::Stencil::D],idx);
             
         }
@@ -180,7 +180,7 @@ void Binary<traits>::boundaries(){
                                                                               //models
             std::apply([this,k](auto&... boundaries){
                 for (int idx=0;idx<traits::Stencil::Q;idx++){
-                    if(!m_Geometry.isSolid(m_Distribution.streamIndex(k,idx))){
+                    if(m_Geometry.isSolid(k)&&!m_Geometry.isSolid(m_Distribution.streamIndex(k,idx))){
                         (boundaries.compute(this->m_Distribution,k,idx),...);
                     }
                 }
@@ -207,9 +207,9 @@ void Binary<traits>::initialise(){ //Initialise model
         double* distribution=m_Distribution.getDistributionPointer(k);
         double* old_distribution=m_Distribution.getDistributionOldPointer(k);
         m_ChemicalPotential.getParameter(k)=0;
-        int yy=computeY(k);
+        int xx=computeX(k);
 
-        if (yy>=LY/2)orderparameter[k]=1.0; //Set order parameter to 1 initially (This will change)
+        if (xx>=LX/2)orderparameter[k]=1.0; //Set order parameter to 1 initially (This will change)
         else orderparameter[k]=-1.0;
         double sum=0;
         for (int idx=traits::Stencil::Q-1;idx>=0;idx--){
@@ -230,12 +230,12 @@ void Binary<traits>::initialise(){ //Initialise model
 template<class traits>
 void Binary<traits>::computeMomenta(){ //Calculate order parameter
 
-    double* distribution=m_Distribution.getDistributionPointer(0);
+    
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( static )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //Loop over k
-
+        double* distribution=m_Distribution.getDistributionPointer(k);
         orderparameter[k]=computeOrderParameter(distribution,k);
 
     }

@@ -58,10 +58,8 @@ struct traitPhaseField{
     using Forces=std::tuple<OrderParameterGradients<CentralXYZ<Stencil,Parallel>>>;
 };
 
-
-
 int main(int argc, char **argv){
-    
+
     #ifdef MPIPARALLEL
     MPI_Init(&argc, &argv);                                            // Initialise parallelisation based on arguments given
     MPI_Comm_size(MPI_COMM_WORLD, &NUMPROCESSORS);                              // Store number of processors
@@ -77,12 +75,10 @@ int main(int argc, char **argv){
     Binary<traitPhaseField> o_PhaseField;
 
     Algorithm<FlowFieldBinary<traitFlowField>,Binary<traitPhaseField>> LBM(o_FlowField,o_PhaseField);
+    
     LBM.initialise(); //Perform necessary initialisation
     auto t0=std::chrono::system_clock::now();
     for (int timestep=0;timestep<=TIMESTEPS;timestep++){
-
-        LBM.evolve(); //Evolve one timestep
-
         if (timestep%SAVEINTERVAL==0) {
             if(CURPROCESSOR==0) std::cout<<"SAVING at timestep "<<timestep<<""<<std::endl;
             Density<double>::save("density",timestep);
@@ -90,7 +86,9 @@ int main(int argc, char **argv){
             ChemicalPotential<double>::save("chemicalpotential",timestep);
             Velocity<double,NDIM>::save("velocity",timestep);
         }
-        
+
+        LBM.evolve(); //Evolve one timestep
+
     }
     auto tend=std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds=tend-t0; 
