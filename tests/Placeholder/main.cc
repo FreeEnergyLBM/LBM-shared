@@ -65,23 +65,10 @@ struct traitPhaseField{
 int main(int argc, char **argv){
 
     #ifdef MPIPARALLEL
-    //#ifdef OMPPARALLEL
-    //MPI_Init_thread(&argc, &argv,MPI_THREAD_MULTIPLE, &prov);                                            // Initialise parallelisation based on arguments given
-    //#else
     MPI_Init(&argc, &argv);
-    //#endif
     MPI_Comm_size(MPI_COMM_WORLD, &NUMPROCESSORS);                              // Store number of processors
     MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
     Parallel<NO_NEIGHBOR> initialise;
-    #ifdef OMPPARALLEL
-    #pragma omp parallel
-    #pragma omp critical
-    {
-        #pragma omp master
-        if(CURPROCESSOR==0) std::cout<<"MPI Processes: "<<NUMPROCESSORS<<" Threads: "<<omp_get_num_threads()<<std::endl;
-    
-    }
-    #endif
     #endif
     
     system("mkdir data");

@@ -22,9 +22,6 @@ constexpr int NDIM=2;
 char* MPIBUFFER;
 int MPIBUFFERSIZE;
 MPI_Status status;
-#ifdef OMPPARALLEL
-int prov;
-#endif
 #endif
 std::string DATA_DIR;
 #ifdef OMPPARALLEL
