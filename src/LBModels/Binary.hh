@@ -277,7 +277,9 @@ double Binary<traits>::computeEquilibrium(const double& orderparam,const double*
 
 template<class traits>
 double Binary<traits>::computeModelForce(int k,int xyz) const{
+    
     return 0;
+
 }
 
 

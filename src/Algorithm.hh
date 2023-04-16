@@ -3,40 +3,83 @@
 #include <tuple>
 #include <iostream>
 
-//Algorithm.hh: This file contains the Algorithm class, which will take the given models and provide functions
-//to initialise the models and evolve the LBM algorithm with the models, stencils, data types, forcing terms
-//and boundary conditions selected.
+/**
+ * \file Algorithm.hh
+ * \brief This file contains classes to run the lattice boltzmann algorithm for the chosen models.
+ * The classes in this file will take the given models and provide functions
+ * to initialise the models and evolve the LBM algorithm with the models, stencils, data types, forcing terms
+ * and boundary conditions selected. If a different algorithm is required, add a new class here and inherit from
+ * the class Algorithm.
+ */
 
-template<class ...Model> //Pass any number of models as to this class (the "..." allows this)
+/**
+ * \brief This class takes runs the standard LBM algorithm for each of the models specified in the template.
+ * The Algorithm class takes any number of model classes as template arguments. It will put these in a tuple
+ * (mt_Models) and then use the std::apply function to perform the compute, boundary, momenta and precompute
+ * calculations for each model. The models that are passed to the template must therefore have these public
+ * functions. The class must be given objects of each model when it is constructed. Then, the models can be
+ * initialised and evolved by one timestep at a time.
+ */
+template<class ...Model>
 class Algorithm{
     public:
 
-        Algorithm(Model&... Models):mt_Models(Models...){} //Pass objects of each model to this class when it is
-                                                           //constructed. The order of objects passed must
-                                                           //correspond to the order of models pased in the
-                                                           //initial template.
+        /**
+         * \brief Constructor for the class that will fill the tuple "mt_Models" with given objects of each model.
+         * This constructor will accept model objects corresponding to each model in the order they are given in the
+         * template arguments. This is then used to initialise the tuple "mt_Models" with references to each
+         * object. Note that models will be computed in the order they are specified.
+         * \param Models Objects of each model in the order specified by the template parameter "...Model".
+         */
+        Algorithm(Model&... Models):mt_Models(Models...){}
 
-        void evolve(); //Evolve the LBM algorithm. For now this is one timestep
+        /**
+         * \brief Function that will evolve the lattice Boltzmann algorithm by one timestep.
+         */
+        void evolve();
 
-        void initialise(); //Perform necessary initialisation
+        /**
+         * \brief Function that will perform necessary initialisations for each model (e.g. set distributions to equilibrium).
+         */
+        void initialise();
 
     private:
 
-        void precomputeStep(); //Perform any necessary calculations before collision can take place at each
-                               //timestep
+        /**
+         * \brief Perform any necessary calculations before collision can take place at each timestep.
+         */
+        void precomputeStep(); 
         
-        void calculateCollisionStep(); //Calculate collision for each model
+        /**
+         * \brief Calculate collision (and streaming currently) for each model over the entire lattice.
+         */
+        void calculateCollisionStep(); 
 
-        void calculateBoundaryStep(); //Apply boundary conditions for each model
+        /**
+         * \brief Apply boundary conditions for each model over the entire lattice.
+         */
+        void calculateBoundaryStep();
 
-        void calculateMomentaStep(); //Calculate momenta (density, velocity) for each model.
+        /**
+         * \brief Calculate momenta (density, velocity) for each model over the entire lattice.
+         */
+        void calculateMomentaStep();
 
-        std::tuple<Model&...> mt_Models; //Tuple containing objects of each model
+        /*
+         * Tuple containing references to objects of each Model... passed through the constructor.
+         */
+        std::tuple<Model&...> mt_Models;
 
 };
 
+/**
+ * \details This function will perform the precompute step (e.g. gradient calculations, chemical potential
+ *          calculations) then the collision (and streaming currently) step, then the boundary calculations
+ *          and finally it will compute the macroscopic variables (density, velocity etc.). It will do this
+ *          for every model.
+ */
 template<class ...Model>
-void Algorithm<Model...>::evolve(){ //See above
+void Algorithm<Model...>::evolve(){
 
     precomputeStep();
     
@@ -48,20 +91,51 @@ void Algorithm<Model...>::evolve(){ //See above
     
 }
 
+/**
+ * \details This function first checks if the algoritm has any models in the template arguments. Then, the 
+ *          std::apply() function is used to apply a lambda function, taking arguments as the models stored in the
+ *          tuple "mt_Models". In this case, the lambda function applies "(models.initialise(),...);", which will 
+ *          run the "initialise()" function for every model in the tuple. This function might set distributions to
+ *          equilibrium and set macroscopic variables to some initial value, for instance.
+ */
 template<class ...Model>
-void Algorithm<Model...>::precomputeStep(){
+void Algorithm<Model...>::initialise(){ //...
 
-    if constexpr (sizeof...(Model)!=0){ //Check if we have any models in the class
-        std::apply([](Model&... models){ //std::apply will run whatever is contained within the {} by expanding
-                                         //the tuple and using the elements as arguments. This is neccessary
-                                         //as std::get<> does not work if we have repeats in "Model&...".
-                (models.precompute(),...); //This expression runs models.precompute() for every "Model&..."
+    if constexpr (sizeof...(Model)!=0){
+        std::apply([](Model&... models){
+                (models.initialise(),...);
             }, mt_Models);
     }
-    else; //THROW SOME ERROR, ALSO PROBABLY JUST DO THIS ONCE
+    else;
 
 }
 
+/**
+ * \details This function first checks if the algoritm has any models in the template arguments. Then, the 
+ *          std::apply() function is used to apply a lambda function, taking arguments as the models stored in the
+ *          tuple "mt_Models". In this case, the lambda function applies "(models.precompute(),...);", which will 
+ *          run the "precompute()" function for every model in the tuple. This function might perform some gradient
+ *          calculations needed in the forcing terms, for instance.
+ */
+template<class ...Model>
+void Algorithm<Model...>::precomputeStep(){
+
+    if constexpr (sizeof...(Model)!=0){
+        std::apply([](Model&... models){
+                (models.precompute(),...);
+            }, mt_Models);
+    }
+    else;
+
+}
+
+/**
+ * \details This function first checks if the algoritm has any models in the template arguments. Then, the 
+ *          std::apply() function is used to apply a lambda function, taking arguments as the models stored in the
+ *          tuple "mt_Models". In this case, the lambda function applies "(models.collide(),...);", which will 
+ *          run the "collide()" function for every model in the tuple. This function will collide based on the 
+ *          chosen collision model and will also perform streaming.
+ */
 template<class ...Model>
 void Algorithm<Model...>::calculateCollisionStep(){ //...
     
@@ -74,6 +148,13 @@ void Algorithm<Model...>::calculateCollisionStep(){ //...
 
 }
 
+/**
+ * \details This function first checks if the algoritm has any models in the template arguments. Then, the 
+ *          std::apply() function is used to apply a lambda function, taking arguments as the models stored in the
+ *          tuple "mt_Models". In this case, the lambda function applies "(models.boundaries(),...);", which will 
+ *          run the "boundaries()" function for every model in the tuple. This function might apply bounceback and
+ *          outflow boundaries, depending on the geometry labels, for instance.
+ */
 template<class ...Model>
 void Algorithm<Model...>::calculateBoundaryStep(){ //...
     
@@ -86,24 +167,19 @@ void Algorithm<Model...>::calculateBoundaryStep(){ //...
 
 }
 
+/**
+ * \details This function first checks if the algoritm has any models in the template arguments. Then, the 
+ *          std::apply() function is used to apply a lambda function, taking arguments as the models stored in the
+ *          tuple "mt_Models". In this case, the lambda function applies "(models.computeMomenta(),...);", which
+ *          will run the "computeMomenta()" function for every model in the tuple. This function might set
+ *          calculate density and velocity based on the distributions, for instance.
+ */
 template<class ...Model>
 void Algorithm<Model...>::calculateMomentaStep(){ //...
 
     if constexpr (sizeof...(Model)!=0){
         std::apply([](Model&... models){
                 (models.computeMomenta(),...);
-            }, mt_Models);
-    }
-    else;
-
-}
-
-template<class ...Model>
-void Algorithm<Model...>::initialise(){ //...
-
-    if constexpr (sizeof...(Model)!=0){
-        std::apply([](Model&... models){
-                (models.initialise(),...);
             }, mt_Models);
     }
     else;

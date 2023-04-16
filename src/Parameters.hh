@@ -126,15 +126,15 @@ void Parameter<obj,T,num>::save(std::string filename,int t){ //Function to save 
     MPI_File_open(MPI_COMM_SELF, fdump,MPI_MODE_CREATE | MPI_MODE_WRONLY,MPI_INFO_NULL,&fh); //Open the file using mpi in write only mode
     
     MPI_File_seek(fh,sizeof(double)*CURPROCESSOR*num*(LX*LY*LZ)/NUMPROCESSORS,MPI_SEEK_SET); //Skip to a certain location in the file, currently
-    //MPI_File_write(fh,&mv_Parameter[MAXNEIGHBORS*LY*LZ*num],num*(N-2*MAXNEIGHBORS*LY*LZ),MPI_DOUBLE,&status);
+    MPI_File_write(fh,&mv_Parameter[MAXNEIGHBORS*LY*LZ*num],num*(N-2*MAXNEIGHBORS*LY*LZ),MPI_DOUBLE,&status);
     //MPI_File_write_all(fh,&mv_Parameter[MAXNEIGHBORS*LY*LZ*num],num*(N-2*MAXNEIGHBORS*LY*LZ),MPI_DOUBLE,&status);
-    for (int k = MAXNEIGHBORS*LY*LZ; k < N-MAXNEIGHBORS*LY*LZ; k++ ) { 
-        
-        for(int idx=0;idx<num;idx++) {
-            MPI_File_write(fh,&mv_Parameter[k*num+idx],num*,MPI_DOUBLE,&status);
-        }
+    //for (int k = MAXNEIGHBORS*LY*LZ; k < N-MAXNEIGHBORS*LY*LZ; k++ ) { 
+    //    
+    //    for(int idx=0;idx<num;idx++) {
+    //        MPI_File_write(fh,&mv_Parameter[k*num+idx],num*,MPI_DOUBLE,&status);
+    //    }
 
-    };
+    //};
 
     MPI_File_close(&fh);
          
