@@ -69,12 +69,11 @@ template<class stencil,int num_neighbors>
 template<class parameter>
 void X_Parallel<stencil,num_neighbors>::communicate(parameter& obj){
     
-    MPI_Bsend(&obj.getParameter()[N*parameter::m_Num-(num_neighbors+1)*LY*LZ],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_RightNeighbor,0,MPI_COMM_WORLD);
-    MPI_Recv(&obj.getParameter()[0],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_LeftNeighbor,0,MPI_COMM_WORLD,&status);
-
-    MPI_Bsend(&obj.getParameter()[num_neighbors*LY*LZ*parameter::m_Num],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_LeftNeighbor,1,MPI_COMM_WORLD);
-    MPI_Recv(&obj.getParameter()[N*parameter::m_Num-num_neighbors*LY*LZ*parameter::m_Num],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_RightNeighbor,1,MPI_COMM_WORLD,&status);
-
+    MPI_Isend(&obj.getParameter()[N*parameter::m_Num-(num_neighbors+1)*LY*LZ],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_RightNeighbor,0,MPI_COMM_WORLD,&request);
+    MPI_Isend(&obj.getParameter()[num_neighbors*LY*LZ*parameter::m_Num],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_LeftNeighbor,1,MPI_COMM_WORLD,&request);
+    MPI_Irecv(&obj.getParameter()[N*parameter::m_Num-num_neighbors*LY*LZ*parameter::m_Num],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_RightNeighbor,1,MPI_COMM_WORLD,&request);
+    MPI_Irecv(&obj.getParameter()[0],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_LeftNeighbor,0,MPI_COMM_WORLD,&request);
+    MPI_Barrier(MPI_COMM_WORLD);
 }
 
 template<class stencil,int num_neighbors>
@@ -88,27 +87,41 @@ void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& ob
             leftorright=stencil::Ci_xyz(0)[idx];
             if(leftorright==-1){
             
-                MPI_Bsend(&obj.getDistribution()[(num_neighbors-1)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_LeftNeighbor,id,MPI_COMM_WORLD);
-                MPI_Recv(&obj.getDistribution()[N*stencil::Q-(num_neighbors+1)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_RightNeighbor,id,MPI_COMM_WORLD,&status);
+                MPI_Isend(&obj.getDistribution()[(num_neighbors-1)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_LeftNeighbor,id,MPI_COMM_WORLD,&request);
                 
             }
             else if(leftorright==1){
             
-                MPI_Bsend(&obj.getDistribution()[N*stencil::Q-(num_neighbors)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_LeftNeighbor,id,MPI_COMM_WORLD);
-                MPI_Recv(&obj.getDistribution()[(num_neighbors)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_RightNeighbor,id,MPI_COMM_WORLD,&status);
+                MPI_Isend(&obj.getDistribution()[N*stencil::Q-(num_neighbors)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_LeftNeighbor,id,MPI_COMM_WORLD,&request);
                 
             }
             id+=1;
         }
-        
+        id=0;
+        for(int idx=1; idx<stencil::Q;idx++){
+            leftorright=stencil::Ci_xyz(0)[idx];
+            if(leftorright==-1){
+            
+                MPI_Irecv(&obj.getDistribution()[N*stencil::Q-(num_neighbors+1)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_RightNeighbor,id,MPI_COMM_WORLD,&request);
+                
+            }
+            else if(leftorright==1){
+            
+                MPI_Irecv(&obj.getDistribution()[(num_neighbors)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_RightNeighbor,id,MPI_COMM_WORLD,&request);
+                
+            }
+            id+=1;
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
     }
+    
     
 }
 
 template<class stencil,int num_neighbors>
 X_Parallel<stencil,num_neighbors>::X_Parallel(){
 
-    const int bufSize=LY*LZ*num_neighbors*stencil::Q*8*3+5000;
+    const int bufSize=(LY*LZ*num_neighbors*(5+2)*2*2+1000)*sizeof(double);
     
     if(bufSize>MPIBUFFERSIZE){
         if(MPIBUFFERSIZE!=0)MPI_Buffer_detach(MPIBUFFER,&MPIBUFFERSIZE);
@@ -117,7 +130,7 @@ X_Parallel<stencil,num_neighbors>::X_Parallel(){
         MPI_Buffer_attach(MPIBUFFER,bufSize);
         MPIBUFFERSIZE=bufSize;
     }
-    
+    //std::cout<<MPIBUFFERSIZE<<std::endl;
     m_LeftNeighbor=CURPROCESSOR-1;
     if (m_LeftNeighbor == -1) m_LeftNeighbor=NUMPROCESSORS-1;
     m_RightNeighbor=CURPROCESSOR+1;

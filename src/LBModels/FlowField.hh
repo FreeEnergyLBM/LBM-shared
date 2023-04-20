@@ -115,7 +115,7 @@ void FlowField<traits>::precompute(){ //Perform necessary calculations before co
     
     //k = m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( static )
+    #pragma omp parallel for schedule( dynamic )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -140,7 +140,7 @@ void FlowField<traits>::precompute(){ //Perform necessary calculations before co
 template<class traits>
 double FlowField<traits>::computeForces(int xyz,int k) const{ //Return the sum of forces
 
-    if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
+    if constexpr (std::tuple_size<typename traits::Forces>::value!=0){
         return std::apply([xyz,k](auto&... forces){
                 return (forces.compute(xyz,k)+...);
             }, mt_Forces);
@@ -155,7 +155,7 @@ void FlowField<traits>::collide(){ //Collision step
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( static )
+    #pragma omp parallel for schedule( dynamic )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -180,7 +180,7 @@ void FlowField<traits>::boundaries(){ //Apply the boundary step
     //int k=0;
     //k = m_Data.iterateSolid0(k,true);
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( static )
+    #pragma omp parallel for schedule( dynamic )
     #endif
     for (int k=0;k<N;k++){ //loop over k
         
@@ -213,7 +213,7 @@ void FlowField<traits>::initialise(){ //Initialise model
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( static )
+    #pragma omp parallel for schedule( dynamic )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -249,7 +249,7 @@ void FlowField<traits>::computeMomenta(){ //Calculate Density and Velocity
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( static )
+    #pragma omp parallel for schedule( dynamic )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //Loop over k
 

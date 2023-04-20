@@ -35,10 +35,10 @@ void BounceBack::postprocess(int k){
 }
 
 double BounceBack::computeDensitySource(int k) const{
-
+    return 0;
 }
 
 double BounceBack::computeVelocitySource(int xyz,int k) const{
-
+    return 0;
 }
 #endif

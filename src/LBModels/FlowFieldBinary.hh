@@ -58,7 +58,7 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
 
     #ifdef OMPPARALLEL
     double CollideStartTime=omp_get_wtime();
-    #pragma omp parallel for schedule( static )
+    #pragma omp parallel for schedule( dynamic )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -85,7 +85,7 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
     FlowField<traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( static )
+    #pragma omp parallel for schedule( dynamic )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 

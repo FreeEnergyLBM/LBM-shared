@@ -113,7 +113,7 @@ template<class traits>
 void Binary<traits>::precompute(){
 
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( static )
+    #pragma omp parallel for schedule( dynamic )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -147,7 +147,7 @@ template<class traits>
 void Binary<traits>::collide(){
 
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( static )
+    #pragma omp parallel for schedule( dynamic )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -172,7 +172,7 @@ template<class traits>
 void Binary<traits>::boundaries(){
 
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( static )
+    #pragma omp parallel for schedule( dynamic )
     #endif
     for (int k=0;k<N;k++){ //loop over k
 
@@ -200,7 +200,7 @@ void Binary<traits>::initialise(){ //Initialise model
     m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( static )
+    #pragma omp parallel for schedule( dynamic )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
@@ -232,7 +232,7 @@ void Binary<traits>::computeMomenta(){ //Calculate order parameter
 
     
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( static )
+    #pragma omp parallel for schedule( dynamic )
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //Loop over k
         double* distribution=m_Distribution.getDistributionPointer(k);

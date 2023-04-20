@@ -18,9 +18,13 @@
 #include <mpi.h>
 #endif
 
-//TODO BEFORE HACKATHON
-//EXCEPTIONS & CLEANUP
-//CLEANUP OLD CODE
+//TODO
+//Swapping based streaming
+//BLAS
+//non-cuboid grid - sparse matrices
+//buffer size
+//adative mesh
+//floats
 
 /**
  * \file main.cc
