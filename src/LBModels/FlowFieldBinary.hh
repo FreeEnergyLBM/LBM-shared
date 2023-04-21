@@ -5,6 +5,8 @@
 #include "../Data.hh"
 #include "../BoundaryModels/Boundaries.hh"
 #include "../Forces/Forces.hh"
+#include "../Parallel.hh"
+#include "../GradientStencils/GradientStencils.hh"
 #include <utility>
 #include <array>
 #include <omp.h>
@@ -12,7 +14,25 @@
 //FlowField.hh: Contains the details of the LBM model to solve the Navier-Stokes and continuity equation. Each
 //Model is given a "traits" class that contains stencil, data, force and boundary information
 
-template<class traits>
+//Trait class for FlowField Distribution (Navier-Stokes and continuity solver)
+
+struct traitFlowFieldBinaryDefault{
+    using Stencil=std::conditional_t<NDIM==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions
+                        //and Q refers to the number of discrete velocity directions.
+                        //This naming convention is standard in LBM.
+
+    #ifdef MPIPARALLEL
+    using Parallel=X_Parallel<Stencil,NO_NEIGHBOR>;
+    #else
+    using Parallel=No_Parallel;
+    #endif
+    using Data=Data1<Stencil,Parallel>; //This will change the "Data" implementation, which will essentially
+                               //govern the access of non-local data
+    using Boundaries=std::tuple<BounceBack>; //This will tell the model which boundaries to apply
+    using Forces=std::tuple<BodyForce,ChemicalForce>; //This will tell the model which forces to apply
+};
+
+template<class traits=traitFlowFieldBinaryDefault>
 class FlowFieldBinary:public FlowField<traits>{ //Inherit from base class to avoid repetition of common
                                                          //calculations
     

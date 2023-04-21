@@ -3,12 +3,27 @@
 #include "../Collide.hh"
 #include "../Parameters.hh"
 #include "../Data.hh"
+#include "../Parallel.hh"
 #include <utility>
 
 //Binary.hh: Contains the details of the LBM model to solve an equation for phase separation. Each
 //Model is given a "traits" class that contains stencil, data, force and boundary information
 
-template<class traits>
+
+//Trait class for PhaseField Distribution (Calculates the interface between components)
+struct traitBinaryDefault{
+    using Stencil=std::conditional_t<NDIM==2,D2Q9,D3Q19>; 
+    #ifdef MPIPARALLEL
+    using Parallel=X_Parallel<Stencil,NO_NEIGHBOR>;
+    #else
+    using Parallel=No_Parallel;
+    #endif
+    using Data=Data1<Stencil,Parallel>;
+    using Boundaries=std::tuple<BounceBack>;
+    using Forces=std::tuple<OrderParameterGradients<CentralXYZ<Stencil,Parallel>>>;
+};
+
+template<class traits=traitBinaryDefault>
 class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class to avoid repetition of common
                                                       //calculations
     public:

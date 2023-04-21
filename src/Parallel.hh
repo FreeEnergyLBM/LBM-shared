@@ -68,18 +68,18 @@ MPI_Datatype X_Parallel<stencil,num_neighbors>::DistributionVector;
 template<class stencil,int num_neighbors>
 template<class parameter>
 void X_Parallel<stencil,num_neighbors>::communicate(parameter& obj){
-    
-    MPI_Isend(&obj.getParameter()[N*parameter::m_Num-(num_neighbors+1)*LY*LZ],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_RightNeighbor,0,MPI_COMM_WORLD,&request);
-    MPI_Isend(&obj.getParameter()[num_neighbors*LY*LZ*parameter::m_Num],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_LeftNeighbor,1,MPI_COMM_WORLD,&request);
-    MPI_Irecv(&obj.getParameter()[N*parameter::m_Num-num_neighbors*LY*LZ*parameter::m_Num],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_RightNeighbor,1,MPI_COMM_WORLD,&request);
-    MPI_Irecv(&obj.getParameter()[0],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_LeftNeighbor,0,MPI_COMM_WORLD,&request);
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Request comm_request[2];
+    MPI_Isend(&obj.getParameter()[N*parameter::m_Num-(num_neighbors+1)*LY*LZ],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_RightNeighbor,0,MPI_COMM_WORLD,&comm_request[0]);
+    MPI_Isend(&obj.getParameter()[num_neighbors*LY*LZ*parameter::m_Num],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_LeftNeighbor,1,MPI_COMM_WORLD,&comm_request[1]);
+    MPI_Irecv(&obj.getParameter()[N*parameter::m_Num-num_neighbors*LY*LZ*parameter::m_Num],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_RightNeighbor,1,MPI_COMM_WORLD,&comm_request[0]);
+    MPI_Irecv(&obj.getParameter()[0],num_neighbors*LY*LZ*parameter::m_Num,mpi_get_type<typename parameter::ParamType>(),m_LeftNeighbor,0,MPI_COMM_WORLD,&comm_request[1]);
+    MPI_Waitall(2,comm_request,MPI_STATUSES_IGNORE);
 }
 
 template<class stencil,int num_neighbors>
 template<class distribution>
 void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& obj){
-
+    MPI_Request comm_dist_request[5];
     if (CURPROCESSOR<NUMPROCESSORS){
         int leftorright;
         int id=0;
@@ -87,12 +87,12 @@ void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& ob
             leftorright=stencil::Ci_xyz(0)[idx];
             if(leftorright==-1){
             
-                MPI_Isend(&obj.getDistribution()[(num_neighbors-1)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_LeftNeighbor,id,MPI_COMM_WORLD,&request);
+                MPI_Isend(&obj.getDistribution()[(num_neighbors-1)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_LeftNeighbor,id,MPI_COMM_WORLD,&comm_dist_request[id]);
                 
             }
             else if(leftorright==1){
             
-                MPI_Isend(&obj.getDistribution()[N*stencil::Q-(num_neighbors)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_LeftNeighbor,id,MPI_COMM_WORLD,&request);
+                MPI_Isend(&obj.getDistribution()[N*stencil::Q-(num_neighbors)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_LeftNeighbor,id,MPI_COMM_WORLD,&comm_dist_request[id]);
                 
             }
             id+=1;
@@ -102,17 +102,17 @@ void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& ob
             leftorright=stencil::Ci_xyz(0)[idx];
             if(leftorright==-1){
             
-                MPI_Irecv(&obj.getDistribution()[N*stencil::Q-(num_neighbors+1)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_RightNeighbor,id,MPI_COMM_WORLD,&request);
+                MPI_Irecv(&obj.getDistribution()[N*stencil::Q-(num_neighbors+1)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_RightNeighbor,id,MPI_COMM_WORLD,&comm_dist_request[id]);
                 
             }
             else if(leftorright==1){
             
-                MPI_Irecv(&obj.getDistribution()[(num_neighbors)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_RightNeighbor,id,MPI_COMM_WORLD,&request);
+                MPI_Irecv(&obj.getDistribution()[(num_neighbors)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_RightNeighbor,id,MPI_COMM_WORLD,&comm_dist_request[id]);
                 
             }
             id+=1;
         }
-        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Waitall(5,comm_dist_request,MPI_STATUSES_IGNORE);
     }
     
     

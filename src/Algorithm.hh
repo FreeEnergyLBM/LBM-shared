@@ -34,6 +34,15 @@ class Algorithm{
         Algorithm(Model&... Models):mt_Models(Models...){}
 
         /**
+         * \brief Constructor for the class that will fill the tuple "mt_Models" with given objects of each model.
+         * This constructor will accept model objects corresponding to each model in the order they are given in the
+         * template arguments. This is then used to initialise the tuple "mt_Models" with references to each
+         * object. Note that models will be computed in the order they are specified.
+         * \param Models Objects of each model in the order specified by the template parameter "...Model".
+         */
+        Algorithm():mt_Models(*new Model...){}
+
+        /**
          * \brief Function that will evolve the lattice Boltzmann algorithm by one timestep.
          */
         void evolve();
