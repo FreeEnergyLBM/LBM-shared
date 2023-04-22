@@ -101,11 +101,9 @@ class Parameter{
         const static int m_Num=num;
         using ParamType=T;
 
-        static void save(std::string filename,int t);
-    
+        static void Save(std::string filename,int t);
 
     private:
-
         static vector<T> mv_Parameter; //Static vector (Does not change between objects of the class)
         
 };
@@ -114,7 +112,7 @@ template<class obj,typename T,int num>
 vector<T> Parameter<obj,T,num>::mv_Parameter; //Must allocate memory for static vector outside of class
 
 template<class obj,typename T,int num>
-void Parameter<obj,T,num>::save(std::string filename,int t){ //Function to save parameter stored in this class
+void Parameter<obj,T,num>::Save(std::string filename,int t){ //Function to save parameter stored in this class
 
     char fdump[512];
     sprintf(fdump, (DATA_DIR+filename+"_t%li.mat").c_str(),t); //Buffer containing file name and location.
@@ -156,31 +154,47 @@ void Parameter<obj,T,num>::save(std::string filename,int t){ //Function to save 
 
 }
 
+template<class ...parameters>
+class ParameterSave{
+    public:
+        ParameterSave(int saveinterval):m_SaveInterval(saveinterval){
+
+        }
+        void Save(int timestep){
+            if (timestep%SAVEINTERVAL==0) {
+                if(CURPROCESSOR==0) std::cout<<"SAVING at timestep "<<timestep<<""<<std::endl;
+                (parameters::Save(parameters::m_Name,timestep),...);
+            }
+        }
+    private:
+        const int m_SaveInterval;
+};
+
 template<typename T,int ndim>
-struct Velocity : public Parameter<Velocity<T,ndim>,T,ndim>{}; //Velocity, with directions D
+struct Velocity : public Parameter<Velocity<T,ndim>,T,ndim>{static constexpr char m_Name[]="Velocity";}; //Velocity, with directions D
                                                                         //corresponding to the number of cartesian
                                                                         //directions in the stencilUw
 
 template<typename T>
-struct Density : public Parameter<Density<T>,T,1>{}; //Density
+struct Density : public Parameter<Density<T>,T,1>{static constexpr char m_Name[]="Density";}; //Density
 
 template<typename T>
-struct Pressure : public Parameter<Pressure<T>,T,1>{}; //Presure
+struct Pressure : public Parameter<Pressure<T>,T,1>{static constexpr char m_Name[]="Pressure";}; //Presure
 
 template<typename T>
-struct OrderParameter : public Parameter<OrderParameter<T>,T,1>{}; //Order parameter representing relative
+struct OrderParameter : public Parameter<OrderParameter<T>,T,1>{static constexpr char m_Name[]="OrderParameter";}; //Order parameter representing relative
                                                                    //concentration of the phases
 
 template<typename T>
-struct ChemicalPotential : public Parameter<ChemicalPotential<T>,T,1>{}; //Chemical potential for the multicomponent model
+struct ChemicalPotential : public Parameter<ChemicalPotential<T>,T,1>{static constexpr char m_Name[]="ChemicalPotential";}; //Chemical potential for the multicomponent model
 
 template<typename T>
-struct LaplacianOrderParameter : public Parameter<LaplacianOrderParameter<T>,T,1>{}; //Laplacian of the order parameter
+struct LaplacianOrderParameter : public Parameter<LaplacianOrderParameter<T>,T,1>{static constexpr char m_Name[]="LaplacianOrderParameter";}; //Laplacian of the order parameter
 
 template<typename T,int ndim>
-struct GradientOrderParameter : public Parameter<GradientOrderParameter<T,ndim>,T,ndim>{}; //Directional first order gradients of the order parameter
+struct GradientOrderParameter : public Parameter<GradientOrderParameter<T,ndim>,T,ndim>{static constexpr char m_Name[]="GradientOrderParameter";}; //Directional first order gradients of the order parameter
 
-struct SolidLabels : public Parameter<SolidLabels,int,1>{}; //Labelling of geometry
+struct SolidLabels : public Parameter<SolidLabels,int,1>{static constexpr char m_Name[]="SolidLabels";}; //Labelling of geometry
 
 
 

@@ -51,18 +51,13 @@ int main(int argc, char **argv){
 
     Algorithm<FlowFieldBinary<>,Binary<>> LBM;
 
+    ParameterSave<Density<double>,OrderParameter<double>,ChemicalPotential<double>,Velocity<double,NDIM>> Saver(SAVEINTERVAL);
+
     LBM.initialise(); //Perform necessary initialisation
 
     for (int timestep=0;timestep<=TIMESTEPS;timestep++){
 
-        if (timestep%SAVEINTERVAL==0) {
-            if(CURPROCESSOR==0) std::cout<<"SAVING at timestep "<<timestep<<""<<std::endl;
-            Density<double>::save("density",timestep);
-            OrderParameter<double>::save("orderparameter",timestep);
-            ChemicalPotential<double>::save("chemicalpotential",timestep);
-            Velocity<double,NDIM>::save("velocity",timestep);
-        }
-
+        Saver.Save(timestep);
         LBM.evolve(); //Evolve one timestep
 
     }
