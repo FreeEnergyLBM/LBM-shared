@@ -1,14 +1,4 @@
-#include "../../src/Algorithm.hh"
-#include "../../src/LBModels/Models.hh"
-#include "../../src/Forces/Forces.hh"
-#include "../../src/BoundaryModels/Boundaries.hh"
-#include "../../src/GradientStencils/GradientStencils.hh"
-#include "../../src/Data.hh"
-#include "../../src/Stencil.hh"
-#include "../../src/Global.hh"
-#include "../../src/Service.hh"
-#include "../../src/Parallel.hh"
-#include "../../src/Parameters.hh"
+#include "../../src/lbm.hh"
 #include <chrono>
 #include <iostream>
 #ifdef OMPPARALLEL
