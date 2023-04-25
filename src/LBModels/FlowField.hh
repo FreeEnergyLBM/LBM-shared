@@ -89,7 +89,7 @@ class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from b
         enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z directions
 
 
-        typename DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
+        DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
 
         typename traits::Forces& mt_Forces; //MOVE THIS TO BASE
         typename traits::Boundaries& mt_Boundaries;

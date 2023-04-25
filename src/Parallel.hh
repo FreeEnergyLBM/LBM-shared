@@ -2,7 +2,8 @@
 #define MPIPARALLEL_HEADER
 #ifdef MPIPARALLEL
 #include <mpi.h>
-
+#include "Global.hh"
+#include "Service.hh"
 /**
  * \file  Parallel.hh
  * \brief This contains classes to control the MPI parallelisation of the code.
@@ -33,7 +34,7 @@ class Parallel{
                 LXdiv=(LX/NUMPROCESSORS+2*num_neighbors);
             }
             else{
-                throw runtime_error(std::string("Currently, the number of cores must be divisible by the size of the domain in the x direction."));
+                throw std::runtime_error(std::string("Currently, the number of cores must be divisible by the size of the domain in the x direction."));
             }
             /*
             else if (CURPROCESSOR<LX%NUMPROCESSORS){
@@ -120,7 +121,7 @@ void X_Parallel<stencil,num_neighbors>::communicate(parameter& obj){
     MPI_Irecv(&obj.getParameter()[0], num_neighbors*LY*LZ*parameter::m_Num, mpi_get_type<typename parameter::ParamType>(), m_LeftNeighbor, 0, MPI_COMM_WORLD, &comm_request[1]);
     
     MPI_Waitall(2,comm_request,MPI_STATUSES_IGNORE);
-    
+
 }
 
 template<class stencil,int num_neighbors>

@@ -14,7 +14,7 @@
 struct traitBinaryDefault{
     using Stencil=std::conditional_t<NDIM==2,D2Q9,D3Q19>; 
     using Boundaries=std::tuple<BounceBack>;
-    using Forces=std::tuple<OrderParameterGradients<CentralXYZ<Stencil,Parallel>>>;
+    using Forces=std::tuple<OrderParameterGradients<CentralXYZ<Stencil,ParallelType>>>;
 };
 
 template<class traits=traitBinaryDefault>
@@ -71,7 +71,7 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
         typename DataType<typename traits::Stencil>::DistributionData& m_Distribution=m_Data.getDistributionObject();
             //Distributions
 
-        typename DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
+        DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
 
         vector<double>& orderparameter=m_OrderParameter.getParameter(); //Reference to vector of order parameters
 
