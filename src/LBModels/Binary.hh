@@ -13,12 +13,6 @@
 //Trait class for PhaseField Distribution (Calculates the interface between components)
 struct traitBinaryDefault{
     using Stencil=std::conditional_t<NDIM==2,D2Q9,D3Q19>; 
-    #ifdef MPIPARALLEL
-    using Parallel=X_Parallel<Stencil,NO_NEIGHBOR>;
-    #else
-    using Parallel=No_Parallel;
-    #endif
-    using Data=Data1<Stencil,Parallel>;
     using Boundaries=std::tuple<BounceBack>;
     using Forces=std::tuple<OrderParameterGradients<CentralXYZ<Stencil,Parallel>>>;
 };
@@ -74,10 +68,10 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         Velocity<double,NDIM> m_Velocity; //Velocity
 
-        typename traits::Data::DistributionData& m_Distribution=m_Data.getDistributionObject();
+        typename DataType<typename traits::Stencil>::DistributionData& m_Distribution=m_Data.getDistributionObject();
             //Distributions
 
-        typename traits::Data m_Data; //MOVE THIS TO BASE
+        typename DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
 
         vector<double>& orderparameter=m_OrderParameter.getParameter(); //Reference to vector of order parameters
 
@@ -273,12 +267,12 @@ double Binary<traits>::computeCollisionQ(double& sum,const int k,const double& o
     //Sum of collision + force contributions
     if (idx>0) {
         double eq=CollisionBase<typename traits::Stencil>::collideSRT(old,computeEquilibrium(orderparam,velocity,idx,k),m_InverseTau)
-              +CollisionBase<typename traits::Stencil>::forceSRT(forcexyz,velocity,m_InverseTau,idx);
+              +CollisionBase<typename traits::Stencil>::forceGuoSRT(forcexyz,velocity,m_InverseTau,idx);
         sum+=eq;
         
         return eq;
     }
-    else return m_OrderParameter.getParameter(k)-sum+CollisionBase<typename traits::Stencil>::forceSRT(forcexyz,velocity,m_InverseTau,idx);
+    else return m_OrderParameter.getParameter(k)-sum+CollisionBase<typename traits::Stencil>::forceGuoSRT(forcexyz,velocity,m_InverseTau,idx);
 
 }
 
@@ -302,13 +296,13 @@ template<class traits>
 double Binary<traits>::computeOrderParameter(const double* distribution,int k) const{//Order parameter calculation
     //Order parameter is the sum of distributions plus any source/correction terms
     if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
-        return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution)
+        return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution)
         +std::apply([k](auto&... tests){
             return (tests.computeDensitySource(k)+...);
         }, mt_Forces);
     }
     //CHANGE THIS SO FIRST/SECOND MOMENT COMPUTATION IS DONE IN DISTRIBUTION
-    else return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution);
+    else return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution);
 
 }
 

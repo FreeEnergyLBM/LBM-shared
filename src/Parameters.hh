@@ -101,7 +101,7 @@ class Parameter{
         const static int m_Num=num;
         using ParamType=T;
 
-        static void Save(std::string filename,int t);
+        static void Save(std::string filename,int t,std::string datadir);
 
     private:
         static vector<T> mv_Parameter; //Static vector (Does not change between objects of the class)
@@ -112,10 +112,10 @@ template<class obj,typename T,int num>
 vector<T> Parameter<obj,T,num>::mv_Parameter; //Must allocate memory for static vector outside of class
 
 template<class obj,typename T,int num>
-void Parameter<obj,T,num>::Save(std::string filename,int t){ //Function to save parameter stored in this class
+void Parameter<obj,T,num>::Save(std::string filename,int t,std::string datadir){ //Function to save parameter stored in this class
 
     char fdump[512];
-    sprintf(fdump, (DATA_DIR+filename+"_t%li.mat").c_str(),t); //Buffer containing file name and location.
+    sprintf(fdump, (datadir+filename+"_t%li.mat").c_str(),t); //Buffer containing file name and location.
 
 #ifdef MPIPARALLEL //When MPI is used we need a different approach for saving as all nodes are trying to write to the file
 
@@ -157,17 +157,18 @@ void Parameter<obj,T,num>::Save(std::string filename,int t){ //Function to save 
 template<class ...parameters>
 class ParameterSave{
     public:
-        ParameterSave(int saveinterval):m_SaveInterval(saveinterval){
-
+        ParameterSave(std::string datadir,int saveinterval):m_SaveInterval(saveinterval),m_DataDir(datadir){
+            system(((std::string)"mkdir "+m_DataDir).c_str());
         }
         void Save(int timestep){
             if (timestep%SAVEINTERVAL==0) {
                 if(CURPROCESSOR==0) std::cout<<"SAVING at timestep "<<timestep<<""<<std::endl;
-                (parameters::Save(parameters::m_Name,timestep),...);
+                (parameters::Save(parameters::m_Name,timestep,m_DataDir),...);
             }
         }
     private:
         const int m_SaveInterval;
+        const std::string m_DataDir;
 };
 
 template<typename T,int ndim>

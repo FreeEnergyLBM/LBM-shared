@@ -39,19 +39,24 @@
 
 int main(int argc, char **argv){
 
+    LX=1000; LY=1000; LZ=1;
+    N=LX*LY*LZ;
+
     #ifdef MPIPARALLEL
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &NUMPROCESSORS);                              // Store number of processors
     MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
     Parallel<NO_NEIGHBOR> initialise;
+    #else
+    LXdiv=LX
     #endif
-    
-    system("mkdir data");
-    DATA_DIR="data/"; //TEMPORARY used to save output
 
     Algorithm<FlowFieldBinary<>,Binary<>> LBM;
 
-    ParameterSave<Density<double>,OrderParameter<double>,ChemicalPotential<double>,Velocity<double,NDIM>> Saver(SAVEINTERVAL);
+    ParameterSave<Density<double>,
+                  OrderParameter<double>,
+                  ChemicalPotential<double>,
+                  Velocity<double,NDIM>> Saver("data/",SAVEINTERVAL);
 
     LBM.initialise(); //Perform necessary initialisation
 
@@ -64,9 +69,6 @@ int main(int argc, char **argv){
     
     #ifdef MPIPARALLEL
     MPI_Finalize();
-    #endif
-    #ifdef OMPPARALLEL
-    //std::cout<<"RUNTIME: "<<TOTALTIME<<std::endl;
     #endif
     
     return 0;

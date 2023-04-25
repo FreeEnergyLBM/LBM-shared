@@ -4,46 +4,78 @@
 #include "Parameters.hh"
 #include "Service.hh"
 
-//Data.hh: Contains data class that will control how how data is accessed and how stremaing happens. These
-//classes will contain derived distribution classes that will determine memory allocation for the distribution
-//arrays and the streaming indices. The Data class also contains a vector of neighbors for each lattice point in
-//every direction but it might be faster to just recalculate every time this is needed.
-//
-//"Neighbor" refers to the lattice point adjacent to any given latice point in a chosen discrete direction
-//
-//Periodic boundaries work by setting the neighbor of each lattice point at the edges of the domain so that the
-//top of the domain connects to the bottom, the left connects to the right etc.
+/**
+ * \file Data.hh
+ * \brief Contains data class that will control how how data is accessed and how stremaing happens.
+ * These classes will contain derived distribution classes that will determine memory allocation for the
+ * distribution arrays and the streaming indices. The Data class also contains a vector of neighbors for each 
+ * lattice point in every direction but it might be faster to just recalculate every time this is needed.
+ * "Neighbor" refers to the lattice point adjacent to any given latice point in a chosen discrete direction
+ * Periodic boundaries work by setting the neighbor of each lattice point at the edges of the domain so that the
+ * top of the domain connects to the bottom, the left connects to the right etc.
+ */
 
-template<class stencil,class parallel> //Stencil information is needed as streaming indices and neighbors are determined by the
-                        //velocity vectors
+
+/**
+ * \brief The Data_Base class provides information for the layout of neighboring lattice points and communication
+          for non-distribution parameters.
+ * This class takes a stencil as a template argument, as the velocity discretisation information and weights is 
+ * needed. It also takes the MPI parallelisation method as a template argument as the communication may change
+ * based on the data layout. The class has public functions for communication, generating neighbors based on the
+ * stencil and a function to get a reference to the vector of neighbor indices.
+ */
+template<class stencil,class parallel>
 class Data_Base{
     private:
         
+        /**
+         * \brief This function returns the neighbor at the current lattice point k in the direction Q.
+         * \param k Index of current lattice point.
+         * \param Q Discrete velocity direction (e.g. 0-8 for D2Q9).
+         */
+        int getOneNeighbor(const int k,const int Q);
 
-        int getOneNeighbor(const int k,const int Q); //Return Neighbor of lattice point k in direction Q
+        /**
+         * \brief This function returns the neighbor at the current lattice point k in the direction Q given that
+         *        the lattice point lies on a periodic boundary.
+         * \param k Index of current lattice point.
+         * \param Q Discrete velocity direction (e.g. 0-8 for D2Q9).
+         */
+        int getOneNeighborPeriodic(const int k,const int Q);
 
-        int getOneNeighborPeriodic(const int k,const int Q); //Return Neighbor of lattice point k in direction Q
-                                                             //given that k lieas on a periodic boundary
-
-        int OppositeOffset[stencil::Q]; //Opposite lattice point offset in each direction
+        int OppositeOffset[stencil::Q]; //!< Opposite lattice point offset in each direction.
         
-        Geometry m_Geometry; //Class containing geometry information (for periodic boundaries)
+        Geometry m_Geometry; //!< Class containing geometry information (for periodic boundaries).
 
-        std::vector<int> mv_Neighbors; //Vector containing neighbor information
+        std::vector<int> mv_Neighbors; //!< Vector containing neighbor information.
 
-        enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z
+        enum{x=0,y=1,z=2}; //!< Indices corresponding to x, y, z.
         
-        parallel m_Parallel;
+        parallel m_Parallel; //!< Object of parallelisation class.
 
         template<class stencil1,class parallel1>
-        friend class Data1;
+        friend class Data1; //Data1 can access private members of the base class (will need to add new data
+                            //types here but I will probably change how this works).
         
     public:
-        using Stencil=stencil;
+
+        using Stencil=stencil; //!< Typedef so type info can be accessed from outside the class.
+
         #ifdef MPIPARALLEL
+        /**
+         * \brief This function communicates a chosen parameter (halo regions are exchanged with neighboring
+         *        processors).
+         * \param obj Object of chosen parameter.
+         */
         template<class parameter>
         void communicate(parameter obj);
         #endif
+
+        /**
+         * \brief The constructor for the class.
+         * This constructor will call the constructor for the given parallel class, calculate the opposite points
+         * at each index Q, allocate memory for neighbors and fill the array of neighbors.
+         */
         Data_Base():m_Parallel(){ //Construct distribution
 
             for(int idx=0;idx<stencil::Q;idx++){
@@ -56,26 +88,24 @@ class Data_Base{
 
         }
 
-        void stream(); //Optional seperate streaming function
+        /**
+         * \brief Function to fill neighbor array with neighbor information.
+         */
+        void generateNeighbors();
 
-        void generateNeighbors(); //Function to fill neighbor array with neighbor information
-
-        std::vector<int>& getNeighbors(); //Returns the neighbor array
-
-        int iterate(int k,bool all); //Increment k THIS WILL BE CHANGED
-
-        int iterateFluid(int k, bool all); //Increment k only over fluid THIS WILL BE CHANGED
-
-        int iterateFluid0(int k, bool all); //Increment k only over fluid THIS WILL BE CHANGED
-
-
-        int iterateSolid(int k, bool all); //Increment k only over solid THIS WILL BE CHANGED
-
-        int iterateSolid0(int k, bool all); //Increment k only over solid THIS WILL BE CHANGED
-
+        /**
+         * \brief Returns the neighbor array
+         */
+        std::vector<int>& getNeighbors();
 
 };
+
 #ifdef MPIPARALLEL
+/**
+ * \details The function calls the communicate(obj) function from the parallel template class chosen when the
+ *          class is used. This will perform the necessary communications so gradients etc. can be calculated
+ *          across parallel regions.
+ */
 template<class stencil,class parallel>
 template<class parameter>
 void Data_Base<stencil,parallel>::communicate(parameter obj){ //Not used in this data type
@@ -84,66 +114,22 @@ void Data_Base<stencil,parallel>::communicate(parameter obj){ //Not used in this
 
 }
 #endif
-template<class stencil,class parallel>
-void Data_Base<stencil,parallel>::stream(){ //Not used in this data type
 
-}
-
+/**
+ * \details The function returns a reference to a vector containing the neighboring lattice point for every point
+ *          in every direction in the stencil.
+ */
 template<class stencil,class parallel>
 std::vector<int>& Data_Base<stencil,parallel>::getNeighbors(){
     
-    return mv_Neighbors; //Return the vector containing neighbor information.
+    return mv_Neighbors;
 
 }
 
-template<class stencil,class parallel>
-int Data_Base<stencil,parallel>::iterate(const int k,bool all){
-
-    if (k>=N-MAXNEIGHBORS*LY*LZ*(!all)-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
-    else return k+1; //Else return k incremented by one
-
-}
-
-template<class stencil,class parallel>
-int Data_Base<stencil,parallel>::iterateFluid(const int k,bool all){
-
-    if (k>=N-MAXNEIGHBORS*LY*LZ*(!all)-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
-    else if (m_Geometry.isSolid(k+1)) return iterateFluid(k+1,all); //Else if we are on a solid node, skip this
-                                                                //and try again for the next node
-    else return k+1; //Else return k incremented by one
-
-}
-
-template<class stencil,class parallel>
-int Data_Base<stencil,parallel>::iterateFluid0(const int k,bool all){
-
-    if (k>=N-MAXNEIGHBORS*LY*LZ*(!all)-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
-    else if (m_Geometry.isSolid(k+1)) return iterateFluid(k+1,all); //Else if we are on a solid node, skip this
-                                                                //and try again for the next node
-    else return k; //Else return k incremented by one
-
-}
-
-template<class stencil,class parallel>
-int Data_Base<stencil,parallel>::iterateSolid(const int k,bool all){
-
-    if (k>=N-MAXNEIGHBORS*LY*LZ*(!all)-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
-    else if (!m_Geometry.isSolid(k+1)) return iterateSolid(k+1,all); //Else if we are on a solid node, skip this
-                                                                //and try again for the next node
-    else return k+1; //Else return k incremented by one
-
-}
-
-template<class stencil,class parallel>
-int Data_Base<stencil,parallel>::iterateSolid0(const int k,bool all){
-
-    if (k>=N-MAXNEIGHBORS*LY*LZ*(!all)-1) return -1; //If k is at the final lattice point, return -1 which will terminate the loop
-    else if (!m_Geometry.isSolid(k+1)) return iterateSolid(k+1,all); //Else if we are on a solid node, skip this
-                                                                //and try again for the next node
-    else return k; //Else return k incremented by one
-
-}
-
+/**
+ * \details The neighbor of the current lattice point is calculated from the current lattice point + the offset
+ *          in each direction, which is precomputed in the constructor and stored in a vector.
+ */
 template<class stencil,class parallel>
 int Data_Base<stencil,parallel>::getOneNeighbor(const int k,const int Q){
     
@@ -151,13 +137,13 @@ int Data_Base<stencil,parallel>::getOneNeighbor(const int k,const int Q){
         
 }
 
+/**
+ * \details If we are at the first lattice point, some of the adjacent points will be on the complete opposite
+ *          side of the lattice so we must account for this. The function will work out if we are on the edge of
+ *          of the simulation in the x, y and z directions and apply offsets in each case.
+ */
 template<class stencil,class parallel>
-int Data_Base<stencil,parallel>::getOneNeighborPeriodic(const int k,const int Q){ //This function will calculate the neighbors
-                                                                     //given that "k" lies on a periodic boundary.
-                                                                     //For instance, if we are at the first
-                                                                     //lattice point, some of the adjacent points
-                                                                     //will be on the complete opposite side of
-                                                                     //the lattice so we must account for this.
+int Data_Base<stencil,parallel>::getOneNeighborPeriodic(const int k,const int Q){ 
 
     int neighbor=0;
 
@@ -224,12 +210,18 @@ int Data_Base<stencil,parallel>::getOneNeighborPeriodic(const int k,const int Q)
     return k+neighbor; //return k + our neighbor offset
 }
 
+/**
+ * \details This will iterate through the lattice and calculate the neighbors depending on whether the current
+ *          lattice point is on a periodic boundary or not.
+ */
 template<class stencil,class parallel>
 void Data_Base<stencil,parallel>::generateNeighbors(){ //Loop over all lattice points and calculate the neghbor at each point
 
     int k=0;
-
-    for (int k=0;k<N;k++){ //While look over all lattice points
+    #ifdef OMPPARALLEL
+    #pragma omp parallel for schedule( dynamic )
+    #endif
+    for (int k=0;k<N;k++){ //For loop over all lattice points
 
         for(int q=0;q<stencil::Q;q++){
 
@@ -246,21 +238,37 @@ void Data_Base<stencil,parallel>::generateNeighbors(){ //Loop over all lattice p
 
         }
 
-        //k=iterate(k,true); //Increment k
     }
 }
 
-template<class stencil,class parallel> //Stencil information is needed as streaming indices and neighbors are determined by the
-                        //velocity vectors
+/**
+ * \brief The Data1 class inherits from the Data_Base class but also provides information about the storage of
+ *        distributions, streaming and communication of distributions.
+ * Much of the functionality is the same as Data_Base, but we have an object of the distribution relevant to this
+ * data type in the class. The stream() and getStreamIndex() function determine how streaming occurs for this data
+ * type.
+ */
+template<class stencil,class parallel>
 class Data1:public Data_Base<stencil,parallel>{
     private:
 
-        struct Distribution_Derived:public Distribution_Base<stencil>{ //Distribution class will allocate memory to
-                                                                //distribution arrays and contains the
-                                                                //streamIndex function which is returns the
-                                                                //index of the neighboring lattice point in
-                                                                //the direction Q.
+        /**
+        * \brief This struct contains the distribution information relevant to this data class.
+        * Distribution class will allocate memory to
+        * distribution arrays and contains the
+        * streamIndex function which is returns the
+        * index of the neighboring lattice point in
+        * the direction Q.
+        */
+        struct Distribution_Derived:public Distribution_Base<stencil>{ //
             
+            /**
+             * \brief The constructor for the class.
+             * This constructor will call the constructor for the base distribution class, calculate the opposite
+             * indices at each index Q and allocate memory for the new and old distributions.
+             * \param neighbors reference to a vector containing the neighboring lattice points at each point. Used to
+             *                  construct the Distribution_Base class.
+             */
             Distribution_Derived(std::vector<int>& neighbors):Distribution_Base<stencil>(neighbors){ //Initialise mv_DistNeighbors
                 ;
                 for(int idx=0;idx<stencil::Q;idx++){ //Calculate the k offset for the neighbors in each direction
@@ -275,6 +283,9 @@ class Data1:public Data_Base<stencil,parallel>{
                 
             }
 
+            /**
+             * \brief Returns the opposite index at the chosen index (Rotation by 180 degrees).
+             */
             int getOpposite(int idx){
 
                 return ma_Opposites[idx];
@@ -282,38 +293,74 @@ class Data1:public Data_Base<stencil,parallel>{
             }
 
 
-            int ma_Opposites[stencil::Q];
+            int ma_Opposites[stencil::Q]; //!< Array containing the opposite indices at each index (rotated by 180 degrees).
 
-            int streamIndex(const int k,const int Q){ //adds quite a bit of overhead
+            /**
+             * \brief Returns the index that the current distribution will be streamed to.
+             * \details In this case, this just returns the neighbor at the current lattice point in the direction Q.
+             * \param k Index of current lattice point.
+             * \param Q Discrete velocity direction (e.g. 0-8 for D2Q9).
+             */
+            int streamIndex(const int k,const int Q){
 
                 return Distribution_Base<stencil>::mv_DistNeighbors[k*stencil::Q+Q]; //Return neighbor of lattice point k in direction Q
 
             }
 
-            
-
         };
 
-        Distribution_Derived m_Distribution; //Object of distribution
+        Distribution_Derived m_Distribution; //!< Object of distribution.
         
     public:
+    
+        /**
+         * \brief Streaming step in the LBM algorithm.
+         */
+        void stream();
+
         #ifdef MPIPARALLEL
+        /**
+         * \brief This function streams the distributions to the neighboring processor.
+         */
         void communicateDistribution();
         #endif
+
+        /**
+         * \brief This constructor calls the constructor of the base disribution using the neighbor information.
+         */
         Data1():m_Distribution(Data_Base<stencil,parallel>::mv_Neighbors){ //Construct distribution
 
         }
-        using DistributionData=Distribution_Derived;
+
+        using DistributionData=Distribution_Derived; //!< Typedef so that the distribution class is available outside of this class.
+
+        /**
+         * \brief This function returns a reference to the distribution object stored within this class.
+         */
         Distribution_Derived& getDistributionObject(){
 
-            return m_Distribution; //Returns the distribution object stored in the class
+            return m_Distribution;
 
         }
         
 };
-#ifdef MPIPARALLEL
+
+/**
+ * \details The stream() function does nothing in this class as streaming is implemented using the
+ *          getStreamIndex() function in this data type.
+ */
 template<class stencil,class parallel>
-void Data1<stencil,parallel>::communicateDistribution(){ //Not used in this data type
+void Data1<stencil,parallel>::stream(){ //Not used in this data type
+
+}
+
+#ifdef MPIPARALLEL
+/**
+ * \details This performs the communicateDistribution() function for the chosen parallelisation method, which
+ *          should perform the streaming step across MPI boundaries.
+ */
+template<class stencil,class parallel>
+void Data1<stencil,parallel>::communicateDistribution(){
     
     parallel::communicateDistribution(m_Distribution);
     

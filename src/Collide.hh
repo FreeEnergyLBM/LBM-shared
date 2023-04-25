@@ -8,30 +8,63 @@
 #include "Global.hh"
 #include "Stencil.hh"
 
-//Collide.hh: Contains base class with commonly used functions for the collision and momentum calculation
-//steps in LBM
+/**
+ * \file Collide.hh
+ * \brief Contains base class with commonly used functions for the collision and momentum calculation steps in LBM.
+ * The class in this file will be inherited by LBM models to provide basic operations in LBM such as SRT collision
+ * or Guo forcing. If you want to implement a new collision or forcing operator, do it here so it can be used by
+ * all models.
+ */
 
-template<class stencil> //Stencil is needed for moment calculations
+/**
+ * \brief The CollisionBase class provides functions that perform basic LBM calculations e.g. collision operators.
+ * This class takes a stencil as a template argument, as the velocity discretisation information and weights is 
+ * needed. The class has public functions for collision terms, momenta calculations, force terms and the common
+ * velocity depenence of equilibrium distibutions.
+ */
+template<class stencil>
 class CollisionBase{
     static_assert(stencil::D==NDIM,"ERROR: The chosen stencil must match the number of lattice dimensions (NDIM) chosen in Global.hh.");
     public:
-        
-        double computeGamma(const double* velocity, const int idx) const; //Gamma is the standard
-                                                                                       //equilibrium calculation
-                                                                                       //divided by density
 
-        double computeFirstMoment(const double *distribution) const; //Sum distributions over Q to calculate
-                                                                     //first moment
+        /**
+         * \brief computeGamma computes first and second order velocity dependence of the equilibrium distributions.
+         * \param velocity Pointer to velocity vector at the current lattice point.
+         * \param idx The discrete velocity index (e.g. 0-8 for D2Q9).
+         */
+        double computeGamma(const double* velocity, const int idx) const;
 
-        double computeSecondMoment(const double *distribution, const int xyz) const; //Sum distributions*C_i
-                                                                                     //over Q to calculate
-                                                                                   //second moment
+        /**
+         * \brief This will sum the distributions in each direction to calculate the zeroth moment.
+         * \param distribution Pointer to distribution vector at the current lattice point.
+         */
+        double computeZerothMoment(const double *distribution) const;
 
-        double collideSRT(const double& old,const double& equilibrium,const double& tau) const; //SRT collision
-                                                                                                //step
+        /**
+         * \brief This will sum the distributions times the velocity vector
+         *        in each direction to calculate the first moment.
+         * \param distribution Pointer to distribution vector at the current lattice point.
+         * \param xyz Cartesian direction of to calculate zeroth moment.
+         */
+        double computeFirstMoment(const double *distribution, const int xyz) const; 
 
-        double forceSRT(const double force[stencil::D],const double* velocity,
-                        const double& itau,const int idx) const; //SRT force calculation
+        /**
+         * \brief This will compute the single relaxation time (BGK) collision step.
+         * \param old Distribution at previous timestep.
+         * \param equilibrium Equilibrium distribution at the current timestep.
+         * \param tau Relaxation time (chosen to provide a desired viscosity).
+         */
+        double collideSRT(const double& old,const double& equilibrium,const double& tau) const;
+
+        /**
+         * \brief This will compute the forcing term using Guo forcing.
+         * \param force Array containing the total force in the cartesian directions.
+         * \param velocity Pointer to velocity vector at the current lattice point.
+         * \param itau Inverse relaxation time (1.0/tau) (chosen to provide a desired viscosity).
+         * \param idx The discrete velocity index (e.g. 0-8 for D2Q9).
+         */
+        double forceGuoSRT(const double force[stencil::D],const double* velocity,
+                        const double& itau,const int idx) const;
         
         double computeVelocityFactor(const double* velocity, const int idx) const; //Second
                                                                                        //order velocity dependence
@@ -40,28 +73,36 @@ class CollisionBase{
         
     private:
 
-        enum{x=0,y=1,z=2}; //Indices of x, y, z directions
+        enum{x=0,y=1,z=2};
         
-        static constexpr auto& ma_Weights=stencil::Weights; //Reference to stencil weights to shorten code
-                                                            //somewhat
+        static constexpr auto& ma_Weights=stencil::Weights;
 
-        static constexpr double m_Cs2=stencil::Cs2; //Again, just to shorten code
+        static constexpr double m_Cs2=stencil::Cs2;
 
 };
 
+/**
+ * \details The computeGamma function will return the standard second order equilibrium distribution divided
+ *          by density. This is calcualted as Weights*(1+velocity factor), where "velocity factor" is the velocity
+ *          dependence of the equilibrium.
+ */
 template<class stencil>
 double CollisionBase<stencil>::computeGamma(const double* velocity, const int idx) const{
 
-    return ma_Weights[idx]*(1.0+computeVelocityFactor(velocity,idx)); //Weights*(1+velocity factor)
-                                                                      //This is the standard equilibrium in
-                                                                      //LBM but not multiplied by density
-                                                                      //SEE LITERATURE
+    return ma_Weights[idx]*(1.0+computeVelocityFactor(velocity,idx)); 
 
 };
 
+/**
+ * \details This function returns the velocity dependence of the equilibrium distributions. This is seperate
+ *          from computeGamma as sometimes this is needed seperately from the usual equilibrium term. First, dot
+ *          products of velocity with velocity and velocity with the discrete c_i vectors in the stencil are
+ *          calculated. These are then normalised with respect to the lattice sound speed and the velocity
+ *          factor is returned.
+ */
 template<class stencil>
 double CollisionBase<stencil>::computeVelocityFactor(const double* velocity, const int idx) const{
-    //Sometimes the velocity part of the equilibrium is needed seperately so we do this here
+    
     double ci_dot_velocity=0;
     double velocity_dot_velocity=0;
 
@@ -77,32 +118,44 @@ double CollisionBase<stencil>::computeVelocityFactor(const double* velocity, con
 
 };
 
+/**
+ * \details This function returns the zeroth moment of the distributions. This is just the sum of distributions
+ *          in each discrete direction (so the sum over 9 directions for D2Q9);
+ */
 template<class stencil>
-double CollisionBase<stencil>::computeFirstMoment(const double *distribution) const{
+double CollisionBase<stencil>::computeZerothMoment(const double *distribution) const{
+
+    double zerothmoment=0;
+
+    for (int idx=0;idx<stencil::Q;idx++){
+        zerothmoment+=distribution[idx]; //Sum distribution over Q
+    }
+
+    return zerothmoment; //And return the sum
+
+}
+
+/**
+ * \details This function returns the first moment of the distributions. This is the sum of the distributions
+ *          multiplied by the stencil velocity vector c_i for each i in the choesn cartesian direction.
+ */
+template<class stencil>
+double CollisionBase<stencil>::computeFirstMoment(const double *distribution,const int xyz) const{
 
     double firstmoment=0;
 
     for (int idx=0;idx<stencil::Q;idx++){
-        firstmoment+=distribution[idx]; //Sum distribution over Q
-    }
-
-    return firstmoment; //And return
-
-}
-
-template<class stencil>
-double CollisionBase<stencil>::computeSecondMoment(const double *distribution,const int xyz) const{
-
-    double secondmoment=0;
-
-    for (int idx=0;idx<stencil::Q;idx++){
-        secondmoment+=(distribution[idx]*stencil::Ci_xyz(xyz)[idx]); //Sum distribution times Ci over Q
+        firstmoment+=(distribution[idx]*stencil::Ci_xyz(xyz)[idx]); //Sum distribution times Ci over Q
     }
     
-    return secondmoment; //Return second moment corresponding to velocity in given direction ("xyz")
+    return firstmoment; //Return first moment corresponding to velocity in given direction ("xyz")
 
 }
 
+/**
+ * \details This computes the SRT/BGK collision step. This is simply the old distribution in each direction minus
+ *          the difference between the old and equilibrium distributions divided by the relaxation time, tau.
+ */
 template<class stencil>
 double CollisionBase<stencil>::collideSRT(const double& old,const double& equilibrium,const double& itau) const{
 
@@ -111,10 +164,14 @@ double CollisionBase<stencil>::collideSRT(const double& old,const double& equili
 
 }
 
+/**
+ * \details This computes the Guo forcing for the SRT collision operator. The dot product of velocity with the
+ *          stencil velocity vectors is calculated and then used to calculate the forcing term.
+ */
 template<class stencil>
-double CollisionBase<stencil>::forceSRT(const double force[stencil::D],
+double CollisionBase<stencil>::forceGuoSRT(const double force[stencil::D],
                                         const double* velocity,const double& itau,
-                                        const int idx) const{ //Guo forcing //SEE LITERATURE
+                                        const int idx) const{ //Guo forcing
 
     double ci_dot_velocity=0;
     double forceterm=0;

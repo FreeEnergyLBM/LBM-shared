@@ -1,10 +1,10 @@
 #ifndef CXYZGRADIENT_HEADER
 #define CXYZGRADIENT_HEADER
 
-template<class stencil, class parallel>
+template<class stencil, template<typename givenstencil> class parallel>
 struct CentralXYZ{
 
-    Data_Base<stencil,parallel> m_Data;
+    Data_Base<stencil,parallel<stencil>> m_Data;
 
     template<class parameter>
     inline double computeFirstDerivative(const parameter& val,const int direciton,const int k);
@@ -16,7 +16,7 @@ struct CentralXYZ{
     
 };
 
-template<class stencil, class parallel>
+template<class stencil, template<typename givenstencil> class parallel>
 template<class parameter>
 double CentralXYZ<stencil,parallel>::computeFirstDerivative(const parameter& val,const int direction,const int k){
 
@@ -35,7 +35,7 @@ double CentralXYZ<stencil,parallel>::computeFirstDerivative(const parameter& val
 
 }
 
-template<class stencil, class parallel>
+template<class stencil, template<typename givenstencil> class parallel>
 template<class parameter>
 double CentralXYZ<stencil,parallel>::computeLaplacian(const parameter& val,const int k){
 

@@ -20,14 +20,6 @@ struct traitFlowFieldBinaryDefault{
     using Stencil=std::conditional_t<NDIM==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions
                         //and Q refers to the number of discrete velocity directions.
                         //This naming convention is standard in LBM.
-
-    #ifdef MPIPARALLEL
-    using Parallel=X_Parallel<Stencil,NO_NEIGHBOR>;
-    #else
-    using Parallel=No_Parallel;
-    #endif
-    using Data=Data1<Stencil,Parallel>; //This will change the "Data" implementation, which will essentially
-                               //govern the access of non-local data
     using Boundaries=std::tuple<BounceBack>; //This will tell the model which boundaries to apply
     using Forces=std::tuple<BodyForce,ChemicalForce>; //This will tell the model which forces to apply
 };
@@ -90,9 +82,6 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
         }        
         
     }
-    #ifdef OMPPARALLEL
-    TOTALTIME+=omp_get_wtime()-CollideStartTime;
-    #endif
     #ifdef MPIPARALLEL
     FlowField<traits>::m_Data.communicateDistribution();
     #endif
@@ -145,12 +134,12 @@ double FlowFieldBinary<traits>::computeCollisionQ(double& sum,const int k,const 
     //Sum of collision + force contributions 
     if (idx>0) {
         double eq=CollisionBase<typename traits::Stencil>::collideSRT(old,computeEquilibrium(density,velocity,order_parameter,chemical_potential,idx,k),FlowField<traits>::m_InverseTau)
-              +CollisionBase<typename traits::Stencil>::forceSRT(forcexyz,velocity,FlowField<traits>::m_InverseTau,idx);
+              +CollisionBase<typename traits::Stencil>::forceGuoSRT(forcexyz,velocity,FlowField<traits>::m_InverseTau,idx);
         sum+=eq;
         
         return eq;
     }
-    else return density-sum+CollisionBase<typename traits::Stencil>::forceSRT(forcexyz,velocity,FlowField<traits>::m_InverseTau,idx);
+    else return density-sum+CollisionBase<typename traits::Stencil>::forceGuoSRT(forcexyz,velocity,FlowField<traits>::m_InverseTau,idx);
     
 }
 

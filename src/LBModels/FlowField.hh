@@ -18,14 +18,6 @@ struct traitFlowFieldDefault{
     using Stencil=std::conditional_t<NDIM==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions
                         //and Q refers to the number of discrete velocity directions.
                         //This naming convention is standard in LBM.
-
-    #ifdef MPIPARALLEL
-    using Parallel=X_Parallel<Stencil,NO_NEIGHBOR>;
-    #else
-    using Parallel=No_Parallel;
-    #endif
-    using Data=Data1<Stencil,Parallel>; //This will change the "Data" implementation, which will essentially
-                               //govern the access of non-local data
     using Boundaries=std::tuple<BounceBack>; //This will tell the model which boundaries to apply
     using Forces=std::tuple<>; //This will tell the model which forces to apply
 };
@@ -85,7 +77,7 @@ class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from b
 
         Velocity<double,NDIM> m_Velocity; //Velocity
 
-        typename traits::Data::DistributionData& m_Distribution;
+        typename DataType<typename traits::Stencil>::DistributionData& m_Distribution;
             //Distributions
 
         vector<double>& density=m_Density.getParameter(); //Reference to vector of densities
@@ -97,7 +89,7 @@ class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from b
         enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z directions
 
 
-        typename traits::Data m_Data; //MOVE THIS TO BASE
+        typename DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
 
         typename traits::Forces& mt_Forces; //MOVE THIS TO BASE
         typename traits::Boundaries& mt_Boundaries;
@@ -303,7 +295,7 @@ double FlowField<traits>::computeCollisionQ(const int k,const double& old,const 
     
     //Sum of collision + force contributions
     return CollisionBase<typename traits::Stencil>::collideSRT(old,computeEquilibrium(density,velocity,idx,k),m_InverseTau)
-              +CollisionBase<typename traits::Stencil>::forceSRT(forcexyz,velocity,m_InverseTau,idx);
+              +CollisionBase<typename traits::Stencil>::forceGuoSRT(forcexyz,velocity,m_InverseTau,idx);
 
 }
 
@@ -328,12 +320,12 @@ template<class traits>
 double FlowField<traits>::computeDensity(const double* distribution,int k) const{ //Density calculation
     //Density is the sum of distributions plus any source/correction terms
     if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
-        return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution)+std::apply([k](auto&... forces){
+        return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution)+std::apply([k](auto&... forces){
                 return (forces.computeDensitySource(k)+...);
             }, mt_Forces);
     }
     //CHANGE THIS SO FIRST/SECOND MOMENT COMPUTATION IS DONE IN DISTRIBUTION
-    else return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution);
+    else return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution);
 
 }
 
@@ -343,11 +335,11 @@ double FlowField<traits>::computeVelocity(const double* distribution,const doubl
     //Velocity in direction xyz is sum of distribution times the xyz component of the discrete velocity vector
     //in each direction plus any source/correction terms
     if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
-        return CollisionBase<typename traits::Stencil>::computeSecondMoment(distribution,xyz)+std::apply([xyz,k](auto&&... forces){
+        return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution,xyz)+std::apply([xyz,k](auto&&... forces){
                 return (forces.computeVelocitySource(xyz,k)+...);
             }, mt_Forces);
     }
-    else return CollisionBase<typename traits::Stencil>::computeSecondMoment(distribution,xyz);
+    else return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution,xyz);
 
 }
 
