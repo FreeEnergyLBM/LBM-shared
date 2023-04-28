@@ -27,15 +27,13 @@
 //Modularisation is implemented using trait classes, which contain stencil information, 
 //the data type, a tuple of the boundary types and a tuple of forces to be applied in the model.
 
-const int LXtemp=100;
-const int LYtemp=100;
-const int LZtemp=1;
-const int TIMESTEPS=10;
-enum Dimension {dimension_2D=2,dimension_3D=3};
+const int LX=200;
+const int LY=200;
+const int TIMESTEPS=100;
 
 int main(int argc, char **argv){
 
-    LatticeProperties l1(LXtemp,LYtemp,LZtemp,dimension_2D);
+    LatticeProperties l1(LX,LY);
 
     #ifdef MPIPARALLEL
     MPI_Init(&argc, &argv);
@@ -51,14 +49,14 @@ int main(int argc, char **argv){
     ParameterSave<Density,OrderParameter,Velocity> Saver(l1,"data/");
 
     LBM.initialise(); //Perform necessary initialisation
-    
+
     for (int timestep=0;timestep<=TIMESTEPS;timestep++){
         
         if (timestep%50000==0) Saver.Save(timestep);
         LBM.evolve(); //Evolve one timestep
 
     }
-    
+
     #ifdef MPIPARALLEL
     MPI_Finalize();
     #endif
