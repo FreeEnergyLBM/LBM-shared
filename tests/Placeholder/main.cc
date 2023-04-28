@@ -29,7 +29,7 @@
 
 int main(int argc, char **argv){
 
-    LX=1000; LY=1000; LZ=1;
+    //LX=1000; LY=1000; LZ=1;
     N=LX*LY*LZ;
 
     #ifdef MPIPARALLEL
@@ -42,12 +42,12 @@ int main(int argc, char **argv){
     #endif
     
     Algorithm<FlowFieldBinary<>,Binary<>> LBM;
-    
-    ParameterSave<Density<double>,
-                  OrderParameter<double>,
-                  ChemicalPotential<double>,
-                  Velocity<double,NDIM>> Saver("data/");
-    
+
+    ParameterSave<Density,
+                  OrderParameter,
+                  ChemicalPotential,
+                  Velocity<NDIM>> Saver("data/",SAVEINTERVAL);
+
     LBM.initialise(); //Perform necessary initialisation
 
     for (int timestep=0;timestep<=TIMESTEPS;timestep++){

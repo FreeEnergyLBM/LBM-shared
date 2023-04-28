@@ -28,7 +28,7 @@ struct D2Q9:Stencil{ //Most commonly used 2D stencil
     static constexpr int Ci_x[Q]={0,1,-1,0,0,1,-1,1,-1}; //Vectors of velocity directions
     static constexpr int Ci_y[Q]={0,0,0,1,-1,1,-1,-1,1}; //There is no convecntion for the ordering of these
     static constexpr int Ci_z[Q]={0,0,0,0,0,0,0,0,0}; //0 array because there is no z direction
-    
+
     enum{x=0,y=1,z=2};
     static auto Ci_xyz(const int d)->const int(&)[Q]{ //Returns velocity direction vector depending on input d
         if (d==x) {

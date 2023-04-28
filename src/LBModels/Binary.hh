@@ -64,9 +64,9 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         static constexpr double m_InverseTau=1.0/m_Tau; //TEMPORARY inverse relaxation time
 
-        OrderParameter<double> m_OrderParameter; //Order Parameter
+        OrderParameter m_OrderParameter; //Order Parameter
 
-        Velocity<double,NDIM> m_Velocity; //Velocity
+        Velocity<NDIM> m_Velocity; //Velocity
 
         typename DataType<typename traits::Stencil>::DistributionData& m_Distribution=m_Data.getDistributionObject();
             //Distributions
@@ -84,11 +84,11 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         double m_Gamma=1;
 
-        ChemicalPotential<double> m_ChemicalPotential;
+        ChemicalPotential m_ChemicalPotential;
 
-        GradientOrderParameter<double,traits::Stencil::D> m_GradOrderParameter;
+        GradientOrderParameter<traits::Stencil::D> m_GradOrderParameter;
 
-        LaplacianOrderParameter<double> m_LaplacianOrderParameter;
+        LaplacianOrderParameter m_LaplacianOrderParameter;
 
         typename traits::Forces mt_Forces; //MOVE THIS TO BASE
         typename traits::Boundaries mt_Boundaries; //MOVE THIS TO BASE

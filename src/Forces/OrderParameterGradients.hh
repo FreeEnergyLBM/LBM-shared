@@ -25,11 +25,11 @@ class OrderParameterGradients{
 
         gradientstencil m_GradientStencil;
 
-        GradientOrderParameter<double,NDIM> m_GradOrderParameter;
+        GradientOrderParameter<NDIM> m_GradOrderParameter;
 
-        LaplacianOrderParameter<double> m_LaplacianOrderParameter;
+        LaplacianOrderParameter m_LaplacianOrderParameter;
 
-        OrderParameter<double> m_OrderParameter;
+        OrderParameter m_OrderParameter;
 
 };
 

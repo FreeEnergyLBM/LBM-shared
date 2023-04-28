@@ -171,29 +171,24 @@ class ParameterSave{
         const std::string m_DataDir;
 };
 
-template<typename T,int ndim>
-struct Velocity : public Parameter<Velocity<T,ndim>,T,ndim>{static constexpr char m_Name[]="Velocity";}; //Velocity, with directions D
+template<int ndim>
+struct Velocity : public Parameter<Velocity<ndim>,double,ndim>{static constexpr char m_Name[]="Velocity";}; //Velocity, with directions D
                                                                         //corresponding to the number of cartesian
                                                                         //directions in the stencilUw
 
-template<typename T>
-struct Density : public Parameter<Density<T>,T,1>{static constexpr char m_Name[]="Density";}; //Density
+struct Density : public Parameter<Density,double,1>{static constexpr char m_Name[]="Density";}; //Density
 
-template<typename T>
-struct Pressure : public Parameter<Pressure<T>,T,1>{static constexpr char m_Name[]="Pressure";}; //Presure
+struct Pressure : public Parameter<Pressure,double,1>{static constexpr char m_Name[]="Pressure";}; //Presure
 
-template<typename T>
-struct OrderParameter : public Parameter<OrderParameter<T>,T,1>{static constexpr char m_Name[]="OrderParameter";}; //Order parameter representing relative
+struct OrderParameter : public Parameter<OrderParameter,double,1>{static constexpr char m_Name[]="OrderParameter";}; //Order parameter representing relative
                                                                    //concentration of the phases
 
-template<typename T>
-struct ChemicalPotential : public Parameter<ChemicalPotential<T>,T,1>{static constexpr char m_Name[]="ChemicalPotential";}; //Chemical potential for the multicomponent model
+struct ChemicalPotential : public Parameter<ChemicalPotential,double,1>{static constexpr char m_Name[]="ChemicalPotential";}; //Chemical potential for the multicomponent model
 
-template<typename T>
-struct LaplacianOrderParameter : public Parameter<LaplacianOrderParameter<T>,T,1>{static constexpr char m_Name[]="LaplacianOrderParameter";}; //Laplacian of the order parameter
+struct LaplacianOrderParameter : public Parameter<LaplacianOrderParameter,double,1>{static constexpr char m_Name[]="LaplacianOrderParameter";}; //Laplacian of the order parameter
 
-template<typename T,int ndim>
-struct GradientOrderParameter : public Parameter<GradientOrderParameter<T,ndim>,T,ndim>{static constexpr char m_Name[]="GradientOrderParameter";}; //Directional first order gradients of the order parameter
+template<int ndim>
+struct GradientOrderParameter : public Parameter<GradientOrderParameter<ndim>,double,ndim>{static constexpr char m_Name[]="GradientOrderParameter";}; //Directional first order gradients of the order parameter
 
 struct SolidLabels : public Parameter<SolidLabels,int,1>{static constexpr char m_Name[]="SolidLabels";}; //Labelling of geometry
 

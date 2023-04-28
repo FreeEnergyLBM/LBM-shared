@@ -25,15 +25,15 @@ class ChemicalForce{
         double m_A=0.00015;
         double m_Kappa=0.0003;
 
-        ChemicalPotential<double> m_ChemicalPotential;
+        ChemicalPotential m_ChemicalPotential;
 
-        GradientOrderParameter<double,NDIM> m_GradOrderParameter;
+        GradientOrderParameter<NDIM> m_GradOrderParameter;
 
-        LaplacianOrderParameter<double> m_LaplacianOrderParameter;
+        LaplacianOrderParameter m_LaplacianOrderParameter;
 
-        OrderParameter<double> m_OrderParameter;
+        OrderParameter m_OrderParameter;
 
-        Density<double> m_Density; //Density
+        Density m_Density; //Density
 
 };
 

@@ -73,9 +73,9 @@ class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from b
         
         static constexpr double m_InverseTau=1.0/m_Tau; //TEMPORARY inverse relaxation time
 
-        Density<double> m_Density; //Density
+        Density m_Density; //Density
 
-        Velocity<double,NDIM> m_Velocity; //Velocity
+        Velocity<NDIM> m_Velocity; //Velocity
 
         typename DataType<typename traits::Stencil>::DistributionData& m_Distribution;
             //Distributions

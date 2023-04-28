@@ -102,9 +102,9 @@ template<class stencil,int num_neighbors>
 MPI_Datatype X_Parallel<stencil,num_neighbors>::DistributionVector;
 
 /**
- * This will communicate the chosen parameter using MPI_Isend and MPI_Irecv, which are non-blocking methods of
- * communication. This means that each process does not need to wait for the other processes to communicate. At
- * the end of this function, we have a MPI_Waitall call, to ensure all processes are synced.
+ * \details This will communicate the chosen parameter using MPI_Isend and MPI_Irecv, which are non-blocking methods of
+ *          communication. This means that each process does not need to wait for the other processes to communicate. At
+ *          the end of this function, we have a MPI_Waitall call, to ensure all processes are synced.
  */
 template<class stencil,int num_neighbors>
 template<class parameter>
@@ -127,8 +127,7 @@ void X_Parallel<stencil,num_neighbors>::communicate(parameter& obj){
 template<class stencil,int num_neighbors>
 template<class distribution>
 void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& obj){
-    
-    MPI_Request comm_dist_request[5];
+    MPI_Request comm_dist_request[20];
     if (CURPROCESSOR<NUMPROCESSORS){
         int leftorright;
         int id=0;
@@ -137,14 +136,16 @@ void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& ob
             if(leftorright==-1){
             
                 MPI_Isend(&obj.getDistribution()[(num_neighbors-1)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_LeftNeighbor,id,MPI_COMM_WORLD,&comm_dist_request[id]);
-                
+                id+=1;
+
             }
             else if(leftorright==1){
             
                 MPI_Isend(&obj.getDistribution()[N*stencil::Q-(num_neighbors)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_LeftNeighbor,id,MPI_COMM_WORLD,&comm_dist_request[id]);
-                
+                id+=1;
+
             }
-            id+=1;
+            
         }
         id=0;
         for(int idx=1; idx<stencil::Q;idx++){
@@ -152,16 +153,18 @@ void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& ob
             if(leftorright==-1){
             
                 MPI_Irecv(&obj.getDistribution()[N*stencil::Q-(num_neighbors+1)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_RightNeighbor,id,MPI_COMM_WORLD,&comm_dist_request[id]);
-                
+                id+=1;
+
             }
             else if(leftorright==1){
             
                 MPI_Irecv(&obj.getDistribution()[(num_neighbors)*LY*LZ*stencil::Q+idx],1,DistributionVector,m_RightNeighbor,id,MPI_COMM_WORLD,&comm_dist_request[id]);
-                
+                id+=1;
+
             }
-            id+=1;
+            
         }
-        MPI_Waitall(5,comm_dist_request,MPI_STATUSES_IGNORE);
+        MPI_Waitall(id,comm_dist_request,MPI_STATUSES_IGNORE);
     }
     
     

@@ -44,8 +44,8 @@ class FlowFieldBinary:public FlowField<traits>{ //Inherit from base class to avo
                                             const double* velocity,const double& order_parameter,const double& chemical_potential,const int idx) const; //Calculate collision                                                                             //at index idx
 
 
-        OrderParameter<double> m_OrderParameter;
-        ChemicalPotential<double> m_ChemicalPotential;
+        OrderParameter m_OrderParameter;
+        ChemicalPotential m_ChemicalPotential;
         enum{x=0,y=1,z=2};
 
 };
