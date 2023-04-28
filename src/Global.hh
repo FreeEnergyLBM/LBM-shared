@@ -11,9 +11,9 @@
 const int NO_NEIGHBOR=1; //!< Number of neighbors needed (controls the size of the MPI region).
 const double DT=1.0; //!< Timestep each iteration.
 const double CS2=1.0/3.0; //!< Lattice speed of sound squared.
-int LX; //!< Size of lattice in x direction.
-int LY; //!< Size of lattice in y direction.
-int LZ; //!< Size of lattice in z direction.
+int LX=1000; //!< Size of lattice in x direction.
+int LY=1000; //!< Size of lattice in y direction.
+int LZ=1; //!< Size of lattice in z direction.
 const int TIMESTEPS=1000; //!< Number of timesteps.
 const int SAVEINTERVAL=50000; //!< Timestep interval at which to save.
 int N; //!< Number of lattice points.

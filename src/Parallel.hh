@@ -45,7 +45,7 @@ class Parallel{
             }
             */
             N=LXdiv*LY*LZ;
-
+            
         }
 };
 
@@ -127,6 +127,7 @@ void X_Parallel<stencil,num_neighbors>::communicate(parameter& obj){
 template<class stencil,int num_neighbors>
 template<class distribution>
 void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& obj){
+    
     MPI_Request comm_dist_request[5];
     if (CURPROCESSOR<NUMPROCESSORS){
         int leftorright;

@@ -157,7 +157,7 @@ void Parameter<obj,T,num>::Save(std::string filename,int t,std::string datadir){
 template<class ...parameters>
 class ParameterSave{
     public:
-        ParameterSave(std::string datadir,int saveinterval):m_SaveInterval(saveinterval),m_DataDir(datadir){
+        ParameterSave(std::string datadir,int saveinterval=1):m_SaveInterval(saveinterval),m_DataDir(datadir){
             system(((std::string)"mkdir "+m_DataDir).c_str());
         }
         void Save(int timestep){

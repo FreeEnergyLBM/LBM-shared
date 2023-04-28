@@ -50,15 +50,14 @@ class Geometry{
  */
 bool Geometry::isPeriodic(int k){
 
-    if (((k%(LZ-1)==0||
-         (k-1)%(LZ-1)==0)&&LZ>1)||
-        ((k/(LZ)%(LY-1)==0||
-         ((k)/(LZ)-1)%(LY-1)==0)&&LY>1)||
-        (((k/(LZ)/(LY))%(LXdiv-1)==0||
+    if (((LZ>1&&(k%(LZ-1)==0||
+         (k-1)%(LZ-1)==0)))||
+        (LY>1&&(k/(LZ)%(LY-1)==0||
+         ((k)/(LZ)-1)%(LY-1)==0))||
+        (LXdiv>1&&((k/(LZ)/(LY))%(LXdiv-1)==0||
           ((k)/(LZ)/(LY)-1)%(LXdiv-1)==0||
           ((k)/(LZ)/(LY)-1)-1<0||
-          ((k)/(LZ)/(LY)-1)+1>LXdiv-1)&&
-         LXdiv>1)||
+          ((k)/(LZ)/(LY)-1)+1>LXdiv-1))||
         LZ==1||
         LY==1||
         LXdiv==1) return true; //These conditions just check whether the lattice point is on the edge of the 

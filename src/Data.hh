@@ -77,15 +77,14 @@ class Data_Base{
          * at each index Q, allocate memory for neighbors and fill the array of neighbors.
          */
         Data_Base():m_Parallel(){ //Construct distribution
-
             for(int idx=0;idx<stencil::Q;idx++){
                 OppositeOffset[idx]=stencil::Ci_xyz(x)[idx]*LZ*LY+stencil::Ci_xyz(y)[idx]*LZ+stencil::Ci_xyz(z)[idx];
             }
 
             mv_Neighbors.resize(stencil::Q*N); //Allocate memory for neighbors array
-
+            
             generateNeighbors(); //Fill neighbors array
-
+            
         }
 
         /**
@@ -222,7 +221,7 @@ void Data_Base<stencil,parallel>::generateNeighbors(){ //Loop over all lattice p
     #pragma omp parallel for schedule( dynamic )
     #endif
     for (int k=0;k<N;k++){ //For loop over all lattice points
-
+        
         for(int q=0;q<stencil::Q;q++){
 
             if(!m_Geometry.isPeriodic(k)) { //If not periodic
@@ -239,6 +238,7 @@ void Data_Base<stencil,parallel>::generateNeighbors(){ //Loop over all lattice p
         }
 
     }
+    
 }
 
 /**
@@ -361,9 +361,9 @@ void Data1<stencil,parallel>::stream(){ //Not used in this data type
  */
 template<class stencil,class parallel>
 void Data1<stencil,parallel>::communicateDistribution(){
-    
+    #ifdef MPIPARALLEL
     parallel::communicateDistribution(m_Distribution);
-    
+    #endif
 }
 #endif
 #endif

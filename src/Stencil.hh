@@ -17,8 +17,10 @@ using namespace std;
 //currently not implemented array of MRT moments "Moments[Q]" and a function to calculate MRT relaxation times
 //"MRTWeights()".
 
-struct D2Q9{ //Most commonly used 2D stencil
+struct Stencil{};
 
+struct D2Q9:Stencil{ //Most commonly used 2D stencil
+    
     static constexpr int D=2; //Number of cartesian directions
     static constexpr int Q=9; //Number of velocity directions
     static constexpr double Cs2=0.33333333333333; //Speed of sound squared
@@ -65,7 +67,7 @@ struct D2Q9{ //Most commonly used 2D stencil
     
 };
 //
-struct D3Q19{ //Most commonly used 3D stencil
+struct D3Q19:Stencil{ //Most commonly used 3D stencil
     static constexpr int D=3;
 
     static constexpr int Q=19;

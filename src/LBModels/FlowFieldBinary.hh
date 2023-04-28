@@ -29,6 +29,7 @@ class FlowFieldBinary:public FlowField<traits>{ //Inherit from base class to avo
                                                          //calculations
     
     public:
+    
         FlowFieldBinary():FlowField<traits>(){}
 
         virtual void collide() override; //Collision step

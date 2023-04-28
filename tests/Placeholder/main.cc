@@ -40,19 +40,19 @@ int main(int argc, char **argv){
     #else
     LXdiv=LX
     #endif
-
+    
     Algorithm<FlowFieldBinary<>,Binary<>> LBM;
-
+    
     ParameterSave<Density<double>,
                   OrderParameter<double>,
                   ChemicalPotential<double>,
-                  Velocity<double,NDIM>> Saver("data/",SAVEINTERVAL);
-
+                  Velocity<double,NDIM>> Saver("data/");
+    
     LBM.initialise(); //Perform necessary initialisation
 
     for (int timestep=0;timestep<=TIMESTEPS;timestep++){
 
-        Saver.Save(timestep);
+        if (timestep%SAVEINTERVAL==0) Saver.Save(timestep);
         LBM.evolve(); //Evolve one timestep
 
     }
@@ -62,4 +62,5 @@ int main(int argc, char **argv){
     #endif
     
     return 0;
+
 }
