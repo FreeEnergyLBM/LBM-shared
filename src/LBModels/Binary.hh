@@ -13,8 +13,8 @@
 //Trait class for PhaseField Distribution (Calculates the interface between components)
 struct traitBinaryDefault{
     using Stencil=std::conditional_t<NDIM==2,D2Q9,D3Q19>; 
-    using Boundaries=std::tuple<BounceBack>;
-    using Forces=std::tuple<OrderParameterGradients<CentralXYZ<Stencil,ParallelType>>>;
+    using Boundaries=LatticeTuple<BounceBack>;
+    using Forces=LatticeTuple<OrderParameterGradients<CentralXYZ<Stencil,ParallelType>>>;
 };
 
 template<class traits=traitBinaryDefault>
@@ -22,7 +22,7 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
                                                       //calculations
     public:
         //Constructors to construct tuples of forces and boundaries
-        Binary():mt_Forces(*new typename traits::Forces),mt_Boundaries(*new typename traits::Boundaries){
+        Binary(LatticeProperties& properties):m_Properties(properties),m_Data(properties),mt_Forces(properties),mt_Boundaries(properties),m_ChemicalPotential(properties),m_GradOrderParameter(properties),m_LaplacianOrderParameter(properties),m_OrderParameter(properties),m_Velocity(properties),CollisionBase<typename traits::Stencil>(properties),m_Geometry(properties){
             
         }
 
@@ -66,7 +66,7 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         OrderParameter m_OrderParameter; //Order Parameter
 
-        Velocity<NDIM> m_Velocity; //Velocity
+        Velocity m_Velocity; //Velocity
 
         typename DataType<typename traits::Stencil>::DistributionData& m_Distribution=m_Data.getDistributionObject();
             //Distributions
@@ -81,12 +81,17 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z directions
 
+        LatticeProperties& m_Properties;
+        const int& N=m_Properties.m_N;
+        const int& LX=m_Properties.m_LX;
+        const int& LY=m_Properties.m_LY;
+        const int& LZ=m_Properties.m_LZ;
 
         double m_Gamma=1;
 
         ChemicalPotential m_ChemicalPotential;
 
-        GradientOrderParameter<traits::Stencil::D> m_GradOrderParameter;
+        GradientOrderParameter m_GradOrderParameter;
 
         LaplacianOrderParameter m_LaplacianOrderParameter;
 
@@ -126,11 +131,11 @@ void Binary<traits>::precompute(){
     #endif
     for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
 
-        if constexpr(std::tuple_size<typename traits::Forces>::value!=0){ //Check if there is at least one element
+        if constexpr(std::tuple_size<typename traits::Forces::getTupleType>::value!=0){ //Check if there is at least one element
                                                                           //in F
             std::apply([k](auto&... forces){//See Algorithm.hh for explanation of std::apply
                 (forces.precompute(k),...);
-            }, mt_Forces);
+            }, mt_Forces.getTuple());
         }
         else;
         
@@ -143,10 +148,10 @@ void Binary<traits>::precompute(){
 template<class traits>
 double Binary<traits>::computeForces(int xyz,int k) const{
 
-    if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
+    if constexpr(std::tuple_size<typename traits::Forces::getTupleType>::value!=0){
         return std::apply([xyz,k](auto&... forces){
                 return (forces.compute(xyz,k)+...);
-            }, mt_Forces);
+            }, mt_Forces.getTuple());
     }
     else return 0;
 
@@ -185,7 +190,7 @@ void Binary<traits>::boundaries(){
     #endif
     for (int k=0;k<N;k++){ //loop over k
 
-        if constexpr(std::tuple_size<typename traits::Boundaries>::value!=0){ //Check if there are any boundary
+        if constexpr(std::tuple_size<typename traits::Boundaries::getTupleType>::value!=0){ //Check if there are any boundary
                                                                               //models
             std::apply([this,k](auto&... boundaries){
                 for (int idx=0;idx<traits::Stencil::Q;idx++){
@@ -193,7 +198,7 @@ void Binary<traits>::boundaries(){
                         (boundaries.compute(this->m_Distribution,k,idx),...);
                     }
                 }
-            }, mt_Boundaries);
+            }, mt_Boundaries.getTuple());
             
         }
         else;
@@ -216,7 +221,7 @@ void Binary<traits>::initialise(){ //Initialise model
         double* distribution=m_Distribution.getDistributionPointer(k);
         double* old_distribution=m_Distribution.getDistributionOldPointer(k);
         m_ChemicalPotential.getParameter(k)=0;
-        int xx=computeX(k);
+        int xx=computeX(m_Properties,k);
 
         if (xx>=LX/2)orderparameter[k]=1.0; //Set order parameter to 1 initially (This will change)
         else orderparameter[k]=-1.0;
@@ -295,11 +300,11 @@ double Binary<traits>::computeModelForce(int k,int xyz) const{
 template<class traits>
 double Binary<traits>::computeOrderParameter(const double* distribution,int k) const{//Order parameter calculation
     //Order parameter is the sum of distributions plus any source/correction terms
-    if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
+    if constexpr(std::tuple_size<typename traits::Forces::getTupleType>::value!=0){
         return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution)
         +std::apply([k](auto&... tests){
             return (tests.computeDensitySource(k)+...);
-        }, mt_Forces);
+        }, mt_Forces.getTuple());
     }
     //CHANGE THIS SO FIRST/SECOND MOMENT COMPUTATION IS DONE IN DISTRIBUTION
     else return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution);

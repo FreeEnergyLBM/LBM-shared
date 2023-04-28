@@ -18,32 +18,44 @@
 #endif
 //Sertive.hh: This will contain some commonly used functions with various uses.
 
-int computeX(const int k) //Compute X direction from a given k, the convention in this code is that
+int computeX(LatticeProperties& properties,const int k) //Compute X direction from a given k, the convention in this code is that
                           //k will iterate over the z direction first, then increment y by 1 once it reaches LZ,
                           //then repeat the iteration over z. Once it reaches LY x will be incremented and this
                           //process continues
 {  
 
-  return int(k/(float) (LZ*LY));
+  return int(k/(float) (properties.m_LZ*properties.m_LY));
 
 
 }
 
-int computeY(const int k) //Compute Y direction from a given k, this uses information from the X direction
+int computeY(LatticeProperties& properties,const int k) //Compute Y direction from a given k, this uses information from the X direction
 {  
 
-  return int((k-computeX(k)*LZ*LY)/(float) LZ);
+  return int((k-computeX(properties,k)*properties.m_LZ*properties.m_LY)/(float) properties.m_LZ);
 
 }
 
-int computeZ(const int k) //Compute Y direction from a given k, this uses information from the X and Y directions
+int computeZ(LatticeProperties& properties,const int k) //Compute Y direction from a given k, this uses information from the X and Y directions
 {  
 
-  return k-computeX(k)*LZ*LY-computeY(k)*LZ;
+  return k-computeX(properties,k)*properties.m_LZ*properties.m_LY-computeY(properties,k)*properties.m_LZ;
 
 }
 
+template<typename... Ts>
+class LatticeTuple{
+  public:
+    constexpr LatticeTuple(LatticeProperties& properties):m_Tuple(*new Ts(properties)...){
 
+    }
+    std::tuple<Ts...>& getTuple(){return m_Tuple;}
+    const std::tuple<Ts...>& getTuple() const {return m_Tuple;}
+    using getTupleType=std::tuple<Ts...>;
+  private:
+    std::tuple<Ts...> m_Tuple;
+
+};
 
 /**\fn      mpi_get_type
  * \brief   Small template function to return the correct MPI_DATATYPE

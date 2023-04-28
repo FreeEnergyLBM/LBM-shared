@@ -73,8 +73,8 @@ template<class obj,typename T,int num> //obj template will guarantee a unique in
 class Parameter{
     public:
 
-        Parameter(){
-            mv_Parameter.resize(num*N); //Resize to the desired size
+        Parameter(LatticeProperties& properties):m_Properties(properties){
+            mv_Parameter.resize(num*properties.m_N); //Resize to the desired size
         }
 
         vector<T>& getParameter() const{ //Returns const vector containing the parameter
@@ -101,10 +101,11 @@ class Parameter{
         const static int m_Num=num;
         using ParamType=T;
 
-        static void Save(std::string filename,int t,std::string datadir);
+        void Save(std::string filename,int t,std::string datadir);
 
     private:
         static vector<T> mv_Parameter; //Static vector (Does not change between objects of the class)
+        LatticeProperties& m_Properties;
         
 };
 
@@ -123,8 +124,8 @@ void Parameter<obj,T,num>::Save(std::string filename,int t,std::string datadir){
 
     MPI_File_open(MPI_COMM_SELF, fdump,MPI_MODE_CREATE | MPI_MODE_WRONLY,MPI_INFO_NULL,&fh); //Open the file using mpi in write only mode
     
-    MPI_File_seek(fh,sizeof(double)*CURPROCESSOR*num*(LX*LY*LZ)/NUMPROCESSORS,MPI_SEEK_SET); //Skip to a certain location in the file, currently
-    MPI_File_write(fh,&mv_Parameter[MAXNEIGHBORS*LY*LZ*num],num*(N-2*MAXNEIGHBORS*LY*LZ),MPI_DOUBLE,&status);
+    MPI_File_seek(fh,sizeof(double)*CURPROCESSOR*num*(m_Properties.m_LX*m_Properties.m_LY*m_Properties.m_LZ)/NUMPROCESSORS,MPI_SEEK_SET); //Skip to a certain location in the file, currently
+    MPI_File_write(fh,&mv_Parameter[MAXNEIGHBORS*m_Properties.m_LY*m_Properties.m_LZ*num],num*(m_Properties.m_N-2*MAXNEIGHBORS*m_Properties.m_LY*m_Properties.m_LZ),MPI_DOUBLE,MPI_STATUSES_IGNORE);
     //MPI_File_write_all(fh,&mv_Parameter[MAXNEIGHBORS*LY*LZ*num],num*(N-2*MAXNEIGHBORS*LY*LZ),MPI_DOUBLE,&status);
     //for (int k = MAXNEIGHBORS*LY*LZ; k < N-MAXNEIGHBORS*LY*LZ; k++ ) { 
     //    
@@ -140,9 +141,9 @@ void Parameter<obj,T,num>::Save(std::string filename,int t,std::string datadir){
 
     std::ofstream fs(fdump, std::ios::out | std::ios::binary );
     
-    fs.seekp(sizeof(double)*CURPROCESSOR*num*(LX*LY*LZ)/NUMPROCESSORS);
+    fs.seekp(sizeof(double)*CURPROCESSOR*num*(m_Properties.m_LX*m_Properties.m_LY*m_Properties.m_LZ)/NUMPROCESSORS);
 
-    for (int k = MAXNEIGHBORS*LY*LZ; k < N-MAXNEIGHBORS*LY*LZ; k++ ) { 
+    for (int k = MAXNEIGHBORS*m_Properties.m_LY*m_Properties.m_LZ; k < m_Properties.m_N-MAXNEIGHBORS*m_Properties.m_LY*m_Properties.m_LZ; k++ ) { 
 
         for(int idx=0;idx<num;idx++) fs.write((char *)(&mv_Parameter[k*num+idx]), sizeof(double));
         
@@ -157,40 +158,46 @@ void Parameter<obj,T,num>::Save(std::string filename,int t,std::string datadir){
 template<class ...parameters>
 class ParameterSave{
     public:
-        ParameterSave(std::string datadir,int saveinterval=1):m_SaveInterval(saveinterval),m_DataDir(datadir){
+        ParameterSave(LatticeProperties& properties,std::string datadir,int saveinterval=1):m_SaveInterval(saveinterval),m_DataDir(datadir),mt_Parameters(properties){
             system(((std::string)"mkdir "+m_DataDir).c_str());
         }
         void Save(int timestep){
-            if (timestep%SAVEINTERVAL==0) {
+            std::string dir=m_DataDir;
+            if (timestep%m_SaveInterval==0) {
                 if(CURPROCESSOR==0) std::cout<<"SAVING at timestep "<<timestep<<""<<std::endl;
-                (parameters::Save(parameters::m_Name,timestep,m_DataDir),...);
+                if constexpr (sizeof...(parameters)!=0){
+                    std::apply([timestep,dir](parameters&... params){
+                            (params.Save(params.m_Name,timestep,dir),...);
+                        }, mt_Parameters.getTuple());
+                }
+                else;
+                
             }
         }
     private:
         const int m_SaveInterval;
-        const std::string m_DataDir;
+        std::string m_DataDir;
+        LatticeTuple<parameters...> mt_Parameters;
 };
 
-template<int ndim>
-struct Velocity : public Parameter<Velocity<ndim>,double,ndim>{static constexpr char m_Name[]="Velocity";}; //Velocity, with directions D
+struct Velocity : public Parameter<Velocity,double,NDIM>{Velocity(LatticeProperties& properties):Parameter<Velocity,double,NDIM>(properties){};static constexpr char m_Name[]="Velocity";}; //Velocity, with directions D
                                                                         //corresponding to the number of cartesian
                                                                         //directions in the stencilUw
 
-struct Density : public Parameter<Density,double,1>{static constexpr char m_Name[]="Density";}; //Density
+struct Density : public Parameter<Density,double,1>{Density(LatticeProperties& properties):Parameter<Density,double,1>(properties){};static constexpr char m_Name[]="Density";}; //Density
 
-struct Pressure : public Parameter<Pressure,double,1>{static constexpr char m_Name[]="Pressure";}; //Presure
+struct Pressure : public Parameter<Pressure,double,1>{Pressure(LatticeProperties& properties):Parameter<Pressure,double,1>(properties){};static constexpr char m_Name[]="Pressure";}; //Presure
 
-struct OrderParameter : public Parameter<OrderParameter,double,1>{static constexpr char m_Name[]="OrderParameter";}; //Order parameter representing relative
+struct OrderParameter : public Parameter<OrderParameter,double,1>{OrderParameter(LatticeProperties& properties):Parameter<OrderParameter,double,1>(properties){};static constexpr char m_Name[]="OrderParameter";}; //Order parameter representing relative
                                                                    //concentration of the phases
 
-struct ChemicalPotential : public Parameter<ChemicalPotential,double,1>{static constexpr char m_Name[]="ChemicalPotential";}; //Chemical potential for the multicomponent model
+struct ChemicalPotential : public Parameter<ChemicalPotential,double,1>{ChemicalPotential(LatticeProperties& properties):Parameter<ChemicalPotential,double,1>(properties){};static constexpr char m_Name[]="ChemicalPotential";}; //Chemical potential for the multicomponent model
 
-struct LaplacianOrderParameter : public Parameter<LaplacianOrderParameter,double,1>{static constexpr char m_Name[]="LaplacianOrderParameter";}; //Laplacian of the order parameter
+struct LaplacianOrderParameter : public Parameter<LaplacianOrderParameter,double,1>{LaplacianOrderParameter(LatticeProperties& properties):Parameter<LaplacianOrderParameter,double,1>(properties){};static constexpr char m_Name[]="LaplacianOrderParameter";}; //Laplacian of the order parameter
 
-template<int ndim>
-struct GradientOrderParameter : public Parameter<GradientOrderParameter<ndim>,double,ndim>{static constexpr char m_Name[]="GradientOrderParameter";}; //Directional first order gradients of the order parameter
+struct GradientOrderParameter : public Parameter<GradientOrderParameter,double,NDIM>{GradientOrderParameter(LatticeProperties& properties):Parameter<GradientOrderParameter,double,NDIM>(properties){};static constexpr char m_Name[]="GradientOrderParameter";}; //Directional first order gradients of the order parameter
 
-struct SolidLabels : public Parameter<SolidLabels,int,1>{static constexpr char m_Name[]="SolidLabels";}; //Labelling of geometry
+struct SolidLabels : public Parameter<SolidLabels,int,1>{SolidLabels(LatticeProperties& properties):Parameter<SolidLabels,int,1>(properties){};static constexpr char m_Name[]="SolidLabels";}; //Labelling of geometry
 
 
 

@@ -9,3 +9,4 @@
 #include "Service.hh"
 #include "Parallel.hh"
 #include "Parameters.hh"
+#include "Lattice.hh"

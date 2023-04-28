@@ -4,6 +4,8 @@
 template<class stencil, template<typename givenstencil> class parallel>
 struct CentralXYZ{
 
+    CentralXYZ(LatticeProperties& properties):m_Data(properties),m_Geometry(properties){}
+
     Data_Base<stencil,parallel<stencil>> m_Data;
 
     template<class parameter>

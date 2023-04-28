@@ -26,12 +26,12 @@ class Parallel{
          * lattice points) is set based on the number of processors and number of neighbors chosen. N is then
          * calculated as LXdiv*LY*LZ.
          */
-        Parallel(){
+        Parallel(LatticeProperties& properties){
 
             if(MAXNEIGHBORS<num_neighbors) MAXNEIGHBORS=num_neighbors;
         
-            if (LX%NUMPROCESSORS==0) {
-                LXdiv=(LX/NUMPROCESSORS+2*num_neighbors);
+            if (properties.m_LX%NUMPROCESSORS==0) {
+                properties.m_LXdiv=(properties.m_LX/NUMPROCESSORS+2*num_neighbors);
             }
             else{
                 throw std::runtime_error(std::string("Currently, the number of cores must be divisible by the size of the domain in the x direction."));
@@ -44,7 +44,7 @@ class Parallel{
                 LXdiv=((LX-LX%NUMPROCESSORS)/NUMPROCESSORS+2*num_neighbors);
             }
             */
-            N=LXdiv*LY*LZ;
+            properties.m_N=properties.m_LXdiv*properties.m_LY*properties.m_LZ;
             
         }
 };
@@ -61,7 +61,7 @@ class X_Parallel:public Parallel<num_neighbors>{
         /**
          * \brief Constructor that will initialise MPI variables for this parallelisation method.
          */
-        X_Parallel();
+        X_Parallel(LatticeProperties& properties);
 
         /**
          * \brief Function to fill halos of adjacent processors with the chosen parameter adjacent to the edge
@@ -69,7 +69,7 @@ class X_Parallel:public Parallel<num_neighbors>{
          * \param obj Object of chosen parameter.
          */
         template<class parameter>
-        static void communicate(parameter& obj);
+        void communicate(parameter& obj);
 
         /**
          * \brief Function to update unknown distributions in the adjacent processors streamed from the edge of
@@ -77,29 +77,23 @@ class X_Parallel:public Parallel<num_neighbors>{
          * \param obj Object of the distribution.
          */
         template<class distribution>
-        static void communicateDistribution(distribution& obj);
+        void communicateDistribution(distribution& obj);
 
     private:
+        LatticeProperties& m_Properties;
+        const int& N=m_Properties.m_N;
+        const int& LX=m_Properties.m_LX;
+        const int& LY=m_Properties.m_LY;
+        const int& LZ=m_Properties.m_LZ;
 
-        static int m_LeftNeighbor; //!< ID of the left neighbor of this process (in the X direction).
-        static int m_RightNeighbor; //!< ID of the right neighbor of this process (in the X direction).
-        static char* m_MPIBuffer; //!< Pointer to the MPI buffer.
-        static MPI_Datatype DistributionVector; //!< Datatype for streaming distributions (allows sending of one velocity index at a time) WILL NEED TO BE CHANGED BASED ON THE DATA TYPE.
+        int m_LeftNeighbor; //!< ID of the left neighbor of this process (in the X direction).
+        int m_RightNeighbor; //!< ID of the right neighbor of this process (in the X direction).
+        char* m_MPIBuffer; //!< Pointer to the MPI buffer.
+        int m_MPIBufferSize; //!< Size of the MPI buffer.
+        MPI_Datatype DistributionVector; //!< Datatype for streaming distributions (allows sending of one velocity index at a time) WILL NEED TO BE CHANGED BASED ON THE DATA TYPE.
         
 
 };
-
-template<class stencil,int num_neighbors>
-int X_Parallel<stencil,num_neighbors>::m_LeftNeighbor;
-
-template<class stencil,int num_neighbors>
-int X_Parallel<stencil,num_neighbors>::m_RightNeighbor;
-
-template<class stencil,int num_neighbors>
-char* X_Parallel<stencil,num_neighbors>::m_MPIBuffer;
-
-template<class stencil,int num_neighbors>
-MPI_Datatype X_Parallel<stencil,num_neighbors>::DistributionVector;
 
 /**
  * \details This will communicate the chosen parameter using MPI_Isend and MPI_Irecv, which are non-blocking methods of
@@ -171,16 +165,16 @@ void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& ob
 }
 
 template<class stencil,int num_neighbors>
-X_Parallel<stencil,num_neighbors>::X_Parallel(){
+X_Parallel<stencil,num_neighbors>::X_Parallel(LatticeProperties& properties):Parallel<num_neighbors>(properties),m_Properties(properties){
 
     const int bufSize=(LY*LZ*num_neighbors*(5+2)*2*2+1000)*sizeof(double);
     
-    if(bufSize>MPIBUFFERSIZE){
-        if(MPIBUFFERSIZE!=0)MPI_Buffer_detach(MPIBUFFER,&MPIBUFFERSIZE);
-        if(MPIBUFFERSIZE!=0)delete[] MPIBUFFER;
-        MPIBUFFER=new char[bufSize];
-        MPI_Buffer_attach(MPIBUFFER,bufSize);
-        MPIBUFFERSIZE=bufSize;
+    if(bufSize>m_MPIBufferSize){
+        //if(m_MPIBufferSize!=0)MPI_Buffer_detach(m_MPIBuffer,&m_MPIBufferSize);
+        //if(m_MPIBufferSize!=0)delete[] m_MPIBuffer;
+        m_MPIBuffer=new char[bufSize];
+        MPI_Buffer_attach(m_MPIBuffer,bufSize);
+        m_MPIBufferSize=bufSize;
     }
     //std::cout<<MPIBUFFERSIZE<<std::endl;
     m_LeftNeighbor=CURPROCESSOR-1;

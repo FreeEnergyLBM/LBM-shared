@@ -2,6 +2,7 @@
 #define ALGORITHM_HEADER
 #include <tuple>
 #include <iostream>
+#include "Lattice.hh"
 
 /**
  * \file Algorithm.hh
@@ -31,7 +32,7 @@ class Algorithm{
          * object. Note that models will be computed in the order they are specified.
          * \param Models Objects of each model in the order specified by the template parameter "...Model".
          */
-        Algorithm(Model&... Models):mt_Models(Models...){}
+        Algorithm(LatticeProperties& properties,Model&... Models):mt_Models(Models(properties)...){}
 
         /**
          * \brief Constructor for the class that will fill the tuple "mt_Models" with given objects of each model.
@@ -40,7 +41,7 @@ class Algorithm{
          * object. Note that models will be computed in the order they are specified.
          * \param Models Objects of each model in the order specified by the template parameter "...Model".
          */
-        Algorithm():mt_Models(*new Model...){}
+        Algorithm(LatticeProperties& properties):mt_Models(*new Model(properties)...){}
 
         /**
          * \brief Function that will evolve the lattice Boltzmann algorithm by one timestep.

@@ -20,8 +20,8 @@ struct traitFlowFieldBinaryDefault{
     using Stencil=std::conditional_t<NDIM==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions
                         //and Q refers to the number of discrete velocity directions.
                         //This naming convention is standard in LBM.
-    using Boundaries=std::tuple<BounceBack>; //This will tell the model which boundaries to apply
-    using Forces=std::tuple<BodyForce,ChemicalForce>; //This will tell the model which forces to apply
+    using Boundaries=LatticeTuple<BounceBack>; //This will tell the model which boundaries to apply
+    using Forces=LatticeTuple<BodyForce,ChemicalForce>; //This will tell the model which forces to apply
 };
 
 template<class traits=traitFlowFieldBinaryDefault>
@@ -30,7 +30,7 @@ class FlowFieldBinary:public FlowField<traits>{ //Inherit from base class to avo
     
     public:
     
-        FlowFieldBinary():FlowField<traits>(){}
+        FlowFieldBinary(LatticeProperties& properties):FlowField<traits>(properties),m_OrderParameter(properties),m_ChemicalPotential(properties){}
 
         virtual void collide() override; //Collision step
 
@@ -64,8 +64,8 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
 
     
     int QQ=traits::Stencil::Q;
-    int QN=traits::Stencil::Q*N;
-    int DN=traits::Stencil::D*N;
+    int QN=traits::Stencil::Q*FlowField<traits>::N;
+    int DN=traits::Stencil::D*FlowField<traits>::N;
     double* old_distribution=FlowField<traits>::m_Distribution.getDistributionOldPointer(0);
     double* distribution=FlowField<traits>::m_Distribution.getDistributionPointer(0);
 
@@ -73,7 +73,7 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
     double CollideStartTime=omp_get_wtime();
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
+    for (int k=FlowField<traits>::LY*FlowField<traits>::LZ*MAXNEIGHBORS;k<FlowField<traits>::N-MAXNEIGHBORS*FlowField<traits>::LY*FlowField<traits>::LZ;k++){ //loop over k
 
         double sum=0;
         for (int idx=traits::Stencil::Q-1;idx>=0;--idx){ //loop over discrete velocity directions
@@ -97,7 +97,7 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=LY*LZ*MAXNEIGHBORS;k<N-MAXNEIGHBORS*LY*LZ;k++){ //loop over k
+    for (int k=FlowField<traits>::LY*FlowField<traits>::LZ*MAXNEIGHBORS;k<FlowField<traits>::N-MAXNEIGHBORS*FlowField<traits>::LY*FlowField<traits>::LZ;k++){ //loop over k
 
         double* distribution=FlowField<traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution=FlowField<traits>::m_Distribution.getDistributionOldPointer(k);

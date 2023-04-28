@@ -9,6 +9,8 @@
 class BodyForce{
     public:
 
+        BodyForce(LatticeProperties& properties):m_Density(properties),m_Properties(properties){}
+
         double compute(int xyz,int k) const; //Return force at lattice point k in direction xyz
 
         void precompute(int k); //Perform any neccessary computations before force is computed
@@ -21,6 +23,9 @@ class BodyForce{
         void postprocess(int k); //Perform any necessary postprocessing
 
     private:
+
+        LatticeProperties& m_Properties;
+        const double& DT=m_Properties.m_DT;
 
         double magnitude=0.00000001;//1;
 

@@ -5,6 +5,9 @@
 
 class BounceBack{
     public:
+
+        BounceBack(const LatticeProperties& properties){}
+
         template <class disttype>
         void compute(disttype& m_Distribution,int k,int idx) const;
 

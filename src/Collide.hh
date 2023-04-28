@@ -27,7 +27,7 @@ class CollisionBase{
     static_assert(std::is_base_of<Stencil,stencil>(),"ERROR: invalid stencil specified in traits.");
     static_assert(stencil::D==NDIM,"ERROR: The chosen stencil must match the number of lattice dimensions (NDIM) chosen in Global.hh.");
     public:
-
+        CollisionBase(LatticeProperties& properties):m_Properties(properties){}
         /**
          * \brief computeGamma computes first and second order velocity dependence of the equilibrium distributions.
          * \param velocity Pointer to velocity vector at the current lattice point.
@@ -73,6 +73,9 @@ class CollisionBase{
                                                                                        //distributions times
         
     private:
+
+        LatticeProperties& m_Properties;
+        const double& DT=m_Properties.m_DT;
 
         enum{x=0,y=1,z=2};
         
@@ -160,7 +163,7 @@ double CollisionBase<stencil>::computeFirstMoment(const double *distribution,con
 template<class stencil>
 double CollisionBase<stencil>::collideSRT(const double& old,const double& equilibrium,const double& itau) const{
 
-    return old-itau*(old-equilibrium); //SRT colision step. Old corresponds to the old distribution and itau is
+    return old-DT*itau*(old-equilibrium); //SRT colision step. Old corresponds to the old distribution and itau is
                                        //the inverse of the relaxation time
 
 }

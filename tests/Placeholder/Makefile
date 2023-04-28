@@ -7,7 +7,7 @@ LIBS	=	-lm
 
 LIBPATH =
 
-COMP	=	 mpiicpc
+COMP	=	 mpicxx
 
 DEPS    =       ../../src/%.hh ../../src/Forces/%.hh ../../src/GradientStencils%.hh ../../src/LBModels/%.hh ../../src/BoundaryModels/%.hh 
 
