@@ -8,8 +8,8 @@
 
 class BodyForce{
     public:
-
-        BodyForce(LatticeProperties& properties):m_Density(properties),m_Properties(properties){}
+        template<int lx, int ly,int lz>
+        BodyForce(LatticeProperties<lx,ly,lz>& properties):m_Density(properties),DT(properties.m_DT){}
 
         double compute(int xyz,int k) const; //Return force at lattice point k in direction xyz
 
@@ -24,8 +24,7 @@ class BodyForce{
 
     private:
 
-        LatticeProperties& m_Properties;
-        const double& DT=m_Properties.m_DT;
+        const double& DT;
 
         double magnitude=0.00000001;//1;
 

@@ -3,8 +3,8 @@
 
 template<class stencil, template<typename givenstencil> class parallel>
 struct CentralXYZ{
-
-    CentralXYZ(LatticeProperties& properties):m_Data(properties),m_Geometry(properties){}
+    template<int lx, int ly,int lz>
+    CentralXYZ(LatticeProperties<lx,ly,lz>& properties):m_Data(properties),m_Geometry(properties){}
 
     Data_Base<stencil,parallel<stencil>> m_Data;
 

@@ -31,9 +31,18 @@ const int LX=200;
 const int LY=200;
 const int TIMESTEPS=100;
 
+struct traitF:traitFlowFieldBinaryDefault<>{
+    using Stencil=D2Q9;
+};
+
+struct traitB:traitBinaryDefault<>{
+    using Stencil=D2Q9;
+};
+
 int main(int argc, char **argv){
 
-    LatticeProperties l1(LX,LY);
+    LatticeProperties<LX,LY> l1;
+    constexpr int NDIM=LatticeProperties<LX,LY>::m_NDIM;
 
     #ifdef MPIPARALLEL
     MPI_Init(&argc, &argv);
@@ -44,11 +53,12 @@ int main(int argc, char **argv){
     LXdiv=LX
     #endif
     
-    Algorithm<FlowFieldBinary<>,Binary<>> LBM(l1);
+    Algorithm<FlowFieldBinary<NDIM,traitF>,Binary<NDIM,traitB>> LBM(l1);
     
     ParameterSave<Density,OrderParameter,Velocity> Saver(l1,"data/");
 
     LBM.initialise(); //Perform necessary initialisation
+    auto t0=std::chrono::system_clock::now();
 
     for (int timestep=0;timestep<=TIMESTEPS;timestep++){
         
@@ -56,6 +66,10 @@ int main(int argc, char **argv){
         LBM.evolve(); //Evolve one timestep
 
     }
+
+    auto tend=std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_seconds=tend-t0; 
+    std::cout<<"RUNTIME: "<<elapsed_seconds.count()<<" "<<LX<<" "<<LY<<std::endl;
 
     #ifdef MPIPARALLEL
     MPI_Finalize();

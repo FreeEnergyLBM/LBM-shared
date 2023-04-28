@@ -76,7 +76,8 @@ class Data_Base{
          * This constructor will call the constructor for the given parallel class, calculate the opposite points
          * at each index Q, allocate memory for neighbors and fill the array of neighbors.
          */
-        Data_Base(LatticeProperties& properties):m_Properties(properties),m_Parallel(properties),m_Geometry(properties){ //Construct distribution
+         template<int lx, int ly,int lz=1>
+        Data_Base(LatticeProperties<lx,ly,lz>& properties):LXdiv(properties.m_LXdiv),LX(properties.m_LX),LY(properties.m_LY),LZ(properties.m_LZ),N(properties.m_N),m_Parallel(properties),m_Geometry(properties){ //Construct distribution
             for(int idx=0;idx<stencil::Q;idx++){
                 OppositeOffset[idx]=stencil::Ci_xyz(x)[idx]*LZ*LY+stencil::Ci_xyz(y)[idx]*LZ+stencil::Ci_xyz(z)[idx];
             }
@@ -87,10 +88,11 @@ class Data_Base{
             
         }
 
-        LatticeProperties& m_Properties;
-        const int& LX=m_Properties.m_LX;
-        const int& LY=m_Properties.m_LY;
-        const int& LZ=m_Properties.m_LZ;
+        const int& LX;
+        const int& LY;
+        const int& LZ;
+        const int& LXdiv;
+        const int& N;
         /**
          * \brief Function to fill neighbor array with neighbor information.
          */
@@ -192,15 +194,15 @@ int Data_Base<stencil,parallel>::getOneNeighborPeriodic(const int k,const int Q)
 
         }
     }
-    if(m_Properties.m_LXdiv>1){
-        if ((k/(LZ)/(LY)+1)%(m_Properties.m_LXdiv)==0&&stencil::Ci_xyz(x)[Q]>0){ //...
+    if(LXdiv>1){
+        if ((k/(LZ)/(LY)+1)%(LXdiv)==0&&stencil::Ci_xyz(x)[Q]>0){ //...
 
-            neighbor+=-(LZ)*LY*(m_Properties.m_LXdiv-1);
+            neighbor+=-(LZ)*LY*(LXdiv-1);
 
         }
-        else if (((k)/(LZ)/(LY))%(m_Properties.m_LXdiv)==0&&stencil::Ci_xyz(x)[Q]<0){
+        else if (((k)/(LZ)/(LY))%(LXdiv)==0&&stencil::Ci_xyz(x)[Q]<0){
 
-            neighbor+=(LZ)*LY*(m_Properties.m_LXdiv-1);
+            neighbor+=(LZ)*LY*(LXdiv-1);
 
         }
         else if (stencil::Ci_xyz(x)[Q]!=0){
@@ -224,7 +226,7 @@ void Data_Base<stencil,parallel>::generateNeighbors(){ //Loop over all lattice p
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=0;k<m_Properties.m_N;k++){ //For loop over all lattice points
+    for (int k=0;k<N;k++){ //For loop over all lattice points
         
         for(int q=0;q<stencil::Q;q++){
 
@@ -273,7 +275,8 @@ class Data1:public Data_Base<stencil,parallel>{
              * \param neighbors reference to a vector containing the neighboring lattice points at each point. Used to
              *                  construct the Distribution_Base class.
              */
-            Distribution_Derived(LatticeProperties& properties,std::vector<int>& neighbors):Distribution_Base<stencil>(neighbors){ //Initialise mv_DistNeighbors
+            template<int lx, int ly,int lz=1>
+            Distribution_Derived(LatticeProperties<lx,ly,lz>& properties,std::vector<int>& neighbors):Distribution_Base<stencil>(neighbors){ //Initialise mv_DistNeighbors
                 
                 for(int idx=0;idx<stencil::Q;idx++){ //Calculate the k offset for the neighbors in each direction
                     ma_Opposites[idx]=stencil::Opposites[idx];
@@ -332,7 +335,8 @@ class Data1:public Data_Base<stencil,parallel>{
         /**
          * \brief This constructor calls the constructor of the base disribution using the neighbor information.
          */
-        Data1(LatticeProperties& properties):Data_Base<stencil,parallel>(properties),m_Distribution(properties,Data_Base<stencil,parallel>::mv_Neighbors){ //Construct distribution
+        template<int lx, int ly,int lz=1>
+        Data1(LatticeProperties<lx,ly,lz>& properties):Data_Base<stencil,parallel>(properties),m_Distribution(properties,Data_Base<stencil,parallel>::mv_Neighbors){ //Construct distribution
 
         }
 

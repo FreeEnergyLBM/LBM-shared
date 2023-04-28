@@ -26,7 +26,8 @@ class Parallel{
          * lattice points) is set based on the number of processors and number of neighbors chosen. N is then
          * calculated as LXdiv*LY*LZ.
          */
-        Parallel(LatticeProperties& properties){
+        template<int lx, int ly,int lz=1=1>
+        Parallel(LatticeProperties<lx,ly,lz>& properties){
 
             if(MAXNEIGHBORS<num_neighbors) MAXNEIGHBORS=num_neighbors;
         
@@ -61,7 +62,8 @@ class X_Parallel:public Parallel<num_neighbors>{
         /**
          * \brief Constructor that will initialise MPI variables for this parallelisation method.
          */
-        X_Parallel(LatticeProperties& properties);
+         template<int lx, int ly,int lz=1>
+        X_Parallel(LatticeProperties<lx,ly,lz>& properties);
 
         /**
          * \brief Function to fill halos of adjacent processors with the chosen parameter adjacent to the edge
@@ -80,11 +82,11 @@ class X_Parallel:public Parallel<num_neighbors>{
         void communicateDistribution(distribution& obj);
 
     private:
-        LatticeProperties& m_Properties;
-        const int& N=m_Properties.m_N;
-        const int& LX=m_Properties.m_LX;
-        const int& LY=m_Properties.m_LY;
-        const int& LZ=m_Properties.m_LZ;
+        
+        const int& N;
+        const int& LX;
+        const int& LY;
+        const int& LZ;
 
         int m_LeftNeighbor; //!< ID of the left neighbor of this process (in the X direction).
         int m_RightNeighbor; //!< ID of the right neighbor of this process (in the X direction).
@@ -106,13 +108,13 @@ void X_Parallel<stencil,num_neighbors>::communicate(parameter& obj){
 
     MPI_Request comm_request[2];
     
-    MPI_Isend(&obj.getParameter()[N*parameter::m_Num-(num_neighbors+1)*LY*LZ], num_neighbors*LY*LZ*parameter::m_Num, mpi_get_type<typename parameter::ParamType>(), m_RightNeighbor, 0, MPI_COMM_WORLD, &comm_request[0]);
+    MPI_Isend(&obj.getParameter()[N*obj.m_Num-(num_neighbors+1)*LY*LZ], num_neighbors*LY*LZ*obj.m_Num, mpi_get_type<typename parameter::ParamType>(), m_RightNeighbor, 0, MPI_COMM_WORLD, &comm_request[0]);
 
-    MPI_Isend(&obj.getParameter()[num_neighbors*LY*LZ*parameter::m_Num], num_neighbors*LY*LZ*parameter::m_Num, mpi_get_type<typename parameter::ParamType>(), m_LeftNeighbor, 1, MPI_COMM_WORLD, &comm_request[1]);
+    MPI_Isend(&obj.getParameter()[num_neighbors*LY*LZ*obj.m_Num], num_neighbors*LY*LZ*obj.m_Num, mpi_get_type<typename parameter::ParamType>(), m_LeftNeighbor, 1, MPI_COMM_WORLD, &comm_request[1]);
 
-    MPI_Irecv(&obj.getParameter()[N*parameter::m_Num-num_neighbors*LY*LZ*parameter::m_Num], num_neighbors*LY*LZ*parameter::m_Num, mpi_get_type<typename parameter::ParamType>(), m_RightNeighbor, 1, MPI_COMM_WORLD, &comm_request[0]);
+    MPI_Irecv(&obj.getParameter()[N*obj.m_Num-num_neighbors*LY*LZ*obj.m_Num], num_neighbors*LY*LZ*obj.m_Num, mpi_get_type<typename parameter::ParamType>(), m_RightNeighbor, 1, MPI_COMM_WORLD, &comm_request[0]);
 
-    MPI_Irecv(&obj.getParameter()[0], num_neighbors*LY*LZ*parameter::m_Num, mpi_get_type<typename parameter::ParamType>(), m_LeftNeighbor, 0, MPI_COMM_WORLD, &comm_request[1]);
+    MPI_Irecv(&obj.getParameter()[0], num_neighbors*LY*LZ*obj.m_Num, mpi_get_type<typename parameter::ParamType>(), m_LeftNeighbor, 0, MPI_COMM_WORLD, &comm_request[1]);
     
     MPI_Waitall(2,comm_request,MPI_STATUSES_IGNORE);
 
@@ -165,7 +167,8 @@ void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& ob
 }
 
 template<class stencil,int num_neighbors>
-X_Parallel<stencil,num_neighbors>::X_Parallel(LatticeProperties& properties):Parallel<num_neighbors>(properties),m_Properties(properties){
+template<int lx, int ly,int lz>
+X_Parallel<stencil,num_neighbors>::X_Parallel(LatticeProperties<lx,ly,lz>& properties):Parallel<num_neighbors>(properties),N(properties.m_N),LX(properties.m_LX),LY(properties.m_LY),LZ(properties.m_LZ){
 
     const int bufSize=(LY*LZ*num_neighbors*(5+2)*2*2+1000)*sizeof(double);
     

@@ -9,8 +9,8 @@
 template<class gradientstencil>
 class OrderParameterGradients{
     public:
-
-        OrderParameterGradients(LatticeProperties& properties):m_GradientStencil(properties),m_GradOrderParameter(properties),m_LaplacianOrderParameter(properties),m_OrderParameter(properties){}
+        template<int lx, int ly,int lz>
+        OrderParameterGradients(LatticeProperties<lx,ly,lz>& properties):NDIM(properties.m_NDIM),m_GradientStencil(properties),m_GradOrderParameter(properties),m_LaplacianOrderParameter(properties),m_OrderParameter(properties){}
 
         double compute(int xyz,int k) const; //Return force at lattice point k in direction xyz
 
@@ -32,6 +32,8 @@ class OrderParameterGradients{
         LaplacianOrderParameter m_LaplacianOrderParameter;
 
         OrderParameter m_OrderParameter;
+
+        const int& NDIM;
 
 };
 

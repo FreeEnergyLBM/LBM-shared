@@ -8,7 +8,8 @@
 
 class ChemicalForce{
     public:
-        ChemicalForce(LatticeProperties& properties):m_ChemicalPotential(properties),m_GradOrderParameter(properties),m_LaplacianOrderParameter(properties),m_OrderParameter(properties),m_Density(properties),m_Properties(properties){}
+        template<int lx, int ly,int lz>
+        ChemicalForce(LatticeProperties<lx,ly,lz>& properties):m_ChemicalPotential(properties),m_GradOrderParameter(properties),m_LaplacianOrderParameter(properties),m_OrderParameter(properties),m_Density(properties),DT(properties.m_DT){}
 
         double compute(int xyz,int k) const; //Return force at lattice point k in direction xyz
 
@@ -22,8 +23,8 @@ class ChemicalForce{
         void postprocess(int k); //Perform any necessary postprocessing
 
     private:
-        LatticeProperties& m_Properties;
-        const double& DT=m_Properties.m_DT;
+
+        const double& DT;
         double m_A=0.00015;
         double m_Kappa=0.0003;
 

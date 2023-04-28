@@ -18,35 +18,36 @@
 #endif
 //Sertive.hh: This will contain some commonly used functions with various uses.
 
-int computeX(LatticeProperties& properties,const int k) //Compute X direction from a given k, the convention in this code is that
+int computeX(const int& LY,const int& LZ,const int k) //Compute X direction from a given k, the convention in this code is that
                           //k will iterate over the z direction first, then increment y by 1 once it reaches LZ,
                           //then repeat the iteration over z. Once it reaches LY x will be incremented and this
                           //process continues
 {  
 
-  return int(k/(float) (properties.m_LZ*properties.m_LY));
+  return int(k/(float) (LZ*LY));
 
 
 }
 
-int computeY(LatticeProperties& properties,const int k) //Compute Y direction from a given k, this uses information from the X direction
+int computeY(const int& LY,const int& LZ,const int k) //Compute Y direction from a given k, this uses information from the X direction
 {  
 
-  return int((k-computeX(properties,k)*properties.m_LZ*properties.m_LY)/(float) properties.m_LZ);
+  return int((k-computeX(LY,LZ,k)*LZ*LY)/(float) LZ);
 
 }
 
-int computeZ(LatticeProperties& properties,const int k) //Compute Y direction from a given k, this uses information from the X and Y directions
+int computeZ(const int& LY,const int& LZ,const int k) //Compute Y direction from a given k, this uses information from the X and Y directions
 {  
 
-  return k-computeX(properties,k)*properties.m_LZ*properties.m_LY-computeY(properties,k)*properties.m_LZ;
+  return k-computeX(LY,LZ,k)*LZ*LY-computeY(LY,LZ,k)*LZ;
 
 }
 
 template<typename... Ts>
 class LatticeTuple{
   public:
-    constexpr LatticeTuple(LatticeProperties& properties):m_Tuple(*new Ts(properties)...){
+    template<int lx, int ly,int lz=1>
+    constexpr LatticeTuple(LatticeProperties<lx,ly,lz>& properties):m_Tuple(*new Ts(properties)...){
 
     }
     std::tuple<Ts...>& getTuple(){return m_Tuple;}

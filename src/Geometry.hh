@@ -17,8 +17,8 @@
  */
 class Geometry{
     public:
-
-        Geometry(LatticeProperties& properties):m_Properties(properties){
+        template<int lx, int ly,int lz=1>
+        Geometry(LatticeProperties<lx,ly,lz>& properties):LXdiv(properties.m_LXdiv),LY(properties.m_LY),LZ(properties.m_LZ){
             
         }
         /**
@@ -40,10 +40,9 @@ class Geometry{
 
     private:
 
-        LatticeProperties& m_Properties;
-        const int& LXdiv=m_Properties.m_LXdiv;
-        const int& LY=m_Properties.m_LY;
-        const int& LZ=m_Properties.m_LZ;
+        const int& LXdiv;
+        const int& LY;
+        const int& LZ;
 
         enum{Periodic=3,Solid=2,Wall=1,Fluid=0}; //!< IDs for each boundary type.
 
@@ -81,7 +80,7 @@ bool Geometry::isPeriodic(int k){
  */
 bool Geometry::isSolid(int k){
 
-    int yAtCurrentk=computeY(m_Properties,k);
+    int yAtCurrentk=computeY(LY,LZ,k);
 
     if (yAtCurrentk<=1||yAtCurrentk>=LY-2) return true; //Change this condition to control where the solid is
     
