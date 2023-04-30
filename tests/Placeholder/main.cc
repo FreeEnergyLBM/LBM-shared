@@ -30,7 +30,7 @@
 const int LX=200;
 const int LY=200;
 const int TIMESTEPS=100;
-
+/*
 struct traitF:traitFlowFieldBinaryDefault<>{
     using Stencil=D2Q9;
 };
@@ -38,7 +38,7 @@ struct traitF:traitFlowFieldBinaryDefault<>{
 struct traitB:traitBinaryDefault<>{
     using Stencil=D2Q9;
 };
-
+*/
 int main(int argc, char **argv){
 
     LatticeProperties<LX,LY> l1;
@@ -53,7 +53,10 @@ int main(int argc, char **argv){
     LXdiv=LX
     #endif
     
-    Algorithm<FlowFieldBinary<NDIM,traitF>,Binary<NDIM,traitB>> LBM(l1);
+    auto Dist1=Model<FlowFieldBinary>(l1);
+    auto Dist2=Model<Binary>(l1);
+
+    Algorithm LBM(l1,Dist1,Dist2);
     
     ParameterSave<Density,OrderParameter,Velocity> Saver(l1,"data/");
 

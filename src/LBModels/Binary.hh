@@ -11,18 +11,22 @@
 
 
 //Trait class for PhaseField Distribution (Calculates the interface between components)
-template<int NDIM=3>
+/*
+template<int NDIM>
 struct traitBinaryDefault{
 
     using Stencil=std::conditional_t<NDIM==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions
     using Boundaries=LatticeTuple<BounceBack>;
     using Forces=LatticeTuple<OrderParameterGradients<CentralXYZ<Stencil,ParallelType>>>;
 };
+*/
 
-template<int ndim=3,class traits=traitBinaryDefault<ndim>>
+
+template<class traits>
 class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class to avoid repetition of common
                                                       //calculations
     public:
+
         //Constructors to construct tuples of forces and boundaries
         template<int lx, int ly,int lz>
         Binary(LatticeProperties<lx,ly,lz>& properties):LX(properties.m_LX),LY(properties.m_LY),LZ(properties.m_LZ),N(properties.m_N),m_Data(properties),mt_Forces(properties),mt_Boundaries(properties),m_ChemicalPotential(properties),m_GradOrderParameter(properties),m_LaplacianOrderParameter(properties),m_OrderParameter(properties),m_Velocity(properties),CollisionBase<typename traits::Stencil>(properties),m_Geometry(properties){
@@ -105,29 +109,29 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
         
 };
 
-template<int ndim,class traits>
-const double& Binary<ndim,traits>::getDensity(int k) const{ //This needs to be renamed
+template<class traits>
+const double& Binary<traits>::getDensity(int k) const{ //This needs to be renamed
 
     return orderparameter[k]; //Return reference to order parameter at point k
 
 }
 
-template<int ndim,class traits>
-const std::vector<double>& Binary<ndim,traits>::getVelocity() const{
+template<class traits>
+const std::vector<double>& Binary<traits>::getVelocity() const{
 
     return velocity; //Return reference to velocity vector
 
 }
 
-template<int ndim,class traits>
-const std::vector<double>& Binary<ndim,traits>::getDistribution() const{
+template<class traits>
+const std::vector<double>& Binary<traits>::getDistribution() const{
 
     return distribution; //Return reference to distribution vector
 
 }
 
-template<int ndim,class traits>
-void Binary<ndim,traits>::precompute(){
+template<class traits>
+void Binary<traits>::precompute(){
 
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
@@ -148,8 +152,8 @@ void Binary<ndim,traits>::precompute(){
                                                                                 //before collision
 }
 
-template<int ndim,class traits>
-double Binary<ndim,traits>::computeForces(int xyz,int k) const{
+template<class traits>
+double Binary<traits>::computeForces(int xyz,int k) const{
 
     if constexpr(std::tuple_size<typename traits::Forces::getTupleType>::value!=0){
         return std::apply([xyz,k](auto&... forces){
@@ -160,8 +164,8 @@ double Binary<ndim,traits>::computeForces(int xyz,int k) const{
 
 }
 
-template<int ndim,class traits>
-void Binary<ndim,traits>::collide(){
+template<class traits>
+void Binary<traits>::collide(){
 
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
@@ -185,8 +189,8 @@ void Binary<ndim,traits>::collide(){
     #endif
 }
 
-template<int ndim,class traits>
-void Binary<ndim,traits>::boundaries(){
+template<class traits>
+void Binary<traits>::boundaries(){
 
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
@@ -211,8 +215,8 @@ void Binary<ndim,traits>::boundaries(){
     
 }
 
-template<int ndim,class traits>
-void Binary<ndim,traits>::initialise(){ //Initialise model
+template<class traits>
+void Binary<traits>::initialise(){ //Initialise model
 
     m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
@@ -244,8 +248,8 @@ void Binary<ndim,traits>::initialise(){ //Initialise model
 }
 
 
-template<int ndim,class traits>
-void Binary<ndim,traits>::computeMomenta(){ //Calculate order parameter
+template<class traits>
+void Binary<traits>::computeMomenta(){ //Calculate order parameter
 
     
     #ifdef OMPPARALLEL
@@ -262,8 +266,8 @@ void Binary<ndim,traits>::computeMomenta(){ //Calculate order parameter
     
 }
 
-template<int ndim,class traits>
-double Binary<ndim,traits>::computeCollisionQ(double& sum,const int k,const double& old,const double& orderparam,
+template<class traits>
+double Binary<traits>::computeCollisionQ(double& sum,const int k,const double& old,const double& orderparam,
                                          const double* velocity,const int idx) const{
                                         //Calculate collision step at a given velocity index at point k
     
@@ -285,23 +289,23 @@ double Binary<ndim,traits>::computeCollisionQ(double& sum,const int k,const doub
 }
 
 
-template<int ndim,class traits>
-double Binary<ndim,traits>::computeEquilibrium(const double& orderparam,const double* velocity,const int idx,const int k) const{
+template<class traits>
+double Binary<traits>::computeEquilibrium(const double& orderparam,const double* velocity,const int idx,const int k) const{
 
     return traits::Stencil::Weights[idx]*(m_ChemicalPotential.getParameter(k)*m_Gamma/traits::Stencil::Cs2+orderparam*CollisionBase<typename traits::Stencil>::computeVelocityFactor(velocity,idx));
 
 }
 
-template<int ndim,class traits>
-double Binary<ndim,traits>::computeModelForce(int k,int xyz) const{
+template<class traits>
+double Binary<traits>::computeModelForce(int k,int xyz) const{
     
     return 0;
 
 }
 
 
-template<int ndim,class traits>
-double Binary<ndim,traits>::computeOrderParameter(const double* distribution,int k) const{//Order parameter calculation
+template<class traits>
+double Binary<traits>::computeOrderParameter(const double* distribution,int k) const{//Order parameter calculation
     //Order parameter is the sum of distributions plus any source/correction terms
     if constexpr(std::tuple_size<typename traits::Forces::getTupleType>::value!=0){
         return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution)
@@ -313,5 +317,13 @@ double Binary<ndim,traits>::computeOrderParameter(const double* distribution,int
     else return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution);
 
 }
+
+
+template<int ndim>
+struct DefaultTrait<ndim,Binary>{
+    using Stencil=std::conditional_t<ndim==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions
+    using Boundaries=LatticeTuple<BounceBack>;
+    using Forces=LatticeTuple<OrderParameterGradients<CentralXYZ<Stencil,ParallelType>>>;
+};
 
 #endif

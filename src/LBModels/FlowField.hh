@@ -13,7 +13,8 @@
 
 
 //Trait class for FlowField Distribution (Navier-Stokes and continuity solver)
-template<int NDIM=3>
+/*
+template<int NDIM>
 struct traitFlowFieldDefault{
 
     using Stencil=std::conditional_t<NDIM==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions
@@ -22,15 +23,16 @@ struct traitFlowFieldDefault{
     using Boundaries=LatticeTuple<BounceBack>; //This will tell the model which boundaries to apply
     using Forces=LatticeTuple<>; //This will tell the model which forces to apply
 };
+*/
 
-template<int ndim=3,class traits=traitFlowFieldDefault<ndim>>
+template<class traits>
 class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from base class to avoid repetition of common
                                                          //calculations
     public:
-        
+
         //Constructors to construct tuples of forces and boundaries
         template<int lx, int ly,int lz>
-        FlowField(LatticeProperties<lx,ly,lz>& properties):NDIM(properties.m_NDIM),LX(properties.m_LX),LY(properties.m_LY),LZ(properties.m_LZ),N(properties.m_N),m_Data(properties),m_Velocity(properties),mt_Forces(properties),mt_Boundaries(properties),m_Distribution(m_Data.getDistributionObject()),m_Density(properties),CollisionBase<typename traits::Stencil>(properties),m_Geometry(properties){
+        constexpr FlowField(LatticeProperties<lx,ly,lz>& properties):NDIM(properties.m_NDIM),LX(properties.m_LX),LY(properties.m_LY),LZ(properties.m_LZ),N(properties.m_N),m_Data(properties),m_Velocity(properties),mt_Forces(properties),mt_Boundaries(properties),m_Distribution(m_Data.getDistributionObject()),m_Density(properties),CollisionBase<typename traits::Stencil>(properties),m_Geometry(properties){
             
         }
 
@@ -50,7 +52,7 @@ class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from b
 
         const std::vector<double>& getDistribution() const; //Return vector of distribution
 
-        template<int ndim2,class traits2>
+        template<class>
         friend class FlowFieldBinary;
 
     private:
@@ -109,29 +111,29 @@ class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from b
         
 };
 
-template<int ndim,class traits>
-const double& FlowField<ndim,traits>::getDensity(int k) const{
+template<class traits>
+const double& FlowField<traits>::getDensity(int k) const{
 
     return density[k]; //Return reference to density at point k
 
 }
 
-template<int ndim,class traits>
-const std::vector<double>& FlowField<ndim,traits>::getVelocity() const{
+template<class traits>
+const std::vector<double>& FlowField<traits>::getVelocity() const{
 
     return velocity; //Return reference to velocity vector
 
 }
 
-template<int ndim,class traits>
-const std::vector<double>& FlowField<ndim,traits>::getDistribution() const{
+template<class traits>
+const std::vector<double>& FlowField<traits>::getDistribution() const{
 
     return distribution; //Return reference to distribution vector
 
 }
 
-template<int ndim,class traits>
-void FlowField<ndim,traits>::precompute(){ //Perform necessary calculations before collision
+template<class traits>
+void FlowField<traits>::precompute(){ //Perform necessary calculations before collision
 
     
     //k = m_Data.iterateFluid0(k,false);
@@ -158,8 +160,8 @@ void FlowField<ndim,traits>::precompute(){ //Perform necessary calculations befo
                                                                                 //before collision
 }
 
-template<int ndim,class traits>
-double FlowField<ndim,traits>::computeForces(int xyz,int k) const{ //Return the sum of forces
+template<class traits>
+double FlowField<traits>::computeForces(int xyz,int k) const{ //Return the sum of forces
 
     if constexpr (std::tuple_size<typename traits::Forces::getTupleType>::value!=0){
         return std::apply([xyz,k](auto&... forces){
@@ -170,8 +172,8 @@ double FlowField<ndim,traits>::computeForces(int xyz,int k) const{ //Return the 
 
 }
 
-template<int ndim,class traits>
-void FlowField<ndim,traits>::collide(){ //Collision step
+template<class traits>
+void FlowField<traits>::collide(){ //Collision step
 
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = m_Data.iterateFluid0(k,false);
@@ -195,8 +197,8 @@ void FlowField<ndim,traits>::collide(){ //Collision step
     #endif
 }
 
-template<int ndim,class traits>
-void FlowField<ndim,traits>::boundaries(){ //Apply the boundary step
+template<class traits>
+void FlowField<traits>::boundaries(){ //Apply the boundary step
 
     //int k=0;
     //k = m_Data.iterateSolid0(k,true);
@@ -226,8 +228,8 @@ void FlowField<ndim,traits>::boundaries(){ //Apply the boundary step
     
 }
 
-template<int ndim,class traits>
-void FlowField<ndim,traits>::initialise(){ //Initialise model
+template<class traits>
+void FlowField<traits>::initialise(){ //Initialise model
 
     m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
@@ -264,8 +266,8 @@ void FlowField<ndim,traits>::initialise(){ //Initialise model
 }
 
 
-template<int ndim,class traits>
-void FlowField<ndim,traits>::computeMomenta(){ //Calculate Density and Velocity
+template<class traits>
+void FlowField<traits>::computeMomenta(){ //Calculate Density and Velocity
 
     //int k=LY*LZ*MAXNEIGHBORS;
     //k = m_Data.iterateFluid0(k,false);
@@ -292,8 +294,8 @@ void FlowField<ndim,traits>::computeMomenta(){ //Calculate Density and Velocity
 
 }
 
-template<int ndim,class traits>
-double FlowField<ndim,traits>::computeCollisionQ(const int k,const double& old,const double& density,
+template<class traits>
+double FlowField<traits>::computeCollisionQ(const int k,const double& old,const double& density,
                                             const double* velocity,const int idx) const{
                                             //Calculate collision step at a given velocity index at point k
 
@@ -309,8 +311,8 @@ double FlowField<ndim,traits>::computeCollisionQ(const int k,const double& old,c
 }
 
 
-template<int ndim,class traits>
-double FlowField<ndim,traits>::computeEquilibrium(const double& density,const double* velocity,const int idx,const int k) const{
+template<class traits>
+double FlowField<traits>::computeEquilibrium(const double& density,const double* velocity,const int idx,const int k) const{
 
     return density*CollisionBase<typename traits::Stencil>::computeGamma(velocity,idx); //Equilibrium is density
                                                                                         //times gamma in this
@@ -318,15 +320,15 @@ double FlowField<ndim,traits>::computeEquilibrium(const double& density,const do
 
 }
 
-template<int ndim,class traits>
-double FlowField<ndim,traits>::computeModelForce(int k,int xyz) const{
+template<class traits>
+double FlowField<traits>::computeModelForce(int k,int xyz) const{
 
     return 0.0; //No model force in this case
 
 }
 
-template<int ndim,class traits>
-double FlowField<ndim,traits>::computeDensity(const double* distribution,int k) const{ //Density calculation
+template<class traits>
+double FlowField<traits>::computeDensity(const double* distribution,int k) const{ //Density calculation
     //Density is the sum of distributions plus any source/correction terms
     if constexpr(std::tuple_size<typename traits::Forces::getTupleType>::value!=0){
         return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution)+std::apply([k](auto&... forces){
@@ -338,8 +340,8 @@ double FlowField<ndim,traits>::computeDensity(const double* distribution,int k) 
 
 }
 
-template<int ndim,class traits>
-double FlowField<ndim,traits>::computeVelocity(const double* distribution,const double& density,
+template<class traits>
+double FlowField<traits>::computeVelocity(const double* distribution,const double& density,
                                           const int xyz,int k) const{ //Velocity calculation in direction xyz
     //Velocity in direction xyz is sum of distribution times the xyz component of the discrete velocity vector
     //in each direction plus any source/correction terms
@@ -351,5 +353,14 @@ double FlowField<ndim,traits>::computeVelocity(const double* distribution,const 
     else return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution,xyz);
 
 }
+
+template<int ndim>
+struct DefaultTrait<ndim,FlowField>{
+    using Stencil=std::conditional_t<ndim==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions
+                        //and Q refers to the number of discrete velocity directions.
+                        //This naming convention is standard in LBM.
+    using Boundaries=LatticeTuple<BounceBack>; //This will tell the model which boundaries to apply
+    using Forces=LatticeTuple<>; //This will tell the model which forces to apply
+};
 
 #endif

@@ -16,6 +16,7 @@
 #ifdef MPIPARALLEL
 #include <mpi.h>
 #endif
+#include "Stencil.hh"
 //Sertive.hh: This will contain some commonly used functions with various uses.
 
 int computeX(const int& LY,const int& LZ,const int k) //Compute X direction from a given k, the convention in this code is that
@@ -132,6 +133,28 @@ template <typename T>
 
   return mpi_type;    
 }
+
+template<int ndim,template<class> class model>
+struct DefaultTrait{
+
+};
+
+template<int NDIM>
+struct trait_base{
+    using Stencil=std::conditional_t<NDIM==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions
+                        //and Q refers to the number of discrete velocity directions.
+                        //This naming convention is standard in LBM.
+    using Boundaries=LatticeTuple<>; //This will tell the model which boundaries to apply
+    using Forces=LatticeTuple<>; //This will tell the model which forces to apply
+};
+
+template<template<class> class model,class trait,class prop>
+auto Model(prop& properties){return model<trait>(properties);}
+
+template<template<class> class model,class prop>
+auto Model(prop& properties){
+  return model<DefaultTrait<prop::m_NDIM,model>>(properties);}
+
 #endif
 //BELOW: Not currently used implementations of type erasure, recursive template loops, MRT generation and a class
 //instance counter.
