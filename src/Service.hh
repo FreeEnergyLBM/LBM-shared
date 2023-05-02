@@ -1,6 +1,4 @@
-#ifndef SERVICE_HEADER
-#define SERVICE_HEADER
-
+#pragma once
 #include <map>
 #include <vector>
 #include <iostream>
@@ -18,6 +16,10 @@
 #endif
 #include "Stencil.hh"
 //Sertive.hh: This will contain some commonly used functions with various uses.
+
+class No_Parallel{
+
+};
 
 int computeX(const int& LY,const int& LZ,const int k) //Compute X direction from a given k, the convention in this code is that
                           //k will iterate over the z direction first, then increment y by 1 once it reaches LZ,
@@ -47,8 +49,8 @@ int computeZ(const int& LY,const int& LZ,const int k) //Compute Y direction from
 template<typename... Ts>
 class LatticeTuple{
   public:
-    template<int lx, int ly,int lz=1>
-    constexpr LatticeTuple(LatticeProperties<lx,ly,lz>& properties):m_Tuple(*new Ts(properties)...){
+    template<class prop>
+    constexpr LatticeTuple(prop& properties):m_Tuple(*new Ts(properties)...){
 
     }
     std::tuple<Ts...>& getTuple(){return m_Tuple;}
@@ -134,26 +136,20 @@ template <typename T>
   return mpi_type;    
 }
 
-template<int ndim,template<class> class model>
-struct DefaultTrait{
-
-};
-
-template<int NDIM>
-struct trait_base{
-    using Stencil=std::conditional_t<NDIM==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions
-                        //and Q refers to the number of discrete velocity directions.
-                        //This naming convention is standard in LBM.
-    using Boundaries=LatticeTuple<>; //This will tell the model which boundaries to apply
-    using Forces=LatticeTuple<>; //This will tell the model which forces to apply
-};
+template<class,template<class> class>
+struct DefaultTrait{};
 
 template<template<class> class model,class trait,class prop>
 auto Model(prop& properties){return model<trait>(properties);}
 
 template<template<class> class model,class prop>
 auto Model(prop& properties){
-  return model<DefaultTrait<prop::m_NDIM,model>>(properties);}
+  return model<DefaultTrait<prop,model>>(properties);}
+
+template<class prop,typename... T>
+auto constructTuple(prop& properties,std::tuple<T...>& tup){
+  tup=std::make_tuple(new T(properties)...);
+}
 
 #endif
 //BELOW: Not currently used implementations of type erasure, recursive template loops, MRT generation and a class
@@ -256,4 +252,3 @@ struct Counter
 };
 template <typename classtocount> int Counter<classtocount>::counter(0);
 */
-#endif

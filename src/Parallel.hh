@@ -1,7 +1,7 @@
-#ifndef MPIPARALLEL_HEADER
-#define MPIPARALLEL_HEADER
+#pragma once
 #ifdef MPIPARALLEL
 #include <mpi.h>
+#include "Lattice.hh"
 #include "Global.hh"
 #include "Service.hh"
 /**
@@ -26,11 +26,11 @@ class Parallel{
          * lattice points) is set based on the number of processors and number of neighbors chosen. N is then
          * calculated as LXdiv*LY*LZ.
          */
-        template<int lx, int ly,int lz=1=1>
-        Parallel(LatticeProperties<lx,ly,lz>& properties){
+        template<class prop>
+        Parallel(prop& properties){
 
-            if(MAXNEIGHBORS<num_neighbors) MAXNEIGHBORS=num_neighbors;
-        
+            if(m_MaxNeighbors<num_neighbors) m_MaxNeighbors=num_neighbors;
+            properties.m_HaloSize=properties.m_LY*properties.m_LZ*m_MaxNeighbors;
             if (properties.m_LX%NUMPROCESSORS==0) {
                 properties.m_LXdiv=(properties.m_LX/NUMPROCESSORS+2*num_neighbors);
             }
@@ -48,6 +48,8 @@ class Parallel{
             properties.m_N=properties.m_LXdiv*properties.m_LY*properties.m_LZ;
             
         }
+    private:
+        int m_MaxNeighbors=0;
 };
 
 /**
@@ -62,8 +64,8 @@ class X_Parallel:public Parallel<num_neighbors>{
         /**
          * \brief Constructor that will initialise MPI variables for this parallelisation method.
          */
-         template<int lx, int ly,int lz=1>
-        X_Parallel(LatticeProperties<lx,ly,lz>& properties);
+         template<class prop>
+        X_Parallel(prop& properties);
 
         /**
          * \brief Function to fill halos of adjacent processors with the chosen parameter adjacent to the edge
@@ -167,8 +169,8 @@ void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& ob
 }
 
 template<class stencil,int num_neighbors>
-template<int lx, int ly,int lz>
-X_Parallel<stencil,num_neighbors>::X_Parallel(LatticeProperties<lx,ly,lz>& properties):Parallel<num_neighbors>(properties),N(properties.m_N),LX(properties.m_LX),LY(properties.m_LY),LZ(properties.m_LZ){
+template<class prop>
+X_Parallel<stencil,num_neighbors>::X_Parallel(prop& properties):Parallel<num_neighbors>(properties),N(properties.m_N),LX(properties.m_LX),LY(properties.m_LY),LZ(properties.m_LZ){
 
     const int bufSize=(LY*LZ*num_neighbors*(5+2)*2*2+1000)*sizeof(double);
     
@@ -189,9 +191,4 @@ X_Parallel<stencil,num_neighbors>::X_Parallel(LatticeProperties<lx,ly,lz>& prope
     MPI_Type_commit(&DistributionVector);
     
 }
-#else
-class No_Parallel{
-
-};
-#endif
 #endif

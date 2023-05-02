@@ -1,10 +1,10 @@
-#ifndef COLLIDE_HEADER
-#define COLLIDE_HEADER
+#pragma once
 #include <string>
 #include <memory>
 #include <utility>
 #include <vector>
 #include <iostream>
+#include "Lattice.hh"
 #include "Global.hh"
 #include "Stencil.hh"
 
@@ -27,8 +27,8 @@ class CollisionBase{
     static_assert(std::is_base_of<Stencil,stencil>(),"ERROR: invalid stencil specified in traits.");
     
     public:
-        template<int lx, int ly,int lz=1>
-        CollisionBase(LatticeProperties<lx,ly,lz>& properties):DT(properties.m_DT){static_assert(stencil::D==properties.m_NDIM,"ERROR: The chosen stencil must match the number of lattice dimensions (NDIM) chosen in Global.hh.");}
+        template<class prop>
+        CollisionBase(prop& properties):DT(properties.m_DT){static_assert(stencil::D==properties.m_NDIM,"ERROR: The chosen stencil must match the number of lattice dimensions (NDIM) chosen in Global.hh.");}
         /**
          * \brief computeGamma computes first and second order velocity dependence of the equilibrium distributions.
          * \param velocity Pointer to velocity vector at the current lattice point.
@@ -194,5 +194,3 @@ double CollisionBase<stencil>::forceGuoSRT(const double force[stencil::D],
     return forceterm;
 
 }
-
-#endif

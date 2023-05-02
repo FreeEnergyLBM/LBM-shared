@@ -1,6 +1,6 @@
-#ifndef CHEMFORCE_HEADER
-#define CHEMFORCE_HEADER
+#pragma once
 #include "../Parameters.hh"
+#include "../Lattice.hh"
 #include<iostream>
 
 //ExternalForce.hh: Contains the force class for a constant applied body force in a given direction. This is
@@ -8,8 +8,10 @@
 
 class ChemicalForce{
     public:
-        template<int lx, int ly,int lz>
-        ChemicalForce(LatticeProperties<lx,ly,lz>& properties):m_ChemicalPotential(properties),m_GradOrderParameter(properties),m_LaplacianOrderParameter(properties),m_OrderParameter(properties),m_Density(properties),DT(properties.m_DT){}
+        template<template<class,class> class data,template<class,int> class parallel,int lx, int ly,int lz=1>
+        ChemicalForce(LatticeProperties<data,parallel,lx,ly,lz>& properties):m_ChemicalPotential(properties),m_GradOrderParameter(properties),m_LaplacianOrderParameter(properties),m_OrderParameter(properties),m_Density(properties),DT(properties.m_DT){}
+
+        ChemicalForce(const ChemicalForce& other):m_ChemicalPotential(other.m_ChemicalPotential),m_GradOrderParameter(other.m_GradOrderParameter),m_LaplacianOrderParameter(other.m_LaplacianOrderParameter),m_OrderParameter(other.m_OrderParameter),m_Density(other.m_Density),DT(other.DT){}
 
         double compute(int xyz,int k) const; //Return force at lattice point k in direction xyz
 
@@ -21,8 +23,6 @@ class ChemicalForce{
                                                            //velocity
 
         void postprocess(int k); //Perform any necessary postprocessing
-
-    private:
 
         const double& DT;
         double m_A=0.00015;
@@ -67,5 +67,3 @@ double ChemicalForce::computeVelocitySource(int xyz,int k) const{ //Need to corr
     return +compute(xyz,k)*DT/(2.0*m_Density.getParameter(k));
     
 }
-
-#endif

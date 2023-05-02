@@ -1,5 +1,5 @@
-#ifndef DATA_HEADER
-#define DATA_HEADER
+#pragma once
+#include "Lattice.hh"
 #include "Geometry.hh"
 #include "Parameters.hh"
 #include "Service.hh"
@@ -76,8 +76,8 @@ class Data_Base{
          * This constructor will call the constructor for the given parallel class, calculate the opposite points
          * at each index Q, allocate memory for neighbors and fill the array of neighbors.
          */
-         template<int lx, int ly,int lz=1>
-        Data_Base(LatticeProperties<lx,ly,lz>& properties):LXdiv(properties.m_LXdiv),LX(properties.m_LX),LY(properties.m_LY),LZ(properties.m_LZ),N(properties.m_N),m_Parallel(properties),m_Geometry(properties){ //Construct distribution
+         template<class prop>
+        Data_Base(prop& properties):LXdiv(properties.m_LXdiv),LX(properties.m_LX),LY(properties.m_LY),LZ(properties.m_LZ),N(properties.m_N),m_Parallel(properties),m_Geometry(properties){ //Construct distribution
             for(int idx=0;idx<stencil::Q;idx++){
                 OppositeOffset[idx]=stencil::Ci_xyz(x)[idx]*LZ*LY+stencil::Ci_xyz(y)[idx]*LZ+stencil::Ci_xyz(z)[idx];
             }
@@ -275,8 +275,8 @@ class Data1:public Data_Base<stencil,parallel>{
              * \param neighbors reference to a vector containing the neighboring lattice points at each point. Used to
              *                  construct the Distribution_Base class.
              */
-            template<int lx, int ly,int lz=1>
-            Distribution_Derived(LatticeProperties<lx,ly,lz>& properties,std::vector<int>& neighbors):Distribution_Base<stencil>(neighbors){ //Initialise mv_DistNeighbors
+            template<class prop>
+            Distribution_Derived(prop& properties,std::vector<int>& neighbors):Distribution_Base<stencil>(neighbors){ //Initialise mv_DistNeighbors
                 
                 for(int idx=0;idx<stencil::Q;idx++){ //Calculate the k offset for the neighbors in each direction
                     ma_Opposites[idx]=stencil::Opposites[idx];
@@ -335,8 +335,8 @@ class Data1:public Data_Base<stencil,parallel>{
         /**
          * \brief This constructor calls the constructor of the base disribution using the neighbor information.
          */
-        template<int lx, int ly,int lz=1>
-        Data1(LatticeProperties<lx,ly,lz>& properties):Data_Base<stencil,parallel>(properties),m_Distribution(properties,Data_Base<stencil,parallel>::mv_Neighbors){ //Construct distribution
+        template<class prop>
+        Data1(prop& properties):Data_Base<stencil,parallel>(properties),m_Distribution(properties,Data_Base<stencil,parallel>::mv_Neighbors){ //Construct distribution
 
         }
 
@@ -373,5 +373,4 @@ void Data1<stencil,parallel>::communicateDistribution(){
     Data_Base<stencil,parallel>::m_Parallel.communicateDistribution(m_Distribution);
     #endif
 }
-#endif
 #endif

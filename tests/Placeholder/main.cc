@@ -30,19 +30,15 @@
 const int LX=200;
 const int LY=200;
 const int TIMESTEPS=100;
-/*
-struct traitF:traitFlowFieldBinaryDefault<>{
-    using Stencil=D2Q9;
+using Lattice=LatticeProperties<Data1,X_Parallel,LX,LY>;
+
+struct traittt:DefaultTrait<Lattice,FlowField>{
+
 };
 
-struct traitB:traitBinaryDefault<>{
-    using Stencil=D2Q9;
-};
-*/
 int main(int argc, char **argv){
 
-    LatticeProperties<LX,LY> l1;
-    constexpr int NDIM=LatticeProperties<LX,LY>::m_NDIM;
+    Lattice l1;
 
     #ifdef MPIPARALLEL
     MPI_Init(&argc, &argv);

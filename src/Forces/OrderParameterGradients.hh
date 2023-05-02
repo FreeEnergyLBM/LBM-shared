@@ -1,6 +1,6 @@
-#ifndef OPGRAD_HEADER
-#define OPGRAD_HEADER
+#pragma once
 #include "../Parameters.hh"
+#include "../Lattice.hh"
 #include<iostream>
 
 //ExternalForce.hh: Contains the force class for a constant applied body force in a given direction. This is
@@ -9,8 +9,10 @@
 template<class gradientstencil>
 class OrderParameterGradients{
     public:
-        template<int lx, int ly,int lz>
-        OrderParameterGradients(LatticeProperties<lx,ly,lz>& properties):NDIM(properties.m_NDIM),m_GradientStencil(properties),m_GradOrderParameter(properties),m_LaplacianOrderParameter(properties),m_OrderParameter(properties){}
+        template<template<class,class> class data,template<class,int> class parallel,int lx, int ly,int lz=1>
+        OrderParameterGradients(LatticeProperties<data,parallel,lx,ly,lz>& properties):NDIM(properties.m_NDIM),m_GradientStencil(properties),m_GradOrderParameter(properties),m_LaplacianOrderParameter(properties),m_OrderParameter(properties){}
+
+        OrderParameterGradients(const OrderParameterGradients<gradientstencil>& other):NDIM(other.NDIM),m_GradientStencil(other.m_GradientStencil),m_GradOrderParameter(other.m_GradOrderParameter),m_LaplacianOrderParameter(other.m_LaplacianOrderParameter),m_OrderParameter(other.m_OrderParameter){}
 
         double compute(int xyz,int k) const; //Return force at lattice point k in direction xyz
 
@@ -22,8 +24,6 @@ class OrderParameterGradients{
                                                            //velocity
 
         void postprocess(int k); //Perform any necessary postprocessing
-
-    private:
 
         gradientstencil m_GradientStencil;
 
@@ -70,5 +70,3 @@ double OrderParameterGradients<gradientstencil>::computeVelocitySource(int xyz,i
     return 0;
     
 }
-
-#endif

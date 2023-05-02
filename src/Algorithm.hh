@@ -1,5 +1,4 @@
-#ifndef ALGORITHM_HEADER
-#define ALGORITHM_HEADER
+#pragma once
 #include <tuple>
 #include <iostream>
 #include "Lattice.hh"
@@ -196,5 +195,3 @@ void Algorithm<prop,Model...>::calculateMomentaStep(){ //...
     else;
 
 }
-
-#endif

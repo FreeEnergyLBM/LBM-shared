@@ -1,12 +1,11 @@
-#ifndef CXYZGRADIENT_HEADER
-#define CXYZGRADIENT_HEADER
+#pragma once
 
-template<class stencil, template<typename givenstencil> class parallel>
+template<class prop,class stencil>
 struct CentralXYZ{
-    template<int lx, int ly,int lz>
-    CentralXYZ(LatticeProperties<lx,ly,lz>& properties):m_Data(properties),m_Geometry(properties){}
+    
+    CentralXYZ(prop& properties):m_Data(properties),m_Geometry(properties){}
 
-    Data_Base<stencil,parallel<stencil>> m_Data;
+    Data_Base<stencil,typename prop::template ParallelType<stencil>> m_Data;
 
     template<class parameter>
     inline double computeFirstDerivative(const parameter& val,const int direciton,const int k);
@@ -18,9 +17,9 @@ struct CentralXYZ{
     
 };
 
-template<class stencil, template<typename givenstencil> class parallel>
+template<class prop,class stencil>
 template<class parameter>
-double CentralXYZ<stencil,parallel>::computeFirstDerivative(const parameter& val,const int direction,const int k){
+double CentralXYZ<prop,stencil>::computeFirstDerivative(const parameter& val,const int direction,const int k){
 
     double temp=0;
     for (int idx=0;idx<stencil::Q;idx++){
@@ -37,9 +36,9 @@ double CentralXYZ<stencil,parallel>::computeFirstDerivative(const parameter& val
 
 }
 
-template<class stencil, template<typename givenstencil> class parallel>
+template<class prop,class stencil>
 template<class parameter>
-double CentralXYZ<stencil,parallel>::computeLaplacian(const parameter& val,const int k){
+double CentralXYZ<prop,stencil>::computeLaplacian(const parameter& val,const int k){
 
     double temp=0;
     for (int idx=1;idx<stencil::Q;idx++){
@@ -50,5 +49,3 @@ double CentralXYZ<stencil,parallel>::computeLaplacian(const parameter& val,const
     }
     return temp;
 }
-
-#endif

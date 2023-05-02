@@ -1,6 +1,6 @@
-#ifndef EXFORCE_HEADER
-#define EXFORCE_HEADER
+#pragma once
 #include "../Parameters.hh"
+#include "../Lattice.hh"
 #include<iostream>
 
 //ExternalForce.hh: Contains the force class for a constant applied body force in a given direction. This is
@@ -8,8 +8,10 @@
 
 class BodyForce{
     public:
-        template<int lx, int ly,int lz>
-        BodyForce(LatticeProperties<lx,ly,lz>& properties):m_Density(properties),DT(properties.m_DT){}
+        template<template<class,class> class data,template<class,int> class parallel,int lx, int ly,int lz=1>
+        BodyForce(LatticeProperties<data,parallel,lx,ly,lz>& properties):m_Density(properties),DT(properties.m_DT){}
+
+        BodyForce(const BodyForce& other):m_Density(other.m_Density),DT(other.DT){}
 
         double compute(int xyz,int k) const; //Return force at lattice point k in direction xyz
 
@@ -21,8 +23,6 @@ class BodyForce{
                                                            //velocity
 
         void postprocess(int k); //Perform any necessary postprocessing
-
-    private:
 
         const double& DT;
 
@@ -58,5 +58,3 @@ double BodyForce::computeVelocitySource(int xyz,int k) const{ //Need to correct 
     return +compute(xyz,k)*DT/(2.0*m_Density.getParameter(k));
     
 }
-
-#endif

@@ -1,12 +1,11 @@
-#ifndef BOUCNEBACK_HEADER
-#define BOUCNEBACK_HEADER
+#pragma once
 #include "../Parameters.hh"
 #include<iostream>
 
 class BounceBack{
     public:
-        template<int lx, int ly,int lz=1>
-        BounceBack(const LatticeProperties<lx,ly,lz>& properties){}
+        template<class prop>
+        BounceBack(const prop& properties){}
 
         template <class disttype>
         void compute(disttype& m_Distribution,int k,int idx) const;
@@ -44,4 +43,3 @@ double BounceBack::computeDensitySource(int k) const{
 double BounceBack::computeVelocitySource(int xyz,int k) const{
     return 0;
 }
-#endif

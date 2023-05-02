@@ -1,8 +1,7 @@
-#ifndef GEOMETRY_HEADER
-#define GEOMETRY_HEADER
+#pragma once
 #include<map>
 #include "Service.hh"
- 
+#include "Lattice.hh"
 /**
  * \file Geometry.hh
  * \brief This is not fully implemented but will contain information relevant to boundary conditions
@@ -17,8 +16,8 @@
  */
 class Geometry{
     public:
-        template<int lx, int ly,int lz=1>
-        Geometry(LatticeProperties<lx,ly,lz>& properties):LXdiv(properties.m_LXdiv),LY(properties.m_LY),LZ(properties.m_LZ){
+        template<class prop>
+        Geometry(prop& properties):LXdiv(properties.m_LXdiv),LY(properties.m_LY),LZ(properties.m_LZ){
             
         }
         /**
@@ -87,5 +86,3 @@ bool Geometry::isSolid(int k){
     else return false;
 
 }
-
-#endif

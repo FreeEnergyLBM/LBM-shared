@@ -1,5 +1,4 @@
-#ifndef STENCIL_HEADER
-#define STENCIL_HEADER
+#pragma once
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -235,4 +234,3 @@ struct D3Q7{
     }
 };
 */
-#endif

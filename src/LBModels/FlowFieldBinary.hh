@@ -1,5 +1,4 @@
-#ifndef FLOWFIELDBINARY_HEADER
-#define FLOWFIELDBINARY_HEADER
+#pragma once
 #include "../Collide.hh"
 #include "../Parameters.hh"
 #include "../Data.hh"
@@ -30,9 +29,7 @@ class FlowFieldBinary:public FlowField<traits>{ //Inherit from base class to avo
     
     public:
 
-
-        template<int lx, int ly,int lz>
-        FlowFieldBinary(LatticeProperties<lx,ly,lz>& properties):FlowField<traits>(properties),m_OrderParameter(properties),m_ChemicalPotential(properties){}
+        FlowFieldBinary(typename traits::Properties& properties):FlowField<traits>(properties),m_OrderParameter(properties),m_ChemicalPotential(properties){}
 
         virtual void collide() override; //Collision step
 
@@ -75,7 +72,7 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
     double CollideStartTime=omp_get_wtime();
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=FlowField<traits>::LY*FlowField<traits>::LZ*MAXNEIGHBORS;k<FlowField<traits>::N-MAXNEIGHBORS*FlowField<traits>::LY*FlowField<traits>::LZ;k++){ //loop over k
+    for (int k=FlowField<traits>::HaloSize;k<FlowField<traits>::N-FlowField<traits>::HaloSize;k++){ //loop over k
 
         double sum=0;
         for (int idx=traits::Stencil::Q-1;idx>=0;--idx){ //loop over discrete velocity directions
@@ -99,7 +96,7 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=FlowField<traits>::LY*FlowField<traits>::LZ*MAXNEIGHBORS;k<FlowField<traits>::N-MAXNEIGHBORS*FlowField<traits>::LY*FlowField<traits>::LZ;k++){ //loop over k
+    for (int k=FlowField<traits>::HaloSize;k<FlowField<traits>::N-FlowField<traits>::HaloSize;k++){ //loop over k
 
         double* distribution=FlowField<traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution=FlowField<traits>::m_Distribution.getDistributionOldPointer(k);
@@ -148,12 +145,10 @@ double FlowFieldBinary<traits>::computeCollisionQ(double& sum,const int k,const 
 
 
 
-template<int ndim>
-struct DefaultTrait<ndim,FlowFieldBinary>{
-    using Stencil=std::conditional_t<ndim==2,D2Q9,D3Q19>;
+template<class properties>
+struct DefaultTrait<properties,FlowFieldBinary>{
+    using Stencil=std::conditional_t<properties::m_NDIM==2,D2Q9,D3Q19>;
     using Boundaries=LatticeTuple<BounceBack>; //This will tell the model which boundaries to apply
     using Forces=LatticeTuple<BodyForce,ChemicalForce>; //This will tell the model which forces to apply
+    using Properties=properties;
 };
-
-
-#endif
