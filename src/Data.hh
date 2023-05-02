@@ -76,8 +76,16 @@ class Data_Base{
          * This constructor will call the constructor for the given parallel class, calculate the opposite points
          * at each index Q, allocate memory for neighbors and fill the array of neighbors.
          */
-         template<class prop>
-        Data_Base(prop& properties):LXdiv(properties.m_LXdiv),LX(properties.m_LX),LY(properties.m_LY),LZ(properties.m_LZ),N(properties.m_N),m_Parallel(properties),m_Geometry(properties){ //Construct distribution
+        template<class prop>
+        Data_Base(prop& properties) //Construct distribution
+         : m_Geometry(properties),
+           m_Parallel(properties),
+           LX(properties.m_LX),
+           LY(properties.m_LY),
+           LZ(properties.m_LZ),
+           LXdiv(properties.m_LXdiv),
+           N(properties.m_N)
+        {
             for(int idx=0;idx<stencil::Q;idx++){
                 OppositeOffset[idx]=stencil::Ci_xyz(x)[idx]*LZ*LY+stencil::Ci_xyz(y)[idx]*LZ+stencil::Ci_xyz(z)[idx];
             }
@@ -222,7 +230,6 @@ int Data_Base<stencil,parallel>::getOneNeighborPeriodic(const int k,const int Q)
 template<class stencil,class parallel>
 void Data_Base<stencil,parallel>::generateNeighbors(){ //Loop over all lattice points and calculate the neghbor at each point
 
-    int k=0;
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
     #endif
@@ -281,7 +288,7 @@ class Data1:public Data_Base<stencil,parallel>{
                 for(int idx=0;idx<stencil::Q;idx++){ //Calculate the k offset for the neighbors in each direction
                     ma_Opposites[idx]=stencil::Opposites[idx];
                 }
-                
+
                 Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q*properties.m_N); //Array size is number of
                                                                                   //directions times number of
                                                                                   //lattice points

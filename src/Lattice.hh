@@ -9,6 +9,7 @@ struct LatticeProperties{
     static constexpr int m_LX=lx;
     int m_LXdiv;
     int m_HaloSize;
+    int m_HaloSize;
     static constexpr int m_LY=ly;
     static constexpr int m_LZ=lz;
     int m_N;

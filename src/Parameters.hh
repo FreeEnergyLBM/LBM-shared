@@ -1,4 +1,5 @@
 #pragma once
+#pragma once
 #include <vector>
 #include<string>
 #include<map>
@@ -112,6 +113,7 @@ class Parameter{
         const int& LZ;
         const int& N;
         const int& HaloSize;
+        const int& HaloSize;
         
 };
 
@@ -134,6 +136,9 @@ void Parameter<obj,T>::Save(std::string filename,int t,std::string datadir){ //F
     MPI_File_write(fh,&mv_Parameter[HaloSize*m_Num],m_Num*(N-2*HaloSize),MPI_DOUBLE,MPI_STATUSES_IGNORE);
     //MPI_File_write_all(fh,&mv_Parameter[HaloSize*num],num*(N-2*HaloSize),MPI_DOUBLE,&status);
     //for (int k = HaloSize; k < N-HaloSize; k++ ) { 
+    MPI_File_write(fh,&mv_Parameter[HaloSize*m_Num],m_Num*(N-2*HaloSize),MPI_DOUBLE,MPI_STATUSES_IGNORE);
+    //MPI_File_write_all(fh,&mv_Parameter[HaloSize*num],num*(N-2*HaloSize),MPI_DOUBLE,&status);
+    //for (int k = HaloSize; k < N-HaloSize; k++ ) { 
     //    
     //    for(int idx=0;idx<num;idx++) {
     //        MPI_File_write(fh,&mv_Parameter[k*num+idx],num*,MPI_DOUBLE,&status);
@@ -150,6 +155,7 @@ void Parameter<obj,T>::Save(std::string filename,int t,std::string datadir){ //F
     fs.seekp(sizeof(double)*CURPROCESSOR*m_Num*(LX*LY*LZ)/NUMPROCESSORS);
 
     for (int k = HaloSize; k < N-HaloSize; k++ ) { 
+    for (int k = HaloSize; k < N-HaloSize; k++ ) { 
 
         for(int idx=0;idx<m_Num;idx++) fs.write((char *)(&mv_Parameter[k*m_Num+idx]), sizeof(double));
         
@@ -165,8 +171,9 @@ template<class ...parameters>
 class ParameterSave{
     public:
         template<class prop>
-        ParameterSave(prop& properties,std::string datadir,int saveinterval=1):m_SaveInterval(saveinterval),m_DataDir(datadir),mt_Parameters(properties){
-            system(((std::string)"mkdir "+m_DataDir).c_str());
+        ParameterSave(prop& properties, std::string datadir, int saveinterval=1) : m_SaveInterval(saveinterval), m_DataDir(datadir), mt_Parameters(properties) {
+            int status = system(((std::string)"mkdir -p "+m_DataDir).c_str());
+            if (status) std::cout << "Error creating output directory" << std::endl;
         }
         void Save(int timestep){
             std::string dir=m_DataDir;
@@ -177,7 +184,6 @@ class ParameterSave{
                             (params.Save(params.m_Name,timestep,dir),...);
                         }, mt_Parameters.getTuple());
                 }
-                else;
                 
             }
         }

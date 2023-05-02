@@ -30,7 +30,9 @@ class BodyForce{
 
         Density m_Density; //Density
 
+        const double& DT;
 };
+
 
 double BodyForce::compute(int xyz,int k) const{
 

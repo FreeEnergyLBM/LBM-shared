@@ -62,23 +62,24 @@ template<class traits>
 void FlowFieldBinary<traits>::collide(){ //Collision step
 
     
-    int QQ=traits::Stencil::Q;
-    int QN=traits::Stencil::Q*FlowField<traits>::N;
-    int DN=traits::Stencil::D*FlowField<traits>::N;
-    double* old_distribution=FlowField<traits>::m_Distribution.getDistributionOldPointer(0);
-    double* distribution=FlowField<traits>::m_Distribution.getDistributionPointer(0);
+    int QQ = traits::Stencil::Q;
+    double* old_distribution = FlowField<traits>::m_Distribution.getDistributionOldPointer(0);
 
     #ifdef OMPPARALLEL
-    double CollideStartTime=omp_get_wtime();
     #pragma omp parallel for schedule( dynamic )
     #endif
     for (int k=FlowField<traits>::HaloSize;k<FlowField<traits>::N-FlowField<traits>::HaloSize;k++){ //loop over k
 
         double sum=0;
-        for (int idx=traits::Stencil::Q-1;idx>=0;--idx){ //loop over discrete velocity directions
+        for (int idx=QQ-1;idx>=0;--idx){ //loop over discrete velocity directions
             //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
             //"computeCollisionQ"
-            FlowField<traits>::m_Distribution.getDistributionPointer(FlowField<traits>::m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(sum,k,old_distribution[k*traits::Stencil::Q+idx],FlowField<traits>::density[k],&FlowField<traits>::velocity[k*traits::Stencil::D],m_OrderParameter.getParameter(k),m_ChemicalPotential.getParameter(k),idx);
+            double density = FlowField<traits>::density[k];
+            double *velocity = &FlowField<traits>::velocity[k*traits::Stencil::D];
+            double orderParameter = m_OrderParameter.getParameter(k);
+            double chemicalPotential = m_ChemicalPotential.getParameter(k);
+            double collision = computeCollisionQ(sum, k, old_distribution[k*QQ+idx], density, velocity, orderParameter, chemicalPotential, idx);
+            FlowField<traits>::m_Distribution.getDistributionPointer(FlowField<traits>::m_Distribution.streamIndex(k,idx))[idx] = collision;
         }        
         
     }

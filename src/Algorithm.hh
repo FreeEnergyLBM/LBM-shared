@@ -116,7 +116,6 @@ void Algorithm<prop,Model...>::initialise(){ //...
                 (models.initialise(),...);
             }, mt_Models);
     }
-    else;
 
 }
 
@@ -135,7 +134,6 @@ void Algorithm<prop,Model...>::precomputeStep(){
                 (models.precompute(),...);
             }, mt_Models);
     }
-    else;
 
 }
 
@@ -154,7 +152,6 @@ void Algorithm<prop,Model...>::calculateCollisionStep(){ //...
                 (models.collide(),...);
             }, mt_Models);
     }
-    else;
 
 }
 
@@ -173,7 +170,6 @@ void Algorithm<prop,Model...>::calculateBoundaryStep(){ //...
                 (models.boundaries(),...);
             }, mt_Models);
     }
-    else;
 
 }
 
@@ -192,6 +188,5 @@ void Algorithm<prop,Model...>::calculateMomentaStep(){ //...
                 (models.computeMomenta(),...);
             }, mt_Models);
     }
-    else;
 
 }

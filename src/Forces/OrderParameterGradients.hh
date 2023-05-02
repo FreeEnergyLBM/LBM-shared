@@ -10,9 +10,19 @@ template<class gradientstencil>
 class OrderParameterGradients{
     public:
         template<template<class,class> class data,template<class,int> class parallel,int lx, int ly,int lz=1>
-        OrderParameterGradients(LatticeProperties<data,parallel,lx,ly,lz>& properties):NDIM(properties.m_NDIM),m_GradientStencil(properties),m_GradOrderParameter(properties),m_LaplacianOrderParameter(properties),m_OrderParameter(properties){}
+        OrderParameterGradients(LatticeProperties<data,parallel,lx,ly,lz>& properties) 
+         : m_GradientStencil(properties),
+           m_GradOrderParameter(properties),
+           m_LaplacianOrderParameter(properties),
+           m_OrderParameter(properties),
+           NDIM(properties.m_NDIM)
+        {}
 
-        OrderParameterGradients(const OrderParameterGradients<gradientstencil>& other):NDIM(other.NDIM),m_GradientStencil(other.m_GradientStencil),m_GradOrderParameter(other.m_GradOrderParameter),m_LaplacianOrderParameter(other.m_LaplacianOrderParameter),m_OrderParameter(other.m_OrderParameter){}
+        OrderParameterGradients(const OrderParameterGradients<gradientstencil>& other): m_GradientStencil(other.m_GradientStencil),
+                                                                                        m_GradOrderParameter(other.m_GradOrderParameter),
+                                                                                        m_LaplacianOrderParameter(other.m_LaplacianOrderParameter),
+                                                                                        m_OrderParameter(other.m_OrderParameter),
+                                                                                        NDIM(other.NDIM){}
 
         double compute(int xyz,int k) const; //Return force at lattice point k in direction xyz
 

@@ -1,4 +1,5 @@
 #pragma once
+#pragma once
 #include "../Parameters.hh"
 #include "../Lattice.hh"
 #include<iostream>
@@ -9,9 +10,22 @@
 class ChemicalForce{
     public:
         template<template<class,class> class data,template<class,int> class parallel,int lx, int ly,int lz=1>
-        ChemicalForce(LatticeProperties<data,parallel,lx,ly,lz>& properties):m_ChemicalPotential(properties),m_GradOrderParameter(properties),m_LaplacianOrderParameter(properties),m_OrderParameter(properties),m_Density(properties),DT(properties.m_DT){}
+        ChemicalForce(LatticeProperties<data,parallel,lx,ly,lz>>& properties)
+          : m_ChemicalPotential(properties),
+            m_GradOrderParameter(properties),
+            m_LaplacianOrderParameter(properties),
+            m_OrderParameter(properties),
+            m_Density(properties),
+            DT(properties.m_DT)
+        {}
 
-        ChemicalForce(const ChemicalForce& other):m_ChemicalPotential(other.m_ChemicalPotential),m_GradOrderParameter(other.m_GradOrderParameter),m_LaplacianOrderParameter(other.m_LaplacianOrderParameter),m_OrderParameter(other.m_OrderParameter),m_Density(other.m_Density),DT(other.DT){}
+        ChemicalForce(const ChemicalForce& other)
+          : m_ChemicalPotential(other.m_ChemicalPotential),
+            m_GradOrderParameter(other.m_GradOrderParameter),
+            m_LaplacianOrderParameter(other.m_LaplacianOrderParameter),
+            m_OrderParameter(other.m_OrderParameter),
+            m_Density(other.m_Density),
+            DT(other.DT){}
 
         double compute(int xyz,int k) const; //Return force at lattice point k in direction xyz
 
@@ -23,6 +37,8 @@ class ChemicalForce{
                                                            //velocity
 
         void postprocess(int k); //Perform any necessary postprocessing
+
+    private:
 
         const double& DT;
         double m_A=0.00015;
@@ -38,7 +54,9 @@ class ChemicalForce{
 
         Density m_Density; //Density
 
+        const double& DT;
 };
+
 
 double ChemicalForce::compute(int xyz,int k) const{
 

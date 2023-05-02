@@ -25,14 +25,28 @@ struct traitFlowFieldDefault{
 */
 
 template<class traits>
-class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from base class to avoid repetition of common
+class FlowField : public CollisionBase<typename traits::Stencil> { //Inherit from base class to avoid repetition of common
                                                          //calculations
     public:
 
         //Constructors to construct tuples of forces and boundaries
-        constexpr FlowField(typename traits::Properties& properties):NDIM(properties.m_NDIM),LX(properties.m_LX),LY(properties.m_LY),LZ(properties.m_LZ),N(properties.m_N),HaloSize(properties.m_HaloSize),m_Data(properties),m_Velocity(properties),mt_Forces(properties),mt_Boundaries(properties),m_Distribution(m_Data.getDistributionObject()),m_Density(properties),CollisionBase<typename traits::Stencil>(properties),m_Geometry(properties){
-            
-        }
+        
+        constexpr FlowField(typename traits::Properties& properties)
+          : CollisionBase<typename traits::Stencil>(properties),
+            N(properties.m_N),
+            LX(properties.m_LX),
+            LY(properties.m_LY),
+            LZ(properties.m_LZ),
+            NDIM(properties.m_NDIM),
+            HaloSize(properties.m_HaloSize),
+            m_Data(properties),
+            m_Density(properties),
+            m_Velocity(properties),
+            m_Distribution(m_Data.getDistributionObject()),
+            mt_Forces(properties),
+            mt_Boundaries(properties),
+            m_Geometry(properties)
+        {}
 
         void precompute(); //Perform any necessary computations before collision
 
@@ -91,12 +105,12 @@ class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from b
 
         enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z directions
 
-
         const int& N;
         const int& LX;
         const int& LY;
         const int& LZ;
         const int& NDIM;
+        const int& HaloSize;
         const int& HaloSize;
 
         typename traits::Properties::template DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
@@ -104,11 +118,8 @@ class FlowField:public CollisionBase<typename traits::Stencil>{ //Inherit from b
         typename traits::Forces mt_Forces; //MOVE THIS TO BASE
         typename traits::Boundaries mt_Boundaries;
         Geometry m_Geometry;
-
-
-
-        
 };
+
 
 template<class traits>
 const double& FlowField<traits>::getDensity(int k) const{
@@ -176,13 +187,13 @@ void FlowField<traits>::collide(){ //Collision step
     #endif
     for (int k=HaloSize;k<N-HaloSize;k++){ //loop over k
 
-        double* distribution=m_Distribution.getDistributionPointer(k);
-        double* old_distribution=m_Distribution.getDistributionOldPointer(k);
+        double* old_distribution = m_Distribution.getDistributionOldPointer(k);
 
         for (int idx=0;idx<traits::Stencil::Q;idx++){ //loop over discrete velocity directions
             //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
             //"computeCollisionQ"
-            m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(k,old_distribution[idx],density[k],&velocity[k*traits::Stencil::D],idx);
+            double collision = computeCollisionQ(k, old_distribution[idx], density[k], &velocity[k*traits::Stencil::D], idx);
+            m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx] = collision;
         }
         
     }
@@ -212,7 +223,6 @@ void FlowField<traits>::boundaries(){ //Apply the boundary step
             }, mt_Boundaries.getTuple());
             
         }
-        else;
         //while(!m_Geometry.isSolid(k+1)&&k<N){
         //    k++;
         //}

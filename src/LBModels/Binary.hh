@@ -27,9 +27,23 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
     public:
 
         //Constructors to construct tuples of forces and boundaries
-        Binary(typename traits::Properties& properties):LX(properties.m_LX),LY(properties.m_LY),LZ(properties.m_LZ),N(properties.m_N),HaloSize(properties.m_HaloSize),m_Data(properties),mt_Forces(properties),mt_Boundaries(properties),m_ChemicalPotential(properties),m_GradOrderParameter(properties),m_LaplacianOrderParameter(properties),m_OrderParameter(properties),m_Velocity(properties),CollisionBase<typename traits::Stencil>(properties),m_Geometry(properties){
-            
-        }
+        Binary(typename traits::Properties& properties)
+          : CollisionBase<typename traits::Stencil>(properties),
+            N(properties.m_N),
+            LX(properties.m_LX),
+            LY(properties.m_LY),
+            LZ(properties.m_LZ),
+            HaloSize(properties.m_HaloSize),
+            m_Data(properties),
+            m_OrderParameter(properties),
+            m_Velocity(properties),
+            m_ChemicalPotential(properties),
+            m_GradOrderParameter(properties),
+            m_LaplacianOrderParameter(properties),
+            mt_Forces(properties),
+            mt_Boundaries(properties),
+            m_Geometry(properties)
+        {}
 
         void precompute(); //Perform any necessary computations before collision
 
@@ -85,7 +99,6 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
         vector<double>& distribution=m_Distribution.getDistribution(); //Reference to vector of distributions
 
         enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z directions
-
         
         const int& N;
         const int& LX;
@@ -95,15 +108,20 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         double m_Gamma=1;
 
+        DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
+        OrderParameter m_OrderParameter; //Order Parameter
+        Velocity m_Velocity; //Velocity
         ChemicalPotential m_ChemicalPotential;
-
         GradientOrderParameter m_GradOrderParameter;
-
         LaplacianOrderParameter m_LaplacianOrderParameter;
+        typename DataType<typename traits::Stencil>::DistributionData& m_Distribution=m_Data.getDistributionObject(); //Distributions
+
+        vector<double>& orderparameter = m_OrderParameter.getParameter(); //Reference to vector of order parameters
+        vector<double>& velocity = m_Velocity.getParameter(); //Reference to vector of velocities
+        vector<double>& distribution = m_Distribution.getDistribution(); //Reference to vector of distributions
 
         typename traits::Forces mt_Forces; //MOVE THIS TO BASE
         typename traits::Boundaries mt_Boundaries; //MOVE THIS TO BASE
-
         Geometry m_Geometry; //MOVE THIS TO BASE
         
 };
@@ -143,7 +161,6 @@ void Binary<traits>::precompute(){
                 (forces.precompute(k),...);
             }, mt_Forces.getTuple());
         }
-        else;
         
     }
     //CHECK DATA TYPE NEEDS THIS
@@ -171,15 +188,14 @@ void Binary<traits>::collide(){
     #endif
     for (int k=HaloSize;k<N-HaloSize;k++){ //loop over k
 
-        double* distribution=m_Distribution.getDistributionPointer(k);
-        double* old_distribution=m_Distribution.getDistributionOldPointer(k);
+        double* old_distribution = m_Distribution.getDistributionOldPointer(k);
         double sum=0;
         for (int idx=traits::Stencil::Q-1;idx>=0;--idx){ //loop over discrete velocity directions
             //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
             //"computeCollisionQ"
             //std::cout<<m_Distribution.streamIndex(k,idx)<<std::endl;
-            m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx]=computeCollisionQ(sum,k,old_distribution[idx],orderparameter[k],&velocity[k*traits::Stencil::D],idx);
-            
+            double collision = computeCollisionQ(sum, k, old_distribution[idx], orderparameter[k], &velocity[k*traits::Stencil::D], idx);
+            m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx] = collision;
         }
         
     }
@@ -207,7 +223,6 @@ void Binary<traits>::boundaries(){
             }, mt_Boundaries.getTuple());
             
         }
-        else;
 
     }
 
