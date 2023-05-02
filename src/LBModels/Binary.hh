@@ -34,12 +34,12 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
             LY(properties.m_LY),
             LZ(properties.m_LZ),
             HaloSize(properties.m_HaloSize),
-            m_Data(properties),
             m_OrderParameter(properties),
             m_Velocity(properties),
             m_ChemicalPotential(properties),
             m_GradOrderParameter(properties),
             m_LaplacianOrderParameter(properties),
+            m_Data(properties),
             mt_Forces(properties),
             mt_Boundaries(properties),
             m_Geometry(properties)
@@ -83,14 +83,9 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         static constexpr double m_InverseTau=1.0/m_Tau; //TEMPORARY inverse relaxation time
 
-        OrderParameter m_OrderParameter; //Order Parameter
-
-        Velocity m_Velocity; //Velocity
 
         typename traits::Properties::template DataType<typename traits::Stencil>::DistributionData& m_Distribution=m_Data.getDistributionObject();
             //Distributions
-
-        typename traits::Properties::template DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
 
         enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z directions
         
@@ -102,6 +97,8 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         double m_Gamma=1;
 
+        OrderParameter m_OrderParameter; //Order Parameter
+        Velocity m_Velocity; //Velocity
         ChemicalPotential m_ChemicalPotential;
         GradientOrderParameter m_GradOrderParameter;
         LaplacianOrderParameter m_LaplacianOrderParameter;
@@ -109,6 +106,8 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
         vector<double>& orderparameter = m_OrderParameter.getParameter(); //Reference to vector of order parameters
         vector<double>& velocity = m_Velocity.getParameter(); //Reference to vector of velocities
         vector<double>& distribution = m_Distribution.getDistribution(); //Reference to vector of distributions
+
+        typename traits::Properties::template DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
 
         typename traits::Forces mt_Forces; //MOVE THIS TO BASE
         typename traits::Boundaries mt_Boundaries; //MOVE THIS TO BASE

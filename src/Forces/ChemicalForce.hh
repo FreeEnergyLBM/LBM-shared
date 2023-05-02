@@ -11,21 +11,21 @@ class ChemicalForce{
     public:
         template<template<class,class> class data,template<class,int> class parallel,int lx, int ly,int lz=1>
         ChemicalForce(LatticeProperties<data,parallel,lx,ly,lz>& properties)
-          : m_ChemicalPotential(properties),
+          : DT(properties.m_DT),
+            m_ChemicalPotential(properties),
             m_GradOrderParameter(properties),
             m_LaplacianOrderParameter(properties),
             m_OrderParameter(properties),
-            m_Density(properties),
-            DT(properties.m_DT)
+            m_Density(properties)
         {}
 
         ChemicalForce(const ChemicalForce& other)
-          : m_ChemicalPotential(other.m_ChemicalPotential),
+          : DT(other.DT),
+            m_ChemicalPotential(other.m_ChemicalPotential),
             m_GradOrderParameter(other.m_GradOrderParameter),
             m_LaplacianOrderParameter(other.m_LaplacianOrderParameter),
             m_OrderParameter(other.m_OrderParameter),
-            m_Density(other.m_Density),
-            DT(other.DT){}
+            m_Density(other.m_Density){}
 
         double compute(int xyz,int k) const; //Return force at lattice point k in direction xyz
 

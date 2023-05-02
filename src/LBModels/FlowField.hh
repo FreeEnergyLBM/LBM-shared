@@ -33,6 +33,9 @@ class FlowField : public CollisionBase<typename traits::Stencil> { //Inherit fro
         
         constexpr FlowField(typename traits::Properties& properties)
           : CollisionBase<typename traits::Stencil>(properties),
+            m_Density(properties),
+            m_Velocity(properties),
+            m_Distribution(m_Data.getDistributionObject()),
             N(properties.m_N),
             LX(properties.m_LX),
             LY(properties.m_LY),
@@ -40,9 +43,6 @@ class FlowField : public CollisionBase<typename traits::Stencil> { //Inherit fro
             NDIM(properties.m_NDIM),
             HaloSize(properties.m_HaloSize),
             m_Data(properties),
-            m_Density(properties),
-            m_Velocity(properties),
-            m_Distribution(m_Data.getDistributionObject()),
             mt_Forces(properties),
             mt_Boundaries(properties),
             m_Geometry(properties)

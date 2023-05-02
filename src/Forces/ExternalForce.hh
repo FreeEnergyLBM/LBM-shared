@@ -9,9 +9,13 @@
 class BodyForce{
     public:
         template<template<class,class> class data,template<class,int> class parallel,int lx, int ly,int lz=1>
-        BodyForce(LatticeProperties<data,parallel,lx,ly,lz>& properties):m_Density(properties),DT(properties.m_DT){}
+        BodyForce(LatticeProperties<data,parallel,lx,ly,lz>& properties)
+            : DT(properties.m_DT),
+              m_Density(properties){}
 
-        BodyForce(const BodyForce& other):m_Density(other.m_Density),DT(other.DT){}
+        BodyForce(const BodyForce& other)
+            : DT(other.DT),
+              m_Density(other.m_Density){}
 
         double compute(int xyz,int k) const; //Return force at lattice point k in direction xyz
 
