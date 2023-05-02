@@ -111,7 +111,6 @@ class FlowField : public CollisionBase<typename traits::Stencil> { //Inherit fro
         const int& LZ;
         const int& NDIM;
         const int& HaloSize;
-        const int& HaloSize;
 
         typename traits::Properties::template DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
 

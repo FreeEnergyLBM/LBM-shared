@@ -113,7 +113,6 @@ class Parameter{
         const int& LZ;
         const int& N;
         const int& HaloSize;
-        const int& HaloSize;
         
 };
 

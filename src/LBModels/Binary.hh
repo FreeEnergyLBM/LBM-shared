@@ -92,12 +92,6 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         typename traits::Properties::template DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
 
-        vector<double>& orderparameter=m_OrderParameter.getParameter(); //Reference to vector of order parameters
-
-        vector<double>& velocity=m_Velocity.getParameter(); //Reference to vector of velocities
-
-        vector<double>& distribution=m_Distribution.getDistribution(); //Reference to vector of distributions
-
         enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z directions
         
         const int& N;
@@ -108,13 +102,9 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         double m_Gamma=1;
 
-        DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
-        OrderParameter m_OrderParameter; //Order Parameter
-        Velocity m_Velocity; //Velocity
         ChemicalPotential m_ChemicalPotential;
         GradientOrderParameter m_GradOrderParameter;
         LaplacianOrderParameter m_LaplacianOrderParameter;
-        typename DataType<typename traits::Stencil>::DistributionData& m_Distribution=m_Data.getDistributionObject(); //Distributions
 
         vector<double>& orderparameter = m_OrderParameter.getParameter(); //Reference to vector of order parameters
         vector<double>& velocity = m_Velocity.getParameter(); //Reference to vector of velocities

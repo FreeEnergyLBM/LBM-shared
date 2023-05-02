@@ -30,7 +30,6 @@ class BodyForce{
 
         Density m_Density; //Density
 
-        const double& DT;
 };
 
 

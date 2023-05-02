@@ -10,7 +10,7 @@
 class ChemicalForce{
     public:
         template<template<class,class> class data,template<class,int> class parallel,int lx, int ly,int lz=1>
-        ChemicalForce(LatticeProperties<data,parallel,lx,ly,lz>>& properties)
+        ChemicalForce(LatticeProperties<data,parallel,lx,ly,lz>& properties)
           : m_ChemicalPotential(properties),
             m_GradOrderParameter(properties),
             m_LaplacianOrderParameter(properties),
@@ -54,7 +54,6 @@ class ChemicalForce{
 
         Density m_Density; //Density
 
-        const double& DT;
 };
 
 
