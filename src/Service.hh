@@ -150,6 +150,16 @@ template<class prop,typename... T>
 auto constructTuple(prop& properties,std::tuple<T...>& tup){
   tup=std::make_tuple(new T(properties)...);
 }
+/*
+template<typename ... input_t>
+using tuple_cat_t=
+decltype(std::tuple_cat(
+    std::declval<input_t>()...
+));
+
+template<class trait, class force>
+auto add_force(){return generate_trait<trait::Stencil,trait::Boundaries,tuple_cat_t::,trait::Properties>;}
+*/
 
 #endif
 //BELOW: Not currently used implementations of type erasure, recursive template loops, MRT generation and a class

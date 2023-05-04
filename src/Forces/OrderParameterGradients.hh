@@ -22,7 +22,7 @@ class OrderParameterGradients{
                                                                                         m_GradOrderParameter( other.m_GradOrderParameter ),
                                                                                         m_LaplacianOrderParameter( other.m_LaplacianOrderParameter ),
                                                                                         m_OrderParameter( other.m_OrderParameter ),
-                                                                                        NDIM( other.NDIM ){}
+                                                                                        m_NDIM( other.m_NDIM ){}
 
         double compute( int xyz, int k ) const; //Return force at lattice point k in direction xyz
 
@@ -34,6 +34,8 @@ class OrderParameterGradients{
                                                            //velocity
 
         void postprocess( int k ); //Perform any necessary postprocessing
+
+    private:
 
         gradientstencil m_GradientStencil;
 

@@ -10,56 +10,64 @@ class BodyForce{
     public:
 
         template< template< class, class > class data, template< class, int > class parallel, int lx, int ly, int lz = 1 >
-        BodyForce( LatticeProperties< data, parallel, lx, ly, lz >& properties )
+        BodyForce( LatticeProperties< data, parallel, lx, ly, lz >& properties, const double magnitude = 0 )
             : m_DT( properties.m_DT ),
+              m_Magnitude( magnitude ),
               m_Density( properties ){}
 
         BodyForce( const BodyForce& other )
-            : m_DT( other.DT ),
+            : m_DT( other.m_DT ),
+              m_Magnitude( other.m_Magnitude ),
               m_Density( other.m_Density ){}
 
-        double compute( int xyz, int k ) const; //Return force at lattice point k in direction xyz
+        double compute( const int xyz, const int k ) const; //Return force at lattice point k in direction xyz
 
-        void precompute( int k ); //Perform any neccessary computations before force is computed
+        void precompute( const int k ); //Perform any neccessary computations before force is computed
 
-        double computeDensitySource( int k ) const; //Calculate any possible source/correction term for density
+        double computeDensitySource( const int k ) const; //Calculate any possible source/correction term for density
 
-        double computeVelocitySource( int xyz,int k ) const; //Calculate any possible source/correction term for
+        double computeVelocitySource( const int xyz, const int k ) const; //Calculate any possible source/correction term for
                                                            //velocity
 
-        void postprocess( int k ); //Perform any necessary postprocessing
+        void setMagnitude( const double magnitude){
+            m_Magnitude=magnitude;
+        }
+
+        void postprocess( const int k ); //Perform any necessary postprocessing
+
+    private:
 
         const double& m_DT;
 
-        double magnitude=0.00000001;//1;
+        double m_Magnitude=0.00000001;//1;
 
         Density m_Density; //Density
 
 };
 
 
-double BodyForce::compute( int xyz, int k ) const{
+double BodyForce::compute( const int xyz, const int k ) const{
 
-    return ( xyz == 0 ) * magnitude * m_Density.getParameter( k ); //Force is just density multiplied by magnitude
+    return ( xyz == 0 ) * m_Magnitude * m_Density.getParameter( k ); //Force is just density multiplied by magnitude
                                                                  //in given direction
 
 }
 
-void BodyForce::precompute( int k ){ //Not necessary
+void BodyForce::precompute( const int k ){ //Not necessary
     
 }
 
-void BodyForce::postprocess( int k ){ //Not necessary
+void BodyForce::postprocess( const int k ){ //Not necessary
     
 }
 
-double BodyForce::computeDensitySource( int k ) const{ //Not necessary
+double BodyForce::computeDensitySource( const int k ) const{ //Not necessary
 
     return 0.0;
 
 }
 
-double BodyForce::computeVelocitySource( int xyz, int k) const{ //Need to correct velocity
+double BodyForce::computeVelocitySource( const int xyz, const int k) const{ //Need to correct velocity
 
     return +compute( xyz, k ) * m_DT / ( 2.0 * m_Density.getParameter( k ) );
     

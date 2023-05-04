@@ -50,6 +50,8 @@ int main(int argc, char **argv){
     auto Dist1=Model<FlowFieldBinary>(l1);
     auto Dist2=Model<Binary>(l1);
 
+    //Dist1.getForce<BodyForce>().setMagnitude(0.0001);
+
     Algorithm LBM(l1,Dist1,Dist2);
     
     ParameterSave<Density,OrderParameter,Velocity> Saver(l1,"data/");
