@@ -98,7 +98,6 @@ struct D3Q19:Stencil{ //Most commonly used 3D stencil
 				                        1.0/36.0, 1.0/36.0, 1.0/36.0};
     template<int idx>
     static const int CModulus=Ci_x[idx]*Ci_x[idx]+Ci_y[idx]*Ci_y[idx]+Ci_z[idx]*Ci_z[idx];
-    //static constexpr int CMod[Q]={CMod<0>,CMod<1>,CMod<2>,CMod<3>,CMod<4>,CMod<5>,CMod<6>,CMod<7>,CMod<8>,CMod<9>};
 
     template<int idx>
     static constexpr int Moments[Q]={1,

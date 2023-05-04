@@ -1,6 +1,6 @@
 #pragma once
 #include "Service.hh"
-//template<int lx, int ly,int lz=1, template<class,template<class> class> class datatype=Data1, template<class,int> class paralleltype=X_Parallel>
+
 template<template<class,class> class data,template<class,int> class parallel,int lx, int ly,int lz=1>
 struct LatticeProperties{
     LatticeProperties(double DT=1.0):m_N(lx*ly*lz),m_DT(DT){

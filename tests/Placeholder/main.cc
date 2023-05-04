@@ -45,8 +45,6 @@ int main(int argc, char **argv){
     MPI_Comm_size(MPI_COMM_WORLD, &NUMPROCESSORS);                              // Store number of processors
     MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
     Parallel<1> initialise(l1);
-    #else
-    LXdiv=LX
     #endif
     
     auto Dist1=Model<FlowFieldBinary>(l1);
