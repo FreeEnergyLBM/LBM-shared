@@ -27,9 +27,9 @@
 //Modularisation is implemented using trait classes, which contain stencil information, 
 //the data type, a tuple of the boundary types and a tuple of forces to be applied in the model.
 
-const int LX=200;
-const int LY=200;
-const int TIMESTEPS=100;
+const int LX=20;
+const int LY=20;
+const int TIMESTEPS=1;
 using Lattice=LatticeProperties<Data1,X_Parallel,LX,LY>;
 
 struct traittt:DefaultTrait<Lattice,FlowField>{
@@ -50,7 +50,7 @@ int main(int argc, char **argv){
     auto Dist1=Model<FlowFieldBinary>(l1);
     auto Dist2=Model<Binary>(l1);
 
-    //Dist1.getForce<BodyForce>().setMagnitude(0.0001);
+    Dist1.getForce<BodyForce>().setMagnitude(0.0001);
 
     Algorithm LBM(l1,Dist1,Dist2);
     

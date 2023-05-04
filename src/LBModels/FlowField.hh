@@ -67,6 +67,18 @@ class FlowField : public CollisionBase<typename traits::Stencil> { //Inherit fro
         template<class>
         friend class FlowFieldBinary;
 
+        template<class force,int inst=0>
+        force& getForce() {
+            auto forces=get_type<force>(mt_Forces.getTuple());
+            return std::get<inst>(forces);
+        }
+
+        template<class boundary,int inst=0>
+        boundary& getBoundary() {
+            auto boundaries=get_type<boundary>(mt_Boundaries.getTuple());
+            return std::get<inst>(boundaries);
+        }
+
     private:
 
        double computeEquilibrium(const double& density,const double* velocity,

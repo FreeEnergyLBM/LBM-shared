@@ -29,7 +29,7 @@ class BodyForce{
         double computeVelocitySource( const int xyz, const int k ) const; //Calculate any possible source/correction term for
                                                            //velocity
 
-        void setMagnitude( const double magnitude){
+        void setMagnitude( const double magnitude ){
             m_Magnitude=magnitude;
         }
 

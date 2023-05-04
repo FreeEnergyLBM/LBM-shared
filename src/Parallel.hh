@@ -92,8 +92,7 @@ class X_Parallel:public Parallel<num_neighbors>{
 
         int m_LeftNeighbor; //!< ID of the left neighbor of this process (in the X direction).
         int m_RightNeighbor; //!< ID of the right neighbor of this process (in the X direction).
-        char* m_MPIBuffer; //!< Pointer to the MPI buffer.
-        int m_MPIBufferSize; //!< Size of the MPI buffer.
+
         MPI_Datatype DistributionVector; //!< Datatype for streaming distributions (allows sending of one velocity index at a time) WILL NEED TO BE CHANGED BASED ON THE DATA TYPE.
         
 
@@ -174,12 +173,12 @@ X_Parallel<stencil,num_neighbors>::X_Parallel(prop& properties):Parallel<num_nei
 
     const int bufSize=(LY*LZ*num_neighbors*(5+2)*2*2+1000)*sizeof(double);
     
-    if(bufSize>m_MPIBufferSize){
-        //if(m_MPIBufferSize!=0)MPI_Buffer_detach(m_MPIBuffer,&m_MPIBufferSize);
-        //if(m_MPIBufferSize!=0)delete[] m_MPIBuffer;
-        m_MPIBuffer=new char[bufSize];
-        MPI_Buffer_attach(m_MPIBuffer,bufSize);
-        m_MPIBufferSize=bufSize;
+    if(bufSize>MPIBUFFERSIZE){
+        if(MPIBUFFERSIZE!=0)MPI_Buffer_detach(MPIBUFFER,&MPIBUFFERSIZE);
+        if(MPIBUFFERSIZE!=0)delete[] MPIBUFFER;
+        MPIBUFFER=new char[bufSize];
+        MPI_Buffer_attach(MPIBUFFER,bufSize);
+        MPIBUFFERSIZE=bufSize;
     }
     //std::cout<<MPIBUFFERSIZE<<std::endl;
     m_LeftNeighbor=CURPROCESSOR-1;

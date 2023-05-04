@@ -1,13 +1,13 @@
 #!/bin/sh
 
 # This job requests number_of_tasks MPI tasks (without OpenMP)
-#SBATCH -N 2
-# SBATCH -n 1
-#SBATCH -c 128
+# SBATCH -N 1
+#SBATCH -n 2
+#SBATCH -c 1
 #SBATCH -t 00:01:00
 # SBATCH --ntasks-per-socket=1
-#SBATCH -p shared
+#SBATCH -p test
 #SBATCH -o ./out/output.%j.out # STDOUT
-export OMP_NUM_THREADS=128
+export OMP_NUM_THREADS=1
 mpirun ./wetP
 # ./wetP

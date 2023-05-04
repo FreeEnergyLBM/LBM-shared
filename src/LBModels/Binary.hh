@@ -61,6 +61,18 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         const std::vector<double>& getDistribution() const; //Return vector of distribution
 
+        template<class force,int inst=0>
+        force& getForce() {
+            auto forces=get_type<force>(mt_Forces.getTuple());
+            return std::get<inst>(forces);
+        }
+
+        template<class boundary,int inst=0>
+        boundary& getBoundary() {
+            auto boundaries=get_type<boundary>(mt_Boundaries.getTuple());
+            return std::get<inst>(boundaries);
+        }
+
     private:
 
         double computeEquilibrium(const double& orderparam,const double* velocity,
