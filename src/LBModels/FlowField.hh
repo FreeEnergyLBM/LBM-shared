@@ -5,24 +5,11 @@
 #include "../BoundaryModels/Boundaries.hh"
 #include "../Forces/Forces.hh"
 #include "../Parallel.hh"
+#include "ModelBase.hh"
 #include <utility>
 
 //FlowField.hh: Contains the details of the LBM model to solve the Navier-Stokes and continuity equation. Each
 //Model is given a "traits" class that contains stencil, data, force and boundary information
-
-
-//Trait class for FlowField Distribution (Navier-Stokes and continuity solver)
-/*
-template<int NDIM>
-struct traitFlowFieldDefault{
-
-    using Stencil=std::conditional_t<NDIM==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions
-                        //and Q refers to the number of discrete velocity directions.
-                        //This naming convention is standard in LBM.
-    using Boundaries=LatticeTuple<BounceBack>; //This will tell the model which boundaries to apply
-    using Forces=LatticeTuple<>; //This will tell the model which forces to apply
-};
-*/
 
 template<typename properties>
 struct DefaultTraitFlowField{
@@ -36,27 +23,13 @@ struct DefaultTraitFlowField{
 
 
 template<class traits=DefaultTraitFlowField<decltype(GETPROPERTIES())>>
-class FlowField : public CollisionBase<typename traits::Stencil> { //Inherit from base class to avoid repetition of common
+class FlowField : public CollisionBase<typename traits::Stencil>, public ModelBase<traits>{ //Inherit from base class to avoid repetition of common
                                                          //calculations
     public:
 
-        FlowField():m_Data(),m_Distribution(m_Data.getDistributionObject()){
+        void collide() override; //Collision step
 
-        }
-
-        FlowField(FlowField<traits>& other):m_Distribution(other.m_Distribution){
-
-        }
-
-        //Constructors to construct tuples of forces and boundaries
-
-        void precompute(); //Perform any necessary computations before collision
-
-        virtual void collide(); //Collision step
-
-        void boundaries(); //Boundary calculation
-
-        virtual void initialise(); //Initialisation step
+        void initialise() override; //Initialisation step
 
         void computeMomenta(); //Momenta (density, velocity) calculation
 
@@ -64,22 +37,8 @@ class FlowField : public CollisionBase<typename traits::Stencil> { //Inherit fro
 
         const std::vector<double>& getVelocity() const; //Return vector of velocity
 
-        const std::vector<double>& getDistribution() const; //Return vector of distribution
-
         template<class>
         friend class FlowFieldBinary;
-
-        template<class force,int inst=0>
-        force& getForce() {
-            auto forces=get_type<force>(mt_Forces);
-            return std::get<inst>(forces);
-        }
-
-        template<class boundary,int inst=0>
-        boundary& getBoundary() {
-            auto boundaries=get_type<boundary>(mt_Boundaries);
-            return std::get<inst>(boundaries);
-        }
 
     private:
 
@@ -88,8 +47,6 @@ class FlowField : public CollisionBase<typename traits::Stencil> { //Inherit fro
                                                         //density and velocity
 
         double computeModelForce(int xyz,int k) const; //Calculate forces specific to the model in direction xyz
-
-        double computeForces(int xyz,int k) const; //Calculate other forces in direction xyz
 
         double computeCollisionQ(int k,const double& old,const double& density,
                                  const double* velocity,const int idx) const; //Calculate collision
@@ -107,22 +64,13 @@ class FlowField : public CollisionBase<typename traits::Stencil> { //Inherit fro
         Density m_Density; //Density<>
 
         Velocity m_Velocity; //Velocity
-        
-        typename std::remove_reference<typename traits::Properties>::type::template DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
-        typename std::remove_reference<typename traits::Properties>::type::template DataType<typename traits::Stencil>::DistributionData& m_Distribution;
-            //Distributions
-
+    
         vector<double>& density=m_Density.getParameter(); //Reference to vector of densities
 
         vector<double>& velocity=m_Velocity.getParameter(); //Reference to vector of velocities
 
-        vector<double>& distribution=m_Distribution.getDistribution(); //Reference to vector of distributions
-
         enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z directions
         
-        typename traits::Forces mt_Forces; //MOVE THIS TO BASE
-        typename traits::Boundaries mt_Boundaries;
-        Geometry<> m_Geometry;
 };
 
 
@@ -141,50 +89,6 @@ const std::vector<double>& FlowField<traits>::getVelocity() const{
 }
 
 template<class traits>
-const std::vector<double>& FlowField<traits>::getDistribution() const{
-
-    return distribution; //Return reference to distribution vector
-
-}
-
-template<class traits>
-void FlowField<traits>::precompute(){ //Perform necessary calculations before collision
-
-    
-    //k = m_Data.iterateFluid0(k,false);
-    #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( guided )
-    #endif
-    for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
-
-        if constexpr(std::tuple_size<typename traits::Forces>::value!=0){ //Check if there is at least one element
-                                                                          //in F
-            std::apply([k](auto&... forces){//See Algorithm.hh for explanation of std::apply
-                (forces.precompute(k),...);
-            }, mt_Forces);
-        }
-        else;
-
-
-    }
-
-    m_Distribution.getDistribution().swap(m_Distribution.getDistributionOld()); //swap old and new distributions
-                                                                                //before collision
-}
-
-template<class traits>
-double FlowField<traits>::computeForces(int xyz,int k) const{ //Return the sum of forces
-
-    if constexpr (std::tuple_size<typename traits::Forces>::value!=0){
-        return std::apply([xyz,k](auto&... forces){
-                return (forces.compute(xyz,k)+...);
-            }, mt_Forces);
-    }
-    else return 0;
-
-}
-
-template<class traits>
 void FlowField<traits>::collide(){ //Collision step
 
     #ifdef OMPPARALLEL
@@ -192,63 +96,33 @@ void FlowField<traits>::collide(){ //Collision step
     #endif
     for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
-        double* old_distribution = m_Distribution.getDistributionOldPointer(k);
+        double* old_distribution = ModelBase<traits>::m_Distribution.getDistributionOldPointer(k);
 
         for (int idx=0;idx<traits::Stencil::Q;idx++){ //loop over discrete velocity directions
             //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
             //"computeCollisionQ"
             double collision = computeCollisionQ(k, old_distribution[idx], density[k], &velocity[k*traits::Stencil::D], idx);
-            m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx] = collision;
+            ModelBase<traits>::m_Distribution.getDistributionPointer(ModelBase<traits>::m_Distribution.streamIndex(k,idx))[idx] = collision;
         }
         
     }
     #ifdef MPIPARALLEL
-    m_Data.communicateDistribution();
+    ModelBase<traits>::m_Data.communicateDistribution();
     #endif
-}
-
-template<class traits>
-void FlowField<traits>::boundaries(){ //Apply the boundary step
-
-    //int k=0;
-    //k = m_Data.iterateSolid0(k,true);
-    #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( guided )
-    #endif
-    for (int k=0;k<GETPROPERTIES().m_N;k++){ //loop over k
-        
-        if constexpr(std::tuple_size<typename traits::Boundaries>::value!=0){ //Check if there are any boundary
-                                                                              //models
-            std::apply([this,k](auto&... boundaries){
-                for (int idx=0;idx<traits::Stencil::Q;idx++){
-                    if(m_Geometry.isSolid(k)&&!m_Geometry.isSolid(m_Distribution.streamIndex(k,idx))){
-                        (boundaries.compute(this->m_Distribution,k,idx),...);
-                    }
-                }
-            }, mt_Boundaries);
-            
-        }
-        //while(!m_Geometry.isSolid(k+1)&&k<GETPROPERTIES().m_N){
-        //    k++;
-        //}
-        //k = m_Data.iterateSolid(k,true); //increment k
-
-    }
-    
 }
 
 template<class traits>
 void FlowField<traits>::initialise(){ //Initialise model
 
-    m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
+    ModelBase<traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( guided )
     #endif
     for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
-        double* distribution=m_Distribution.getDistributionPointer(k);
-        double* old_distribution=m_Distribution.getDistributionOldPointer(k);
+        double* distribution=ModelBase<traits>::m_Distribution.getDistributionPointer(k);
+        double* old_distribution=ModelBase<traits>::m_Distribution.getDistributionOldPointer(k);
 
         density[k]=1.0; //Set density to 1 initially (This will change)
         velocity[k*traits::Stencil::D+x]=0.0; //0 initial velocity
@@ -277,7 +151,7 @@ void FlowField<traits>::computeMomenta(){ //Calculate Density<> and Velocity
     #endif
     for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //Loop over k
 
-        double* distribution=m_Distribution.getDistributionPointer(k);
+        double* distribution=ModelBase<traits>::m_Distribution.getDistributionPointer(k);
 
         density[k]=computeDensity(distribution,k); //Calculate density
         velocity[k*traits::Stencil::D+x]=computeVelocity(distribution,density[k],x,k); //Calculate velocities
@@ -285,7 +159,7 @@ void FlowField<traits>::computeMomenta(){ //Calculate Density<> and Velocity
         if constexpr (traits::Stencil::D==3)velocity[k*traits::Stencil::D+z]=computeVelocity(distribution,density[k],z,k);
     }
     #ifdef MPIPARALLEL
-    m_Data.communicate(m_Density);
+    ModelBase<traits>::m_Data.communicate(m_Density);
     #endif
 
 }
@@ -298,7 +172,7 @@ double FlowField<traits>::computeCollisionQ(const int k,const double& old,const 
     double forcexyz[traits::Stencil::D]; //Temporary array storing force in each cartesian direction
 
     //Force is the sum of model forces and given forces
-    for(int xyz=0;xyz<traits::Stencil::D;xyz++) forcexyz[xyz]=computeModelForce(xyz,k)+computeForces(xyz,k);
+    for(int xyz=0;xyz<traits::Stencil::D;xyz++) forcexyz[xyz]=computeModelForce(xyz,k)+ModelBase<traits>::computeForces(xyz,k);
     
     //Sum of collision + force contributions
     return CollisionBase<typename traits::Stencil>::collideSRT(old,computeEquilibrium(density,velocity,idx,k),m_InverseTau)
@@ -329,7 +203,7 @@ double FlowField<traits>::computeDensity(const double* distribution,int k) const
     if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
         return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution)+std::apply([k](auto&... forces){
                 return (forces.computeDensitySource(k)+...);
-            }, mt_Forces);
+            }, ModelBase<traits>::mt_Forces);
     }
     //CHANGE THIS SO FIRST/SECOND MOMENT COMPUTATION IS DONE IN DISTRIBUTION
     else return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution);
@@ -344,7 +218,7 @@ double FlowField<traits>::computeVelocity(const double* distribution,const doubl
     if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
         return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution,xyz)+std::apply([xyz,k](auto&&... forces){
                 return (forces.computeVelocitySource(xyz,k)+...);
-            }, mt_Forces);
+            }, ModelBase<traits>::mt_Forces);
     }
     else return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution,xyz);
 

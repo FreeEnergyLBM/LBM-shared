@@ -9,18 +9,6 @@
 //Binary.hh: Contains the details of the LBM model to solve an equation for phase separation. Each
 //Model is given a "traits" class that contains stencil, data, force and boundary information
 
-
-//Trait class for PhaseField Distribution (Calculates the interface between components)
-/*
-template<int NDIM>
-struct traitBinaryDefault{
-
-    using Stencil=std::conditional_t<NDIM==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions
-    using Boundaries=LatticeTuple<BounceBack>;
-    using Forces=LatticeTuple<OrderParameterGradients<CentralXYZ<Stencil,ParallelType>>>;
-};
-*/
-
 template<class properties>
 struct DefaultTraitBinary{
     using Stencil=std::conditional_t<std::remove_reference<properties>::type::m_NDIM==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions

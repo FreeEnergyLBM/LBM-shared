@@ -13,16 +13,6 @@
 //FlowField.hh: Contains the details of the LBM model to solve the Navier-Stokes and continuity equation. Each
 //Model is given a "traits" class that contains stencil, data, force and boundary information
 
-//Trait class for FlowField Distribution (Navier-Stokes and continuity solver)
-/*
-template<int NDIM>
-struct traitFlowFieldBinaryDefault{
-    using Stencil=std::conditional_t<NDIM==2,D2Q9,D3Q19>;
-    using Boundaries=LatticeTuple<BounceBack>; //This will tell the model which boundaries to apply
-    using Forces=LatticeTuple<BodyForce,ChemicalForce>; //This will tell the model which forces to apply
-};
-*/
-
 template<typename properties>
 struct DefaultTraitFlowFieldBinary{
     using Stencil=std::conditional_t<std::remove_reference<properties>::type::m_NDIM==2,D2Q9,D3Q19>;
