@@ -28,7 +28,7 @@ struct LatticeProperties{
 
     template<typename Stencil>
     using ParallelType=parallel<Stencil,1>; //!< Chosen MPI parallelisation method when MPI enabled.
-    int m_LXdivm_LX;
+    int m_LXdiv=m_LX;
     int m_HaloSize=0;
     int m_N=lx*ly*lz;
 
