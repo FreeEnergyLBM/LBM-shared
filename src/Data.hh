@@ -284,7 +284,17 @@ class Data1:public Data_Base<stencil,parallel>{
              *                  construct the Distribution_Base class.
              */
 
-            Distribution_Derived(std::vector<int>& neighbors):Distribution_Base<stencil>(neighbors){ //Initialise mv_DistNeighbors
+            Distribution_Derived(std::vector<int>& neighbors):Distribution_Base<stencil>(neighbors),mv_Neighbors(neighbors){ //Initialise mv_DistNeighbors
+
+                Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q*GETPROPERTIES().m_N); //Array size is number of
+                                                                                  //directions times number of
+                                                                                  //lattice points
+                Distribution_Base<stencil>::mv_OldDistribution.resize(stencil::Q*GETPROPERTIES().m_N); //Old distributions needed
+                                                                                     //in this case
+                
+            }
+
+            Distribution_Derived(Distribution_Derived& other):Distribution_Base<stencil>(other.neighbors),mv_Neighbors(other.mv_Neighbors){ //Initialise mv_DistNeighbors
 
                 Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q*GETPROPERTIES().m_N); //Array size is number of
                                                                                   //directions times number of
@@ -297,15 +307,8 @@ class Data1:public Data_Base<stencil,parallel>{
             /**
              * \brief Returns the opposite index at the chosen index (Rotation by 180 degrees).
              */
-            int getOpposite(int idx){
-
-                return ma_Opposites[idx];
-
-            }
 
             std::vector<int>& mv_Neighbors;
-
-            int ma_Opposites[stencil::Q]; //!< Array containing the opposite indices at each index (rotated by 180 degrees).
 
             /**
              * \brief Returns the index that the current distribution will be streamed to.
