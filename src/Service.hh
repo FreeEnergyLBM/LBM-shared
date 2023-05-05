@@ -54,21 +54,6 @@ int computeZ(const int& LY,const int& LZ,const int k) //Compute Y direction from
 
 }
 
-template<typename... Ts>
-class LatticeTuple{
-  public:
-    template<class prop>
-    constexpr LatticeTuple(prop& properties):m_Tuple(*new Ts(properties)...){
-
-    }
-    std::tuple<Ts...>& getTuple(){return m_Tuple;}
-    const std::tuple<Ts...>& getTuple() const {return m_Tuple;}
-    using getTupleType=std::tuple<Ts...>;
-  private:
-    std::tuple<Ts...> m_Tuple;
-
-};
-
 /**\fn      mpi_get_type
  * \brief   Small template function to return the correct MPI_DATATYPE
  *          data type need for an MPI message as a constexpr at compile time
@@ -144,20 +129,6 @@ template <typename T>
   return mpi_type;    
 }
 #endif
-template<class,template<class> class>
-struct DefaultTrait{};
-
-template<template<class> class model,class trait,class prop>
-auto Model(prop& properties){return model<trait>(properties);}
-
-template<template<class> class model,class prop>
-auto Model(prop& properties){
-  return model<DefaultTrait<prop,model>>(properties);}
-
-template<class prop,typename... T>
-auto constructTuple(prop& properties,std::tuple<T...>& tup){
-  tup=std::make_tuple(new T(properties)...);
-}
 
 
 // Answer one simple question: here's a type, and a tuple. Tell me

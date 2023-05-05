@@ -3,6 +3,7 @@
 #include "../Parameters.hh"
 #include "../Data.hh"
 #include "../Parallel.hh"
+#include "ModelBase.hh"
 #include <utility>
 
 //Binary.hh: Contains the details of the LBM model to solve an equation for phase separation. Each
@@ -30,45 +31,19 @@ struct DefaultTraitBinary{
 
 
 template<class traits=DefaultTraitBinary<decltype(GETPROPERTIES())>>
-class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class to avoid repetition of common
+class Binary: public CollisionBase<typename traits::Stencil>, public ModelBase<traits>{ //Inherit from base class to avoid repetition of common
                                                       //calculations
     public:
 
-        Binary():m_Data(),m_Distribution(m_Data.getDistributionObject()){
+        void collide() override; //Collision step
 
-        }
+        void initialise() override; //Initialisation step
 
-        Binary(Binary<traits>& other):m_Distribution(other.m_Distribution){
-
-        }
-
-        void precompute(); //Perform any necessary computations before collision
-
-        void collide(); //Collision step
-
-        void boundaries(); //Boundary calculation
-
-        void initialise(); //Initialisation step
-
-        void computeMomenta(); //Momenta (density, velocity) calculation
+        void computeMomenta() override; //Momenta (density, velocity) calculation
 
         const double& getDensity(int k) const; //Return density at lattice point k
 
         const std::vector<double>& getVelocity() const; //Return vector of velocity
-
-        const std::vector<double>& getDistribution() const; //Return vector of distribution
-
-        template<class force,int inst=0>
-        force& getForce() {
-            auto forces=get_type<force>(mt_Forces);
-            return std::get<inst>(forces);
-        }
-
-        template<class boundary,int inst=0>
-        boundary& getBoundary() {
-            auto boundaries=get_type<boundary>(mt_Boundaries);
-            return std::get<inst>(boundaries);
-        }
 
     private:
 
@@ -77,8 +52,6 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
                                                         //density and velocity
 
         double computeModelForce(int xyz,int k) const; //Calculate forces specific to the model in direction xyz
-
-        double computeForces(int xyz,int k) const; //Calculate other forces in direction xyz
 
         double computeCollisionQ(double& sum,int k,const double& old,const double& orderparam,
                                  const double* velocity,const int idx) const; //Calculate collision
@@ -92,10 +65,6 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         static constexpr double m_InverseTau=1.0/m_Tau; //TEMPORARY inverse relaxation time
 
-        typename std::remove_reference<typename traits::Properties>::type::template DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
-        typename std::remove_reference<typename traits::Properties>::type::template DataType<typename traits::Stencil>::DistributionData& m_Distribution=m_Data.getDistributionObject();
-            //Distributions
-
         enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z directions
         
         double m_Gamma=1;
@@ -108,12 +77,7 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         vector<double>& orderparameter = m_OrderParameter.getParameter(); //Reference to vector of order parameters
         vector<double>& velocity = m_Velocity.getParameter(); //Reference to vector of velocities
-        vector<double>& distribution = m_Distribution.getDistribution(); //Reference to vector of distributions
 
-        typename traits::Forces mt_Forces; //MOVE THIS TO BASE
-        typename traits::Boundaries mt_Boundaries; //MOVE THIS TO BASE
-        Geometry<> m_Geometry; //MOVE THIS TO BASE
-        
 };
 
 template<class traits>
@@ -131,46 +95,6 @@ const std::vector<double>& Binary<traits>::getVelocity() const{
 }
 
 template<class traits>
-const std::vector<double>& Binary<traits>::getDistribution() const{
-
-    return distribution; //Return reference to distribution vector
-
-}
-
-template<class traits>
-void Binary<traits>::precompute(){
-
-    #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( guided )
-    #endif
-    for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
-
-        if constexpr(std::tuple_size<typename traits::Forces>::value!=0){ //Check if there is at least one element
-                                                                          //in F
-            std::apply([k](auto&... forces){//See Algorithm.hh for explanation of std::apply
-                (forces.precompute(k),...);
-            }, mt_Forces);
-        }
-        
-    }
-    //CHECK DATA TYPE NEEDS THIS
-    m_Distribution.getDistribution().swap(m_Distribution.getDistributionOld()); //swap old and new distributions
-                                                                                //before collision
-}
-
-template<class traits>
-double Binary<traits>::computeForces(int xyz,int k) const{
-
-    if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
-        return std::apply([xyz,k](auto&... forces){
-                return (forces.compute(xyz,k)+...);
-            }, mt_Forces);
-    }
-    else return 0;
-
-}
-
-template<class traits>
 void Binary<traits>::collide(){
 
     #ifdef OMPPARALLEL
@@ -178,59 +102,34 @@ void Binary<traits>::collide(){
     #endif
     for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
-        double* old_distribution = m_Distribution.getDistributionOldPointer(k);
+        double* old_distribution = ModelBase<traits>::m_Distribution.getDistributionOldPointer(k);
         double sum=0;
         for (int idx=traits::Stencil::Q-1;idx>=0;--idx){ //loop over discrete velocity directions
             //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
             //"computeCollisionQ"
             //std::cout<<m_Distribution.streamIndex(k,idx)<<std::endl;
             double collision = computeCollisionQ(sum, k, old_distribution[idx], orderparameter[k], &velocity[k*traits::Stencil::D], idx);
-            m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx] = collision;
+            ModelBase<traits>::m_Distribution.getDistributionPointer(ModelBase<traits>::m_Distribution.streamIndex(k,idx))[idx] = collision;
         }
         
     }
     #ifdef MPIPARALLEL
-    m_Data.communicateDistribution();
+    ModelBase<traits>::m_Data.communicateDistribution();
     #endif
-}
-
-template<class traits>
-void Binary<traits>::boundaries(){
-
-    #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( guided )
-    #endif
-    for (int k=0;k<GETPROPERTIES().m_N;k++){ //loop over k
-
-        if constexpr(std::tuple_size<typename traits::Boundaries>::value!=0){ //Check if there are any boundary
-                                                                              //models
-            std::apply([this,k](auto&... boundaries){
-                for (int idx=0;idx<traits::Stencil::Q;idx++){
-                    if(m_Geometry.isSolid(k)&&!m_Geometry.isSolid(m_Distribution.streamIndex(k,idx))){
-                        (boundaries.compute(this->m_Distribution,k,idx),...);
-                    }
-                }
-            }, mt_Boundaries);
-            
-        }
-
-    }
-
-    
 }
 
 template<class traits>
 void Binary<traits>::initialise(){ //Initialise model
 
-    m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
+    ModelBase<traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( guided ) 
     #endif
     for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
-        double* distribution=m_Distribution.getDistributionPointer(k);
-        double* old_distribution=m_Distribution.getDistributionOldPointer(k);
+        double* distribution=ModelBase<traits>::m_Distribution.getDistributionPointer(k);
+        double* old_distribution=ModelBase<traits>::m_Distribution.getDistributionOldPointer(k);
         m_ChemicalPotential.getParameter(k)=0;
         int xx=computeX(GETPROPERTIES().m_LY,GETPROPERTIES().m_LZ,k);
 
@@ -255,17 +154,16 @@ void Binary<traits>::initialise(){ //Initialise model
 template<class traits>
 void Binary<traits>::computeMomenta(){ //Calculate order parameter
 
-    
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( guided )
     #endif
     for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //Loop over k
-        double* distribution=m_Distribution.getDistributionPointer(k);
+        double* distribution=ModelBase<traits>::m_Distribution.getDistributionPointer(k);
         orderparameter[k]=computeOrderParameter(distribution,k);
 
     }
     #ifdef MPIPARALLEL
-    m_Data.communicate(m_OrderParameter);
+    ModelBase<traits>::m_Data.communicate(m_OrderParameter);
     #endif
     
 }
@@ -278,7 +176,7 @@ double Binary<traits>::computeCollisionQ(double& sum,const int k,const double& o
     double forcexyz[traits::Stencil::D]; //Temporary array storing force in each cartesian direction
 
     //Force is the sum of model forces and given forces
-    for(int xyz=0;xyz< traits::Stencil::D;xyz++) forcexyz[xyz]=computeModelForce(xyz,k)+computeForces(xyz,k);
+    for(int xyz=0;xyz< traits::Stencil::D;xyz++) forcexyz[xyz]=computeModelForce(xyz,k)+ModelBase<traits>::computeForces(xyz,k);
     
     //Sum of collision + force contributions
     if (idx>0) {
@@ -315,7 +213,7 @@ double Binary<traits>::computeOrderParameter(const double* distribution,int k) c
         return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution)
         +std::apply([k](auto&... tests){
             return (tests.computeDensitySource(k)+...);
-        }, mt_Forces);
+        }, ModelBase<traits>::mt_Forces);
     }
     //CHANGE THIS SO FIRST/SECOND MOMENT COMPUTATION IS DONE IN DISTRIBUTION
     else return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution);
