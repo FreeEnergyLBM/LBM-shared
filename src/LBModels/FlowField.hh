@@ -29,6 +29,7 @@ struct DefaultTraitFlowField{
 template< class traits = DefaultTraitFlowField< decltype( GETPROPERTIES() ) > >
 class FlowField : public CollisionBase< typename traits::Stencil >, public ModelBase< traits > { //Inherit from base class to avoid repetition of common
                                                          //calculations
+                                                         
     public:
 
         void collide() override; //Collision step

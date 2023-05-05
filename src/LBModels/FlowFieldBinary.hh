@@ -108,7 +108,7 @@ void FlowFieldBinary< traits >::initialise() { //Initialise model
         FlowField< traits >::velocity[ k * traits::Stencil::D + y ] = 0;
         FlowField< traits >::velocity[ k * traits::Stencil::D + z] = 0;
         int equilibriumsum = 0;
-        for (int idx = traits::Stencil::Q-1; idx >= 0; idx-- ) {
+        for ( int idx = traits::Stencil::Q-1; idx >= 0; idx-- ) {
 
             double equilibrium;
 

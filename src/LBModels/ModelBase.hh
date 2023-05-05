@@ -17,6 +17,7 @@ struct DefaultTrait{
 template<class traits = DefaultTrait< decltype( GETPROPERTIES() ) > >
 class ModelBase{ //Inherit from base class to avoid repetition of common
                                                       //calculations
+                                                      
     public:
 
         ModelBase()

@@ -11,7 +11,7 @@
 
 template< class properties >
 struct DefaultTraitBinary{
-    
+
     using Stencil = std::conditional_t< std::remove_reference< properties >::type::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
 
     using Boundaries = std::tuple< BounceBack >;
@@ -26,6 +26,7 @@ struct DefaultTraitBinary{
 template< class traits = DefaultTraitBinary< decltype( GETPROPERTIES() ) > >
 class Binary: public CollisionBase< typename traits::Stencil >, public ModelBase< traits > { //Inherit from base class to avoid repetition of common
                                                       //calculations
+                                                      
     public:
 
         void collide() override; //Collision step
