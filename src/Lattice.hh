@@ -4,34 +4,49 @@
 template<template<class,class> class data,template<class,int> class parallel,int lx, int ly,int lz=1>
 struct LatticeProperties{
 
-    constexpr LatticeProperties(double DT=1.0):m_N(lx*ly*lz),m_DT(DT){
-   
-    }
-    constexpr LatticeProperties(LatticeProperties<data,parallel,lx,ly,lz>& other):m_N(other.m_N),m_DT(other.m_DT){
-   
-    }
-    constexpr LatticeProperties<data,parallel,lx,ly,lz>& operator=(const LatticeProperties<data,parallel,lx,ly,lz>&){
-        return *this;
-    }
+    #ifdef MPIPARALLEL
+
+    constexpr LatticeProperties(double DT=1.0):m_N(lx*ly*lz),m_DT(DT){}
+
+    constexpr LatticeProperties(LatticeProperties<data,parallel,lx,ly,lz>& other):m_N(other.m_N),m_DT(other.m_DT){}
+
+    #else
+
+    constexpr LatticeProperties(double DT=1.0):m_DT(DT){}
+
+    constexpr LatticeProperties(LatticeProperties<data,parallel,lx,ly,lz>& other):m_DT(other.m_DT){}
+
+    #endif
+
+    constexpr LatticeProperties<data,parallel,lx,ly,lz>& operator=(const LatticeProperties<data,parallel,lx,ly,lz>&){}
 
     static constexpr int m_LX=lx;
-    int m_LXdiv;
-    int m_HaloSize;
     static constexpr int m_LY=ly;
     static constexpr int m_LZ=lz;
-    int m_N;
-    static constexpr int m_NDIM=(lx<=1||ly<=1||lz<=1)*-1+3;
-    const double m_DT;
 
     #ifdef MPIPARALLEL
+
     template<typename Stencil>
     using ParallelType=parallel<Stencil,1>; //!< Chosen MPI parallelisation method when MPI enabled.
+    int m_LXdivm_LX;
+    int m_HaloSize=0;
+    int m_N=lx*ly*lz;
+
     #else
-    template<typename... Stencil>
-    using ParallelType=No_Parallel; //!< Default parallelisation when MPI disabled (Just serial).
+
+    template<typename Stencil>
+    using ParallelType=No_Parallel<Stencil,1>; //!< Default parallelisation when MPI disabled (Just serial).
+    static constexpr int m_LXdiv=m_LX;
+    static constexpr int m_HaloSize=0;
+    static constexpr int m_N=m_LX*m_LY*m_LZ;
+
     #endif
+
     template<typename Stencil>
     using DataType=data<Stencil,ParallelType<Stencil>>;//!< This will change the "DataType" implementation, which will govern the access of non-local data
+
+    static constexpr int m_NDIM=(lx<=1||ly<=1||lz<=1)*-1+3;
+    const double m_DT;
 };
 
 template<template<class,class> class data,template<class,int> class parallel,int NDIM>
@@ -60,12 +75,18 @@ struct LatticePropertiesRuntime{
     const double m_DT;
 
     #ifdef MPIPARALLEL
+
     template<typename Stencil>
     using ParallelType=parallel<Stencil,1>; //!< Chosen MPI parallelisation method when MPI enabled.
+
     #else
-    template<typename... Stencil>
-    using ParallelType=No_Parallel; //!< Default parallelisation when MPI disabled (Just serial).
+
+    template<typename Stencil>
+    using ParallelType=No_Parallel<Stencil,1>; //!< Default parallelisation when MPI disabled (Just serial).
+
     #endif
+
     template<typename Stencil>
     using DataType=data<Stencil,ParallelType<Stencil>>;//!< This will change the "DataType" implementation, which will govern the access of non-local data
+
 };

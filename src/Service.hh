@@ -20,11 +20,11 @@
 #include <mpi.h>
 #endif
 #include "Stencil.hh"
-#include "Lattice.hh"
+
 //Sertive.hh: This will contain some commonly used functions with various uses.
 
 
-
+template<typename Stencil, int num_neighbors>
 class No_Parallel{
 
 };
@@ -143,7 +143,7 @@ template <typename T>
 
   return mpi_type;    
 }
-
+#endif
 template<class,template<class> class>
 struct DefaultTrait{};
 
@@ -231,7 +231,7 @@ template<class trait, class force>
 auto add_force(){return generate_trait<trait::Stencil,trait::Boundaries,tuple_cat_t::,trait::Properties>;}
 */
 
-#endif
+
 //BELOW: Not currently used implementations of type erasure, recursive template loops, MRT generation and a class
 //instance counter.
 
