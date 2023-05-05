@@ -15,8 +15,8 @@ int MPIBUFFERSIZE; //!< Size of the MPI buffer.
 
 inline auto& GETPROPERTIES();
 
-template<class type>
-auto& getGlobal(){
-    static auto PROPERTIES=*new type();
+template<class type,typename ...args>
+auto& getGlobal(args... a){
+    static auto PROPERTIES=*new type(a...);
     return PROPERTIES;
 }
