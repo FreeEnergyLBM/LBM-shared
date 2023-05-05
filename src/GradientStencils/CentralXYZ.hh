@@ -2,10 +2,8 @@
 
 template<class prop,class stencil>
 struct CentralXYZ{
-    
-    CentralXYZ(prop& properties):m_Data(properties),m_Geometry(properties){}
 
-    Data_Base<stencil,typename prop::template ParallelType<stencil>> m_Data;
+    Data_Base<stencil,typename std::remove_reference<prop>::type::template ParallelType<stencil>> m_Data;
 
     template<class parameter>
     inline double computeFirstDerivative(const parameter& val,const int direciton,const int k);
@@ -13,7 +11,7 @@ struct CentralXYZ{
     template<class parameter>
     inline double computeLaplacian(const parameter& val,const int k);
 
-    Geometry m_Geometry;
+    Geometry<> m_Geometry;
     
 };
 

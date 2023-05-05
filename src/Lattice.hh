@@ -3,9 +3,17 @@
 
 template<template<class,class> class data,template<class,int> class parallel,int lx, int ly,int lz=1>
 struct LatticeProperties{
-    LatticeProperties(double DT=1.0):m_N(lx*ly*lz),m_DT(DT){
+
+    constexpr LatticeProperties(double DT=1.0):m_N(lx*ly*lz),m_DT(DT){
    
     }
+    constexpr LatticeProperties(LatticeProperties<data,parallel,lx,ly,lz>& prop):m_N(prop.m_N),m_DT(prop.m_DT){
+   
+    }
+    constexpr LatticeProperties<data,parallel,lx,ly,lz>& operator=(const LatticeProperties<data,parallel,lx,ly,lz>&){
+        return *this;
+    }
+
     static constexpr int m_LX=lx;
     int m_LXdiv;
     int m_HaloSize;

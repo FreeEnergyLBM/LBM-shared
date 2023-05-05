@@ -20,7 +20,7 @@
  * functions. The class must be given objects of each model when it is constructed. Then, the models can be
  * initialised and evolved by one timestep at a time.
  */
-template<typename prop,class ...Model>
+template<class ...Model>
 class Algorithm{
     public:
 
@@ -31,7 +31,7 @@ class Algorithm{
          * object. Note that models will be computed in the order they are specified.
          * \param Models Objects of each model in the order specified by the template parameter "...Model".
          */
-        Algorithm(prop& properties,Model&... Models):mt_Models(Models...){}
+        Algorithm(Model&... Models):mt_Models(Models...){}
 
         /**
          * \brief Constructor for the class that will fill the tuple "mt_Models" with given objects of each model.
@@ -41,7 +41,7 @@ class Algorithm{
          * \param Models Objects of each model in the order specified by the template parameter "...Model".
          */
         
-        Algorithm(prop& properties):mt_Models(*new Model(properties)...){}
+        Algorithm():mt_Models(*new Model...){}
 
         /**
          * \brief Function that will evolve the lattice Boltzmann algorithm by one timestep.
@@ -88,8 +88,8 @@ class Algorithm{
  *          and finally it will compute the macroscopic variables (density, velocity etc.). It will do this
  *          for every model.
  */
-template<typename prop,class ...Model>
-void Algorithm<prop,Model...>::evolve(){
+template<class ...Model>
+void Algorithm<Model...>::evolve(){
 
     precomputeStep();
     
@@ -108,8 +108,8 @@ void Algorithm<prop,Model...>::evolve(){
  *          run the "initialise()" function for every model in the tuple. This function might set distributions to
  *          equilibrium and set macroscopic variables to some initial value, for instance.
  */
-template<typename prop,class ...Model>
-void Algorithm<prop,Model...>::initialise(){ //...
+template<class ...Model>
+void Algorithm<Model...>::initialise(){ //...
 
     if constexpr (sizeof...(Model)!=0){
         std::apply([](Model&... models){
@@ -126,8 +126,8 @@ void Algorithm<prop,Model...>::initialise(){ //...
  *          run the "precompute()" function for every model in the tuple. This function might perform some gradient
  *          calculations needed in the forcing terms, for instance.
  */
-template<typename prop,class ...Model>
-void Algorithm<prop,Model...>::precomputeStep(){
+template<class ...Model>
+void Algorithm<Model...>::precomputeStep(){
 
     if constexpr (sizeof...(Model)!=0){
         std::apply([](Model&... models){
@@ -144,8 +144,8 @@ void Algorithm<prop,Model...>::precomputeStep(){
  *          run the "collide()" function for every model in the tuple. This function will collide based on the 
  *          chosen collision model and will also perform streaming.
  */
-template<typename prop,class ...Model>
-void Algorithm<prop,Model...>::calculateCollisionStep(){ //...
+template<class ...Model>
+void Algorithm<Model...>::calculateCollisionStep(){ //...
     
     if constexpr (sizeof...(Model)!=0){
         std::apply([](Model&... models){
@@ -162,8 +162,8 @@ void Algorithm<prop,Model...>::calculateCollisionStep(){ //...
  *          run the "boundaries()" function for every model in the tuple. This function might apply bounceback and
  *          outflow boundaries, depending on the geometry labels, for instance.
  */
-template<typename prop,class ...Model>
-void Algorithm<prop,Model...>::calculateBoundaryStep(){ //...
+template<class ...Model>
+void Algorithm<Model...>::calculateBoundaryStep(){ //...
     
     if constexpr (sizeof...(Model)!=0){
         std::apply([](Model&... models){
@@ -180,8 +180,8 @@ void Algorithm<prop,Model...>::calculateBoundaryStep(){ //...
  *          will run the "computeMomenta()" function for every model in the tuple. This function might set
  *          calculate density and velocity based on the distributions, for instance.
  */
-template<typename prop,class ...Model>
-void Algorithm<prop,Model...>::calculateMomentaStep(){ //...
+template<class ...Model>
+void Algorithm<Model...>::calculateMomentaStep(){ //...
 
     if constexpr (sizeof...(Model)!=0){
         std::apply([](Model&... models){

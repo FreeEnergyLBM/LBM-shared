@@ -32,29 +32,30 @@ const int LY=20;
 const int TIMESTEPS=1;
 using Lattice=LatticeProperties<Data1,X_Parallel,LX,LY>;
 
-struct traittt:DefaultTrait<Lattice,FlowField>{
-
-};
+auto& GETPROPERTIES(){
+    return getGlobal<Lattice>();
+}
 
 int main(int argc, char **argv){
-
-    Lattice l1;
 
     #ifdef MPIPARALLEL
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &NUMPROCESSORS);                              // Store number of processors
     MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
-    Parallel<1> initialise(l1);
+    Parallel<1> initialise;
     #endif
     
-    auto Dist1=Model<FlowFieldBinary>(l1);
-    auto Dist2=Model<Binary>(l1);
+    //auto Dist1=Model<FlowFieldBinary>();
+    //auto Dist2=Model<Binary>();
+
+    FlowFieldBinary Dist1;
+    Binary Dist2;
 
     Dist1.getForce<BodyForce>().setMagnitude(0.0001);
 
-    Algorithm LBM(l1,Dist1,Dist2);
+    Algorithm LBM(Dist1,Dist2);
     
-    ParameterSave<Density,OrderParameter,Velocity> Saver(l1,"data/");
+    ParameterSave<Density,OrderParameter,Velocity> Saver("data/");
 
     LBM.initialise(); //Perform necessary initialisation
     auto t0=std::chrono::system_clock::now();

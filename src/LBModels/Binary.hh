@@ -20,30 +20,27 @@ struct traitBinaryDefault{
 };
 */
 
+template<class properties>
+struct DefaultTraitBinary{
+    using Stencil=std::conditional_t<std::remove_reference<properties>::type::m_NDIM==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions
+    using Boundaries=std::tuple<BounceBack>;
+    using Forces=std::tuple<OrderParameterGradients<CentralXYZ<properties,Stencil>>>;
+    using Properties=properties;
+};
 
-template<class traits>
+
+template<class traits=DefaultTraitBinary<decltype(GETPROPERTIES())>>
 class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class to avoid repetition of common
                                                       //calculations
     public:
 
-        //Constructors to construct tuples of forces and boundaries
-        Binary(typename traits::Properties& properties)
-          : CollisionBase<typename traits::Stencil>(properties),
-            N(properties.m_N),
-            LX(properties.m_LX),
-            LY(properties.m_LY),
-            LZ(properties.m_LZ),
-            HaloSize(properties.m_HaloSize),
-            m_OrderParameter(properties),
-            m_Velocity(properties),
-            m_ChemicalPotential(properties),
-            m_GradOrderParameter(properties),
-            m_LaplacianOrderParameter(properties),
-            m_Data(properties),
-            mt_Forces(properties),
-            mt_Boundaries(properties),
-            m_Geometry(properties)
-        {}
+        Binary():m_Data(),m_Distribution(m_Data.getDistributionObject()){
+
+        }
+
+        Binary(Binary<traits>& other):m_Distribution(other.m_Distribution){
+
+        }
 
         void precompute(); //Perform any necessary computations before collision
 
@@ -63,13 +60,13 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         template<class force,int inst=0>
         force& getForce() {
-            auto forces=get_type<force>(mt_Forces.getTuple());
+            auto forces=get_type<force>(mt_Forces);
             return std::get<inst>(forces);
         }
 
         template<class boundary,int inst=0>
         boundary& getBoundary() {
-            auto boundaries=get_type<boundary>(mt_Boundaries.getTuple());
+            auto boundaries=get_type<boundary>(mt_Boundaries);
             return std::get<inst>(boundaries);
         }
 
@@ -95,18 +92,12 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
 
         static constexpr double m_InverseTau=1.0/m_Tau; //TEMPORARY inverse relaxation time
 
-
-        typename traits::Properties::template DataType<typename traits::Stencil>::DistributionData& m_Distribution=m_Data.getDistributionObject();
+        typename std::remove_reference<typename traits::Properties>::type::template DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
+        typename std::remove_reference<typename traits::Properties>::type::template DataType<typename traits::Stencil>::DistributionData& m_Distribution=m_Data.getDistributionObject();
             //Distributions
 
         enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z directions
         
-        const int& N;
-        const int& LX;
-        const int& LY;
-        const int& LZ;
-        const int& HaloSize;
-
         double m_Gamma=1;
 
         OrderParameter m_OrderParameter; //Order Parameter
@@ -119,11 +110,9 @@ class Binary:CollisionBase<typename traits::Stencil>{ //Inherit from base class 
         vector<double>& velocity = m_Velocity.getParameter(); //Reference to vector of velocities
         vector<double>& distribution = m_Distribution.getDistribution(); //Reference to vector of distributions
 
-        typename traits::Properties::template DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
-
         typename traits::Forces mt_Forces; //MOVE THIS TO BASE
         typename traits::Boundaries mt_Boundaries; //MOVE THIS TO BASE
-        Geometry m_Geometry; //MOVE THIS TO BASE
+        Geometry<> m_Geometry; //MOVE THIS TO BASE
         
 };
 
@@ -154,13 +143,13 @@ void Binary<traits>::precompute(){
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=HaloSize;k<N-HaloSize;k++){ //loop over k
+    for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
-        if constexpr(std::tuple_size<typename traits::Forces::getTupleType>::value!=0){ //Check if there is at least one element
+        if constexpr(std::tuple_size<typename traits::Forces>::value!=0){ //Check if there is at least one element
                                                                           //in F
             std::apply([k](auto&... forces){//See Algorithm.hh for explanation of std::apply
                 (forces.precompute(k),...);
-            }, mt_Forces.getTuple());
+            }, mt_Forces);
         }
         
     }
@@ -172,10 +161,10 @@ void Binary<traits>::precompute(){
 template<class traits>
 double Binary<traits>::computeForces(int xyz,int k) const{
 
-    if constexpr(std::tuple_size<typename traits::Forces::getTupleType>::value!=0){
+    if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
         return std::apply([xyz,k](auto&... forces){
                 return (forces.compute(xyz,k)+...);
-            }, mt_Forces.getTuple());
+            }, mt_Forces);
     }
     else return 0;
 
@@ -187,7 +176,7 @@ void Binary<traits>::collide(){
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=HaloSize;k<N-HaloSize;k++){ //loop over k
+    for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
         double* old_distribution = m_Distribution.getDistributionOldPointer(k);
         double sum=0;
@@ -211,9 +200,9 @@ void Binary<traits>::boundaries(){
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=0;k<N;k++){ //loop over k
+    for (int k=0;k<GETPROPERTIES().m_N;k++){ //loop over k
 
-        if constexpr(std::tuple_size<typename traits::Boundaries::getTupleType>::value!=0){ //Check if there are any boundary
+        if constexpr(std::tuple_size<typename traits::Boundaries>::value!=0){ //Check if there are any boundary
                                                                               //models
             std::apply([this,k](auto&... boundaries){
                 for (int idx=0;idx<traits::Stencil::Q;idx++){
@@ -221,7 +210,7 @@ void Binary<traits>::boundaries(){
                         (boundaries.compute(this->m_Distribution,k,idx),...);
                     }
                 }
-            }, mt_Boundaries.getTuple());
+            }, mt_Boundaries);
             
         }
 
@@ -238,14 +227,14 @@ void Binary<traits>::initialise(){ //Initialise model
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=HaloSize;k<N-HaloSize;k++){ //loop over k
+    for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
         double* old_distribution=m_Distribution.getDistributionOldPointer(k);
         m_ChemicalPotential.getParameter(k)=0;
-        int xx=computeX(LY,LZ,k);
+        int xx=computeX(GETPROPERTIES().m_LY,GETPROPERTIES().m_LZ,k);
 
-        if (xx>=LX/2)orderparameter[k]=1.0; //Set order parameter to 1 initially (This will change)
+        if (xx>=GETPROPERTIES().m_LX/2)orderparameter[k]=1.0; //Set order parameter to 1 initially (This will change)
         else orderparameter[k]=-1.0;
         double sum=0;
         for (int idx=traits::Stencil::Q-1;idx>=0;idx--){
@@ -270,7 +259,7 @@ void Binary<traits>::computeMomenta(){ //Calculate order parameter
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=HaloSize;k<N-HaloSize;k++){ //Loop over k
+    for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //Loop over k
         double* distribution=m_Distribution.getDistributionPointer(k);
         orderparameter[k]=computeOrderParameter(distribution,k);
 
@@ -322,22 +311,13 @@ double Binary<traits>::computeModelForce(int k,int xyz) const{
 template<class traits>
 double Binary<traits>::computeOrderParameter(const double* distribution,int k) const{//Order parameter calculation
     //Order parameter is the sum of distributions plus any source/correction terms
-    if constexpr(std::tuple_size<typename traits::Forces::getTupleType>::value!=0){
+    if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
         return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution)
         +std::apply([k](auto&... tests){
             return (tests.computeDensitySource(k)+...);
-        }, mt_Forces.getTuple());
+        }, mt_Forces);
     }
     //CHANGE THIS SO FIRST/SECOND MOMENT COMPUTATION IS DONE IN DISTRIBUTION
     else return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution);
 
 }
-
-
-template<class properties>
-struct DefaultTrait<properties,Binary>{
-    using Stencil=std::conditional_t<properties::m_NDIM==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions
-    using Boundaries=LatticeTuple<BounceBack>;
-    using Forces=LatticeTuple<OrderParameterGradients<CentralXYZ<properties,Stencil>>>;
-    using Properties=properties;
-};

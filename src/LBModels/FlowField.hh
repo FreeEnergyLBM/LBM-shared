@@ -24,29 +24,31 @@ struct traitFlowFieldDefault{
 };
 */
 
-template<class traits>
+template<typename properties>
+struct DefaultTraitFlowField{
+    using Stencil=std::conditional_t<std::remove_reference<properties>::type::m_NDIM==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions
+                        //and Q refers to the number of discrete velocity directions.
+                        //This naming convention is standard in LBM.
+    using Boundaries=std::tuple<BounceBack>; //This will tell the model which boundaries to apply
+    using Forces=std::tuple<>; //This will tell the model which forces to apply
+    using Properties=properties;
+};
+
+
+template<class traits=DefaultTraitFlowField<decltype(GETPROPERTIES())>>
 class FlowField : public CollisionBase<typename traits::Stencil> { //Inherit from base class to avoid repetition of common
                                                          //calculations
     public:
 
+        FlowField():m_Data(),m_Distribution(m_Data.getDistributionObject()){
+
+        }
+
+        FlowField(FlowField<traits>& other):m_Distribution(other.m_Distribution){
+
+        }
+
         //Constructors to construct tuples of forces and boundaries
-        
-        constexpr FlowField(typename traits::Properties& properties)
-          : CollisionBase<typename traits::Stencil>(properties),
-            m_Density(properties),
-            m_Velocity(properties),
-            m_Distribution(m_Data.getDistributionObject()),
-            N(properties.m_N),
-            LX(properties.m_LX),
-            LY(properties.m_LY),
-            LZ(properties.m_LZ),
-            NDIM(properties.m_NDIM),
-            HaloSize(properties.m_HaloSize),
-            m_Data(properties),
-            mt_Forces(properties),
-            mt_Boundaries(properties),
-            m_Geometry(properties)
-        {}
 
         void precompute(); //Perform any necessary computations before collision
 
@@ -69,13 +71,13 @@ class FlowField : public CollisionBase<typename traits::Stencil> { //Inherit fro
 
         template<class force,int inst=0>
         force& getForce() {
-            auto forces=get_type<force>(mt_Forces.getTuple());
+            auto forces=get_type<force>(mt_Forces);
             return std::get<inst>(forces);
         }
 
         template<class boundary,int inst=0>
         boundary& getBoundary() {
-            auto boundaries=get_type<boundary>(mt_Boundaries.getTuple());
+            auto boundaries=get_type<boundary>(mt_Boundaries);
             return std::get<inst>(boundaries);
         }
 
@@ -102,11 +104,12 @@ class FlowField : public CollisionBase<typename traits::Stencil> { //Inherit fro
         
         static constexpr double m_InverseTau=1.0/m_Tau; //TEMPORARY inverse relaxation time
 
-        Density m_Density; //Density
+        Density m_Density; //Density<>
 
         Velocity m_Velocity; //Velocity
-
-        typename traits::Properties::template DataType<typename traits::Stencil>::DistributionData& m_Distribution;
+        
+        typename std::remove_reference<typename traits::Properties>::type::template DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
+        typename std::remove_reference<typename traits::Properties>::type::template DataType<typename traits::Stencil>::DistributionData& m_Distribution;
             //Distributions
 
         vector<double>& density=m_Density.getParameter(); //Reference to vector of densities
@@ -116,19 +119,10 @@ class FlowField : public CollisionBase<typename traits::Stencil> { //Inherit fro
         vector<double>& distribution=m_Distribution.getDistribution(); //Reference to vector of distributions
 
         enum{x=0,y=1,z=2}; //Indices corresponding to x, y, z directions
-
-        const int& N;
-        const int& LX;
-        const int& LY;
-        const int& LZ;
-        const int& NDIM;
-        const int& HaloSize;
-
-        typename traits::Properties::template DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
-
+        
         typename traits::Forces mt_Forces; //MOVE THIS TO BASE
         typename traits::Boundaries mt_Boundaries;
-        Geometry m_Geometry;
+        Geometry<> m_Geometry;
 };
 
 
@@ -161,13 +155,13 @@ void FlowField<traits>::precompute(){ //Perform necessary calculations before co
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=HaloSize;k<N-HaloSize;k++){ //loop over k
+    for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
-        if constexpr(std::tuple_size<typename traits::Forces::getTupleType>::value!=0){ //Check if there is at least one element
+        if constexpr(std::tuple_size<typename traits::Forces>::value!=0){ //Check if there is at least one element
                                                                           //in F
             std::apply([k](auto&... forces){//See Algorithm.hh for explanation of std::apply
                 (forces.precompute(k),...);
-            }, mt_Forces.getTuple());
+            }, mt_Forces);
         }
         else;
 
@@ -181,10 +175,10 @@ void FlowField<traits>::precompute(){ //Perform necessary calculations before co
 template<class traits>
 double FlowField<traits>::computeForces(int xyz,int k) const{ //Return the sum of forces
 
-    if constexpr (std::tuple_size<typename traits::Forces::getTupleType>::value!=0){
+    if constexpr (std::tuple_size<typename traits::Forces>::value!=0){
         return std::apply([xyz,k](auto&... forces){
                 return (forces.compute(xyz,k)+...);
-            }, mt_Forces.getTuple());
+            }, mt_Forces);
     }
     else return 0;
 
@@ -196,7 +190,7 @@ void FlowField<traits>::collide(){ //Collision step
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=HaloSize;k<N-HaloSize;k++){ //loop over k
+    for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
         double* old_distribution = m_Distribution.getDistributionOldPointer(k);
 
@@ -221,9 +215,9 @@ void FlowField<traits>::boundaries(){ //Apply the boundary step
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=0;k<N;k++){ //loop over k
+    for (int k=0;k<GETPROPERTIES().m_N;k++){ //loop over k
         
-        if constexpr(std::tuple_size<typename traits::Boundaries::getTupleType>::value!=0){ //Check if there are any boundary
+        if constexpr(std::tuple_size<typename traits::Boundaries>::value!=0){ //Check if there are any boundary
                                                                               //models
             std::apply([this,k](auto&... boundaries){
                 for (int idx=0;idx<traits::Stencil::Q;idx++){
@@ -231,10 +225,10 @@ void FlowField<traits>::boundaries(){ //Apply the boundary step
                         (boundaries.compute(this->m_Distribution,k,idx),...);
                     }
                 }
-            }, mt_Boundaries.getTuple());
+            }, mt_Boundaries);
             
         }
-        //while(!m_Geometry.isSolid(k+1)&&k<N){
+        //while(!m_Geometry.isSolid(k+1)&&k<GETPROPERTIES().m_N){
         //    k++;
         //}
         //k = m_Data.iterateSolid(k,true); //increment k
@@ -251,7 +245,7 @@ void FlowField<traits>::initialise(){ //Initialise model
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=HaloSize;k<N-HaloSize;k++){ //loop over k
+    for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
         double* old_distribution=m_Distribution.getDistributionOldPointer(k);
@@ -276,12 +270,12 @@ void FlowField<traits>::initialise(){ //Initialise model
 
 
 template<class traits>
-void FlowField<traits>::computeMomenta(){ //Calculate Density and Velocity
+void FlowField<traits>::computeMomenta(){ //Calculate Density<> and Velocity
 
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=HaloSize;k<N-HaloSize;k++){ //Loop over k
+    for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //Loop over k
 
         double* distribution=m_Distribution.getDistributionPointer(k);
 
@@ -330,12 +324,12 @@ double FlowField<traits>::computeModelForce(int k,int xyz) const{
 }
 
 template<class traits>
-double FlowField<traits>::computeDensity(const double* distribution,int k) const{ //Density calculation
-    //Density is the sum of distributions plus any source/correction terms
-    if constexpr(std::tuple_size<typename traits::Forces::getTupleType>::value!=0){
+double FlowField<traits>::computeDensity(const double* distribution,int k) const{ //Density<> calculation
+    //Density<> is the sum of distributions plus any source/correction terms
+    if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
         return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution)+std::apply([k](auto&... forces){
                 return (forces.computeDensitySource(k)+...);
-            }, mt_Forces.getTuple());
+            }, mt_Forces);
     }
     //CHANGE THIS SO FIRST/SECOND MOMENT COMPUTATION IS DONE IN DISTRIBUTION
     else return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution);
@@ -347,21 +341,11 @@ double FlowField<traits>::computeVelocity(const double* distribution,const doubl
                                           const int xyz,int k) const{ //Velocity calculation in direction xyz
     //Velocity in direction xyz is sum of distribution times the xyz component of the discrete velocity vector
     //in each direction plus any source/correction terms
-    if constexpr(std::tuple_size<typename traits::Forces::getTupleType>::value!=0){
+    if constexpr(std::tuple_size<typename traits::Forces>::value!=0){
         return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution,xyz)+std::apply([xyz,k](auto&&... forces){
                 return (forces.computeVelocitySource(xyz,k)+...);
-            }, mt_Forces.getTuple());
+            }, mt_Forces);
     }
     else return CollisionBase<typename traits::Stencil>::computeFirstMoment(distribution,xyz);
 
 }
-
-template<class properties>
-struct DefaultTrait<properties,FlowField>{
-    using Stencil=std::conditional_t<properties::m_NDIM==2,D2Q9,D3Q19>; //Here, D refers to the number of cartesian dimensions
-                        //and Q refers to the number of discrete velocity directions.
-                        //This naming convention is standard in LBM.
-    using Boundaries=LatticeTuple<BounceBack>; //This will tell the model which boundaries to apply
-    using Forces=LatticeTuple<>; //This will tell the model which forces to apply
-    using Properties=properties;
-};

@@ -23,13 +23,19 @@ struct traitFlowFieldBinaryDefault{
 };
 */
 
-template<class traits>
+template<typename properties>
+struct DefaultTraitFlowFieldBinary{
+    using Stencil=std::conditional_t<std::remove_reference<properties>::type::m_NDIM==2,D2Q9,D3Q19>;
+    using Boundaries=std::tuple<BounceBack>; //This will tell the model which boundaries to apply
+    using Forces=std::tuple<BodyForce,ChemicalForce>; //This will tell the model which forces to apply
+    using Properties=properties;
+};
+
+template<class traits=DefaultTraitFlowFieldBinary<decltype(GETPROPERTIES())>>
 class FlowFieldBinary:public FlowField<traits>{ //Inherit from base class to avoid repetition of common
                                                          //calculations
     
     public:
-
-        FlowFieldBinary(typename traits::Properties& properties):FlowField<traits>(properties),m_OrderParameter(properties),m_ChemicalPotential(properties){}
 
         virtual void collide() override; //Collision step
 
@@ -45,6 +51,7 @@ class FlowFieldBinary:public FlowField<traits>{ //Inherit from base class to avo
 
         OrderParameter m_OrderParameter;
         ChemicalPotential m_ChemicalPotential;
+
         enum{x=0,y=1,z=2};
 
 };
@@ -68,7 +75,7 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=FlowField<traits>::HaloSize;k<FlowField<traits>::N-FlowField<traits>::HaloSize;k++){ //loop over k
+    for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
         double sum=0;
         for (int idx=QQ-1;idx>=0;--idx){ //loop over discrete velocity directions
@@ -97,7 +104,7 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
     #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( dynamic )
     #endif
-    for (int k=FlowField<traits>::HaloSize;k<FlowField<traits>::N-FlowField<traits>::HaloSize;k++){ //loop over k
+    for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
         double* distribution=FlowField<traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution=FlowField<traits>::m_Distribution.getDistributionOldPointer(k);
@@ -143,13 +150,3 @@ double FlowFieldBinary<traits>::computeCollisionQ(double& sum,const int k,const 
     else return density-sum+CollisionBase<typename traits::Stencil>::forceGuoSRT(forcexyz,velocity,FlowField<traits>::m_InverseTau,idx);
     
 }
-
-
-
-template<class properties>
-struct DefaultTrait<properties,FlowFieldBinary>{
-    using Stencil=std::conditional_t<properties::m_NDIM==2,D2Q9,D3Q19>;
-    using Boundaries=LatticeTuple<BounceBack>; //This will tell the model which boundaries to apply
-    using Forces=LatticeTuple<BodyForce,ChemicalForce>; //This will tell the model which forces to apply
-    using Properties=properties;
-};

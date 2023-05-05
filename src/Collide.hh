@@ -25,10 +25,9 @@
 template<class stencil>
 class CollisionBase{
     static_assert(std::is_base_of<Stencil,stencil>(),"ERROR: invalid stencil specified in traits.");
-    
+    static_assert(stencil::D==std::remove_reference<decltype(GETPROPERTIES())>::type::m_NDIM,"ERROR: The chosen stencil must match the number of lattice dimensions (NDIM) chosen in Global.hh.");
     public:
-        template<class prop>
-        CollisionBase(prop& properties):DT(properties.m_DT){static_assert(stencil::D==properties.m_NDIM,"ERROR: The chosen stencil must match the number of lattice dimensions (NDIM) chosen in Global.hh.");}
+        
         /**
          * \brief computeGamma computes first and second order velocity dependence of the equilibrium distributions.
          * \param velocity Pointer to velocity vector at the current lattice point.
@@ -74,8 +73,6 @@ class CollisionBase{
                                                                                        //distributions times
         
     private:
-
-        const double& DT;
 
         enum{x=0,y=1,z=2};
         
@@ -163,7 +160,7 @@ double CollisionBase<stencil>::computeFirstMoment(const double *distribution,con
 template<class stencil>
 double CollisionBase<stencil>::collideSRT(const double& old,const double& equilibrium,const double& itau) const{
 
-    return old-DT*itau*(old-equilibrium); //SRT colision step. Old corresponds to the old distribution and itau is
+    return old-GETPROPERTIES().m_DT*itau*(old-equilibrium); //SRT colision step. Old corresponds to the old distribution and itau is
                                        //the inverse of the relaxation time
 
 }
@@ -179,7 +176,7 @@ double CollisionBase<stencil>::forceGuoSRT(const double force[stencil::D],
 
     double ci_dot_velocity=0;
     double forceterm=0;
-    double prefactor=(1-DT*itau/2.0)*ma_Weights[idx]; //Prefactor for Guo forcing
+    double prefactor=(1-GETPROPERTIES().m_DT*itau/2.0)*ma_Weights[idx]; //Prefactor for Guo forcing
 
     for (int xyz=0;xyz<stencil::D;xyz++){
         ci_dot_velocity+=(stencil::Ci_xyz(xyz)[idx]*velocity[xyz]); //Dot product of discrete velocity vector

@@ -2,6 +2,7 @@
 #include<map>
 #include "Service.hh"
 #include "Lattice.hh"
+#include "Global.hh"
 /**
  * \file Geometry.hh
  * \brief This is not fully implemented but will contain information relevant to boundary conditions
@@ -14,12 +15,10 @@
  * This class contains functions to initialise the chosen geometry and determine whether the current lattice
  * point is a solid or a periodic boundary.
  */
+template<typename placeholder=void>
 class Geometry{
     public:
-        template<class prop>
-        Geometry(prop& properties):LXdiv(properties.m_LXdiv),LY(properties.m_LY),LZ(properties.m_LZ){
-            
-        }
+
         /**
          * \brief Initialise the geometry vector for the system based on some conditions in this function.
          */
@@ -39,10 +38,6 @@ class Geometry{
 
     private:
 
-        const int& LXdiv;
-        const int& LY;
-        const int& LZ;
-
         enum{Periodic=3,Solid=2,Wall=1,Fluid=0}; //!< IDs for each boundary type.
 
         std::vector<int> geometry; //!< Vector containing geometry information.
@@ -54,19 +49,20 @@ class Geometry{
  * \details This function evaluates an (unnecessarily complex for now) if statement to determine if we are on the
  *          edge of the simulation domain. Returns true if current lattice point is a periodic boundary.
  */
-bool Geometry::isPeriodic(int k){
+template<typename placeholder>
+bool Geometry<placeholder>::isPeriodic(int k){
 
-    if (((LZ>1&&(k%(LZ-1)==0||
-         (k-1)%(LZ-1)==0)))||
-        (LY>1&&(k/(LZ)%(LY-1)==0||
-         ((k)/(LZ)-1)%(LY-1)==0))||
-        (LXdiv>1&&((k/(LZ)/(LY))%(LXdiv-1)==0||
-          ((k)/(LZ)/(LY)-1)%(LXdiv-1)==0||
-          ((k)/(LZ)/(LY)-1)-1<0||
-          ((k)/(LZ)/(LY)-1)+1>LXdiv-1))||
-        LZ==1||
-        LY==1||
-        LXdiv==1) return true; //These conditions just check whether the lattice point is on the edge of the 
+    if (((GETPROPERTIES().m_LZ>1&&(k%(GETPROPERTIES().m_LZ-1)==0||
+         (k-1)%(GETPROPERTIES().m_LZ-1)==0)))||
+        (GETPROPERTIES().m_LY>1&&(k/(GETPROPERTIES().m_LZ)%(GETPROPERTIES().m_LY-1)==0||
+         ((k)/(GETPROPERTIES().m_LZ)-1)%(GETPROPERTIES().m_LY-1)==0))||
+        (GETPROPERTIES().m_LXdiv>1&&((k/(GETPROPERTIES().m_LZ)/(GETPROPERTIES().m_LY))%(GETPROPERTIES().m_LXdiv-1)==0||
+          ((k)/(GETPROPERTIES().m_LZ)/(GETPROPERTIES().m_LY)-1)%(GETPROPERTIES().m_LXdiv-1)==0||
+          ((k)/(GETPROPERTIES().m_LZ)/(GETPROPERTIES().m_LY)-1)-1<0||
+          ((k)/(GETPROPERTIES().m_LZ)/(GETPROPERTIES().m_LY)-1)+1>GETPROPERTIES().m_LXdiv-1))||
+        GETPROPERTIES().m_LZ==1||
+        GETPROPERTIES().m_LY==1||
+        GETPROPERTIES().m_LXdiv==1) return true; //These conditions just check whether the lattice point is on the edge of the 
                             //simulation domain
     
     else return false;
@@ -77,11 +73,12 @@ bool Geometry::isPeriodic(int k){
  *          is currently determined by this function, but in the future it will be chosen elsewhere so that no
  *          modification to the source file is needed. Returns true if current lattice point is a solid.
  */
-bool Geometry::isSolid(int k){
+template<typename placeholder>
+bool Geometry<placeholder>::isSolid(int k){
 
-    int yAtCurrentk=computeY(LY,LZ,k);
+    int yAtCurrentk=computeY(GETPROPERTIES().m_LY,GETPROPERTIES().m_LZ,k);
 
-    if (yAtCurrentk<=1||yAtCurrentk>=LY-2) return true; //Change this condition to control where the solid is
+    if (yAtCurrentk<=1||yAtCurrentk>=GETPROPERTIES().m_LY-2) return true; //Change this condition to control where the solid is
     
     else return false;
 

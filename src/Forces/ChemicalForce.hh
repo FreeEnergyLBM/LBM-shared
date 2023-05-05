@@ -7,26 +7,9 @@
 //ExternalForce.hh: Contains the force class for a constant applied body force in a given direction. This is
 //unfinished (should be able to specify magnitude and direction).
 
-class ChemicalForce{
+template<typename placeholder=void>
+class ChemicalForceTemplate{
     public:
-
-        template< template< class, class > class data, template< class, int > class parallel, int lx, int ly, int lz = 1 >
-        ChemicalForce( LatticeProperties< data, parallel, lx, ly, lz >& properties )
-          : m_DT( properties.m_DT ),
-            m_ChemicalPotential( properties ),
-            m_GradOrderParameter( properties ),
-            m_LaplacianOrderParameter( properties ),
-            m_OrderParameter( properties ),
-            m_Density( properties )
-        {}
-
-        ChemicalForce( const ChemicalForce& other )
-          : m_DT( other.m_DT ),
-            m_ChemicalPotential( other.m_ChemicalPotential ),
-            m_GradOrderParameter( other.m_GradOrderParameter ),
-            m_LaplacianOrderParameter( other.m_LaplacianOrderParameter ),
-            m_OrderParameter( other.m_OrderParameter ),
-            m_Density( other.m_Density ){}
 
         double compute( int xyz, int k ) const; //Return force at lattice point k in direction xyz
 
@@ -40,8 +23,6 @@ class ChemicalForce{
         void postprocess( int k ); //Perform any necessary postprocessing
 
     private:
-
-        const double& m_DT;
 
         double m_A=0.00015;
 
@@ -59,31 +40,37 @@ class ChemicalForce{
 
 };
 
-
-double ChemicalForce::compute( int xyz, int k ) const{
+template<typename placeholder>
+double ChemicalForceTemplate<placeholder>::compute( int xyz, int k ) const{
 
     return m_ChemicalPotential.getParameter( k ) * m_GradOrderParameter.getParameterPointer( k )[ xyz ];
 
 }
 
-void ChemicalForce::precompute( int k ){ //Not necessary
+template<typename placeholder>
+void ChemicalForceTemplate<placeholder>::precompute( int k ){ //Not necessary
 
     m_ChemicalPotential.getParameter( k ) = -m_A * m_OrderParameter.getParameter( k ) + m_A * m_OrderParameter.getParameter( k ) * m_OrderParameter.getParameter( k ) * m_OrderParameter.getParameter( k ) - m_Kappa * m_LaplacianOrderParameter.getParameter( k );
 
 }
 
-void ChemicalForce::postprocess( int k ){ //Not necessary
+template<typename placeholder>
+void ChemicalForceTemplate<placeholder>::postprocess( int k ){ //Not necessary
     
 }
 
-double ChemicalForce::computeDensitySource( int k ) const{ //Not necessary
+template<typename placeholder>
+double ChemicalForceTemplate<placeholder>::computeDensitySource( int k ) const{ //Not necessary
 
     return 0.0;
 
 }
 
-double ChemicalForce::computeVelocitySource( int xyz, int k ) const{ //Need to correct velocity
+template<typename placeholder>
+double ChemicalForceTemplate<placeholder>::computeVelocitySource( int xyz, int k ) const{ //Need to correct velocity
 
-    return +compute(xyz,k) * m_DT / ( 2.0 * m_Density.getParameter( k ) );
+    return +compute(xyz,k) * GETPROPERTIES().m_DT / ( 2.0 * m_Density.getParameter( k ) );
     
 }
+
+typedef ChemicalForceTemplate<> ChemicalForce;

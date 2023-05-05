@@ -2,13 +2,11 @@
 #include "../Parameters.hh"
 #include<iostream>
 
-class BounceBack{
+template<typename placeholder=void>
+class BounceBackTemplate{
     public:
-        template< class prop >
-        BounceBack( const prop& properties ){}
 
-        template < class disttype >
-        void compute( disttype& m_Distribution, int k, int idx ) const;
+        void compute( auto& m_Distribution, int k, int idx ) const;
 
         void precompute( int k );
 
@@ -23,27 +21,33 @@ class BounceBack{
 
 };
 
-template< class disttype >
-void BounceBack::compute( disttype& m_Distribution, int k, int idx) const{
+template<typename placeholder>
+void BounceBackTemplate<placeholder>::compute( auto& m_Distribution, int k, int idx) const{
     m_Distribution.getDistributionPointer( m_Distribution.streamIndex(k,idx) )[ idx ] = m_Distribution.getDistributionPointer( k )[ m_Distribution.getOpposite( idx ) ];
 }
 
-void BounceBack::precompute( int k ){
+template<typename placeholder>
+void BounceBackTemplate<placeholder>::precompute( int k ){
     
 }
 
-void BounceBack::postprocess( int k ){
+template<typename placeholder>
+void BounceBackTemplate<placeholder>::postprocess( int k ){
     
 }
 
-double BounceBack::computeDensitySource( int k ) const{
+template<typename placeholder>
+double BounceBackTemplate<placeholder>::computeDensitySource( int k ) const{
 
     return 0;
 
 }
 
-double BounceBack::computeVelocitySource( int xyz,int k ) const{
+template<typename placeholder>
+double BounceBackTemplate<placeholder>::computeVelocitySource( int xyz,int k ) const{
 
     return 0;
 
 }
+
+typedef BounceBackTemplate<> BounceBack;
