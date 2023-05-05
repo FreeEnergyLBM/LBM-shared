@@ -1,9 +1,6 @@
 #include "../../src/lbm.hh"
 #include <chrono>
 #include <iostream>
-#ifdef OMPPARALLEL
-#include <omp.h>
-#endif
 #ifdef MPIPARALLEL
 #include <mpi.h>
 #endif
@@ -49,7 +46,7 @@ int main(int argc, char **argv){
     FlowFieldBinary Dist1;
     Binary Dist2;
 
-    Dist1.getForce<BodyForce>().setMagnitude(0.0001);
+    Dist1.getForce<BodyForce>().setMagnitudeX(0.0001);
 
     Algorithm LBM(Dist1,Dist2);
     

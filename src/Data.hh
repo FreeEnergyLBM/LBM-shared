@@ -45,7 +45,7 @@ class Data_Base{
 
         int OppositeOffset[stencil::Q]; //!< Opposite lattice point offset in each direction.
         
-        Geometry<> m_Geometry; //!< Class containing geometry information (for periodic boundaries).
+        Geometry m_Geometry; //!< Class containing geometry information (for periodic boundaries).
 
         std::vector<int> mv_Neighbors; //!< Vector containing neighbor information.
 
@@ -231,9 +231,7 @@ int Data_Base<stencil,parallel>::getOneNeighborPeriodic(const int k,const int Q)
 template<class stencil,class parallel>
 void Data_Base<stencil,parallel>::generateNeighbors(){ //Loop over all lattice points and calculate the neghbor at each point
 
-    #ifdef OMPPARALLEL
     #pragma omp parallel for schedule( guided )
-    #endif
     for (int k=0;k<GETPROPERTIES().m_N;k++){ //For loop over all lattice points
         
         for(int q=0;q<stencil::Q;q++){

@@ -16,7 +16,7 @@
  * point is a solid or a periodic boundary.
  */
 template<typename placeholder=void>
-class Geometry{
+class GeometryTemplate{
     public:
 
         /**
@@ -50,7 +50,7 @@ class Geometry{
  *          edge of the simulation domain. Returns true if current lattice point is a periodic boundary.
  */
 template<typename placeholder>
-bool Geometry<placeholder>::isPeriodic(int k){
+bool GeometryTemplate<placeholder>::isPeriodic(int k){
 
     if (((GETPROPERTIES().m_LZ>1&&(k%(GETPROPERTIES().m_LZ-1)==0||
          (k-1)%(GETPROPERTIES().m_LZ-1)==0)))||
@@ -74,7 +74,7 @@ bool Geometry<placeholder>::isPeriodic(int k){
  *          modification to the source file is needed. Returns true if current lattice point is a solid.
  */
 template<typename placeholder>
-bool Geometry<placeholder>::isSolid(int k){
+bool GeometryTemplate<placeholder>::isSolid(int k){
 
     int yAtCurrentk=computeY(GETPROPERTIES().m_LY,GETPROPERTIES().m_LZ,k);
 
@@ -83,3 +83,5 @@ bool Geometry<placeholder>::isSolid(int k){
     else return false;
 
 }
+
+typedef GeometryTemplate<> Geometry;

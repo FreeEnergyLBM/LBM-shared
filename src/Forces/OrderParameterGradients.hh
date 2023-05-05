@@ -9,9 +9,10 @@
 
 template< class gradientstencil >
 class OrderParameterGradients : public ForceBase {
+
     public:
 
-        void precompute( int k ) override; //Perform any neccessary computations before force is computed
+        void precompute( const int k ) override; //Perform any neccessary computations before force is computed
 
     private:
 
@@ -27,9 +28,10 @@ class OrderParameterGradients : public ForceBase {
 
 
 template< class gradientstencil >
-void OrderParameterGradients< gradientstencil >::precompute( int k ){ //Not necessary
+void OrderParameterGradients< gradientstencil >::precompute( const int k ) { //Not necessary
     
     for( int xyz = 0; xyz < GETPROPERTIES().m_NDIM; xyz++ ) m_GradOrderParameter.getParameterPointer( k )[ xyz ] = m_GradientStencil.computeFirstDerivative( m_OrderParameter, xyz, k );
+
     m_LaplacianOrderParameter.getParameter( k ) = m_GradientStencil.computeLaplacian( m_OrderParameter, k );
 
 }
