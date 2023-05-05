@@ -209,23 +209,23 @@ struct VelocityTemplate : public Parameter<VelocityTemplate<placeholder>,double>
 
 typedef VelocityTemplate<> Velocity;
 
-struct Density : public Parameter<Density,double>{Density():Parameter<Density,double>(){};static constexpr char m_Name[]="Density";}; //Density
+struct Density : public Parameter<Density,double>{static constexpr char m_Name[]="Density";}; //Density
 
 
-struct Pressure : public Parameter<Pressure,double>{Pressure():Parameter<Pressure,double>(){};static constexpr char m_Name[]="Pressure";}; //Presure
+struct Pressure : public Parameter<Pressure,double>{static constexpr char m_Name[]="Pressure";}; //Presure
 
 
-struct OrderParameter : public Parameter<OrderParameter,double>{OrderParameter():Parameter<OrderParameter,double>(){};static constexpr char m_Name[]="OrderParameter";}; //Order parameter representing relative
+struct OrderParameter : public Parameter<OrderParameter,double>{static constexpr char m_Name[]="OrderParameter";}; //Order parameter representing relative
                                                                    //concentration of the phases
 
-struct ChemicalPotential : public Parameter<ChemicalPotential,double>{ChemicalPotential():Parameter<ChemicalPotential,double>(){};static constexpr char m_Name[]="ChemicalPotential";}; //Chemical potential for the multicomponent model
+struct ChemicalPotential : public Parameter<ChemicalPotential,double>{static constexpr char m_Name[]="ChemicalPotential";}; //Chemical potential for the multicomponent model
 
 
-struct LaplacianOrderParameter : public Parameter<LaplacianOrderParameter,double>{LaplacianOrderParameter():Parameter<LaplacianOrderParameter,double>(){};static constexpr char m_Name[]="LaplacianOrderParameter";}; //Laplacian of the order parameter
+struct LaplacianOrderParameter : public Parameter<LaplacianOrderParameter,double>{static constexpr char m_Name[]="LaplacianOrderParameter";}; //Laplacian of the order parameter
 
 template<typename placeholder=void>
 struct GradientOrderParameterTemplate : public Parameter<GradientOrderParameterTemplate<placeholder>,double>{GradientOrderParameterTemplate():Parameter<GradientOrderParameterTemplate,double>(GETPROPERTIES().m_NDIM){};static constexpr char m_Name[]="GradientOrderParameter";}; //Directional first order gradients of the order parameter
 
 typedef GradientOrderParameterTemplate<> GradientOrderParameter;
 
-struct SolidLabels : public Parameter<SolidLabels,int>{SolidLabels():Parameter<SolidLabels,int>(){};static constexpr char m_Name[]="SolidLabels";}; //Labelling of geometry
+struct SolidLabels : public Parameter<SolidLabels,int>{static constexpr char m_Name[]="SolidLabels";}; //Labelling of geometry
