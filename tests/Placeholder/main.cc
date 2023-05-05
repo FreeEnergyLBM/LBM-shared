@@ -27,9 +27,9 @@
 //Modularisation is implemented using trait classes, which contain stencil information, 
 //the data type, a tuple of the boundary types and a tuple of forces to be applied in the model.
 
-const int LX=20;
-const int LY=20;
-const int TIMESTEPS=1;
+const int LX=100;
+const int LY=100;
+const int TIMESTEPS=10000;
 using Lattice=LatticeProperties<Data1,X_Parallel,LX,LY>;
 
 auto& GETPROPERTIES(){

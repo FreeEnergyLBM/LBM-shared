@@ -232,7 +232,7 @@ template<class stencil,class parallel>
 void Data_Base<stencil,parallel>::generateNeighbors(){ //Loop over all lattice points and calculate the neghbor at each point
 
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( dynamic )
+    #pragma omp parallel for schedule( guided )
     #endif
     for (int k=0;k<GETPROPERTIES().m_N;k++){ //For loop over all lattice points
         
@@ -283,25 +283,8 @@ class Data1:public Data_Base<stencil,parallel>{
              * \param neighbors reference to a vector containing the neighboring lattice points at each point. Used to
              *                  construct the Distribution_Base class.
              */
-            Distribution_Derived(std::vector<int>& neighbors):Distribution_Base<stencil>(neighbors),mv_Neighbors(neighbors){ //Initialise mv_DistNeighbors
-                
-                for(int idx=0;idx<stencil::Q;idx++){ //Calculate the k offset for the neighbors in each direction
-                    ma_Opposites[idx]=stencil::Opposites[idx];
-                }
 
-                Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q*GETPROPERTIES().m_N); //Array size is number of
-                                                                                  //directions times number of
-                                                                                  //lattice points
-                Distribution_Base<stencil>::mv_OldDistribution.resize(stencil::Q*GETPROPERTIES().m_N); //Old distributions needed
-                                                                                     //in this case
-                
-            }
-
-            Distribution_Derived(Distribution_Derived& other):Distribution_Base<stencil>(other.mv_Neighbors),mv_Neighbors(other.mv_Neighbors){ //Initialise mv_DistNeighbors
-                
-                for(int idx=0;idx<stencil::Q;idx++){ //Calculate the k offset for the neighbors in each direction
-                    ma_Opposites[idx]=stencil::Opposites[idx];
-                }
+            Distribution_Derived(std::vector<int>& neighbors):Distribution_Base<stencil>(neighbors){ //Initialise mv_DistNeighbors
 
                 Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q*GETPROPERTIES().m_N); //Array size is number of
                                                                                   //directions times number of

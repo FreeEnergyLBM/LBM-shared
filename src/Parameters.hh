@@ -8,7 +8,6 @@
 #include "Lattice.hh"
 #include <fstream>
 #include <iostream>
-using namespace std;
 
 //Parameters.hh: This file details how macroscopic quantities are stored and interacted with.
 //The Distribution class contains some vectors and functions to return values from these. This will be inherited
@@ -21,8 +20,23 @@ template<class  stencil> //Distribution must know information about the stencil 
                          //of the vectors and the data layout
 struct Distribution_Base{ //Distribution base class
     Distribution_Base(std::vector<int>& neighbors):mv_DistNeighbors(neighbors){
+        for(int idx=0;idx<stencil::Q;idx++){ //Calculate the k offset for the neighbors in each direction
+            ma_Opposites[idx]=stencil::Opposites[idx];
+        }
+    }
+
+    /**
+    * \brief Returns the opposite index at the chosen index (Rotation by 180 degrees).
+    */
+
+    int ma_Opposites[stencil::Q]; //!< Array containing the opposite indices at each index (rotated by 180 degrees).
+
+    int getOpposite(int idx){
+
+        return ma_Opposites[idx];
 
     }
+
     vector<double> mv_Distribution; //Vector that will store the distribution information
     vector<double> mv_OldDistribution; //Possibly unused vector storing the old distributions (at t_old=t_new-1)
                                        //This is required in the collision step

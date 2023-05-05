@@ -73,7 +73,7 @@ void FlowFieldBinary<traits>::collide(){ //Collision step
     double* old_distribution = FlowField<traits>::m_Distribution.getDistributionOldPointer(0);
 
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( dynamic )
+    #pragma omp parallel for schedule( guided )
     #endif
     for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
@@ -102,7 +102,7 @@ void FlowFieldBinary<traits>::initialise(){ //Initialise model
     FlowField<traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( dynamic )
+    #pragma omp parallel for schedule( guided )
     #endif
     for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 

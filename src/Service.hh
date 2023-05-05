@@ -23,6 +23,8 @@
 #include "Lattice.hh"
 //Sertive.hh: This will contain some commonly used functions with various uses.
 
+
+
 class No_Parallel{
 
 };

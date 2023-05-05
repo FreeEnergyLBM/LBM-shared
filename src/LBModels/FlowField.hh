@@ -153,7 +153,7 @@ void FlowField<traits>::precompute(){ //Perform necessary calculations before co
     
     //k = m_Data.iterateFluid0(k,false);
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( dynamic )
+    #pragma omp parallel for schedule( guided )
     #endif
     for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
@@ -188,7 +188,7 @@ template<class traits>
 void FlowField<traits>::collide(){ //Collision step
 
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( dynamic )
+    #pragma omp parallel for schedule( guided )
     #endif
     for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
@@ -213,7 +213,7 @@ void FlowField<traits>::boundaries(){ //Apply the boundary step
     //int k=0;
     //k = m_Data.iterateSolid0(k,true);
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( dynamic )
+    #pragma omp parallel for schedule( guided )
     #endif
     for (int k=0;k<GETPROPERTIES().m_N;k++){ //loop over k
         
@@ -243,7 +243,7 @@ void FlowField<traits>::initialise(){ //Initialise model
     m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( dynamic )
+    #pragma omp parallel for schedule( guided )
     #endif
     for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
@@ -273,7 +273,7 @@ template<class traits>
 void FlowField<traits>::computeMomenta(){ //Calculate Density<> and Velocity
 
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( dynamic )
+    #pragma omp parallel for schedule( guided )
     #endif
     for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //Loop over k
 

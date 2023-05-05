@@ -141,7 +141,7 @@ template<class traits>
 void Binary<traits>::precompute(){
 
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( dynamic )
+    #pragma omp parallel for schedule( guided )
     #endif
     for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
@@ -174,7 +174,7 @@ template<class traits>
 void Binary<traits>::collide(){
 
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( dynamic )
+    #pragma omp parallel for schedule( guided )
     #endif
     for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
@@ -198,7 +198,7 @@ template<class traits>
 void Binary<traits>::boundaries(){
 
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( dynamic )
+    #pragma omp parallel for schedule( guided )
     #endif
     for (int k=0;k<GETPROPERTIES().m_N;k++){ //loop over k
 
@@ -225,7 +225,7 @@ void Binary<traits>::initialise(){ //Initialise model
     m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( dynamic )
+    #pragma omp parallel for schedule( guided ) 
     #endif
     for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //loop over k
 
@@ -257,7 +257,7 @@ void Binary<traits>::computeMomenta(){ //Calculate order parameter
 
     
     #ifdef OMPPARALLEL
-    #pragma omp parallel for schedule( dynamic )
+    #pragma omp parallel for schedule( guided )
     #endif
     for (int k=GETPROPERTIES().m_HaloSize;k<GETPROPERTIES().m_N-GETPROPERTIES().m_HaloSize;k++){ //Loop over k
         double* distribution=m_Distribution.getDistributionPointer(k);
