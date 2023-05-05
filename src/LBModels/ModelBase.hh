@@ -1,8 +1,4 @@
 #pragma once
-#include "../Collide.hh"
-#include "../Parameters.hh"
-#include "../Data.hh"
-#include "../Parallel.hh"
 #include <utility>
 
 template<class properties>

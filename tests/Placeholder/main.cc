@@ -45,9 +45,6 @@ int main(int argc, char **argv){
     MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
     Parallel<1> initialise;
     #endif
-    
-    //auto Dist1=Model<FlowFieldBinary>();
-    //auto Dist2=Model<Binary>();
 
     FlowFieldBinary Dist1;
     Binary Dist2;
