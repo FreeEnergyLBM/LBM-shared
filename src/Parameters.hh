@@ -5,7 +5,6 @@
 #include<map>
 #include<any>
 #include "Global.hh"
-#include "Lattice.hh"
 #include <fstream>
 #include <iostream>
 
@@ -16,7 +15,7 @@
 //classes, the value will be consistent between classes. Note that, for every template configuration, a new
 //static variable is created, so I pass each class to itself as a template to ensure the parameters are unique.
 
-template<class  stencil> //Distribution must know information about the stencil as this determines the size
+template<class stencil> //Distribution must know information about the stencil as this determines the size
                          //of the vectors and the data layout
 struct Distribution_Base { //Distribution base class
 

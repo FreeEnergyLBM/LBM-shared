@@ -2,7 +2,6 @@
 #ifdef MPIPARALLEL
 #include <mpi.h>
 #endif
-#include "Lattice.hh"
 /**
  * \file Global.hh
  * \brief This contains global parameters for the code. Eventually this should be mostly phased out.

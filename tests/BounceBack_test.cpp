@@ -1,6 +1,6 @@
 #include "test_main.hh"
+#include "Global.hh"
 #include "BoundaryModels/BounceBack.hh"
-
 #include "Lattice.hh"
 #include "Data.hh"
 #include "Parallel.hh"
