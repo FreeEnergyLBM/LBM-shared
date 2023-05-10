@@ -2,6 +2,7 @@
 #include <tuple>
 #include <iostream>
 #include "Lattice.hh"
+#include "LBModels/ModelBase.hh"
 
 /**
  * \file Algorithm.hh
@@ -24,7 +25,7 @@
  */
 template<class ...Model>
 class Algorithm {
-
+    static_assert(std::conjunction<is_base_of_template<ModelBase,Model>...>::value, "ERROR: At least one LBM model chosen is not a model class.");
     public:
 
         /**

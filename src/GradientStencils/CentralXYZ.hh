@@ -48,14 +48,14 @@ double CentralXYZ<prop, stencil>::computeLaplacian(const parameter& val, const i
 
     for (int idx = 1; idx <stencil::Q; idx++) {
     
-        if((!m_Geometry.isSolid(m_Data.getNeighbors()[k*stencil::Q+idx]))) {
+        if((!m_Geometry.isSolid(m_Data.getNeighbors()[k * stencil::Q + idx]))) {
 
-            laplaciansum += 1.0 / stencil::Cs2 * stencil::Weights[idx] * 2 * (val.getParameter(m_Data.getNeighbors()[k * stencil::Q +idx])-val.getParameter(k));
+            laplaciansum += 1.0 / stencil::Cs2 * stencil::Weights[idx] * 2 * (val.getParameter(m_Data.getNeighbors()[k * stencil::Q +idx]) - val.getParameter(k));
 
         }
         else {
 
-            laplaciansum+=1.0/stencil::Cs2*stencil::Weights[idx]*2*(val.getParameter(m_Data.getNeighbors()[k * stencil::Q + stencil::Opposites[idx]]) - val.getParameter(k));
+            laplaciansum += 1.0 / stencil::Cs2 * stencil::Weights[idx] * 2 * (val.getParameter(m_Data.getNeighbors()[k * stencil::Q + stencil::Opposites[idx]]) - val.getParameter(k));
 
         }
 

@@ -1,7 +1,6 @@
 #pragma once
 #ifdef MPIPARALLEL
 #include <mpi.h>
-#include "Lattice.hh"
 #include "Global.hh"
 #include "Service.hh"
 /**

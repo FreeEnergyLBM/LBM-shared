@@ -1,5 +1,7 @@
 #pragma once
 #include <utility>
+#include "../BoundaryModels/BoundaryBase.hh"
+#include "../Forces/ForceBase.hh"
 
 template<class properties>
 struct DefaultTrait{
@@ -17,7 +19,8 @@ struct DefaultTrait{
 template<class traits = DefaultTrait<decltype(GETPROPERTIES())>>
 class ModelBase{ //Inherit from base class to avoid repetition of common
                                                       //calculations
-                                                      
+    static_assert(CheckBase<ForceBase, typename traits::Forces>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
+    static_assert(CheckBase<BoundaryBase, typename traits::Boundaries>::value, "ERROR: At least one force chosen is not a force class.");
     public:
 
         ModelBase()
@@ -71,7 +74,7 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
         typename traits::Forces mt_Forces; //MOVE THIS TO BASE
         typename traits::Boundaries mt_Boundaries; //MOVE THIS TO BASE
         Geometry m_Geometry; //MOVE THIS TO BASE
-
+        
         std::vector<double>& distribution = m_Distribution.getDistribution(); //Reference to vector of distributions
         
 };

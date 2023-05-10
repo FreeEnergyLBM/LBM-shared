@@ -36,12 +36,7 @@ struct D2Q9:Stencil { //Most commonly used 2D stencil
         else if (d == y) {
             return Ci_y;
         }
-        else if (d == z) {
-            return Ci_z;
-        }
-        else{
-            throw std::runtime_error(std::string("Error when indexing velocity stencil. Indices must be greater than 0 and less than "+std::to_string(D)));
-        }
+        return Ci_z;
 
     }
     static constexpr int Opposites[Q] = {0, 2, 1, 4, 3, 6, 5, 8, 7}; //Opposite vector at a given index
@@ -85,12 +80,7 @@ struct D3Q19:Stencil{ //Most commonly used 3D stencil
         else if (d==1) {
             return Ci_y;
         }
-        else if (d==2) {
-            return Ci_z;
-        }
-        else{
-            throw std::runtime_error(std::string("Error when indexing velocity stencil. Indices must be greater than 0 and less than "+std::to_string(D)));
-        }
+        return Ci_z;
     }
 
     static constexpr int Opposites[Q] = {0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17};

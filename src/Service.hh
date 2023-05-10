@@ -222,6 +222,21 @@ auto get_type(std::tuple<types...> &t) {
         
 }
 
+template<class Base, typename Tuple>
+struct CheckBase;
+
+template<class Base, typename... Types>
+struct CheckBase<Base, std::tuple<Types...>> : std::conjunction<std::is_base_of<Base,Types>...> {};
+
+template <template <typename...> class C, typename...Ts>
+std::true_type is_base_of_template_impl(const C<Ts...>*);
+
+template <template <typename...> class C>
+std::false_type is_base_of_template_impl(...);
+
+template <template <typename...> class C,typename T>
+using is_base_of_template = decltype(is_base_of_template_impl<C>(std::declval<T*>()));
+
 /*
 template<typename ... input_t>
 using tuple_cat_t=
