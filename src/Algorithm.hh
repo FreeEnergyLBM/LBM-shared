@@ -22,6 +22,7 @@
  * calculations for each model. The models that are passed to the template must therefore have these public
  * functions. The class must be given objects of each model when it is constructed. Then, the models can be
  * initialised and evolved by one timestep at a time.
+ * \tparam Model Any number of LBM model classes.
  */
 template<class ...Model>
 class Algorithm {

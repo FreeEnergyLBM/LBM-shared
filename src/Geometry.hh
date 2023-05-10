@@ -14,6 +14,7 @@
  * \brief Geometry contains functions to initialise and access the chosen geometry.
  * This class contains functions to initialise the chosen geometry and determine whether the current lattice
  * point is a solid or a periodic boundary.
+ * \tparam Empty template parameter, used to ensure GETPROPERTIES is defined before it is needed in this function.
  */
 template<typename placeholder = void>
 class GeometryTemplate {
@@ -27,12 +28,14 @@ class GeometryTemplate {
         /**
          * \brief Returns true if the current lattice point lies on a periodic boundary.
          * \param k Index of current lattice point.
+         * \return True if lattice point lies on a periodic boundary.
          */
         bool isPeriodic(int k);
 
         /**
          * \brief Returns true if the current lattice point lies on a solid boundary.
          * \param k Index of current lattice point.
+         * \return True if lattice point lies on a solid
          */
         bool isSolid(int k);
 
@@ -52,19 +55,17 @@ class GeometryTemplate {
 template<typename placeholder>
 bool GeometryTemplate<placeholder>::isPeriodic(int k) {
 
-    if(GETPROPERTIES().m_LZ <= 1) return true;
+    if(GETPROPERTIES().m_LZ <= 1 || GETPROPERTIES().m_LY <= 1 || GETPROPERTIES().m_LXdiv <= 1) return true; //If simulation is 2D
     else if (k % (GETPROPERTIES().m_LZ - 1) == 0 ||
-         (k - 1) % (GETPROPERTIES().m_LZ - 1) == 0) return true;
+         (k - 1) % (GETPROPERTIES().m_LZ - 1) == 0) return true; //Edges in Z direction
 
-    else if (GETPROPERTIES().m_LY <= 1) return true;
     else if (k / (GETPROPERTIES().m_LZ) % (GETPROPERTIES().m_LY - 1) == 0 ||
-         ((k) / (GETPROPERTIES().m_LZ) - 1) % (GETPROPERTIES().m_LY - 1) == 0) return true;
+         ((k) / (GETPROPERTIES().m_LZ) - 1) % (GETPROPERTIES().m_LY - 1) == 0) return true; //Edges in Y direction
         
-    else if (GETPROPERTIES().m_LXdiv <= 1) return true;
     else if ((k / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY)) % (GETPROPERTIES().m_LXdiv - 1) == 0 ||
           ((k) / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY) - 1) % (GETPROPERTIES().m_LXdiv - 1) == 0 ||
           ((k) / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY) - 1) - 1 < 0 ||
-          ((k) / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY) - 1) + 1 > GETPROPERTIES().m_LXdiv - 1) return true;
+          ((k) / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY) - 1) + 1 > GETPROPERTIES().m_LXdiv - 1) return true; //Edges in X direction
     
     return false;
 
@@ -86,4 +87,4 @@ bool GeometryTemplate<placeholder>::isSolid(int k) {
 
 }
 
-typedef GeometryTemplate<> Geometry;
+typedef GeometryTemplate<> Geometry; //!<Typedef to avoid needing empty angle brackets

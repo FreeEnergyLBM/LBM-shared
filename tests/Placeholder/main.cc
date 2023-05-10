@@ -30,9 +30,12 @@ const int TIMESTEPS=10000;
 using Lattice=LatticeProperties<Data1,X_Parallel,LX,LY>;
 //using Lattice=LatticePropertiesRuntime<Data1,X_Parallel,2>;
 
-auto& GETPROPERTIES(){
-    return getGlobal<Lattice>();
-}
+auto& GETPROPERTIES(){return getGlobal<Lattice>();}
+
+//test=GETPROPERTIES();
+
+//GETPROPERTIES=getGlobal<Lattice>();
+//auto &LATTICEPROPERTIES=GETPROPERTIES;
 
 int main(int argc, char **argv){
 

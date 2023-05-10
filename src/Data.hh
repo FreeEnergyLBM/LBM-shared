@@ -23,6 +23,8 @@
  * needed. It also takes the MPI parallelisation method as a template argument as the communication may change
  * based on the data layout. The class has public functions for communication, generating neighbors based on the
  * stencil and a function to get a reference to the vector of neighbor indices.
+ * \tparam stencil Velocity Stencil of class using this data type.
+ * \tparam parallel MPI parallisation method.
  */
 template<class stencil, class parallel>
 class Data_Base{
@@ -32,6 +34,7 @@ class Data_Base{
          * \brief This function returns the neighbor at the current lattice point k in the direction Q.
          * \param k Index of current lattice point.
          * \param Q Discrete velocity direction (e.g. 0-8 for D2Q9).
+         * \return Lattice index of neighboring lattice point in chosen direction.
          */
         int getOneNeighbor(const int k, const int Q);
 
@@ -40,6 +43,7 @@ class Data_Base{
          *        the lattice point lies on a periodic boundary.
          * \param k Index of current lattice point.
          * \param Q Discrete velocity direction (e.g. 0-8 for D2Q9).
+         * \return Lattice index of neighboring lattice point in chosen direction given that the current point is on a periodic boundary.
          */
         int getOneNeighborPeriodic(const int k, const int Q);
 
@@ -66,6 +70,7 @@ class Data_Base{
          * \brief This function communicates a chosen parameter (halo regions are exchanged with neighboring
          *        processors).
          * \param obj Object of chosen parameter.
+         * \tparam parameter type of object to be communicated.
          */
         template<class parameter>
         void communicate(parameter obj);
@@ -128,6 +133,7 @@ template<class stencil, class parallel>
 template<class parameter>
 void Data_Base<stencil, parallel>::communicate(parameter obj) { //Not used in this data type
 
+    static_assert(is_base_of_template<Parameter,parameter>::value,"ERROR: The object passed to this function cannot be communicated.")
     m_Parallel.communicate(obj);
 
 }
@@ -264,6 +270,8 @@ void Data_Base<stencil, parallel>::generateNeighbors() { //Loop over all lattice
  * Much of the functionality is the same as Data_Base, but we have an object of the distribution relevant to this
  * data type in the class. The stream() and getStreamIndex() function determine how streaming occurs for this data
  * type.
+ * \tparam stencil Velocity Stencil of class using this data type.
+ * \tparam parallel MPI parallisation method.
  */
 template<class stencil, class parallel>
 class Data1 : public Data_Base<stencil, parallel> {
@@ -318,6 +326,7 @@ class Data1 : public Data_Base<stencil, parallel> {
              * \details In this case, this just returns the neighbor at the current lattice point in the direction Q.
              * \param k Index of current lattice point.
              * \param Q Discrete velocity direction (e.g. 0-8 for D2Q9).
+             * \return Index of distribution vector that the distribution will be streamed to.
              */
             int streamIndex(const int k, const int Q) {
 
@@ -346,7 +355,6 @@ class Data1 : public Data_Base<stencil, parallel> {
         /**
          * \brief This constructor calls the constructor of the base disribution using the neighbor information.
          */
-
         Data1() : m_Distribution(Data_Base<stencil, parallel>::mv_Neighbors) { //Construct distribution
 
         }
@@ -359,6 +367,7 @@ class Data1 : public Data_Base<stencil, parallel> {
 
         /**
          * \brief This function returns a reference to the distribution object stored within this class.
+         * \return Reference to object of distribution.
          */
         Distribution_Derived& getDistributionObject() {
 
@@ -384,8 +393,8 @@ void Data1<stencil, parallel>::stream() { //Not used in this data type
  */
 template<class stencil, class parallel>
 void Data1<stencil, parallel>::communicateDistribution() {
-    #ifdef MPIPARALLEL
+    
     Data_Base<stencil, parallel>::m_Parallel.communicateDistribution(m_Distribution);
-    #endif
+    
 }
 #endif

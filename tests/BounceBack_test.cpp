@@ -13,7 +13,7 @@ auto& GETPROPERTIES(){
 
 TEST(BounceBackTest, TestNodePair) {
   Data1<D2Q9,Parallel<0>> data;
-  auto& distr = data.getDistributionObject();
+  auto distr = data.getDistributionObject();
   distr.mv_Distribution = {0,1,2,3,4,5,6,7,8, 0,0,0,0,0,0,0,0};
 
   BounceBack bb;

@@ -21,6 +21,7 @@
  * This class takes a stencil as a template argument, as the velocity discretisation information and weights is 
  * needed. The class has public functions for collision terms, momenta calculations, force terms and the common
  * velocity depenence of equilibrium distibutions.
+ * \tparam stencil Velocity stencil for the model inheriting from this class.
  */
 template<class stencil>
 class CollisionBase {
@@ -31,15 +32,17 @@ class CollisionBase {
     public:
         
         /**
-         * \brief computeGamma computes first and second order velocity dependence of the equilibrium distributions.
+         * \brief computeGamma computes first and second order velocity dependence of the equilibrium distributions, as well as the non velocity dependent part.
          * \param velocity Pointer to velocity vector at the current lattice point.
          * \param idx The discrete velocity index (e.g. 0-8 for D2Q9).
+         * \return 1 + velocity dependence of equilibrium.
          */
         double computeGamma(const double* velocity, const int idx) const;
 
         /**
          * \brief This will sum the distributions in each direction to calculate the zeroth moment.
          * \param distribution Pointer to distribution vector at the current lattice point.
+         * \return Zeroth moment distributions in each direction.
          */
         double computeZerothMoment(const double *distribution) const;
 
@@ -48,6 +51,7 @@ class CollisionBase {
          *        in each direction to calculate the first moment.
          * \param distribution Pointer to distribution vector at the current lattice point.
          * \param xyz Cartesian direction of to calculate zeroth moment.
+         * \return First moment of distributions.
          */
         double computeFirstMoment(const double *distribution, const int xyz) const; 
 
@@ -56,6 +60,7 @@ class CollisionBase {
          * \param old Distribution at previous timestep.
          * \param equilibrium Equilibrium distribution at the current timestep.
          * \param tau Relaxation time (chosen to provide a desired viscosity).
+         * \return Post collision distribution.
          */
         double collideSRT(const double& old, const double& equilibrium, const double& tau) const;
 
@@ -65,14 +70,18 @@ class CollisionBase {
          * \param velocity Pointer to velocity vector at the current lattice point.
          * \param itau Inverse relaxation time (1.0/tau) (chosen to provide a desired viscosity).
          * \param idx The discrete velocity index (e.g. 0-8 for D2Q9).
+         * \return Forcing term in chosen velocity index direction.
          */
         double forceGuoSRT(const double force[stencil::D ],const double* velocity,
                             const double& itau, const int idx) const;
         
-        double computeVelocityFactor(const double* velocity, const int idx) const; //Second
-                                                                                       //order velocity dependence
-                                                                                       //of the equilibrium
-                                                                                       //distributions times
+        /**
+         * \brief computeGamma computes first and second order velocity dependence of the equilibrium distributions.
+         * \param velocity Pointer to velocity vector at the current lattice point.
+         * \param idx The discrete velocity index (e.g. 0-8 for D2Q9).
+         * \return Velocity dependence of equilibrium.
+         */
+        double computeVelocityFactor(const double* velocity, const int idx) const;
         
     private:
 
