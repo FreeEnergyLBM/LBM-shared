@@ -297,7 +297,7 @@ class Data1 : public Data_Base<stencil, parallel> {
                 
             }
 
-            Distribution_Derived(Distribution_Derived& other) : Distribution_Base<stencil>(other.neighbors), mv_Neighbors(other.mv_Neighbors) { //Initialise mv_DistNeighbors
+            Distribution_Derived(Distribution_Derived& other) : Distribution_Base<stencil>(other.mv_Neighbors), mv_Neighbors(other.mv_Neighbors) { //Initialise mv_DistNeighbors
 
                 Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q * GETPROPERTIES().m_N); //Array size is number of
                                                                                   //directions times number of
