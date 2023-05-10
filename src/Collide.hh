@@ -22,11 +22,11 @@
  * needed. The class has public functions for collision terms, momenta calculations, force terms and the common
  * velocity depenence of equilibrium distibutions.
  */
-template< class stencil >
+template<class stencil>
 class CollisionBase {
 
-    static_assert( std::is_base_of< Stencil, stencil >(), "ERROR: invalid stencil specified in traits class." );
-    static_assert( stencil::D == std::remove_reference< decltype( GETPROPERTIES() ) >::type::m_NDIM, "ERROR: The chosen stencil must match the number of lattice dimensions in the lattice properties." );
+    static_assert(std::is_base_of<Stencil, stencil>(), "ERROR: invalid stencil specified in traits class.");
+    static_assert(stencil::D == std::remove_reference<decltype(GETPROPERTIES())>::type::m_NDIM, "ERROR: The chosen stencil must match the number of lattice dimensions in the lattice properties.");
     
     public:
         
@@ -35,13 +35,13 @@ class CollisionBase {
          * \param velocity Pointer to velocity vector at the current lattice point.
          * \param idx The discrete velocity index (e.g. 0-8 for D2Q9).
          */
-        double computeGamma( const double* velocity, const int idx ) const;
+        double computeGamma(const double* velocity, const int idx) const;
 
         /**
          * \brief This will sum the distributions in each direction to calculate the zeroth moment.
          * \param distribution Pointer to distribution vector at the current lattice point.
          */
-        double computeZerothMoment( const double *distribution ) const;
+        double computeZerothMoment(const double *distribution) const;
 
         /**
          * \brief This will sum the distributions times the velocity vector
@@ -49,7 +49,7 @@ class CollisionBase {
          * \param distribution Pointer to distribution vector at the current lattice point.
          * \param xyz Cartesian direction of to calculate zeroth moment.
          */
-        double computeFirstMoment( const double *distribution, const int xyz ) const; 
+        double computeFirstMoment(const double *distribution, const int xyz) const; 
 
         /**
          * \brief This will compute the single relaxation time (BGK) collision step.
@@ -57,7 +57,7 @@ class CollisionBase {
          * \param equilibrium Equilibrium distribution at the current timestep.
          * \param tau Relaxation time (chosen to provide a desired viscosity).
          */
-        double collideSRT( const double& old, const double& equilibrium, const double& tau ) const;
+        double collideSRT(const double& old, const double& equilibrium, const double& tau) const;
 
         /**
          * \brief This will compute the forcing term using Guo forcing.
@@ -66,10 +66,10 @@ class CollisionBase {
          * \param itau Inverse relaxation time (1.0/tau) (chosen to provide a desired viscosity).
          * \param idx The discrete velocity index (e.g. 0-8 for D2Q9).
          */
-        double forceGuoSRT( const double force[ stencil::D  ],const double* velocity,
-                            const double& itau, const int idx ) const;
+        double forceGuoSRT(const double force[stencil::D ],const double* velocity,
+                            const double& itau, const int idx) const;
         
-        double computeVelocityFactor( const double* velocity, const int idx ) const; //Second
+        double computeVelocityFactor(const double* velocity, const int idx) const; //Second
                                                                                        //order velocity dependence
                                                                                        //of the equilibrium
                                                                                        //distributions times
@@ -89,10 +89,10 @@ class CollisionBase {
  *          by density. This is calcualted as Weights*(1+velocity factor), where "velocity factor" is the velocity
  *          dependence of the equilibrium.
  */
-template< class stencil >
-double CollisionBase< stencil >::computeGamma( const double* velocity, const int idx) const {
+template<class stencil>
+double CollisionBase<stencil>::computeGamma(const double* velocity, const int idx) const {
 
-    return ma_Weights[ idx ] * ( 1.0 + computeVelocityFactor( velocity, idx ) ); 
+    return ma_Weights[idx] * (1.0 + computeVelocityFactor(velocity, idx)); 
 
 };
 
@@ -103,23 +103,23 @@ double CollisionBase< stencil >::computeGamma( const double* velocity, const int
  *          calculated. These are then normalised with respect to the lattice sound speed and the velocity
  *          factor is returned.
  */
-template< class stencil >
-double CollisionBase< stencil >::computeVelocityFactor( const double* velocity, const int idx ) const {
+template<class stencil>
+double CollisionBase<stencil>::computeVelocityFactor(const double* velocity, const int idx) const {
     
     double ci_dot_velocity = 0;
     double velocity_dot_velocity = 0;
 
-    for ( int xyz = 0; xyz < stencil::D; xyz++ ) {
+    for (int xyz = 0; xyz <stencil::D; xyz++) {
 
-        ci_dot_velocity += ( stencil::Ci_xyz( xyz )[ idx ] * velocity[ xyz ] ); //Dot product of Ci (discrete velocity)
+        ci_dot_velocity += (stencil::Ci_xyz(xyz)[idx] * velocity[xyz]); //Dot product of Ci (discrete velocity)
                                                                     //vector and velocity
-        velocity_dot_velocity += ( velocity[ xyz ] * velocity[ xyz ] ); //Dot product of velocity and velocity
+        velocity_dot_velocity += (velocity[xyz] * velocity[xyz]); //Dot product of velocity and velocity
 
     }
 
-    return ( ci_dot_velocity ) / m_Cs2
-           + ( ci_dot_velocity * ci_dot_velocity ) / ( 2.0 * m_Cs2 * m_Cs2 ) //Return velocity factor
-           - ( velocity_dot_velocity ) / ( 2.0 * m_Cs2 );
+    return (ci_dot_velocity) / m_Cs2
+           + (ci_dot_velocity * ci_dot_velocity) / (2.0 * m_Cs2 * m_Cs2) //Return velocity factor
+           - (velocity_dot_velocity) / (2.0 * m_Cs2);
 
 };
 
@@ -127,14 +127,14 @@ double CollisionBase< stencil >::computeVelocityFactor( const double* velocity, 
  * \details This function returns the zeroth moment of the distributions. This is just the sum of distributions
  *          in each discrete direction (so the sum over 9 directions for D2Q9);
  */
-template< class stencil >
-double CollisionBase< stencil >::computeZerothMoment( const double *distribution ) const {
+template<class stencil>
+double CollisionBase<stencil>::computeZerothMoment(const double *distribution) const {
 
     double zerothmoment = 0;
 
-    for ( int idx = 0; idx < stencil::Q; idx++ ) {
+    for (int idx = 0; idx <stencil::Q; idx++) {
 
-        zerothmoment += distribution[ idx ]; //Sum distribution over Q
+        zerothmoment += distribution[idx]; //Sum distribution over Q
 
     }
 
@@ -146,12 +146,12 @@ double CollisionBase< stencil >::computeZerothMoment( const double *distribution
  * \details This function returns the first moment of the distributions. This is the sum of the distributions
  *          multiplied by the stencil velocity vector c_i for each i in the choesn cartesian direction.
  */
-template< class stencil >
-double CollisionBase< stencil >::computeFirstMoment( const double *distribution,const int xyz ) const {
+template<class stencil>
+double CollisionBase<stencil>::computeFirstMoment(const double *distribution,const int xyz) const {
 
     double firstmoment = 0;
 
-    for ( int idx = 0; idx < stencil::Q; idx++ ){
+    for (int idx = 0; idx <stencil::Q; idx++){
 
         firstmoment+=(distribution[idx]*stencil::Ci_xyz(xyz)[idx]); //Sum distribution times Ci over Q
         
@@ -165,10 +165,10 @@ double CollisionBase< stencil >::computeFirstMoment( const double *distribution,
  * \details This computes the SRT/BGK collision step. This is simply the old distribution in each direction minus
  *          the difference between the old and equilibrium distributions divided by the relaxation time, tau.
  */
-template< class stencil >
-double CollisionBase< stencil >::collideSRT( const double& old, const double& equilibrium, const double& itau ) const{
+template<class stencil>
+double CollisionBase<stencil>::collideSRT(const double& old, const double& equilibrium, const double& itau) const{
 
-    return old - GETPROPERTIES().m_DT * itau * ( old - equilibrium ); //SRT colision step. Old corresponds to the old distribution and itau is
+    return old - GETPROPERTIES().m_DT * itau * (old - equilibrium); //SRT colision step. Old corresponds to the old distribution and itau is
                                        //the inverse of the relaxation time
 
 }
@@ -177,24 +177,24 @@ double CollisionBase< stencil >::collideSRT( const double& old, const double& eq
  * \details This computes the Guo forcing for the SRT collision operator. The dot product of velocity with the
  *          stencil velocity vectors is calculated and then used to calculate the forcing term.
  */
-template< class stencil >
-double CollisionBase< stencil >::forceGuoSRT( const double force[ stencil::D ],
+template<class stencil>
+double CollisionBase<stencil>::forceGuoSRT(const double force[stencil::D],
                                         const double* velocity, const double& itau,
-                                        const int idx ) const { //Guo forcing
+                                        const int idx) const { //Guo forcing
 
     double ci_dot_velocity = 0;
     double forceterm = 0;
-    double prefactor = ( 1 - GETPROPERTIES().m_DT * itau / 2.0 ) * ma_Weights[ idx ]; //Prefactor for Guo forcing
+    double prefactor = (1 - GETPROPERTIES().m_DT * itau / 2.0) * ma_Weights[idx]; //Prefactor for Guo forcing
 
     for (int xyz=0;xyz<stencil::D;xyz++){
 
-        ci_dot_velocity += ( stencil::Ci_xyz( xyz )[ idx ] * velocity[ xyz ] ); //Dot product of discrete velocity vector
+        ci_dot_velocity += (stencil::Ci_xyz(xyz)[idx] * velocity[xyz]); //Dot product of discrete velocity vector
                                                                     //with velocity
     }
-    for ( int xyz = 0; xyz < stencil::D; xyz++ ) {
+    for (int xyz = 0; xyz <stencil::D; xyz++) {
 
-        forceterm += prefactor * ( ( ( stencil::Ci_xyz( xyz )[ idx ] - velocity[ xyz ] ) / m_Cs2
-                               + ci_dot_velocity * stencil::Ci_xyz( xyz )[ idx ] / ( m_Cs2 * m_Cs2 ) ) * force[ xyz ] ); //Force
+        forceterm += prefactor * (((stencil::Ci_xyz(xyz)[idx] - velocity[xyz]) / m_Cs2
+                               + ci_dot_velocity * stencil::Ci_xyz(xyz)[idx] / (m_Cs2 * m_Cs2)) * force[xyz]); //Force
                                                                                                      //Calculation
     }
     

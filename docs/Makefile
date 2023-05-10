@@ -1,10 +1,10 @@
 all: html latex
 
 html:
-	( cat Doxyfile ; echo "GENERATE_HTML=YES" ) | doxygen -
+	(cat Doxyfile ; echo "GENERATE_HTML=YES") | doxygen -
 
 latex:
-	( cat Doxyfile ; echo "GENERATE_LATEX=YES" ) | doxygen -
+	(cat Doxyfile ; echo "GENERATE_LATEX=YES") | doxygen -
 	$(MAKE) -C latex
 	cp latex/refman.pdf doxygen.pdf
 

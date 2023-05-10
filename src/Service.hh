@@ -25,32 +25,30 @@
 
 
 template<typename Stencil, int num_neighbors>
-class No_Parallel{
+class No_Parallel{};
 
-};
-
-int computeX(const int& LY,const int& LZ,const int k) //Compute X direction from a given k, the convention in this code is that
+int computeX(const int& LY, const int& LZ, const int k) //Compute X direction from a given k, the convention in this code is that
                           //k will iterate over the z direction first, then increment y by 1 once it reaches LZ,
                           //then repeat the iteration over z. Once it reaches LY x will be incremented and this
                           //process continues
 {  
 
-  return int(k/(float) (LZ*LY));
+  return int(k / (float) (LZ * LY));
 
 
 }
 
-int computeY(const int& LY,const int& LZ,const int k) //Compute Y direction from a given k, this uses information from the X direction
+int computeY(const int& LY, const int& LZ, const int k) //Compute Y direction from a given k, this uses information from the X direction
 {  
 
-  return int((k-computeX(LY,LZ,k)*LZ*LY)/(float) LZ);
+  return int((k - computeX(LY, LZ, k) * LZ * LY) / (float) LZ);
 
 }
 
-int computeZ(const int& LY,const int& LZ,const int k) //Compute Y direction from a given k, this uses information from the X and Y directions
+int computeZ(const int& LY, const int& LZ, const int k) //Compute Y direction from a given k, this uses information from the X and Y directions
 {  
 
-  return k-computeX(LY,LZ,k)*LZ*LY-computeY(LY,LZ,k)*LZ;
+  return k - computeX(LY, LZ, k) * LZ * LY - computeY(LY, LZ, k) * LZ;
 
 }
 
@@ -66,67 +64,95 @@ int computeZ(const int& LY,const int& LZ,const int k) //Compute Y direction from
 #ifdef MPIPARALLEL
 template <typename T>
 [[nodiscard]] constexpr MPI_Datatype mpi_get_type() noexcept {
+
   MPI_Datatype mpi_type = MPI_DATATYPE_NULL;
     
   if constexpr (std::is_same_v<T, char>) {
     mpi_type = MPI_CHAR;
-  } else if constexpr (std::is_same_v<T, signed char>) {
+  }
+  else if constexpr (std::is_same_v<T, signed char>) {
     mpi_type = MPI_SIGNED_CHAR;
-  } else if constexpr (std::is_same_v<T, unsigned char>) {
+  }
+  else if constexpr (std::is_same_v<T, unsigned char>) {
     mpi_type = MPI_UNSIGNED_CHAR;
-  } else if constexpr (std::is_same_v<T, wchar_t>) {
+  }
+  else if constexpr (std::is_same_v<T, wchar_t>) {
     mpi_type = MPI_WCHAR;
-  } else if constexpr (std::is_same_v<T, signed short>) {
+  }
+  else if constexpr (std::is_same_v<T, signed short>) {
     mpi_type = MPI_SHORT;
-  } else if constexpr (std::is_same_v<T, unsigned short>) {
+  }
+  else if constexpr (std::is_same_v<T, unsigned short>) {
     mpi_type = MPI_UNSIGNED_SHORT;
-  } else if constexpr (std::is_same_v<T, signed int>) {
+  }
+  else if constexpr (std::is_same_v<T, signed int>) {
     mpi_type = MPI_INT;
-  } else if constexpr (std::is_same_v<T, unsigned int>) {
+  }
+  else if constexpr (std::is_same_v<T, unsigned int>) {
     mpi_type = MPI_UNSIGNED;
-  } else if constexpr (std::is_same_v<T, signed long int>) {
+  }
+  else if constexpr (std::is_same_v<T, signed long int>) {
      mpi_type = MPI_LONG;
-  } else if constexpr (std::is_same_v<T, unsigned long int>) {
+  }
+  else if constexpr (std::is_same_v<T, unsigned long int>) {
     mpi_type = MPI_UNSIGNED_LONG;
-  } else if constexpr (std::is_same_v<T, signed long long int>) {
+  }
+  else if constexpr (std::is_same_v<T, signed long long int>) {
     mpi_type = MPI_LONG_LONG;
-  } else if constexpr (std::is_same_v<T, unsigned long long int>) {
+  }
+  else if constexpr (std::is_same_v<T, unsigned long long int>) {
     mpi_type = MPI_UNSIGNED_LONG_LONG;
-  } else if constexpr (std::is_same_v<T, float>) {
+  }
+  else if constexpr (std::is_same_v<T, float>) {
     mpi_type = MPI_FLOAT;
-  } else if constexpr (std::is_same_v<T, double>) {
+  }
+  else if constexpr (std::is_same_v<T, double>) {
     mpi_type = MPI_DOUBLE;
-  } else if constexpr (std::is_same_v<T, long double>) {
+  }
+  else if constexpr (std::is_same_v<T, long double>) {
     mpi_type = MPI_LONG_DOUBLE;
-  } else if constexpr (std::is_same_v<T, std::int8_t>) {
+  }
+  else if constexpr (std::is_same_v<T, std::int8_t>) {
     mpi_type = MPI_INT8_T;
-  } else if constexpr (std::is_same_v<T, std::int16_t>) {
+  }
+  else if constexpr (std::is_same_v<T, std::int16_t>) {
     mpi_type = MPI_INT16_T;
-  } else if constexpr (std::is_same_v<T, std::int32_t>) {
+  }
+  else if constexpr (std::is_same_v<T, std::int32_t>) {
     mpi_type = MPI_INT32_T;
-  } else if constexpr (std::is_same_v<T, std::int64_t>) {
+  }
+  else if constexpr (std::is_same_v<T, std::int64_t>) {
     mpi_type = MPI_INT64_T;
-  } else if constexpr (std::is_same_v<T, std::uint8_t>) {
+  }
+  else if constexpr (std::is_same_v<T, std::uint8_t>) {
     mpi_type = MPI_UINT8_T;
-  } else if constexpr (std::is_same_v<T, std::uint16_t>) {
+  }
+  else if constexpr (std::is_same_v<T, std::uint16_t>) {
     mpi_type = MPI_UINT16_T;
-  } else if constexpr (std::is_same_v<T, std::uint32_t>) {
+  }
+  else if constexpr (std::is_same_v<T, std::uint32_t>) {
     mpi_type = MPI_UINT32_T;
-  } else if constexpr (std::is_same_v<T, std::uint64_t>) {
+  }
+  else if constexpr (std::is_same_v<T, std::uint64_t>) {
     mpi_type = MPI_UINT64_T;
-  } else if constexpr (std::is_same_v<T, bool>) {
+  }
+  else if constexpr (std::is_same_v<T, bool>) {
     mpi_type = MPI_C_BOOL;
-  } else if constexpr (std::is_same_v<T, std::complex<float>>) {
+  }
+  else if constexpr (std::is_same_v<T, std::complex<float>>) {
     mpi_type = MPI_C_COMPLEX;
-  } else if constexpr (std::is_same_v<T, std::complex<double>>) {
+  }
+  else if constexpr (std::is_same_v<T, std::complex<double>>) {
     mpi_type = MPI_C_DOUBLE_COMPLEX;
-  } else if constexpr (std::is_same_v<T, std::complex<long double>>) {
+  }
+  else if constexpr (std::is_same_v<T, std::complex<long double>>) {
     mpi_type = MPI_C_LONG_DOUBLE_COMPLEX;
   }
 	
   assert(mpi_type != MPI_DATATYPE_NULL);
 
-  return mpi_type;    
+  return mpi_type;
+
 }
 #endif
 
@@ -139,8 +165,8 @@ template<typename wanted_type, typename T> struct is_wanted_type;
 template<typename wanted_type, typename ...Types>
 struct is_wanted_type<wanted_type, std::tuple<Types...>> {
 
-    static constexpr bool wanted=(std::is_same_v<wanted_type, Types>
-                      || ...);
+    static constexpr bool wanted = (std::is_same_v<wanted_type, Types> || ...);
+
 };
 
 // Ok, the ith index in the tuple, here's its std::tuple_element type.
@@ -150,15 +176,17 @@ struct is_wanted_type<wanted_type, std::tuple<Types...>> {
 // or a std::tuple<tuple_element_t>.
 
 template<size_t i, typename tuple_element_t,
-     typename wanted_element_t,
-     bool wanted=is_wanted_type<tuple_element_t, wanted_element_t>::wanted>
+         typename wanted_element_t,
+         bool wanted = is_wanted_type<tuple_element_t, wanted_element_t>::wanted>
 struct extract_type {
 
     template<typename tuple_type>
-    static auto do_extract_type(tuple_type &t)
-    {
+    static auto do_extract_type(tuple_type &t) {
+
         return std::tuple<>{};
+
     }
+
 };
 
 
@@ -166,29 +194,32 @@ template<size_t i, typename tuple_element_t, typename wanted_element_t>
 struct extract_type<i, tuple_element_t, wanted_element_t, true> {
 
     template<typename tuple_type>
-    static auto do_extract_type(tuple_type &t)
-    {
+    static auto do_extract_type(tuple_type &t) {
+
         return std::tie(std::get<i>(t));
+
     }
+
 };
 
 // And now, a simple fold expression to pull out all wanted types
 // and tuple-cat them together.
 
 template<typename wanted_element_t, typename tuple_type, size_t ...i>
-auto get_type_t(tuple_type &t, std::index_sequence<i...>)
-{
-    return std::tuple_cat( extract_type<i,
-                   typename std::tuple_element<i, tuple_type>::type,
-                   wanted_element_t>::do_extract_type(t)... );
+auto get_type_t(tuple_type &t, std::index_sequence<i...>) {
+
+    return std::tuple_cat(extract_type<i,
+                          typename std::tuple_element<i, tuple_type>::type,
+                          wanted_element_t>::do_extract_type(t)...);
+
 }
 
 
 template<typename ...wanted_element_t, typename ...types>
-auto get_type(std::tuple<types...> &t)
-{
-    return get_type_t<std::tuple<wanted_element_t...>>(
-        t, std::make_index_sequence<sizeof...(types)>());
+auto get_type(std::tuple<types...> &t) {
+
+    return get_type_t<std::tuple<wanted_element_t...>>(t, std::make_index_sequence<sizeof...(types)>());
+        
 }
 
 /*
@@ -231,7 +262,7 @@ public:
         virtual void initialise() const = 0;
     };
 
-   template< typename T >
+   template<typename T>
    struct Model : Concept {
        Model(const T& t) : object(t) {}
 	   void collide() const override {

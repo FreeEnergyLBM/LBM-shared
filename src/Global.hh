@@ -8,15 +8,17 @@
  * \brief This contains global parameters for the code. Eventually this should be mostly phased out.
  */
 
-int NUMPROCESSORS=1; //!< Number of processors (1 for a serial job, updated otherwise).
-int CURPROCESSOR=0; //!< Id of the current process (0 for a serial job).
-char* MPIBUFFER; //!< Pointer to the MPI buffer.
-int MPIBUFFERSIZE; //!< Size of the MPI buffer.
+int NUMPROCESSORS = 1; //!<Number of processors (1 for a serial job, updated otherwise).
+int CURPROCESSOR = 0; //!<Id of the current process (0 for a serial job).
+char* MPIBUFFER; //!<Pointer to the MPI buffer.
+int MPIBUFFERSIZE; //!<Size of the MPI buffer.
 
 inline auto& GETPROPERTIES();
 
-template<class type,typename ...args>
-auto& getGlobal(args... a){
-    static auto PROPERTIES=*new type(a...);
+template<class type, typename ...args>
+auto& getGlobal(args... a) {
+
+    static auto PROPERTIES = *new type(a...);
     return PROPERTIES;
+    
 }

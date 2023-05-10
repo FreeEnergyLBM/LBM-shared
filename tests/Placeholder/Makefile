@@ -17,7 +17,7 @@ all: wetP
 #all: wetS 
 
 %.o: %.cc $(DEPS)
-	$(COMP) -c -o $@ $< $(DEFS) $(LIBS)
+	$(COMP) -c -o $@ $<$(DEFS) $(LIBS)
 
 wetP: $(OBJ)
 	$(COMP) -o wetP $(OBJ)  $(INCS) $(DEFS) $(LIBPATH) $(LIBS)
