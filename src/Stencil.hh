@@ -2,7 +2,6 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-using namespace std;
 
 //Stencil.hh: This file specifies the stencils that can be used. This determines the discretisation of the model.
 //The "D" refers to the number of cartesian dimensions in the stencil, so "D2" would be a 2D simulation. The "Q"
@@ -40,8 +39,8 @@ struct D2Q9:Stencil { //Most commonly used 2D stencil
         else if (d == z) {
             return Ci_z;
         }
-        else {
-            throw runtime_error(std::string("Error when indexing velocity stencil. Indices must be greater than 0 and less than " + std::to_string(D)));
+        else{
+            throw std::runtime_error(std::string("Error when indexing velocity stencil. Indices must be greater than 0 and less than "+std::to_string(D)));
         }
 
     }
@@ -62,7 +61,7 @@ struct D2Q9:Stencil { //Most commonly used 2D stencil
                                     (3 * (CModulus<idx>) - 5) * Ci_y[idx],
                                     Ci_x[idx] * Ci_x[idx] - Ci_y[idx] * Ci_y[idx],
                                     Ci_x[idx] * Ci_y[idx]};
-    inline static vector<double> MRTWeights(const double& invtau) { //MRT relaxation rates
+    inline static std::vector<double> MRTWeights(const double& invtau) { //MRT relaxation rates
 
         return {0, 1, 1, 0, 1, 0, 1, invtau, invtau};
         
@@ -90,7 +89,7 @@ struct D3Q19:Stencil{ //Most commonly used 3D stencil
             return Ci_z;
         }
         else{
-            throw runtime_error(std::string("Error when indexing velocity stencil. Indices must be greater than 0 and less than "+std::to_string(D)));
+            throw std::runtime_error(std::string("Error when indexing velocity stencil. Indices must be greater than 0 and less than "+std::to_string(D)));
         }
     }
 
@@ -124,7 +123,7 @@ struct D3Q19:Stencil{ //Most commonly used 3D stencil
                                        Ci_x[idx] * (Ci_y[idx] * Ci_y[idx] - Ci_z[idx] * Ci_z[idx]),
                                        Ci_y[idx] * (Ci_z[idx] * Ci_z[idx] - Ci_x[idx] * Ci_x[idx]),
                                        Ci_z[idx] * (Ci_x[idx] * Ci_x[idx] - Ci_y[idx] * Ci_y[idx])};
-    inline static vector<double> MRTWeights(const double& invtau) {
+    inline static std::vector<double> MRTWeights(const double& invtau) {
 
         return {0, 1, 1, 0, 1, 0, 1, 0, 1, invtau, 1, invtau, 1, invtau, invtau, invtau, 1, 1, 1};
 
@@ -164,8 +163,8 @@ struct D2Q5{
                                     3 * (CModulus<idx>)-4,
                                     Ci_x[idx],
                                     Ci_y[idx],
-                                    Ci_x[idx] * Ci_x[idx]-Ci_y[idx] * Ci_y[idx]};
-    inline static vector<int> MRTWeights(const T& invtau){
+                                    Ci_x[idx]*Ci_x[idx]-Ci_y[idx]*Ci_y[idx]};
+    inline static std::vector<int> MRTWeights(const T& invtau){
         return {0,0,0,1,invtau};
     }
 };
@@ -197,18 +196,18 @@ struct D3Q19{
                                     Ci_y[idx],
                                     (5 * (CModulus<idx>)-9) * Ci_y[idx],
                                     Ci_z[idx],
-                                    (5 * (CModulus<idx>)-9) * Ci_z[idx],
-                                    3 * Ci_x[idx] * Ci_x[idx]-CModulus<idx>,
-                                    (3 * CModulus<idx>-5) * (3 * Ci_x[idx] * Ci_x[idx]-CModulus<idx>),
-                                    Ci_y[idx] * Ci_y[idx]-Ci_z[idx] * Ci_z[idx],
-                                    (3 * CModulus<idx>-5) * (Ci_y[idx] * Ci_y[idx]-Ci_z[idx] * Ci_z[idx]),
-                                    Ci_x[idx] * Ci_y[idx],
-                                    Ci_y[idx] * Ci_z[idx],
-                                    Ci_x[idx] * Ci_z[idx],
-                                    Ci_x[idx] * (Ci_y[idx] * Ci_y[idx]-Ci_z[idx] * Ci_z[idx]),
-                                    Ci_y[idx] * (Ci_z[idx] * Ci_z[idx]-Ci_x[idx] * Ci_x[idx]),
-                                    Ci_z[idx] * (Ci_x[idx] * Ci_x[idx]-Ci_y[idx] * Ci_y[idx])};
-    inline static vector<int> MRTWeights(const T& invtau){
+                                    (5*(CModulus<idx>)-9)*Ci_z[idx],
+                                    3*Ci_x[idx]*Ci_x[idx]-CModulus<idx>,
+                                    (3*CModulus<idx>-5)*(3*Ci_x[idx]*Ci_x[idx]-CModulus<idx>),
+                                    Ci_y[idx]*Ci_y[idx]-Ci_z[idx]*Ci_z[idx],
+                                    (3*CModulus<idx>-5)*(Ci_y[idx]*Ci_y[idx]-Ci_z[idx]*Ci_z[idx]),
+                                    Ci_x[idx]*Ci_y[idx],
+                                    Ci_y[idx]*Ci_z[idx],
+                                    Ci_x[idx]*Ci_z[idx],
+                                    Ci_x[idx]*(Ci_y[idx]*Ci_y[idx]-Ci_z[idx]*Ci_z[idx]),
+                                    Ci_y[idx]*(Ci_z[idx]*Ci_z[idx]-Ci_x[idx]*Ci_x[idx]),
+                                    Ci_z[idx]*(Ci_x[idx]*Ci_x[idx]-Ci_y[idx]*Ci_y[idx])};
+    inline static std::vector<int> MRTWeights(const T& invtau){
         return {0,1,1,0,1,0,1,0,1,invtau,1,invtau,1,invtau,invtau,invtau,1,1,1};
     }
 };
@@ -232,10 +231,10 @@ struct D3Q7{
                                     Ci_x[idx],
                                     Ci_y[idx],
                                     Ci_z[idx],
-                                    6-7 * CModulus<idx>,
-                                    3 * Ci_x[idx]-(CModulus<idx> * CModulus<idx>),
-                                    Ci_y[idx] * Ci_y[idx]-Ci_z[idx] * Ci_z[idx]};
-    inline static vector<int> MRTWeights(const T& invtau){
+                                    6-7*CModulus<idx>,
+                                    3*Ci_x[idx]-(CModulus<idx>*CModulus<idx>),
+                                    Ci_y[idx]*Ci_y[idx]-Ci_z[idx]*Ci_z[idx]};
+    inline static std::vector<int> MRTWeights(const T& invtau){
         return {0,0,0,0,1,1,invtau};
     }
 };

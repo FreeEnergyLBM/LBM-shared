@@ -64,7 +64,7 @@ bool GeometryTemplate<placeholder>::isPeriodic(int k) {
     else if ((k / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY)) % (GETPROPERTIES().m_LXdiv - 1) == 0 ||
           ((k) / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY) - 1) % (GETPROPERTIES().m_LXdiv - 1) == 0 ||
           ((k) / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY) - 1) - 1 < 0 ||
-          ((k) / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY) - 1) + 1 > GETPROPERTIES().m_LXdiv - 1) return true
+          ((k) / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY) - 1) + 1 > GETPROPERTIES().m_LXdiv - 1) return true;
     
     return false;
 

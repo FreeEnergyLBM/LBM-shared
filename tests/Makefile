@@ -2,11 +2,11 @@ ROOT_DIR = ..
 INC_DIR = $(ROOT_DIR)/src
 INC = $(addprefix -I, $(INC_DIR))
 
-TESTS = example_test
+TESTS = Collide_test BounceBack_test FlowField_test
 RUN_TESTS = $(addprefix run_, $(TESTS))
 
 CXX = mpicxx
-CXXFLAGS = -Wall -DMPIPARALLEL
+CXXFLAGS = -std=c++17 -Wall -DMPIPARALLEL -fopenmp
 
 .PHONY: all clean cleantests gtest $(RUN_TESTS)
 

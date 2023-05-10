@@ -42,11 +42,11 @@ struct Distribution_Base { //Distribution base class
 
     }
 
-    vector<double> mv_Distribution; //Vector that will store the distribution information
-    vector<double> mv_OldDistribution; //Possibly unused vector storing the old distributions (at t_old=t_new-1)
+    std::vector<double> mv_Distribution; //Vector that will store the distribution information
+    std::vector<double> mv_OldDistribution; //Possibly unused vector storing the old distributions (at t_old=t_new-1)
                                        //This is required in the collision step
     std::vector<int>& mv_DistNeighbors; //Reference to vector containing neighbor information
-    vector<double>& getDistribution() { //Get a vector containing the distributions
+    std::vector<double>& getDistribution() { //Get a vector containing the distributions
 
         return mv_Distribution;
 
@@ -70,7 +70,7 @@ struct Distribution_Base { //Distribution base class
         return mv_Distribution[idx];
 
     }
-    vector<double>& getDistributionOld() { //SAME AS ABOVE BUT FOR OLD DISTRIBUTION
+    std::vector<double>& getDistributionOld() { //SAME AS ABOVE BUT FOR OLD DISTRIBUTION
 
         return mv_OldDistribution;
 
@@ -121,12 +121,12 @@ class Parameter {
             mv_Parameter.resize(m_Num * GETPROPERTIES().m_N); //Resize to the desired size
 
         }
-        vector<T>& getParameter() const { //Returns const vector containing the parameter
+        std::vector<T>& getParameter() const { //Returns const vector containing the parameter
 
             return mv_Parameter;
 
         }
-        vector<T>& getParameter() { //Returns vector containing the parameter
+        std::vector<T>& getParameter() { //Returns vector containing the parameter
 
             return mv_Parameter;
 
@@ -157,12 +157,12 @@ class Parameter {
 
         void Save(std::string filename, int t, std::string datadir);
 
-        static vector<T> mv_Parameter; //Static vector (Does not change between objects of the class)
+        static std::vector<T> mv_Parameter; //Static vector (Does not change between objects of the class)
         
 };
 
 template<class obj, typename T>
-vector<T> Parameter<obj, T>::mv_Parameter; //Must allocate memory for static vector outside of class
+std::vector<T> Parameter<obj, T>::mv_Parameter; //Must allocate memory for static vector outside of class
 
 template<class obj, typename T>
 void Parameter<obj, T>::Save(std::string filename, int t, std::string datadir) { //Function to save parameter stored in this class
@@ -226,7 +226,7 @@ class ParameterSave {
 };
 
 template<class ...parameters>
-void ParameterSave<aprameters>::Save(int timestep) {
+void ParameterSave<parameters...>::Save(int timestep) {
 
     std::string dir = m_DataDir;
 
@@ -259,7 +259,7 @@ typedef VelocityTemplate<> Velocity;
 
 struct Density : public Parameter<Density, double> {
 
-    constexpr char m_Name[] = "Density";
+    static constexpr char m_Name[] = "Density";
 
 }; //Density
 

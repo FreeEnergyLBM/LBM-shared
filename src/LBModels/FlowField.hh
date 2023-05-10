@@ -68,8 +68,8 @@ class FlowField : public CollisionBase<typename traits::Stencil>, public ModelBa
         Density m_Density; //Density<>
         Velocity m_Velocity; //Velocity
     
-        vector<double>& density = m_Density.getParameter(); //Reference to vector of densities
-        vector<double>& velocity = m_Velocity.getParameter(); //Reference to vector of velocities
+        std::vector<double>& density = m_Density.getParameter(); //Reference to vector of densities
+        std::vector<double>& velocity = m_Velocity.getParameter(); //Reference to vector of velocities
 
         enum{ x = 0, y = 1, z = 2 }; //Indices corresponding to x, y, z directions
         

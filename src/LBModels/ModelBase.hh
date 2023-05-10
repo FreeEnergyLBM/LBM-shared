@@ -72,7 +72,7 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
         typename traits::Boundaries mt_Boundaries; //MOVE THIS TO BASE
         Geometry m_Geometry; //MOVE THIS TO BASE
 
-        vector<double>& distribution = m_Distribution.getDistribution(); //Reference to vector of distributions
+        std::vector<double>& distribution = m_Distribution.getDistribution(); //Reference to vector of distributions
         
 };
 

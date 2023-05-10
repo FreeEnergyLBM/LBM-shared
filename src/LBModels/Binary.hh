@@ -68,8 +68,8 @@ class Binary: public CollisionBase<typename traits::Stencil>, public ModelBase<t
         GradientOrderParameter m_GradOrderParameter;
         LaplacianOrderParameter m_LaplacianOrderParameter;
 
-        vector<double>& orderparameter = m_OrderParameter.getParameter(); //Reference to vector of order parameters
-        vector<double>& velocity = m_Velocity.getParameter(); //Reference to vector of velocities
+        std::vector<double>& orderparameter = m_OrderParameter.getParameter(); //Reference to vector of order parameters
+        std::vector<double>& velocity = m_Velocity.getParameter(); //Reference to vector of velocities
 
 };
 
