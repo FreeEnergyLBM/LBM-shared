@@ -28,7 +28,7 @@ struct LatticeProperties{
 
     template<typename Stencil>
     using ParallelType = parallel<Stencil, 1>; //!<Chosen MPI parallelisation method when MPI enabled.
-    static_assert(std::is_base_of<Parallel<1>,parallel<D2Q9,1>::value,"ERROR: Chosen parallelisation method is not a parallelisation class.");
+    static_assert(std::is_base_of<Parallel<1>,parallel<D2Q9,1>>::value,"ERROR: Chosen parallelisation method is not a parallelisation class.");
     
     int m_LXdiv = m_LX;
     int m_HaloSize = 0;
@@ -38,7 +38,6 @@ struct LatticeProperties{
 
     template<typename Stencil>
     using ParallelType=No_Parallel<Stencil, 1>; //!<Default parallelisation when MPI disabled (Just serial).
-
 
     static constexpr int m_LXdiv = m_LX;
     static constexpr int m_HaloSize = 0;
@@ -86,7 +85,7 @@ struct LatticePropertiesRuntime {
 
     template<typename Stencil>
     using ParallelType = parallel<Stencil, 1>; //!<Chosen MPI parallelisation method when MPI enabled.
-    static_assert(std::is_base_of<Parallel<1>,parallel<D2Q9,1>::value,"ERROR: Chosen parallelisation method is not a parallelisation class.");
+    static_assert(std::is_base_of<Parallel<1>,parallel<D2Q9,1>>::value,"ERROR: Chosen parallelisation method is not a parallelisation class.");
 
     #else
 
