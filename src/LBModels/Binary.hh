@@ -91,7 +91,7 @@ template<class traits>
 void Binary<traits>::collide() {
 
     #pragma omp parallel for schedule(guided)
-    for (int k = GETPROPERTIES().m_HaloSize; k <GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++){ //loop over k
+    for (int k = GETPROPERTIES().m_HaloSize; k < GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++){ //loop over k
 
         double* old_distribution = ModelBase<traits>::m_Distribution.getDistributionOldPointer(k);
 

@@ -28,6 +28,7 @@ struct LatticeProperties{
 
     template<typename Stencil>
     using ParallelType = parallel<Stencil, 1>; //!<Chosen MPI parallelisation method when MPI enabled.
+    static_assert(std::is_base_of<Parallel<1>,parallel<D2Q9,1>::value,"ERROR: Chosen parallelisation method is not a parallelisation class.");
     
     int m_LXdiv = m_LX;
     int m_HaloSize = 0;
@@ -37,7 +38,7 @@ struct LatticeProperties{
 
     template<typename Stencil>
     using ParallelType=No_Parallel<Stencil, 1>; //!<Default parallelisation when MPI disabled (Just serial).
-    //static_assert(std::is_base_of<Parallel<1>,parallel<D2Q9,1>::value,"ERROR: Chosen parallelisation method is not a parallelisation class.");
+
 
     static constexpr int m_LXdiv = m_LX;
     static constexpr int m_HaloSize = 0;
@@ -47,13 +48,11 @@ struct LatticeProperties{
 
     template<typename Stencil>
     using DataType = data<Stencil, ParallelType<Stencil>>;//!<This will change the "DataType" implementation, which will govern the access of non-local data
-    //static_assert(is_base_of_template<Data_Base,data<D2Q9, ParallelType<D2Q9>>>::value,"ERROR: Chosen data method is not a data class.");
+    static_assert(std::is_base_of<Data_Base<D2Q9, ParallelType<D2Q9>>,data<D2Q9, ParallelType<D2Q9>>>::value,"ERROR: Chosen data method is not a data class.");
 
     static constexpr int m_NDIM = 3 - (lx <= 1 || ly <= 1 || lz <=1 );
     const double m_DT;
-
     
-
 };
 
 template<template<class, class> class data, template<class, int> class parallel, int NDIM>
@@ -87,7 +86,7 @@ struct LatticePropertiesRuntime {
 
     template<typename Stencil>
     using ParallelType = parallel<Stencil, 1>; //!<Chosen MPI parallelisation method when MPI enabled.
-    //static_assert(std::is_base_of<Parallel<1>,parallel<D2Q9,1>>::value,"ERROR: Chosen parallelisation method is not a parallelisation class.");
+    static_assert(std::is_base_of<Parallel<1>,parallel<D2Q9,1>::value,"ERROR: Chosen parallelisation method is not a parallelisation class.");
 
     #else
 
@@ -98,6 +97,6 @@ struct LatticePropertiesRuntime {
 
     template<typename Stencil>
     using DataType = data<Stencil, ParallelType<Stencil>>;//!<This will change the "DataType" implementation, which will govern the access of non-local data
-    //static_assert(is_base_of_template<Data_Base,data<D2Q9, ParallelType<D2Q9>>>::value,"ERROR: Chosen data method is not a data class.");
+    static_assert(std::is_base_of<Data_Base<D2Q9, ParallelType<D2Q9>>,data<D2Q9, ParallelType<D2Q9>>>::value,"ERROR: Chosen data method is not a data class.");
 
 };

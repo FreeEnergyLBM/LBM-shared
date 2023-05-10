@@ -3,6 +3,7 @@
 #include <mpi.h>
 #include "Global.hh"
 #include "Service.hh"
+#endif
 /**
  * \file  Parallel.hh
  * \brief This contains classes to control the MPI parallelisation of the code.
@@ -17,6 +18,7 @@
  */
 template<int num_neighbors>
 class Parallel {
+    #ifdef MPIPARALLEL
     public:
         /**
          * \brief Constructor that updates global parameters. This is contained within a class as I may move stuff
@@ -53,6 +55,7 @@ class Parallel {
     private:
 
         int m_MaxNeighbors = 0;
+    #endif
 };
 
 /**
@@ -62,6 +65,7 @@ class Parallel {
  */
 template<class stencil, int num_neighbors>
 class X_Parallel : public Parallel<num_neighbors> {
+    #ifdef MPIPARALLEL
     public:
 
         /**
@@ -92,10 +96,9 @@ class X_Parallel : public Parallel<num_neighbors> {
         int m_RightNeighbor; //!<ID of the right neighbor of this process (in the X direction).
 
         MPI_Datatype DistributionVector; //!<Datatype for streaming distributions (allows sending of one velocity index at a time) WILL NEED TO BE CHANGED BASED ON THE DATA TYPE.
-        
-
+    #endif
 };
-
+#ifdef MPIPARALLEL
 /**
  * \details This will communicate the chosen parameter using MPI_Isend and MPI_Irecv, which are non-blocking methods of
  *          communication. This means that each process does not need to wait for the other processes to communicate. At
