@@ -28,7 +28,7 @@ struct D2Q9:Stencil { //Most commonly used 2D stencil
     static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 0, 0, 0, 0}; //0 array because there is no z direction
 
     enum{x = 0, y = 1, z = 2};
-    static auto Ci_xyz(const int d) -> const int(&)[Q] { //Returns velocity direction vector depending on input d, this is probably slow
+    inline static auto Ci_xyz(const int d) -> const int(&)[Q] { //Returns velocity direction vector depending on input d, this is probably slow
 
         if (d == x) {
             return Ci_x;
@@ -73,7 +73,7 @@ struct D3Q19:Stencil{ //Most commonly used 3D stencil
     static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 1, -1, 1, -1, 0, 0, 0, 0};
     static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 1, -1, -1, 1, 1, -1, -1, 1};
 
-    static auto Ci_xyz(const int d) -> const int(&)[Q]{
+    inline static auto Ci_xyz(const int d) -> const int(&)[Q]{
         if (d==0) {
             return Ci_x;
         }

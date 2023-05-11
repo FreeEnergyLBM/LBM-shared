@@ -80,7 +80,7 @@ class X_Parallel : public Parallel<num_neighbors> {
          * \param obj Object of chosen parameter.
          */
         template<class parameter>
-        void communicate(parameter& obj);
+        inline void communicate(parameter& obj);
 
         /**
          * \brief Function to update unknown distributions in the adjacent processors streamed from the edge of
@@ -88,7 +88,7 @@ class X_Parallel : public Parallel<num_neighbors> {
          * \param obj Object of the distribution.
          */
         template<class distribution>
-        void communicateDistribution(distribution& obj);
+        inline void communicateDistribution(distribution& obj);
 
     private:
 
@@ -106,7 +106,7 @@ class X_Parallel : public Parallel<num_neighbors> {
  */
 template<class stencil, int num_neighbors>
 template<class parameter>
-void X_Parallel<stencil,num_neighbors>::communicate(parameter& obj) {
+inline void X_Parallel<stencil,num_neighbors>::communicate(parameter& obj) {
 
     MPI_Request comm_request[2];
     
@@ -136,7 +136,7 @@ void X_Parallel<stencil,num_neighbors>::communicate(parameter& obj) {
 
 template<class stencil, int num_neighbors>
 template<class distribution>
-void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& obj) {
+inline void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& obj) {
 
     MPI_Request comm_dist_request[20];
 
@@ -185,7 +185,7 @@ void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& ob
 }
 
 template<class stencil, int num_neighbors>
-X_Parallel<stencil, num_neighbors>::X_Parallel() {
+inline X_Parallel<stencil, num_neighbors>::X_Parallel() {
 
     const int bufSize = (GETPROPERTIES().m_LY * GETPROPERTIES().m_LZ * num_neighbors * (5 + 2) * 2 * 2 + 1000) * sizeof(double);
     

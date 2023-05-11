@@ -36,7 +36,7 @@ class Data_Base{
          * \param Q Discrete velocity direction (e.g. 0-8 for D2Q9).
          * \return Lattice index of neighboring lattice point in chosen direction.
          */
-        int getOneNeighbor(const int k, const int Q);
+        inline int getOneNeighbor(const int k, const int Q);
 
         /**
          * \brief This function returns the neighbor at the current lattice point k in the direction Q given that
@@ -45,7 +45,7 @@ class Data_Base{
          * \param Q Discrete velocity direction (e.g. 0-8 for D2Q9).
          * \return Lattice index of neighboring lattice point in chosen direction given that the current point is on a periodic boundary.
          */
-        int getOneNeighborPeriodic(const int k, const int Q);
+        inline int getOneNeighborPeriodic(const int k, const int Q);
 
         int OppositeOffset[stencil::Q]; //!<Opposite lattice point offset in each direction.
         
@@ -73,7 +73,7 @@ class Data_Base{
          * \tparam parameter type of object to be communicated.
          */
         template<class parameter>
-        void communicate(parameter obj);
+        inline void communicate(parameter obj);
         #endif
 
         /**
@@ -114,12 +114,12 @@ class Data_Base{
         /**
          * \brief Function to fill neighbor array with neighbor information.
          */
-        void generateNeighbors();
+        inline void generateNeighbors();
 
         /**
          * \brief Returns the neighbor array
          */
-        std::vector<int>& getNeighbors();
+        inline std::vector<int>& getNeighbors();
 
 };
 
@@ -131,7 +131,7 @@ class Data_Base{
  */
 template<class stencil, class parallel>
 template<class parameter>
-void Data_Base<stencil, parallel>::communicate(parameter obj) { //Not used in this data type
+inline void Data_Base<stencil, parallel>::communicate(parameter obj) { //Not used in this data type
 
     static_assert(is_base_of_template<Parameter,parameter>::value,"ERROR: The object passed to this function cannot be communicated.")
     m_Parallel.communicate(obj);
@@ -144,7 +144,7 @@ void Data_Base<stencil, parallel>::communicate(parameter obj) { //Not used in th
  *          in every direction in the stencil.
  */
 template<class stencil, class parallel>
-std::vector<int>& Data_Base<stencil, parallel>::getNeighbors() {
+inline std::vector<int>& Data_Base<stencil, parallel>::getNeighbors() {
     
     return mv_Neighbors;
 
@@ -155,7 +155,7 @@ std::vector<int>& Data_Base<stencil, parallel>::getNeighbors() {
  *          in each direction, which is precomputed in the constructor and stored in a vector.
  */
 template<class stencil, class parallel>
-int Data_Base<stencil, parallel>::getOneNeighbor(const int k, const int Q) {
+inline int Data_Base<stencil, parallel>::getOneNeighbor(const int k, const int Q) {
     
     return k + OppositeOffset[Q]; //The neighbor is the lattice point plus the opposite offset in direction Q
         
@@ -167,7 +167,7 @@ int Data_Base<stencil, parallel>::getOneNeighbor(const int k, const int Q) {
  *          of the simulation in the x, y and z directions and apply offsets in each case.
  */
 template<class stencil, class parallel>
-int Data_Base<stencil, parallel>::getOneNeighborPeriodic(const int k, const int Q) { 
+inline int Data_Base<stencil, parallel>::getOneNeighborPeriodic(const int k, const int Q) { 
 
     int neighbor = 0;
 
@@ -240,7 +240,7 @@ int Data_Base<stencil, parallel>::getOneNeighborPeriodic(const int k, const int 
  *          lattice point is on a periodic boundary or not.
  */
 template<class stencil, class parallel>
-void Data_Base<stencil, parallel>::generateNeighbors() { //Loop over all lattice points and calculate the neghbor at each point
+inline void Data_Base<stencil, parallel>::generateNeighbors() { //Loop over all lattice points and calculate the neghbor at each point
 
     #pragma omp parallel for schedule(guided)
     for (int k = 0; k <GETPROPERTIES().m_N; k++) { //For loop over all lattice points
@@ -328,7 +328,7 @@ class Data1 : public Data_Base<stencil, parallel> {
              * \param Q Discrete velocity direction (e.g. 0-8 for D2Q9).
              * \return Index of distribution vector that the distribution will be streamed to.
              */
-            int streamIndex(const int k, const int Q) {
+            inline int streamIndex(const int k, const int Q) {
 
                 return Distribution_Base<stencil>::mv_DistNeighbors[k * stencil::Q + Q]; //Return neighbor of lattice point k in direction Q
 
@@ -343,13 +343,13 @@ class Data1 : public Data_Base<stencil, parallel> {
         /**
          * \brief Streaming step in the LBM algorithm.
          */
-        void stream();
+        inline void stream();
 
         #ifdef MPIPARALLEL
         /**
          * \brief This function streams the distributions to the neighboring processor.
          */
-        void communicateDistribution();
+        inline void communicateDistribution();
         #endif
 
         /**
@@ -369,7 +369,7 @@ class Data1 : public Data_Base<stencil, parallel> {
          * \brief This function returns a reference to the distribution object stored within this class.
          * \return Reference to object of distribution.
          */
-        Distribution_Derived& getDistributionObject() {
+        inline Distribution_Derived& getDistributionObject() {
 
             return m_Distribution;
 
@@ -382,7 +382,7 @@ class Data1 : public Data_Base<stencil, parallel> {
  *          getStreamIndex() function in this data type.
  */
 template<class stencil, class parallel>
-void Data1<stencil, parallel>::stream() { //Not used in this data type
+inline void Data1<stencil, parallel>::stream() { //Not used in this data type
 
 }
 
@@ -392,7 +392,7 @@ void Data1<stencil, parallel>::stream() { //Not used in this data type
  *          should perform the streaming step across MPI boundaries.
  */
 template<class stencil, class parallel>
-void Data1<stencil, parallel>::communicateDistribution() {
+inline void Data1<stencil, parallel>::communicateDistribution() {
     
     Data_Base<stencil, parallel>::m_Parallel.communicateDistribution(m_Distribution);
     

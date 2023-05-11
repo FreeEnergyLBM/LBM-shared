@@ -12,13 +12,13 @@ class BodyForceTemplate : public ForceBase {
 
     public:
 
-        double compute(const int xyz, const int k) const override; //Return force at lattice point k in direction xyz
+        inline double compute(const int xyz, const int k) const override; //Return force at lattice point k in direction xyz
 
-        double computeVelocitySource(const int xyz, const int k) const override; //Calculate any possible source/correction term for velocity
+        inline double computeVelocitySource(const int xyz, const int k) const override; //Calculate any possible source/correction term for velocity
 
-        void setMagnitudeX(const double magnitude);
-        void setMagnitudeY(const double magnitude);
-        void setMagnitudeZ(const double magnitude);
+        inline void setMagnitudeX(const double magnitude);
+        inline void setMagnitudeY(const double magnitude);
+        inline void setMagnitudeZ(const double magnitude);
 
 
     private:
@@ -32,14 +32,14 @@ class BodyForceTemplate : public ForceBase {
 };
 
 template<typename placeholder>
-void BodyForceTemplate<placeholder>::setMagnitudeX(const double magnitude) {
+inline void BodyForceTemplate<placeholder>::setMagnitudeX(const double magnitude) {
 
     m_MagnitudeX=magnitude;
 
 }
 
 template<typename placeholder>
-void BodyForceTemplate<placeholder>::setMagnitudeY(const double magnitude) {
+inline void BodyForceTemplate<placeholder>::setMagnitudeY(const double magnitude) {
 
     m_MagnitudeY=magnitude;
 
@@ -47,14 +47,14 @@ void BodyForceTemplate<placeholder>::setMagnitudeY(const double magnitude) {
 
 
 template<typename placeholder>
-void BodyForceTemplate<placeholder>::setMagnitudeZ(const double magnitude) {
+inline void BodyForceTemplate<placeholder>::setMagnitudeZ(const double magnitude) {
 
     m_MagnitudeZ=magnitude;
 
 }
 
 template<typename placeholder>
-double BodyForceTemplate<placeholder>::compute(const int xyz, const int k) const {
+inline double BodyForceTemplate<placeholder>::compute(const int xyz, const int k) const {
 
     return ((xyz == 0) * m_MagnitudeX + (xyz == 1) * m_MagnitudeY + (xyz == 2) * m_MagnitudeZ) * m_Density.getParameter(k); //Force is just density multiplied by magnitude
                                                                  //in given direction
@@ -62,7 +62,7 @@ double BodyForceTemplate<placeholder>::compute(const int xyz, const int k) const
 }
 
 template<typename placeholder>
-double BodyForceTemplate<placeholder>::computeVelocitySource(const int xyz, const int k) const { //Need to correct velocity
+inline double BodyForceTemplate<placeholder>::computeVelocitySource(const int xyz, const int k) const { //Need to correct velocity
 
     return +compute(xyz, k) * GETPROPERTIES().m_DT / (2.0 * m_Density.getParameter(k));
     

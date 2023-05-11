@@ -55,34 +55,34 @@ class Algorithm {
         /**
          * \brief Function that will evolve the lattice Boltzmann algorithm by one timestep.
          */
-        void evolve();
+        inline void evolve();
 
         /**
          * \brief Function that will perform necessary initialisations for each model (e.g. set distributions to equilibrium).
          */
-        void initialise();
+        inline void initialise();
 
     private:
 
         /**
          * \brief Perform any necessary calculations before collision can take place at each timestep.
          */
-        void precomputeStep(); 
+        inline void precomputeStep(); 
         
         /**
          * \brief Calculate collision (and streaming currently) for each model over the entire lattice.
          */
-        void calculateCollisionStep(); 
+        inline void calculateCollisionStep(); 
 
         /**
          * \brief Apply boundary conditions for each model over the entire lattice.
          */
-        void calculateBoundaryStep();
+        inline void calculateBoundaryStep();
 
         /**
          * \brief Calculate momenta (density, velocity) for each model over the entire lattice.
          */
-        void calculateMomentaStep();
+        inline void calculateMomentaStep();
 
         /*
          * Tuple containing references to objects of each Model... passed through the constructor.
@@ -98,7 +98,7 @@ class Algorithm {
  *          for every model.
  */
 template<class ...Model>
-void Algorithm<Model...>::evolve() {
+inline void Algorithm<Model...>::evolve() {
 
     precomputeStep();
     
@@ -118,7 +118,7 @@ void Algorithm<Model...>::evolve() {
  *          equilibrium and set macroscopic variables to some initial value, for instance.
  */
 template<class ...Model>
-void Algorithm<Model...>::initialise() { //...
+inline void Algorithm<Model...>::initialise() { //...
 
     if constexpr (sizeof...(Model) != 0) {
 
@@ -140,7 +140,7 @@ void Algorithm<Model...>::initialise() { //...
  *          calculations needed in the forcing terms, for instance.
  */
 template<class ...Model>
-void Algorithm<Model...>::precomputeStep() {
+inline void Algorithm<Model...>::precomputeStep() {
 
     if constexpr (sizeof...(Model) != 0) {
 
@@ -162,7 +162,7 @@ void Algorithm<Model...>::precomputeStep() {
  *          chosen collision model and will also perform streaming.
  */
 template<class ...Model>
-void Algorithm<Model...>::calculateCollisionStep() { //...
+inline void Algorithm<Model...>::calculateCollisionStep() { //...
     
     if constexpr (sizeof...(Model) != 0){
 
@@ -184,7 +184,7 @@ void Algorithm<Model...>::calculateCollisionStep() { //...
  *          outflow boundaries, depending on the geometry labels, for instance.
  */
 template<class ...Model>
-void Algorithm<Model...>::calculateBoundaryStep() { //...
+inline void Algorithm<Model...>::calculateBoundaryStep() { //...
     
     if constexpr (sizeof...(Model) != 0){
 
@@ -206,7 +206,7 @@ void Algorithm<Model...>::calculateBoundaryStep() { //...
  *          calculate density and velocity based on the distributions, for instance.
  */
 template<class ...Model>
-void Algorithm<Model...>::calculateMomentaStep() { //...
+inline void Algorithm<Model...>::calculateMomentaStep() { //...
 
     if constexpr (sizeof...(Model) != 0) {
 

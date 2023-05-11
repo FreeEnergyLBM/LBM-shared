@@ -37,14 +37,14 @@ class CollisionBase {
          * \param idx The discrete velocity index (e.g. 0-8 for D2Q9).
          * \return 1 + velocity dependence of equilibrium.
          */
-        double computeGamma(const double* velocity, const int idx) const;
+        inline double computeGamma(const double* velocity, const int idx) const;
 
         /**
          * \brief This will sum the distributions in each direction to calculate the zeroth moment.
          * \param distribution Pointer to distribution vector at the current lattice point.
          * \return Zeroth moment distributions in each direction.
          */
-        double computeZerothMoment(const double *distribution) const;
+        inline double computeZerothMoment(const double *distribution) const;
 
         /**
          * \brief This will sum the distributions times the velocity vector
@@ -53,7 +53,7 @@ class CollisionBase {
          * \param xyz Cartesian direction of to calculate zeroth moment.
          * \return First moment of distributions.
          */
-        double computeFirstMoment(const double *distribution, const int xyz) const; 
+        inline double computeFirstMoment(const double *distribution, const int xyz) const; 
 
         /**
          * \brief This will compute the single relaxation time (BGK) collision step.
@@ -62,7 +62,7 @@ class CollisionBase {
          * \param tau Relaxation time (chosen to provide a desired viscosity).
          * \return Post collision distribution.
          */
-        double collideSRT(const double& old, const double& equilibrium, const double& tau) const;
+        inline double collideSRT(const double& old, const double& equilibrium, const double& tau) const;
 
         /**
          * \brief This will compute the forcing term using Guo forcing.
@@ -72,7 +72,7 @@ class CollisionBase {
          * \param idx The discrete velocity index (e.g. 0-8 for D2Q9).
          * \return Forcing term in chosen velocity index direction.
          */
-        double forceGuoSRT(const double force[stencil::D ],const double* velocity,
+        inline double forceGuoSRT(const double force[stencil::D ],const double* velocity,
                             const double& itau, const int idx) const;
         
         /**
@@ -81,7 +81,7 @@ class CollisionBase {
          * \param idx The discrete velocity index (e.g. 0-8 for D2Q9).
          * \return Velocity dependence of equilibrium.
          */
-        double computeVelocityFactor(const double* velocity, const int idx) const;
+        inline double computeVelocityFactor(const double* velocity, const int idx) const;
         
     private:
 
@@ -99,7 +99,7 @@ class CollisionBase {
  *          dependence of the equilibrium.
  */
 template<class stencil>
-double CollisionBase<stencil>::computeGamma(const double* velocity, const int idx) const {
+inline double CollisionBase<stencil>::computeGamma(const double* velocity, const int idx) const {
 
     return ma_Weights[idx] * (1.0 + computeVelocityFactor(velocity, idx)); 
 
@@ -113,7 +113,7 @@ double CollisionBase<stencil>::computeGamma(const double* velocity, const int id
  *          factor is returned.
  */
 template<class stencil>
-double CollisionBase<stencil>::computeVelocityFactor(const double* velocity, const int idx) const {
+inline double CollisionBase<stencil>::computeVelocityFactor(const double* velocity, const int idx) const {
     
     double ci_dot_velocity = 0;
     double velocity_dot_velocity = 0;
@@ -137,7 +137,7 @@ double CollisionBase<stencil>::computeVelocityFactor(const double* velocity, con
  *          in each discrete direction (so the sum over 9 directions for D2Q9);
  */
 template<class stencil>
-double CollisionBase<stencil>::computeZerothMoment(const double *distribution) const {
+inline double CollisionBase<stencil>::computeZerothMoment(const double *distribution) const {
 
     double zerothmoment = 0;
 
@@ -156,7 +156,7 @@ double CollisionBase<stencil>::computeZerothMoment(const double *distribution) c
  *          multiplied by the stencil velocity vector c_i for each i in the choesn cartesian direction.
  */
 template<class stencil>
-double CollisionBase<stencil>::computeFirstMoment(const double *distribution,const int xyz) const {
+inline double CollisionBase<stencil>::computeFirstMoment(const double *distribution,const int xyz) const {
 
     double firstmoment = 0;
 
@@ -175,7 +175,7 @@ double CollisionBase<stencil>::computeFirstMoment(const double *distribution,con
  *          the difference between the old and equilibrium distributions divided by the relaxation time, tau.
  */
 template<class stencil>
-double CollisionBase<stencil>::collideSRT(const double& old, const double& equilibrium, const double& itau) const{
+inline double CollisionBase<stencil>::collideSRT(const double& old, const double& equilibrium, const double& itau) const{
 
     return old - GETPROPERTIES().m_DT * itau * (old - equilibrium); //SRT colision step. Old corresponds to the old distribution and itau is
                                        //the inverse of the relaxation time
@@ -187,7 +187,7 @@ double CollisionBase<stencil>::collideSRT(const double& old, const double& equil
  *          stencil velocity vectors is calculated and then used to calculate the forcing term.
  */
 template<class stencil>
-double CollisionBase<stencil>::forceGuoSRT(const double force[stencil::D],
+inline double CollisionBase<stencil>::forceGuoSRT(const double force[stencil::D],
                                         const double* velocity, const double& itau,
                                         const int idx) const { //Guo forcing
 

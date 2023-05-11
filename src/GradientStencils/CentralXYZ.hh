@@ -17,7 +17,7 @@ struct CentralXYZ{
 
 template<class prop, class stencil>
 template<class parameter>
-double CentralXYZ<prop, stencil>::computeFirstDerivative(const parameter& val, const int direction, const int k) {
+inline double CentralXYZ<prop, stencil>::computeFirstDerivative(const parameter& val, const int direction, const int k) {
 
     double gradientsum=0;
 
@@ -42,7 +42,7 @@ double CentralXYZ<prop, stencil>::computeFirstDerivative(const parameter& val, c
 
 template<class prop, class stencil>
 template<class parameter>
-double CentralXYZ<prop, stencil>::computeLaplacian(const parameter& val, const int k) {
+inline double CentralXYZ<prop, stencil>::computeLaplacian(const parameter& val, const int k) {
 
     double laplaciansum=0;
 

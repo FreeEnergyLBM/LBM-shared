@@ -33,22 +33,22 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
               m_Distribution(other.m_Distribution)
         {}
 
-        virtual void precompute(); //Perform any necessary computations before collision
+        inline virtual void precompute(); //Perform any necessary computations before collision
 
-        virtual void collide() = 0; //Collision step
+        inline virtual void collide() = 0; //Collision step
 
-        virtual void boundaries(); //Boundary calculation
+        inline virtual void boundaries(); //Boundary calculation
 
-        virtual void initialise() = 0; //Initialisation step
+        inline virtual void initialise() = 0; //Initialisation step
 
-        virtual void computeMomenta() = 0; //Momenta (density, velocity) calculation
+        inline virtual void computeMomenta() = 0; //Momenta (density, velocity) calculation
 
-        double computeForces(int xyz, int k) const; //Calculate other forces in direction xyz
+        inline double computeForces(int xyz, int k) const; //Calculate other forces in direction xyz
 
-        const std::vector<double>& getDistribution() const; //Return vector of distribution
+        inline const std::vector<double>& getDistribution() const; //Return vector of distribution
 
         template<class force, int inst = 0>
-        force& getForce() {
+        inline force& getForce() {
 
             auto forces = get_type<force>(mt_Forces);
 
@@ -57,7 +57,7 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
         }
 
         template<class boundary, int inst = 0>
-        boundary& getBoundary() {
+        inline boundary& getBoundary() {
 
             auto boundaries = get_type<boundary>(mt_Boundaries);
 
@@ -80,14 +80,14 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
 };
 
 template<class traits>
-const std::vector<double>& ModelBase<traits>::getDistribution() const {
+inline const std::vector<double>& ModelBase<traits>::getDistribution() const {
 
     return distribution; //Return reference to distribution vector
 
 }
 
 template<class traits>
-void ModelBase<traits>::precompute() {
+inline void ModelBase<traits>::precompute() {
 
     #pragma omp parallel for schedule(guided)
     for (int k = GETPROPERTIES().m_HaloSize; k <GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //loop over k
@@ -111,7 +111,7 @@ void ModelBase<traits>::precompute() {
 }
 
 template<class traits>
-double ModelBase<traits>::computeForces(int xyz, int k) const {
+inline double ModelBase<traits>::computeForces(int xyz, int k) const {
 
     if constexpr(std::tuple_size<typename traits::Forces>::value != 0){
 
@@ -125,7 +125,7 @@ double ModelBase<traits>::computeForces(int xyz, int k) const {
 }
 
 template<class traits>
-void ModelBase<traits>::boundaries() {
+inline void ModelBase<traits>::boundaries() {
 
     #pragma omp parallel for schedule(guided)
     for (int k = 0; k <GETPROPERTIES().m_N; k++) { //loop over k

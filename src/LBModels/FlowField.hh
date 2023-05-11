@@ -32,34 +32,34 @@ class FlowField : public CollisionBase<typename traits::Stencil>, public ModelBa
                                                          
     public:
 
-        void collide() override; //Collision step
+        inline void collide() override; //Collision step
 
-        void initialise() override; //Initialisation step
+        inline void initialise() override; //Initialisation step
 
-        void computeMomenta(); //Momenta (density, velocity) calculation
+        inline void computeMomenta(); //Momenta (density, velocity) calculation
 
-        const double& getDensity(const int k) const; //Return density at lattice point k
+        inline const double& getDensity(const int k) const; //Return density at lattice point k
 
-        const std::vector<double>& getVelocity() const; //Return vector of velocity
+        inline const std::vector<double>& getVelocity() const; //Return vector of velocity
 
         template<class>
         friend class FlowFieldBinary;
 
     private:
 
-       double computeEquilibrium(const double& density, const double* velocity,
+        inline double computeEquilibrium(const double& density, const double* velocity,
                                   const int idx, const int k) const; //Calculate equilibrium in direction idx with a given
                                                         //density and velocity
 
-        double computeModelForce(int xyz, int k) const; //Calculate forces specific to the model in direction xyz
+        inline double computeModelForce(int xyz, int k) const; //Calculate forces specific to the model in direction xyz
 
-        double computeCollisionQ(int k, const double& old, const double& density,
+        inline double computeCollisionQ(int k, const double& old, const double& density,
                                  const double* velocity, const int idx) const; //Calculate collision
                                                                                            //at index idx
 
-        double computeDensity(const double* distribution, const int k) const; //Calculate density
+        inline double computeDensity(const double* distribution, const int k) const; //Calculate density
 
-        double computeVelocity(const double* distribution, const double& density,
+        inline double computeVelocity(const double* distribution, const double& density,
                                 const int xyz, const int k) const; //Calculate velocity
 
         static constexpr double m_Tau = 1.0; //TEMPORARY relaxation time
@@ -77,21 +77,21 @@ class FlowField : public CollisionBase<typename traits::Stencil>, public ModelBa
 
 
 template<class traits>
-const double& FlowField<traits>::getDensity(const int k) const {
+inline const double& FlowField<traits>::getDensity(const int k) const {
 
     return density[k]; //Return reference to density at point k
 
 }
 
 template<class traits>
-const std::vector<double>& FlowField<traits>::getVelocity() const {
+inline const std::vector<double>& FlowField<traits>::getVelocity() const {
 
     return velocity; //Return reference to velocity vector
 
 }
 
 template<class traits>
-void FlowField<traits>::collide() { //Collision step
+inline void FlowField<traits>::collide() { //Collision step
 
     #pragma omp parallel for schedule(guided)
     for (int k = GETPROPERTIES().m_HaloSize; k <GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //loop over k
@@ -116,7 +116,7 @@ void FlowField<traits>::collide() { //Collision step
 }
 
 template<class traits>
-void FlowField<traits>::initialise() { //Initialise model
+inline void FlowField<traits>::initialise() { //Initialise model
 
     ModelBase<traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
@@ -146,7 +146,7 @@ void FlowField<traits>::initialise() { //Initialise model
 
 
 template<class traits>
-void FlowField<traits>::computeMomenta() { //Calculate Density<> and Velocity
+inline void FlowField<traits>::computeMomenta() { //Calculate Density<> and Velocity
 
     #pragma omp parallel for schedule(guided)
     for (int k = GETPROPERTIES().m_HaloSize; k <GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //Loop over k
@@ -167,7 +167,7 @@ void FlowField<traits>::computeMomenta() { //Calculate Density<> and Velocity
 }
 
 template<class traits>
-double FlowField<traits>::computeCollisionQ(const int k, const double& old, const double& density,
+inline double FlowField<traits>::computeCollisionQ(const int k, const double& old, const double& density,
                                                const double* velocity, const int idx) const {
                                             //Calculate collision step at a given velocity index at point k
 
@@ -184,7 +184,7 @@ double FlowField<traits>::computeCollisionQ(const int k, const double& old, cons
 
 
 template<class traits>
-double FlowField<traits>::computeEquilibrium(const double& density, const double* velocity, const int idx, const int k) const {
+inline double FlowField<traits>::computeEquilibrium(const double& density, const double* velocity, const int idx, const int k) const {
 
     return density * CollisionBase<typename traits::Stencil>::computeGamma(velocity, idx); //Equilibrium is density
                                                                                         //times gamma in this
@@ -193,14 +193,14 @@ double FlowField<traits>::computeEquilibrium(const double& density, const double
 }
 
 template<class traits>
-double FlowField<traits>::computeModelForce(int k, int xyz) const {
+inline double FlowField<traits>::computeModelForce(int k, int xyz) const {
 
     return 0.0; //No model force in this case
 
 }
 
 template<class traits>
-double FlowField<traits>::computeDensity(const double* distribution, const int k) const { //Density<> calculation
+inline double FlowField<traits>::computeDensity(const double* distribution, const int k) const { //Density<> calculation
     //Density<> is the sum of distributions plus any source/correction terms
 
     if constexpr(std::tuple_size<typename traits::Forces>::value != 0) {
@@ -217,7 +217,7 @@ double FlowField<traits>::computeDensity(const double* distribution, const int k
 }
 
 template<class traits>
-double FlowField<traits>::computeVelocity(const double* distribution, const double& density,
+inline double FlowField<traits>::computeVelocity(const double* distribution, const double& density,
                                              const int xyz, const int k) const { //Velocity calculation in direction xyz
     //Velocity in direction xyz is sum of distribution times the xyz component of the discrete velocity vector
     //in each direction plus any source/correction terms

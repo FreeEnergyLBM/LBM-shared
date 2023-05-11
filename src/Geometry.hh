@@ -23,21 +23,21 @@ class GeometryTemplate {
         /**
          * \brief Initialise the geometry vector for the system based on some conditions in this function.
          */
-        void initialise();
+        inline void initialise();
 
         /**
          * \brief Returns true if the current lattice point lies on a periodic boundary.
          * \param k Index of current lattice point.
          * \return True if lattice point lies on a periodic boundary.
          */
-        bool isPeriodic(int k);
+        inline bool isPeriodic(int k);
 
         /**
          * \brief Returns true if the current lattice point lies on a solid boundary.
          * \param k Index of current lattice point.
          * \return True if lattice point lies on a solid
          */
-        bool isSolid(int k);
+        inline bool isSolid(int k);
 
     private:
 
@@ -53,7 +53,7 @@ class GeometryTemplate {
  *          edge of the simulation domain. Returns true if current lattice point is a periodic boundary.
  */
 template<typename placeholder>
-bool GeometryTemplate<placeholder>::isPeriodic(int k) {
+inline bool GeometryTemplate<placeholder>::isPeriodic(int k) {
 
     if(GETPROPERTIES().m_LZ <= 1 || GETPROPERTIES().m_LY <= 1 || GETPROPERTIES().m_LXdiv <= 1) return true; //If simulation is 2D
     else if (k % (GETPROPERTIES().m_LZ - 1) == 0 ||
@@ -77,7 +77,7 @@ bool GeometryTemplate<placeholder>::isPeriodic(int k) {
  *          modification to the source file is needed. Returns true if current lattice point is a solid.
  */
 template<typename placeholder>
-bool GeometryTemplate<placeholder>::isSolid(int k) {
+inline bool GeometryTemplate<placeholder>::isSolid(int k) {
 
     int yAtCurrentk = computeY(GETPROPERTIES().m_LY, GETPROPERTIES().m_LZ, k);
 

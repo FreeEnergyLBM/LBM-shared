@@ -6,13 +6,13 @@ class BoundaryBaseTemplate{
 
         //virtual void compute(auto& m_Distribution, int k, int idx) const;
 
-        virtual void precompute(const int k);
+        inline virtual void precompute(const int k);
 
-        virtual double computeDensitySource(const int k) const;
+        inline virtual double computeDensitySource(const int k) const;
 
-        virtual double computeVelocitySource(const int xyz, const int k) const;
+        inline virtual double computeVelocitySource(const int xyz, const int k) const;
 
-        virtual void postprocess(const int k);
+        inline virtual void postprocess(const int k);
 
     private:
 
@@ -20,24 +20,24 @@ class BoundaryBaseTemplate{
 };
 
 template<typename placeholder>
-void BoundaryBaseTemplate<placeholder>::precompute(const int k) {
+inline void BoundaryBaseTemplate<placeholder>::precompute(const int k) {
     
 }
 
 template<typename placeholder>
-void BoundaryBaseTemplate<placeholder>::postprocess(const int k) {
+inline void BoundaryBaseTemplate<placeholder>::postprocess(const int k) {
     
 }
 
 template<typename placeholder>
-double BoundaryBaseTemplate<placeholder>::computeDensitySource(const int k) const {
+inline double BoundaryBaseTemplate<placeholder>::computeDensitySource(const int k) const {
 
     return 0;
 
 }
 
 template<typename placeholder>
-double BoundaryBaseTemplate<placeholder>::computeVelocitySource(const int xyz,const int k) const {
+inline double BoundaryBaseTemplate<placeholder>::computeVelocitySource(const int xyz,const int k) const {
 
     return 0;
 

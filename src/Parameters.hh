@@ -35,7 +35,7 @@ struct Distribution_Base { //Distribution base class
 
     int ma_Opposites[stencil::Q]; //!<Array containing the opposite indices at each index (rotated by 180 degrees).
 
-    int getOpposite(int idx) {
+    inline int getOpposite(int idx) {
 
         return ma_Opposites[idx];
 
@@ -45,51 +45,51 @@ struct Distribution_Base { //Distribution base class
     std::vector<double> mv_OldDistribution; //Possibly unused vector storing the old distributions (at t_old=t_new-1)
                                        //This is required in the collision step
     std::vector<int>& mv_DistNeighbors; //Reference to vector containing neighbor information
-    std::vector<double>& getDistribution() { //Get a vector containing the distributions
+    inline std::vector<double>& getDistribution() { //Get a vector containing the distributions
 
         return mv_Distribution;
 
     }
-    const double* getDistributionPointer(const int k) const { //Get a constant pointer to the the distribution at
+    inline const double* getDistributionPointer(const int k) const { //Get a constant pointer to the the distribution at
                                                              //lattice point k and pointing in direction 0
         return &mv_Distribution[k * stencil::Q];
     }
-    double* getDistributionPointer(const int k) { //Get a pointer to the the distribution at
+    inline double* getDistributionPointer(const int k) { //Get a pointer to the the distribution at
                                                  //lattice point k and pointing in direction 0
         return &mv_Distribution[k * stencil::Q];
 
     }
-    const double& getDistribution(const int idx) const { //Get const distribution value at a given index
+    inline const double& getDistribution(const int idx) const { //Get const distribution value at a given index
 
         return mv_Distribution[idx];
 
     }
-    double& getDistribution(const int idx) { //Get distribution value at a given index
+    inline double& getDistribution(const int idx) { //Get distribution value at a given index
 
         return mv_Distribution[idx];
 
     }
-    std::vector<double>& getDistributionOld() { //SAME AS ABOVE BUT FOR OLD DISTRIBUTION
+    inline std::vector<double>& getDistributionOld() { //SAME AS ABOVE BUT FOR OLD DISTRIBUTION
 
         return mv_OldDistribution;
 
     }
-    const double* getDistributionOldPointer(const int k) const {
+    inline const double* getDistributionOldPointer(const int k) const {
 
         return &mv_OldDistribution[k * stencil::Q];
 
     }
-    double* getDistributionOldPointer(const int k) {
+    inline double* getDistributionOldPointer(const int k) {
 
         return &mv_OldDistribution[k * stencil::Q];
 
     }
-    const double& getDistributionOld(const int k) const {
+    inline const double& getDistributionOld(const int k) const {
 
         return mv_OldDistribution[k];
 
     }
-    double& getDistributionOld(const int k) {
+    inline double& getDistributionOld(const int k) {
 
         return mv_OldDistribution[k];
 
@@ -120,32 +120,32 @@ class Parameter {
             mv_Parameter.resize(m_Num * GETPROPERTIES().m_N); //Resize to the desired size
 
         }
-        std::vector<T>& getParameter() const { //Returns const vector containing the parameter
+        inline std::vector<T>& getParameter() const { //Returns const vector containing the parameter
 
             return mv_Parameter;
 
         }
-        std::vector<T>& getParameter() { //Returns vector containing the parameter
+        inline std::vector<T>& getParameter() { //Returns vector containing the parameter
 
             return mv_Parameter;
 
         }
-        T* getParameterPointer(const int k) const {  //Returns const pointer to parameter at lattice point k and
+        inline T* getParameterPointer(const int k) const {  //Returns const pointer to parameter at lattice point k and
                                                     //direction 0
             return &mv_Parameter[k * m_Num];
 
         }
-        T* getParameterPointer(const int k) { //Returns pointer to parameter at lattice point k and
+        inline T* getParameterPointer(const int k) { //Returns pointer to parameter at lattice point k and
                                              //direction 0
             return &mv_Parameter[k * m_Num];
 
         }
-        T& getParameter(const int idx) const { //Returns const parameter at index idx
+        inline T& getParameter(const int idx) const { //Returns const parameter at index idx
 
             return mv_Parameter[idx];
 
         }
-        T& getParameter(const int idx) { //Returns const parameter at index idx
+        inline T& getParameter(const int idx) { //Returns const parameter at index idx
 
             return mv_Parameter[idx];
             
@@ -154,7 +154,7 @@ class Parameter {
         const int m_Num;
         using ParamType = T;
 
-        void Save(std::string filename, int t, std::string datadir);
+        inline void Save(std::string filename, int t, std::string datadir);
 
         static std::vector<T> mv_Parameter; //Static vector (Does not change between objects of the class)
         
@@ -164,7 +164,7 @@ template<class obj, typename T>
 std::vector<T> Parameter<obj, T>::mv_Parameter; //Must allocate memory for static vector outside of class
 
 template<class obj, typename T>
-void Parameter<obj, T>::Save(std::string filename, int t, std::string datadir) { //Function to save parameter stored in this class
+inline void Parameter<obj, T>::Save(std::string filename, int t, std::string datadir) { //Function to save parameter stored in this class
 
     char fdump[512];
     sprintf(fdump, (datadir + filename + "_t%li.mat").c_str(), t); //Buffer containing file name and location.
@@ -215,17 +215,18 @@ class ParameterSave {
             if (status) std::cout << "Error creating output directory" << std::endl;
 
         }
-        void Save(int timestep);
+        inline void Save(int timestep);
 
     private:
 
         const int m_SaveInterval;
         std::string m_DataDir;
         std::tuple<parameters...> mt_Parameters;
+        
 };
 
 template<class ...parameters>
-void ParameterSave<parameters...>::Save(int timestep) {
+inline void ParameterSave<parameters...>::Save(int timestep) {
 
     std::string dir = m_DataDir;
 

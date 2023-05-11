@@ -27,25 +27,25 @@
 template<typename Stencil, int num_neighbors>
 class No_Parallel{};
 
-int computeX(const int& LY, const int& LZ, const int k) //Compute X direction from a given k, the convention in this code is that
+inline int computeX(const int& LY, const int& LZ, const int k) //Compute X direction from a given k, the convention in this code is that
                           //k will iterate over the z direction first, then increment y by 1 once it reaches LZ,
                           //then repeat the iteration over z. Once it reaches LY x will be incremented and this
                           //process continues
 {  
 
-  return int(k / (float) (LZ * LY));
+  return int(k / (LZ * LY));
 
 
 }
 
-int computeY(const int& LY, const int& LZ, const int k) //Compute Y direction from a given k, this uses information from the X direction
+inline int computeY(const int& LY, const int& LZ, const int k) //Compute Y direction from a given k, this uses information from the X direction
 {  
 
-  return int((k - computeX(LY, LZ, k) * LZ * LY) / (float) LZ);
+  return int((k - computeX(LY, LZ, k) * LZ * LY) / LZ);
 
 }
 
-int computeZ(const int& LY, const int& LZ, const int k) //Compute Y direction from a given k, this uses information from the X and Y directions
+inline int computeZ(const int& LY, const int& LZ, const int k) //Compute Y direction from a given k, this uses information from the X and Y directions
 {  
 
   return k - computeX(LY, LZ, k) * LZ * LY - computeY(LY, LZ, k) * LZ;
@@ -181,7 +181,7 @@ template<size_t i, typename tuple_element_t,
 struct extract_type {
 
     template<typename tuple_type>
-    static auto do_extract_type(tuple_type &t) {
+    inline static auto do_extract_type(tuple_type &t) {
 
         return std::tuple<>{};
 
@@ -194,7 +194,7 @@ template<size_t i, typename tuple_element_t, typename wanted_element_t>
 struct extract_type<i, tuple_element_t, wanted_element_t, true> {
 
     template<typename tuple_type>
-    static auto do_extract_type(tuple_type &t) {
+    inline static auto do_extract_type(tuple_type &t) {
 
         return std::tie(std::get<i>(t));
 
@@ -206,7 +206,7 @@ struct extract_type<i, tuple_element_t, wanted_element_t, true> {
 // and tuple-cat them together.
 
 template<typename wanted_element_t, typename tuple_type, size_t ...i>
-auto get_type_t(tuple_type &t, std::index_sequence<i...>) {
+inline auto get_type_t(tuple_type &t, std::index_sequence<i...>) {
 
     return std::tuple_cat(extract_type<i,
                           typename std::tuple_element<i, tuple_type>::type,
@@ -216,7 +216,7 @@ auto get_type_t(tuple_type &t, std::index_sequence<i...>) {
 
 
 template<typename ...wanted_element_t, typename ...types>
-auto get_type(std::tuple<types...> &t) {
+inline auto get_type(std::tuple<types...> &t) {
 
     return get_type_t<std::tuple<wanted_element_t...>>(t, std::make_index_sequence<sizeof...(types)>());
         

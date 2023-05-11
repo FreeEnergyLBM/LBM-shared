@@ -33,15 +33,15 @@ class FlowFieldBinary : public FlowField<traits>{ //Inherit from base class to a
     
     public:
 
-        virtual void collide() override; //Collision step
+        inline virtual void collide() override; //Collision step
 
-        virtual void initialise() override; //Initialisation step
+        inline virtual void initialise() override; //Initialisation step
 
     private:
 
-        double computeEquilibrium(const double& density, const double* velocity, const double& order_parameter, const double& chemical_potential, const int idx, const int k) const; //Calculate equilibrium in direction idx with a given//density and velocity
+        inline double computeEquilibrium(const double& density, const double* velocity, const double& order_parameter, const double& chemical_potential, const int idx, const int k) const; //Calculate equilibrium in direction idx with a given//density and velocity
 
-        double computeCollisionQ(double& sum, const int k, const double& old, const double& density,
+        inline double computeCollisionQ(double& sum, const int k, const double& old, const double& density,
                                   const double* velocity, const double& order_parameter, const double& chemical_potential, const int idx) const; //Calculate collision                                                                             //at index idx
 
 
@@ -53,14 +53,14 @@ class FlowFieldBinary : public FlowField<traits>{ //Inherit from base class to a
 };
 
 template<class traits>
-double FlowFieldBinary<traits>::computeEquilibrium(const double& density, const double* velocity, const double& order_parameter, const double& chemical_potential, const int idx, const int k) const {
+inline double FlowFieldBinary<traits>::computeEquilibrium(const double& density, const double* velocity, const double& order_parameter, const double& chemical_potential, const int idx, const int k) const {
 
     return density * CollisionBase<typename traits::Stencil>::computeGamma(velocity, idx) + traits::Stencil::Weights[idx] * order_parameter * chemical_potential / traits::Stencil::Cs2; //Equilibrium is density times gamma in this case
 
 }
 
 template<class traits>
-void FlowFieldBinary<traits>::collide() { //Collision step
+inline void FlowFieldBinary<traits>::collide() { //Collision step
     
     int QQ = traits::Stencil::Q;
     double* old_distribution = FlowField<traits>::m_Distribution.getDistributionOldPointer(0);
@@ -93,7 +93,7 @@ void FlowFieldBinary<traits>::collide() { //Collision step
 }
 
 template<class traits>
-void FlowFieldBinary<traits>::initialise() { //Initialise model
+inline void FlowFieldBinary<traits>::initialise() { //Initialise model
 
     FlowField<traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
 
@@ -126,7 +126,7 @@ void FlowFieldBinary<traits>::initialise() { //Initialise model
 }
 
 template<class traits>
-double FlowFieldBinary<traits>::computeCollisionQ(double& equilibriumsum, const int k, const double& old, const double& density,
+inline double FlowFieldBinary<traits>::computeCollisionQ(double& equilibriumsum, const int k, const double& old, const double& density,
                                                      const double* velocity, const double& order_parameter, const double& chemical_potential, const int idx) const {
                                             //Calculate collision step at a given velocity index at point k
     

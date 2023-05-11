@@ -14,6 +14,7 @@
 //floats
 //MPI object - get rid of ifdefs
 //Sort out globals
+//Adjust parallelisation basedo n solid
 
 /**
  * \file main.cc
@@ -26,11 +27,11 @@
 
 const int LX=100;
 const int LY=100;
-const int TIMESTEPS=10000;
+const int TIMESTEPS=100;
 using Lattice=LatticeProperties<Data1,X_Parallel,LX,LY>;
 //using Lattice=LatticePropertiesRuntime<Data1,X_Parallel,2>;
 
-auto& GETPROPERTIES(){return getGlobal<Lattice>();}
+inline auto& GETPROPERTIES(){return getGlobal<Lattice>();}
 
 //test=GETPROPERTIES();
 

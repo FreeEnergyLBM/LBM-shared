@@ -29,29 +29,29 @@ class Binary: public CollisionBase<typename traits::Stencil>, public ModelBase<t
                                                       
     public:
 
-        void collide() override; //Collision step
+        inline void collide() override; //Collision step
 
-        void initialise() override; //Initialisation step
+        inline void initialise() override; //Initialisation step
 
-        void computeMomenta() override; //Momenta (density, velocity) calculation
+        inline void computeMomenta() override; //Momenta (density, velocity) calculation
 
-        const double& getDensity(const int k) const; //Return density at lattice point k
+        inline const double& getDensity(const int k) const; //Return density at lattice point k
 
-        const std::vector<double>& getVelocity() const; //Return vector of velocity
+        inline const std::vector<double>& getVelocity() const; //Return vector of velocity
 
     private:
 
-        double computeEquilibrium(const double& orderparam, const double* velocity,
+        inline double computeEquilibrium(const double& orderparam, const double* velocity,
                                    const int idx, const int k) const; //Calculate equilibrium in direction idx with a given
                                                         //density and velocity
 
-        double computeModelForce(int xyz, int k) const; //Calculate forces specific to the model in direction xyz
+        inline double computeModelForce(int xyz, int k) const; //Calculate forces specific to the model in direction xyz
 
-        double computeCollisionQ(double& sum, int k, const double& old, const double& orderparam,
+        inline double computeCollisionQ(double& sum, int k, const double& old, const double& orderparam,
                                   const double* velocity, const int idx) const; //Calculate collision
                                                                                            //at index idx
 
-        double computeOrderParameter(const double* distribution, const int k) const; //Calculate the order parameter
+        inline double computeOrderParameter(const double* distribution, const int k) const; //Calculate the order parameter
                                                                               //corresponding to the relative
                                                                               //concentrations of each phase
 
@@ -74,21 +74,21 @@ class Binary: public CollisionBase<typename traits::Stencil>, public ModelBase<t
 };
 
 template<class traits>
-const double& Binary<traits>::getDensity(const int k) const { //This needs to be renamed
+inline const double& Binary<traits>::getDensity(const int k) const { //This needs to be renamed
 
     return orderparameter[k]; //Return reference to order parameter at point k
 
 }
 
 template<class traits>
-const std::vector<double>& Binary<traits>::getVelocity() const {
+inline const std::vector<double>& Binary<traits>::getVelocity() const {
 
     return velocity; //Return reference to velocity vector
 
 }
 
 template<class traits>
-void Binary<traits>::collide() {
+inline void Binary<traits>::collide() {
 
     #pragma omp parallel for schedule(guided)
     for (int k = GETPROPERTIES().m_HaloSize; k < GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++){ //loop over k
@@ -116,7 +116,7 @@ void Binary<traits>::collide() {
 }
 
 template<class traits>
-void Binary<traits>::initialise() { //Initialise model
+inline void Binary<traits>::initialise() { //Initialise model
 
     ModelBase<traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
@@ -153,7 +153,7 @@ void Binary<traits>::initialise() { //Initialise model
 
 
 template<class traits>
-void Binary<traits>::computeMomenta() { //Calculate order parameter
+inline void Binary<traits>::computeMomenta() { //Calculate order parameter
 
     #pragma omp parallel for schedule(guided)
     for (int k = GETPROPERTIES().m_HaloSize; k <GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //Loop over k
@@ -171,7 +171,7 @@ void Binary<traits>::computeMomenta() { //Calculate order parameter
 }
 
 template<class traits>
-double Binary<traits>::computeCollisionQ(double& equilibriumsum, const int k, const double& old, const double& orderparam,
+inline double Binary<traits>::computeCollisionQ(double& equilibriumsum, const int k, const double& old, const double& orderparam,
                                             const double* velocity, const int idx) const {
                                         //Calculate collision step at a given velocity index at point k
     
@@ -196,14 +196,14 @@ double Binary<traits>::computeCollisionQ(double& equilibriumsum, const int k, co
 
 
 template<class traits>
-double Binary<traits>::computeEquilibrium(const double& orderparam, const double* velocity, const int idx, const int k) const {
+inline double Binary<traits>::computeEquilibrium(const double& orderparam, const double* velocity, const int idx, const int k) const {
 
     return traits::Stencil::Weights[idx] * (m_ChemicalPotential.getParameter(k) * m_Gamma / traits::Stencil::Cs2 + orderparam * CollisionBase<typename traits::Stencil>::computeVelocityFactor(velocity, idx));
 
 }
 
 template<class traits>
-double Binary<traits>::computeModelForce(int k,int xyz) const {
+inline double Binary<traits>::computeModelForce(int k,int xyz) const {
     
     return 0;
 
@@ -211,7 +211,7 @@ double Binary<traits>::computeModelForce(int k,int xyz) const {
 
 
 template<class traits>
-double Binary<traits>::computeOrderParameter(const double* distribution, const int k) const {//Order parameter calculation
+inline double Binary<traits>::computeOrderParameter(const double* distribution, const int k) const {//Order parameter calculation
     //Order parameter is the sum of distributions plus any source/correction terms
 
     if constexpr(std::tuple_size<typename traits::Forces>::value != 0){
