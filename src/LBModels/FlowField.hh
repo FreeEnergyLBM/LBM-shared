@@ -94,10 +94,10 @@ template<class traits>
 inline void FlowField<traits>::collide() { //Collision step
 
     #pragma omp for schedule(guided)
-    for (int k = GETPROPERTIES().m_HaloSize; k <GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //loop over k
+    for (int k = GETPROPERTIES().m_HaloSize; k < GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //loop over k
 
         double* old_distribution = ModelBase<traits>::m_Distribution.getDistributionOldPointer(k);
-
+        
         for (int idx = 0; idx <traits::Stencil::Q; idx++) { //loop over discrete velocity directions
             //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
             //"computeCollisionQ"
@@ -114,6 +114,7 @@ inline void FlowField<traits>::collide() { //Collision step
     {
     ModelBase<traits>::m_Data.communicateDistribution();
     }
+    
     #endif
 
 }
@@ -168,6 +169,7 @@ inline void FlowField<traits>::computeMomenta() { //Calculate Density<> and Velo
     {
     ModelBase<traits>::m_Data.communicate(m_Density);
     }
+    
     #endif
 
 }

@@ -26,39 +26,44 @@
 //Modularisation is implemented using trait classes, which contain stencil information, 
 //the data type, a tuple of the boundary types and a tuple of forces to be applied in the model.
 
-const int LX=256;
-const int LY=200;
-const int LZ=1;
-const int TIMESTEPS=100;
+const int LX=128;
+const int LY=100;
+const int LZ=100;
+const int TIMESTEPS=1;
 using Lattice=LatticeProperties<Data1,X_Parallel,LX,LY,LZ>;
 //using Lattice=LatticePropertiesRuntime<Data1,X_Parallel,2>;
 
 inline auto& GETPROPERTIES(){return getGlobal<Lattice>();}
 
-int main(int argc, char **argv){
 
+int main(int argc, char **argv){
+    
     #ifdef MPIPARALLEL
-    MPI_Init(&argc, &argv);
+    int provided;
+    //MPI_Init(&argc, &argv);
+    MPI_Init_thread(&argc, &argv,MPI_THREAD_FUNNELED,&provided);
     MPI_Comm_size(MPI_COMM_WORLD, &NUMPROCESSORS);                              // Store number of processors
     MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
+    
     Parallel<1> initialise;
     #endif
+    FlowField Dist0;
+    //FlowFieldBinary Dist1;
+    //Binary Dist2;
 
-    FlowFieldBinary Dist1;
-    Binary Dist2;
+    //Dist1.getForce<BodyForce>().setMagnitudeX(0.0001);
 
-    Dist1.getForce<BodyForce>().setMagnitudeX(0.0001);
-
-    Algorithm LBM(Dist1,Dist2);
-    
-    ParameterSave<Density,OrderParameter,Velocity> Saver("data/");
+    //Algorithm LBM(Dist1,Dist2);
+    Algorithm LBM(Dist0);
+    //ParameterSave<Density,OrderParameter,Velocity> Saver("data/");
 
     LBM.initialise(); //Perform necessary initialisation
     auto t0=std::chrono::system_clock::now();
+    
     #pragma omp parallel
     {
     for (int timestep=0;timestep<=TIMESTEPS;timestep++){
-        
+
         //if (timestep%50000==0) Saver.Save(timestep);
         LBM.evolve(); //Evolve one timestep
         
@@ -66,8 +71,8 @@ int main(int argc, char **argv){
     }
     auto tend=std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds=tend-t0; 
-    const auto processor_count = std::thread::hardware_concurrency();
-    std::cout<<"RUNTIME: "<<elapsed_seconds.count()<<" "<<LX<<" "<<LY<<" "<<processor_count<<std::endl;
+
+    if(CURPROCESSOR==0)std::cout<<"RUNTIME: "<<elapsed_seconds.count()<<" "<<LX<<" "<<LY<<" "<<std::endl;
 
     #ifdef MPIPARALLEL
     MPI_Finalize();

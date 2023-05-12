@@ -111,6 +111,7 @@ inline void ModelBase<traits>::precompute() {
     m_Distribution.getDistribution().swap(m_Distribution.getDistributionOld()); //swap old and new distributions
                                                                                 //before collision
     }
+    
 }
 
 template<class traits>

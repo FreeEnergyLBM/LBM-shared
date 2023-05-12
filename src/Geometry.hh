@@ -54,7 +54,7 @@ class GeometryTemplate {
  */
 template<typename placeholder>
 inline bool GeometryTemplate<placeholder>::isPeriodic(int k) {
-
+    /*
     if(GETPROPERTIES().m_LZ <= 1 || GETPROPERTIES().m_LY <= 1 || GETPROPERTIES().m_LXdiv <= 1) return true; //If simulation is 2D
     else if (k % (GETPROPERTIES().m_LZ - 1) == 0 ||
          (k - 1) % (GETPROPERTIES().m_LZ - 1) == 0) return true; //Edges in Z direction
@@ -68,7 +68,21 @@ inline bool GeometryTemplate<placeholder>::isPeriodic(int k) {
           ((k) / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY) - 1) + 1 > GETPROPERTIES().m_LXdiv - 1) return true; //Edges in X direction
     
     return false;
-
+    */
+    if (((GETPROPERTIES().m_LZ>1&&(k%(GETPROPERTIES().m_LZ-1)==0||
+         (k-1)%(GETPROPERTIES().m_LZ-1)==0)))||
+        (GETPROPERTIES().m_LY>1&&(k/(GETPROPERTIES().m_LZ)%(GETPROPERTIES().m_LY-1)==0||
+         ((k)/(GETPROPERTIES().m_LZ)-1)%(GETPROPERTIES().m_LY-1)==0))||
+        (GETPROPERTIES().m_LXdiv>1&&((k/(GETPROPERTIES().m_LZ)/(GETPROPERTIES().m_LY))%(GETPROPERTIES().m_LXdiv-1)==0||
+          ((k)/(GETPROPERTIES().m_LZ)/(GETPROPERTIES().m_LY)-1)%(GETPROPERTIES().m_LXdiv-1)==0||
+          ((k)/(GETPROPERTIES().m_LZ)/(GETPROPERTIES().m_LY)-1)-1<0||
+          ((k)/(GETPROPERTIES().m_LZ)/(GETPROPERTIES().m_LY)-1)+1>GETPROPERTIES().m_LXdiv-1))||
+        GETPROPERTIES().m_LZ==1||
+        GETPROPERTIES().m_LY==1||
+        GETPROPERTIES().m_LXdiv==1) return true; //These conditions just check whether the lattice point is on the edge of the 
+                            //simulation domain
+    
+    else return false;
 }
 
 /**

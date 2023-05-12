@@ -90,6 +90,7 @@ inline void FlowFieldBinary<traits>::collide() { //Collision step
     {
     FlowField<traits>::m_Data.communicateDistribution();
     }
+    
     #endif
     
 }

@@ -173,7 +173,6 @@ inline void Binary<traits>::computeMomenta() { //Calculate order parameter
     ModelBase<traits>::m_Data.communicate(m_OrderParameter);
     }
     #endif
-    
 }
 
 template<class traits>

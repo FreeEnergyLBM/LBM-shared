@@ -48,7 +48,7 @@ inline int computeY(const int& LY, const int& LZ, const int k) //Compute Y direc
 inline int computeZ(const int& LY, const int& LZ, const int k) //Compute Y direction from a given k, this uses information from the X and Y directions
 {  
 
-  return k%LZ;// - computeX(LY, LZ, k) * LZ * LY - computeY(LY, LZ, k) * LZ;
+  return k - computeX(LY, LZ, k) * LZ * LY - computeY(LY, LZ, k) * LZ;
 
 }
 

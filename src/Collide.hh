@@ -87,7 +87,7 @@ class CollisionBase {
 
         enum{ x = 0, y = 1, z = 2 };
         
-        static constexpr auto& ma_Weights = stencil::Weights;
+        //static constexpr auto& ma_Weights = stencil::Weights;
 
         static constexpr double m_Cs2 = stencil::Cs2;
 
@@ -100,8 +100,8 @@ class CollisionBase {
  */
 template<class stencil>
 inline double CollisionBase<stencil>::computeGamma(const double* velocity, const int idx) const {
-
-    return ma_Weights[idx] * (1.0 + computeVelocityFactor(velocity, idx)); 
+    
+    return stencil::Weights[idx] * (1.0 + computeVelocityFactor(velocity, idx)); 
 
 };
 
@@ -193,7 +193,7 @@ inline double CollisionBase<stencil>::forceGuoSRT(const double force[stencil::D]
 
     double ci_dot_velocity = 0;
     double forceterm = 0;
-    double prefactor = (1 - GETPROPERTIES().m_DT * itau / 2.0) * ma_Weights[idx]; //Prefactor for Guo forcing
+    double prefactor = (1 - GETPROPERTIES().m_DT * itau / 2.0) * stencil::Weights[idx]; //Prefactor for Guo forcing
 
     for (int xyz=0;xyz<stencil::D;xyz++){
 

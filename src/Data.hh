@@ -96,20 +96,8 @@ class Data_Base{
             
         }
 
-        Data_Base(Data_Base<stencil, parallel>& object) //Construct distribution
-        {
-
-            for(int idx = 0; idx <stencil::Q; idx++) {
-
-                OppositeOffset[idx] = stencil::Ci_xyz(x)[idx] * GETPROPERTIES().m_LZ * GETPROPERTIES().m_LY + stencil::Ci_xyz(y)[idx] * GETPROPERTIES().m_LZ + stencil::Ci_xyz(z)[idx];
-            
-            }
-
-            mv_Neighbors.resize(stencil::Q * GETPROPERTIES().m_N); //Allocate memory for neighbors array
-            
-            generateNeighbors(); //Fill neighbors array
-            
-        }
+        Data_Base(Data_Base<stencil, parallel>& other) : mv_Neighbors(other.mv_Neighbors), OppositeOffset(other.OppositeOffset) //Construct distribution
+        {}
 
         /**
          * \brief Function to fill neighbor array with neighbor information.

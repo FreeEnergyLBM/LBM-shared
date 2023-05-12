@@ -101,13 +101,13 @@ template<class ...Model>
 inline void Algorithm<Model...>::evolve() {
 
     precomputeStep();
-    
+
     calculateCollisionStep();
-    
+
     calculateBoundaryStep();
     
     calculateMomentaStep();
-    
+
 }
 
 /**
