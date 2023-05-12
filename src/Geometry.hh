@@ -54,21 +54,24 @@ class GeometryTemplate {
  */
 template<typename placeholder>
 inline bool GeometryTemplate<placeholder>::isPeriodic(int k) {
-    /*
-    if(GETPROPERTIES().m_LZ <= 1 || GETPROPERTIES().m_LY <= 1 || GETPROPERTIES().m_LXdiv <= 1) return true; //If simulation is 2D
-    else if (k % (GETPROPERTIES().m_LZ - 1) == 0 ||
-         (k - 1) % (GETPROPERTIES().m_LZ - 1) == 0) return true; //Edges in Z direction
+    
+    int yAtCurrentk = computeY(GETPROPERTIES().m_LY, GETPROPERTIES().m_LZ, k);
+    int zAtCurrentk = computeZ(GETPROPERTIES().m_LY, GETPROPERTIES().m_LZ, k);
+    int xAtCurrentk = computeX(GETPROPERTIES().m_LY, GETPROPERTIES().m_LZ, k);
 
-    else if (k / (GETPROPERTIES().m_LZ) % (GETPROPERTIES().m_LY - 1) == 0 ||
-         ((k) / (GETPROPERTIES().m_LZ) - 1) % (GETPROPERTIES().m_LY - 1) == 0) return true; //Edges in Y direction
+    if(GETPROPERTIES().m_LZ <= 1 || GETPROPERTIES().m_LY <= 1 || GETPROPERTIES().m_LXdiv <= 1) return true; //If simulation is 2D
+    else if (zAtCurrentk == 0 ||
+         zAtCurrentk == GETPROPERTIES().m_LZ-1) return true; //Edges in Z direction
+
+    else if (yAtCurrentk == 0 ||
+         yAtCurrentk == GETPROPERTIES().m_LY-1) return true; //Edges in Y direction
         
-    else if ((k / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY)) % (GETPROPERTIES().m_LXdiv - 1) == 0 ||
-          ((k) / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY) - 1) % (GETPROPERTIES().m_LXdiv - 1) == 0 ||
-          ((k) / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY) - 1) - 1 < 0 ||
-          ((k) / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY) - 1) + 1 > GETPROPERTIES().m_LXdiv - 1) return true; //Edges in X direction
+    else if (xAtCurrentk == 0 ||
+         xAtCurrentk == GETPROPERTIES().m_LXdiv-1) return true; //Edges in X direction
     
     return false;
-    */
+    
+    /*
     if (((GETPROPERTIES().m_LZ>1&&(k%(GETPROPERTIES().m_LZ-1)==0||
          (k-1)%(GETPROPERTIES().m_LZ-1)==0)))||
         (GETPROPERTIES().m_LY>1&&(k/(GETPROPERTIES().m_LZ)%(GETPROPERTIES().m_LY-1)==0||
@@ -83,6 +86,7 @@ inline bool GeometryTemplate<placeholder>::isPeriodic(int k) {
                             //simulation domain
     
     else return false;
+    */
 }
 
 /**
@@ -94,9 +98,12 @@ template<typename placeholder>
 inline bool GeometryTemplate<placeholder>::isSolid(int k) {
 
     int yAtCurrentk = computeY(GETPROPERTIES().m_LY, GETPROPERTIES().m_LZ, k);
-
-    if (yAtCurrentk <= 1 || yAtCurrentk >= GETPROPERTIES().m_LY - 2) return true; //Change this condition to control where the solid is
+    //int zAtCurrentk = computeZ(GETPROPERTIES().m_LY, GETPROPERTIES().m_LZ, k);
+    //int xAtCurrentk = computeX(GETPROPERTIES().m_LY, GETPROPERTIES().m_LZ, k);
     
+    //if (yAtCurrentk <= 1 || yAtCurrentk >= GETPROPERTIES().m_LY - 2 || xAtCurrentk <= 1 || xAtCurrentk >= GETPROPERTIES().m_LXdiv - 2 || zAtCurrentk <= 1 || zAtCurrentk >= GETPROPERTIES().m_LZ - 2 ) return true; //Change this condition to control where the solid is
+    
+    if (yAtCurrentk <= 1 || yAtCurrentk >= GETPROPERTIES().m_LY - 2 ) return true; //Change this condition to control where the solid is
     else return false;
 
 }

@@ -26,10 +26,10 @@
 //Modularisation is implemented using trait classes, which contain stencil information, 
 //the data type, a tuple of the boundary types and a tuple of forces to be applied in the model.
 
-const int LX=128;
+const int LX=100;
 const int LY=100;
-const int LZ=100;
-const int TIMESTEPS=1;
+const int LZ=10;
+const int TIMESTEPS=100;
 using Lattice=LatticeProperties<Data1,X_Parallel,LX,LY,LZ>;
 //using Lattice=LatticePropertiesRuntime<Data1,X_Parallel,2>;
 
@@ -40,8 +40,8 @@ int main(int argc, char **argv){
     
     #ifdef MPIPARALLEL
     int provided;
-    //MPI_Init(&argc, &argv);
-    MPI_Init_thread(&argc, &argv,MPI_THREAD_FUNNELED,&provided);
+    MPI_Init(&argc, &argv);
+    //MPI_Init_thread(&argc, &argv,MPI_THREAD_FUNNELED,&provided);
     MPI_Comm_size(MPI_COMM_WORLD, &NUMPROCESSORS);                              // Store number of processors
     MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
     

@@ -160,8 +160,8 @@ inline int Data_Base<stencil, parallel>::getOneNeighborPeriodic(const int k, con
     int neighbor = 0;
 
     if(GETPROPERTIES().m_LZ> 1) {
-
-        if ((k + 1) % (GETPROPERTIES().m_LZ) == 0 && stencil::Ci_xyz(z)[Q]> 0) { //(note that the z direction goes from 0 to GETPROPERTIES().m_LZ-1)
+        int localz=computeZ(GETPROPERTIES().m_LY,GETPROPERTIES().m_LZ,k);
+        if (localz==(GETPROPERTIES().m_LZ - 1) && stencil::Ci_xyz(z)[Q]> 0) { //(note that the z direction goes from 0 to GETPROPERTIES().m_LZ-1)
                                                      //if the next lattice point in the z direction is divisible
                                                      //by GETPROPERTIES().m_LZ (so we are at z=GETPROPERTIES().m_LZ-1) and we are pointing in the +z
                                                      //direction
@@ -169,7 +169,7 @@ inline int Data_Base<stencil, parallel>::getOneNeighborPeriodic(const int k, con
             neighbor += -(GETPROPERTIES().m_LZ - 1); //reduce k by GETPROPERTIES().m_LZ-1 so we are now at z=0
 
         }
-        else if ((k) % (GETPROPERTIES().m_LZ) == 0 && stencil::Ci_xyz(z)[Q] <0) { //if the current lattice point in the z direction is
+        else if (localz==(0) && stencil::Ci_xyz(z)[Q] <0) { //if the current lattice point in the z direction is
                                                         //divisible by GETPROPERTIES().m_LZ (so we are at z=0) and we are pointing
                                                         //in the -z direction
 
@@ -183,7 +183,8 @@ inline int Data_Base<stencil, parallel>::getOneNeighborPeriodic(const int k, con
         }
     }
     if(GETPROPERTIES().m_LY> 1) {
-        if (((k) / (GETPROPERTIES().m_LZ) + 1) % (GETPROPERTIES().m_LY) == 0 && stencil::Ci_xyz(y)[Q]> 0) { //(note that the y direction goes from 0 to GETPROPERTIES().m_LY-1)
+        int localY=computeY(GETPROPERTIES().m_LY,GETPROPERTIES().m_LZ,k);
+        if (localY == (GETPROPERTIES().m_LY - 1) && stencil::Ci_xyz(y)[Q]> 0) { //(note that the y direction goes from 0 to GETPROPERTIES().m_LY-1)
                                                             //if the next lattice point in the y direction is
                                                             //divisible by GETPROPERTIES().m_LY (so we are at z=GETPROPERTIES().m_LY-1) and we are
                                                             //pointing in the +y direction
@@ -191,7 +192,7 @@ inline int Data_Base<stencil, parallel>::getOneNeighborPeriodic(const int k, con
             neighbor += -(GETPROPERTIES().m_LZ) * (GETPROPERTIES().m_LY - 1);
 
         }
-        else if (((k) / (GETPROPERTIES().m_LZ)) % (GETPROPERTIES().m_LY) == 0 && stencil::Ci_xyz(y)[Q] <0) { //...
+        else if (localY == 0 && stencil::Ci_xyz(y)[Q] <0) { //...
 
             neighbor += (GETPROPERTIES().m_LZ) * (GETPROPERTIES().m_LY - 1);
 
@@ -203,12 +204,13 @@ inline int Data_Base<stencil, parallel>::getOneNeighborPeriodic(const int k, con
         }
     }
     if(GETPROPERTIES().m_LXdiv> 1) {
-        if ((k / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY) + 1) % (GETPROPERTIES().m_LXdiv) == 0 && stencil::Ci_xyz(x)[Q]> 0) { //...
+        int localX=computeX(GETPROPERTIES().m_LY,GETPROPERTIES().m_LZ,k);
+        if (localX == (GETPROPERTIES().m_LXdiv - 1) && stencil::Ci_xyz(x)[Q]> 0) { //...
 
             neighbor += -(GETPROPERTIES().m_LZ) * GETPROPERTIES().m_LY * (GETPROPERTIES().m_LXdiv - 1);
 
         }
-        else if (((k) / (GETPROPERTIES().m_LZ) / (GETPROPERTIES().m_LY)) % (GETPROPERTIES().m_LXdiv) == 0 && stencil::Ci_xyz(x)[Q] <0) {
+        else if (localX == 0 && stencil::Ci_xyz(x)[Q] <0) {
 
             neighbor += (GETPROPERTIES().m_LZ) * GETPROPERTIES().m_LY * (GETPROPERTIES().m_LXdiv - 1);
 
@@ -243,7 +245,7 @@ inline void Data_Base<stencil, parallel>::generateNeighbors() { //Loop over all 
             else { //Else if periodic
 
                 mv_Neighbors[k*stencil::Q + q] = getOneNeighborPeriodic(k, q);
-
+                
             }
 
         }

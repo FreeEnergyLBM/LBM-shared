@@ -2,17 +2,17 @@
 
 # This job requests number_of_tasks MPI tasks (without OpenMP)
 # SBATCH -N 1
-#SBATCH -n 128
+#SBATCH -n 10
 #SBATCH -c 1
 #SBATCH -t 00:05:00
-#SBATCH --ntasks-per-socket=64
+#SBATCH --ntasks-per-socket=10
 #SBATCH -p test
 #SBATCH -o ./out/output.%j.out # STDOUT
-
+#SBATCH --mem=8G 
 export OMP_PROC_BIND=true
 export OMP_PLACES=cores
 export OMP_NUM_THREADS=1
 export OMP_AFFINITY=balaned
 mpiexec ./wetP
-#valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./wetP
+#valgrind ./wetP
 #./wetP

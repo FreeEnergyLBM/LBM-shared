@@ -27,28 +27,28 @@
 template<typename Stencil, int num_neighbors>
 class No_Parallel{};
 
-inline int computeX(const int& LY, const int& LZ, const int k) //Compute X direction from a given k, the convention in this code is that
+inline int computeX(const int& LY,const int& LZ,const int k) //Compute X direction from a given k, the convention in this code is that
                           //k will iterate over the z direction first, then increment y by 1 once it reaches LZ,
                           //then repeat the iteration over z. Once it reaches LY x will be incremented and this
                           //process continues
 {  
 
-  return int(k / (LZ * LY));
+  return int(k/(float) (LZ*LY));
 
 
 }
 
-inline int computeY(const int& LY, const int& LZ, const int k) //Compute Y direction from a given k, this uses information from the X direction
+inline int computeY(const int& LY,const int& LZ,const int k) //Compute Y direction from a given k, this uses information from the X direction
 {  
 
-  return int((k - computeX(LY, LZ, k) * LZ * LY) / LZ);
+  return int((k-computeX(LY,LZ,k)*LZ*LY)/(float) LZ);
 
 }
 
-inline int computeZ(const int& LY, const int& LZ, const int k) //Compute Y direction from a given k, this uses information from the X and Y directions
+inline int computeZ(const int& LY,const int& LZ,const int k) //Compute Y direction from a given k, this uses information from the X and Y directions
 {  
 
-  return k - computeX(LY, LZ, k) * LZ * LY - computeY(LY, LZ, k) * LZ;
+  return k-computeX(LY,LZ,k)*LZ*LY-computeY(LY,LZ,k)*LZ;
 
 }
 
