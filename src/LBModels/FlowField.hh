@@ -126,10 +126,10 @@ inline void FlowField<traits>::initialise() { //Initialise model
         double* distribution = ModelBase<traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution = ModelBase<traits>::m_Distribution.getDistributionOldPointer(k);
 
-        density[k] = 1.0; //Set density to 1 initially (This will change)
-        velocity[k * traits::Stencil::D + x] = 0.0; //0 initial velocity
-        velocity[k * traits::Stencil::D + y] = 0.0;
-        velocity[k * traits::Stencil::D + z] = 0.0;
+        m_Density.initialiseModel(1.0,k); //Set density to 1 initially (This will change)
+        m_Velocity.initialiseModel(0.0,k,x);
+        m_Velocity.initialiseModel(0.0,k,x);
+        m_Velocity.initialiseModel(0.0,k,x);
 
         for (int idx = 0; idx <traits::Stencil::Q; idx++) {
 

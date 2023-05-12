@@ -124,14 +124,14 @@ inline void Binary<traits>::initialise() { //Initialise model
     for (int k=GETPROPERTIES().m_HaloSize; k<GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //loop over k
 
         double* distribution = ModelBase<traits>::m_Distribution.getDistributionPointer(k);
-        double* old_distribution=ModelBase<traits>::m_Distribution.getDistributionOldPointer(k);
+        double* old_distribution = ModelBase<traits>::m_Distribution.getDistributionOldPointer(k);
 
-        m_ChemicalPotential.getParameter(k) = 0;
+        m_ChemicalPotential.initialiseModel(0,k);
 
         int xx = computeX(GETPROPERTIES().m_LY, GETPROPERTIES().m_LZ, k);
 
-        if (xx>=GETPROPERTIES().m_LX/2) orderparameter[k] = 1.0; //Set order parameter to 1 initially (This will change)
-        else orderparameter[k] = -1.0;
+        if (xx>=GETPROPERTIES().m_LX/2) m_OrderParameter.initialiseModel(1.0,k); //Set order parameter to 1 initially (This will change)
+        else m_OrderParameter.initialiseModel(-1.0,k);
 
         double equilibriumsum = 0;
 

@@ -103,10 +103,11 @@ inline void FlowFieldBinary<traits>::initialise() { //Initialise model
         double* distribution = FlowField<traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution = FlowField<traits>::m_Distribution.getDistributionOldPointer(k);
 
-        FlowField<traits>::density[k] = 1.0; //Set density to 1 initially (This will change)
-        FlowField<traits>::velocity[k * traits::Stencil::D + x] = 0.0; //0 initial velocity
-        FlowField<traits>::velocity[k * traits::Stencil::D + y] = 0;
-        FlowField<traits>::velocity[k * traits::Stencil::D + z] = 0;
+        FlowField<traits>::m_Density.initialiseModel(1.0,k); //Set density to 1 initially (This will change)
+        FlowField<traits>::m_Velocity.initialiseModel(0.0,k,x);
+        FlowField<traits>::m_Velocity.initialiseModel(0.0,k,x);
+        FlowField<traits>::m_Velocity.initialiseModel(0.0,k,x);
+
         int equilibriumsum = 0;
         for (int idx = traits::Stencil::Q-1; idx>= 0; idx--) {
 

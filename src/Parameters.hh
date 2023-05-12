@@ -115,11 +115,8 @@ class Parameter {
             mv_Parameter.resize(m_Num * GETPROPERTIES().m_N); //Resize to the desired size
 
         }
-        Parameter(const Parameter& other) : m_Num(other.m_Num) {
+        Parameter(const Parameter& other) : m_Num(other.m_Num){}
 
-            mv_Parameter.resize(m_Num * GETPROPERTIES().m_N); //Resize to the desired size
-
-        }
         inline std::vector<T>& getParameter() const { //Returns const vector containing the parameter
 
             return mv_Parameter;
@@ -151,6 +148,22 @@ class Parameter {
             
         }
 
+        inline void initialiseModel(const T val,const int k, const int idx=0){
+
+            if (!mm_Initialised.count(k*m_Num+idx)) mv_Parameter[k*m_Num+idx]=val;
+            else mm_Initialised.erase(k*m_Num+idx);
+
+        }
+
+        inline void initialiseUser(const T val,const int k, const int idx=0){
+
+            mm_Initialised[k*m_Num+idx]=true;
+            mv_Parameter[k*m_Num+idx]=val;
+
+        }
+
+        static std::map<int,bool> mm_Initialised;
+
         const int m_Num;
         using ParamType = T;
 
@@ -162,6 +175,9 @@ class Parameter {
 
 template<class obj, typename T>
 std::vector<T> Parameter<obj, T>::mv_Parameter; //Must allocate memory for static vector outside of class
+
+template<class obj, typename T>
+std::map<int,bool> Parameter<obj, T>::mm_Initialised; //Must allocate memory for static vector outside of class
 
 template<class obj, typename T>
 inline void Parameter<obj, T>::Save(std::string filename, int t, std::string datadir) { //Function to save parameter stored in this class

@@ -1,5 +1,6 @@
 #pragma once
 #include <utility>
+#include <memory>
 #include "../BoundaryModels/BoundaryBase.hh"
 #include "../Forces/ForceBase.hh"
 

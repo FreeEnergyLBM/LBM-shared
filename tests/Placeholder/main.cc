@@ -33,11 +33,6 @@ using Lattice=LatticeProperties<Data1,X_Parallel,LX,LY>;
 
 inline auto& GETPROPERTIES(){return getGlobal<Lattice>();}
 
-//test=GETPROPERTIES();
-
-//GETPROPERTIES=getGlobal<Lattice>();
-//auto &LATTICEPROPERTIES=GETPROPERTIES;
-
 int main(int argc, char **argv){
 
     #ifdef MPIPARALLEL
