@@ -90,7 +90,7 @@ inline const std::vector<double>& ModelBase<traits>::getDistribution() const {
 template<class traits>
 inline void ModelBase<traits>::precompute() {
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp for schedule(guided)
     for (int k = GETPROPERTIES().m_HaloSize; k <GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //loop over k
 
         if constexpr(std::tuple_size<typename traits::Forces>::value != 0){ //Check if there is at least one element
@@ -106,9 +106,11 @@ inline void ModelBase<traits>::precompute() {
         
     }
 
+    #pragma omp master
+    {
     m_Distribution.getDistribution().swap(m_Distribution.getDistributionOld()); //swap old and new distributions
                                                                                 //before collision
-
+    }
 }
 
 template<class traits>
@@ -128,7 +130,7 @@ inline double ModelBase<traits>::computeForces(int xyz, int k) const {
 template<class traits>
 inline void ModelBase<traits>::boundaries() {
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp for schedule(guided)
     for (int k = 0; k <GETPROPERTIES().m_N; k++) { //loop over k
 
         if constexpr(std::tuple_size<typename traits::Boundaries>::value != 0) { //Check if there are any boundary

@@ -4,7 +4,8 @@
 #ifdef MPIPARALLEL
 #include <mpi.h>
 #endif
-
+#include <thread>
+#include <omp.h>
 //TODO
 //Swapping based streaming
 //BLAS
@@ -25,10 +26,11 @@
 //Modularisation is implemented using trait classes, which contain stencil information, 
 //the data type, a tuple of the boundary types and a tuple of forces to be applied in the model.
 
-const int LX=100;
-const int LY=100;
+const int LX=256;
+const int LY=200;
+const int LZ=1;
 const int TIMESTEPS=100;
-using Lattice=LatticeProperties<Data1,X_Parallel,LX,LY>;
+using Lattice=LatticeProperties<Data1,X_Parallel,LX,LY,LZ>;
 //using Lattice=LatticePropertiesRuntime<Data1,X_Parallel,2>;
 
 inline auto& GETPROPERTIES(){return getGlobal<Lattice>();}
@@ -53,17 +55,19 @@ int main(int argc, char **argv){
 
     LBM.initialise(); //Perform necessary initialisation
     auto t0=std::chrono::system_clock::now();
-
+    #pragma omp parallel
+    {
     for (int timestep=0;timestep<=TIMESTEPS;timestep++){
         
-        if (timestep%50000==0) Saver.Save(timestep);
+        //if (timestep%50000==0) Saver.Save(timestep);
         LBM.evolve(); //Evolve one timestep
-
+        
     }
-
+    }
     auto tend=std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds=tend-t0; 
-    std::cout<<"RUNTIME: "<<elapsed_seconds.count()<<" "<<LX<<" "<<LY<<std::endl;
+    const auto processor_count = std::thread::hardware_concurrency();
+    std::cout<<"RUNTIME: "<<elapsed_seconds.count()<<" "<<LX<<" "<<LY<<" "<<processor_count<<std::endl;
 
     #ifdef MPIPARALLEL
     MPI_Finalize();

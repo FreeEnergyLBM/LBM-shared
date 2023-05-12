@@ -93,7 +93,7 @@ inline const std::vector<double>& FlowField<traits>::getVelocity() const {
 template<class traits>
 inline void FlowField<traits>::collide() { //Collision step
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp for schedule(guided)
     for (int k = GETPROPERTIES().m_HaloSize; k <GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //loop over k
 
         double* old_distribution = ModelBase<traits>::m_Distribution.getDistributionOldPointer(k);
@@ -110,7 +110,10 @@ inline void FlowField<traits>::collide() { //Collision step
     }
 
     #ifdef MPIPARALLEL
+    #pragma omp master
+    {
     ModelBase<traits>::m_Data.communicateDistribution();
+    }
     #endif
 
 }
@@ -148,7 +151,7 @@ inline void FlowField<traits>::initialise() { //Initialise model
 template<class traits>
 inline void FlowField<traits>::computeMomenta() { //Calculate Density<> and Velocity
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp for schedule(guided)
     for (int k = GETPROPERTIES().m_HaloSize; k <GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //Loop over k
 
         double* distribution = ModelBase<traits>::m_Distribution.getDistributionPointer(k);
@@ -161,7 +164,10 @@ inline void FlowField<traits>::computeMomenta() { //Calculate Density<> and Velo
     }
 
     #ifdef MPIPARALLEL
+    #pragma omp master
+    {
     ModelBase<traits>::m_Data.communicate(m_Density);
+    }
     #endif
 
 }

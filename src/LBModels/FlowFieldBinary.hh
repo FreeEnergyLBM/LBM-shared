@@ -61,13 +61,12 @@ inline double FlowFieldBinary<traits>::computeEquilibrium(const double& density,
 
 template<class traits>
 inline void FlowFieldBinary<traits>::collide() { //Collision step
-    
-    int QQ = traits::Stencil::Q;
-    double* old_distribution = FlowField<traits>::m_Distribution.getDistributionOldPointer(0);
+       
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp for schedule(guided)
     for (int k = GETPROPERTIES().m_HaloSize; k <GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //loop over k
-
+        int QQ = traits::Stencil::Q;
+        double* old_distribution = FlowField<traits>::m_Distribution.getDistributionOldPointer(0);
         double equilibriumsum = 0;
 
         for (int idx = QQ-1; idx>= 0; --idx) { //loop over discrete velocity directions
@@ -87,7 +86,10 @@ inline void FlowFieldBinary<traits>::collide() { //Collision step
     }
 
     #ifdef MPIPARALLEL
+    #pragma omp master
+    {
     FlowField<traits>::m_Data.communicateDistribution();
+    }
     #endif
     
 }

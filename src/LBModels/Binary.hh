@@ -90,7 +90,7 @@ inline const std::vector<double>& Binary<traits>::getVelocity() const {
 template<class traits>
 inline void Binary<traits>::collide() {
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp for schedule(guided)
     for (int k = GETPROPERTIES().m_HaloSize; k < GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++){ //loop over k
 
         double* old_distribution = ModelBase<traits>::m_Distribution.getDistributionOldPointer(k);
@@ -110,7 +110,10 @@ inline void Binary<traits>::collide() {
     }
 
     #ifdef MPIPARALLEL
+    #pragma omp master
+    {
     ModelBase<traits>::m_Data.communicateDistribution();
+    }
     #endif
 
 }
@@ -155,7 +158,7 @@ inline void Binary<traits>::initialise() { //Initialise model
 template<class traits>
 inline void Binary<traits>::computeMomenta() { //Calculate order parameter
 
-    #pragma omp parallel for schedule(guided)
+    #pragma omp for schedule(guided)
     for (int k = GETPROPERTIES().m_HaloSize; k <GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //Loop over k
 
         double* distribution = ModelBase<traits>::m_Distribution.getDistributionPointer(k);
@@ -165,7 +168,10 @@ inline void Binary<traits>::computeMomenta() { //Calculate order parameter
     }
 
     #ifdef MPIPARALLEL
+    #pragma omp master
+    {
     ModelBase<traits>::m_Data.communicate(m_OrderParameter);
+    }
     #endif
     
 }
