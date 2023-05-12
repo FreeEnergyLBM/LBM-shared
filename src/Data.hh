@@ -133,7 +133,7 @@ template<class stencil, class parallel>
 template<class parameter>
 inline void Data_Base<stencil, parallel>::communicate(parameter obj) { //Not used in this data type
 
-    static_assert(is_base_of_template<Parameter,parameter>::value,"ERROR: The object passed to this function cannot be communicated.")
+    static_assert(is_base_of_template<Parameter,parameter>::value,"ERROR: The object passed to this function cannot be communicated.");
     m_Parallel.communicate(obj);
 
 }
