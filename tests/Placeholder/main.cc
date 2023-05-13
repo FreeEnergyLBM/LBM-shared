@@ -49,7 +49,10 @@ int main(int argc, char **argv){
     //FlowField<Lattice> Dist0;
     FlowFieldBinary<Lattice> Dist1;
     Binary<Lattice> Dist2;
+    
     setFluid<Lattice>();
+    setGeometry<Lattice>();
+
     Dist1.getForce<BodyForce>().setMagnitudeX(0.0001);
 
     Algorithm LBM(Dist1,Dist2);

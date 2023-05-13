@@ -127,9 +127,9 @@ inline void Binary<lattice, traits>::initialise() { //Initialise model
         double* distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
 
-        m_ChemicalPotential.initialiseModel(0,k);
+        m_ChemicalPotential.initialise(0,k);
 
-        m_OrderParameter.initialiseModel(1.0,k);
+        m_OrderParameter.initialise(1.0,k);
 
         double equilibriumsum = 0;
 

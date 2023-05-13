@@ -148,7 +148,7 @@ class Parameter {
             
         }
 
-        static inline void initialiseModel(const T val,const int k, const int idx=0){
+        static inline void initialise(const T val,const int k, const int idx=0){
 
             if (!mm_Initialised.count(k*m_Num+idx)) mv_Parameter[k*m_Num+idx]=val;
             else mm_Initialised.erase(k*m_Num+idx);
@@ -157,8 +157,9 @@ class Parameter {
 
         static inline void initialiseUser(const T val,const int k, const int idx=0){
 
-            mm_Initialised[k*m_Num+idx]=true;
-            mv_Parameter[k*m_Num+idx]=val;
+            mm_Initialised.insert({k*m_Num+idx,true});
+            if (!mm_Initialised.count(k*m_Num+idx)) mv_Parameter[k*m_Num+idx]=val;
+            else mm_Initialised.erase(k*m_Num+idx);
 
         }
 
@@ -177,7 +178,7 @@ template<template<class> class obj, class lattice, typename T, int num>
 std::vector<T> Parameter<obj, lattice, T, num>::mv_Parameter; //Must allocate memory for static vector outside of class
 
 template<template<class> class obj, class lattice, typename T, int num>
-std::map<int,bool> Parameter<obj, lattice, T, num>::mm_Initialised; //Must allocate memory for static vector outside of class
+std::map<int,bool> Parameter<obj, lattice, T, num>::mm_Initialised;
 
 template<template<class> class obj,class lattice,  typename T, int num>
 inline void Parameter<obj, lattice, T, num>::Save(std::string filename, int t, std::string datadir) { //Function to save parameter stored in this class

@@ -128,10 +128,10 @@ inline void FlowField<lattice, traits>::initialise() { //Initialise model
         double* distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
 
-        m_Density.initialiseModel(1.0,k); //Set density to 1 initially (This will change)
-        m_Velocity.initialiseModel(0.0,k,x);
-        m_Velocity.initialiseModel(0.0,k,x);
-        m_Velocity.initialiseModel(0.0,k,x);
+        m_Density.initialise(1.0,k); //Set density to 1 initially (This will change)
+        m_Velocity.initialise(0.0,k,x);
+        m_Velocity.initialise(0.0,k,x);
+        m_Velocity.initialise(0.0,k,x);
 
         for (int idx = 0; idx <traits::Stencil::Q; idx++) {
 

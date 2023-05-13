@@ -104,10 +104,10 @@ inline void FlowFieldBinary<lattice, traits>::initialise() { //Initialise model
         double* distribution = FlowField<lattice, traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution = FlowField<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
 
-        FlowField<lattice, traits>::m_Density.initialiseModel(1.0,k); //Set density to 1 initially (This will change)
-        FlowField<lattice, traits>::m_Velocity.initialiseModel(0.0,k,x);
-        FlowField<lattice, traits>::m_Velocity.initialiseModel(0.0,k,x);
-        FlowField<lattice, traits>::m_Velocity.initialiseModel(0.0,k,x);
+        FlowField<lattice, traits>::m_Density.initialise(1.0,k); //Set density to 1 initially (This will change)
+        FlowField<lattice, traits>::m_Velocity.initialise(0.0,k,x);
+        FlowField<lattice, traits>::m_Velocity.initialise(0.0,k,x);
+        FlowField<lattice, traits>::m_Velocity.initialise(0.0,k,x);
 
         int equilibriumsum = 0;
         for (int idx = traits::Stencil::Q-1; idx>= 0; idx--) {

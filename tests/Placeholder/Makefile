@@ -9,7 +9,7 @@ LIBPATH =
 
 COMP	=	 mpicxx
 
-DEPS    =       ../../src/%.hh ../../src/Forces/%.hh ../../src/GradientStencils%.hh ../../src/LBModels/%.hh ../../src/BoundaryModels/%.hh 
+DEPS    =       ../../src/%.hh ../../src/Forces/%.hh ../../src/GradientStencils%.hh ../../src/LBModels/%.hh ../../src/BoundaryModels/%.hh main.hh 
 
 OBJ     =       main.cc
 

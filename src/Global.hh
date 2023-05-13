@@ -3,6 +3,7 @@
 #include <mpi.h>
 #endif
 #include <functional>
+
 /**
  * \file Global.hh
  * \brief This contains global parameters for the code. Eventually this should be mostly phased out.

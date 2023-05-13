@@ -1,8 +1,10 @@
 #pragma once
 #include<map>
+#include "Parameters.hh"
 #include "Service.hh"
 #include "Lattice.hh"
 #include "Global.hh"
+
 /**
  * \file Geometry.hh
  * \brief This is not fully implemented but will contain information relevant to boundary conditions
@@ -44,8 +46,7 @@ class Geometry {
 
         enum{Periodic = 3, Solid = 2, Wall = 1, Fluid = 0}; //!<IDs for each boundary type.
 
-        std::vector<int> geometry; //!<Vector containing geometry information.
-
+        SolidLabels<lattice> m_SolidLabels;
 
 };
 
@@ -98,13 +99,14 @@ inline bool Geometry<lattice>::isPeriodic(int k) {
 template<typename lattice>
 inline bool Geometry<lattice>::isSolid(int k) {
 
-    int yAtCurrentk = computeY(lattice::m_LY, lattice::m_LZ, k);
+    return m_SolidLabels.getParameter(k);
+    //int yAtCurrentk = computeY(lattice::m_LY, lattice::m_LZ, k);
     //int zAtCurrentk = computeZ(lattice::m_LY, lattice::m_LZ, k);
     //int xAtCurrentk = computeX(lattice::m_LY, lattice::m_LZ, k);
     
     //if (yAtCurrentk <= 1 || yAtCurrentk >= lattice::m_LY - 2 || xAtCurrentk <= 1 || xAtCurrentk >= lattice::m_LXdiv - 2 || zAtCurrentk <= 1 || zAtCurrentk >= lattice::m_LZ - 2 ) return true; //Change this condition to control where the solid is
     
-    if (yAtCurrentk <= 1 || yAtCurrentk >= lattice::m_LY - 2 ) return true; //Change this condition to control where the solid is
-    else return false;
+    //if (yAtCurrentk <= 1 || yAtCurrentk >= lattice::m_LY - 2 ) return true; //Change this condition to control where the solid is
+    //else return false;
 
 }
