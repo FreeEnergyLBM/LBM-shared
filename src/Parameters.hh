@@ -195,6 +195,7 @@ inline void Parameter<obj, lattice, T, num>::Save(std::string filename, int t, s
     MPI_File_open(MPI_COMM_SELF, fdump, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh); //Open the file using mpi in write only mode
     
     MPI_File_seek(fh, sizeof(double) * CURPROCESSOR * m_Num * (lattice::m_LX * lattice::m_LY * lattice::m_LZ) / NUMPROCESSORS, MPI_SEEK_SET); //Skip to a certain location in the file, currently
+    
     MPI_File_write(fh,&mv_Parameter[lattice::m_HaloSize * m_Num], m_Num * (lattice::m_N - 2 * lattice::m_HaloSize), MPI_DOUBLE, MPI_STATUSES_IGNORE);
 
     MPI_File_close(&fh);
@@ -236,6 +237,8 @@ class ParameterSave {
         }
         inline void Save(int timestep);
 
+        inline void SaveHeader(const int& timestep, const int& saveinterval);
+
     private:
 
         const int m_SaveInterval;
@@ -243,6 +246,29 @@ class ParameterSave {
         std::tuple<parameters<lattice>...> mt_Parameters;
         
 };
+
+template<class lattice, template<class> class ...parameters>
+inline void ParameterSave<lattice, parameters...>::SaveHeader(const int& timestep, const int& saveinterval) { //Function to save parameter stored in this class
+    
+    if(CURPROCESSOR==0){
+        std::cout<<"SAVING HEADER"<<std::endl;
+        char fdump[256];
+        sprintf(fdump, (m_DataDir + "Header.mat").c_str()); //Buffer containing file name and location.
+
+        std::ofstream fs(fdump, std::ios::out | std::ios::binary);
+
+        fs.write((char *)(&lattice::m_LX), sizeof(int));
+        fs.write((char *)(&lattice::m_LY), sizeof(int));
+        fs.write((char *)(&lattice::m_LZ), sizeof(int));
+        fs.write((char *)(&lattice::m_NDIM), sizeof(int));
+        fs.write((char *)(&timestep), sizeof(int));
+        fs.write((char *)(&saveinterval), sizeof(int));
+
+        fs.close();
+
+    }
+
+}
 
 template<class lattice, template<class> class ...parameters>
 inline void ParameterSave<lattice, parameters...>::Save(int timestep) {

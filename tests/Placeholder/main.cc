@@ -12,9 +12,10 @@
 //adative mesh
 //floats
 //MPI object - get rid of ifdefs
-//Sort out globals
 //Adjust parallelisation basedo n solid
 //template function to add forces
+//init in x dir
+//variable viscosity
 
 /**
  * \file main.cc
@@ -29,6 +30,7 @@ const int LX=100;
 const int LY=100;
 const int LZ=1;
 const int TIMESTEPS=1000;
+const int SAVEINTERVAL=100;
 using Lattice=LatticeProperties<Data1,X_Parallel,LX,LY,LZ>;
 
 int main(int argc, char **argv){
@@ -53,6 +55,7 @@ int main(int argc, char **argv){
     Algorithm LBM(Dist1,Dist2);
 
     ParameterSave<Lattice,Density,OrderParameter,Velocity> Saver("data/");
+    Saver.SaveHeader(TIMESTEPS,SAVEINTERVAL);
 
     LBM.initialise(); //Perform necessary initialisation
     auto t0=std::chrono::system_clock::now();
@@ -60,8 +63,10 @@ int main(int argc, char **argv){
     #pragma omp parallel
     {
     for (int timestep=0;timestep<=TIMESTEPS;timestep++){
-
+        #pragma omp master
+        {
         if (timestep%100==0) Saver.Save(timestep);
+        }
         LBM.evolve(); //Evolve one timestep
         
     }
