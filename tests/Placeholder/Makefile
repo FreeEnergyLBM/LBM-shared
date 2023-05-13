@@ -1,7 +1,7 @@
 
 INCS	=	
 
-DEFS    =	   -g -O3 -fconcepts-ts -Wno-deprecated -Wall -std=c++17 -I. -fopenmp -DMPIPARALLEL
+DEFS    =	   -g -O3 -Wno-deprecated -Wall -std=c++17 -I. -fopenmp -DMPIPARALLEL
 
 LIBS	=	-lm
 

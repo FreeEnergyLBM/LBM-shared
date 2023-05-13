@@ -6,7 +6,7 @@ TESTS = Collide_test BounceBack_test FlowField_test
 RUN_TESTS = $(addprefix run_, $(TESTS))
 
 CXX = mpicxx
-CXXFLAGS = -fconcepts-ts -std=c++17 -Wall -DMPIPARALLEL -fopenmp
+CXXFLAGS = -std=c++17 -Wall -DMPIPARALLEL -fopenmp
 
 .PHONY: all clean cleantests gtest $(RUN_TESTS)
 

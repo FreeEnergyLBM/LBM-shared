@@ -6,14 +6,8 @@
 #include "Parallel.hh"
 #include "Stencil.hh"
 
-
-auto& GETPROPERTIES(){
-    return getGlobal<LatticeProperties<Data1,X_Parallel,1,1>>();
-}
-
-
 TEST(FlowFieldTest, initialiseD2Q9) {
-  FlowField ff;
+  FlowField<LatticeProperties<Data1,X_Parallel,1,1>> ff;
   ff.initialise();
 
   // Add two neighbours due to the parallel implementation

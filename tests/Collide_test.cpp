@@ -6,15 +6,12 @@
 #include "Parallel.hh"
 #include "Stencil.hh"
 
-auto& GETPROPERTIES(){
-    return getGlobal<LatticeProperties<Data1,X_Parallel,1,1>>();
-}
-
 double epsilon = 1e-10;
 
+using Lattice = LatticeProperties<Data1,X_Parallel,1,1>;
 
 TEST(CollideTest, computeGammaD2Q9) {
-  CollisionBase<D2Q9> collision;
+  CollisionBase<Lattice,D2Q9> collision;
   double v[2] = {1,2};
   double vv = v[0]*v[0] + v[1]*v[1];
   for (int i=0; i<9; i++) {
@@ -27,14 +24,14 @@ TEST(CollideTest, computeGammaD2Q9) {
 
 
 TEST(CollideTest, computeZerothMomentD2Q9) {
-  CollisionBase<D2Q9> collision;
+  CollisionBase<Lattice,D2Q9> collision;
   double distr[9] = {1,1,1,1,1,1,1,1,1};
   EXPECT_NEAR(collision.computeZerothMoment(distr), 9, epsilon);
 }
 
 
 TEST(CollideTest, computeFirstMomentD2Q9) {
-  CollisionBase<D2Q9> collision;
+  CollisionBase<Lattice,D2Q9> collision;
   double distr[9] = {1,1,0,1,0,1,0,1,0};
   EXPECT_NEAR(collision.computeFirstMoment(distr,0), 3, epsilon);
   EXPECT_NEAR(collision.computeFirstMoment(distr,1), 1, epsilon);
@@ -42,7 +39,7 @@ TEST(CollideTest, computeFirstMomentD2Q9) {
 
 
 TEST(CollideTest, collideSRTD2Q9) {
-  CollisionBase<D2Q9> collision;
+  CollisionBase<Lattice,D2Q9> collision;
   double old = 2;
   double eq = 1;
   EXPECT_NEAR(collision.collideSRT(old, eq, 1), eq, epsilon);
@@ -52,7 +49,7 @@ TEST(CollideTest, collideSRTD2Q9) {
 
 
 TEST(CollideTest, forceGuoSRTD2Q9) {
-  CollisionBase<D2Q9> collision;
+  CollisionBase<Lattice,D2Q9> collision;
   double tau = 0.9;
   double f[2] = {1, 2};
   double v[2] = {-1, 1};
