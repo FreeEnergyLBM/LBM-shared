@@ -46,19 +46,19 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
 
         inline const std::vector<double>& getDistribution() const; //Return vector of distribution
 
-        template<class force, int inst = 0>
-        inline force& getForce() {
+        template<template<class> class force, int inst = 0>
+        inline force<lattice>& getForce() {
 
-            auto forces = get_type<force>(mt_Forces);
+            auto forces = get_type<force<lattice>>(mt_Forces);
 
             return std::get<inst>(forces);
 
         }
 
-        template<class boundary, int inst = 0>
-        inline boundary& getBoundary() {
+        template<template<class> class boundary, int inst = 0>
+        inline boundary<lattice>& getBoundary() {
 
-            auto boundaries = get_type<boundary>(mt_Boundaries);
+            auto boundaries = get_type<boundary<lattice>>(mt_Boundaries);
 
             return std::get<inst>(boundaries);
 

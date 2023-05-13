@@ -129,10 +129,7 @@ inline void Binary<lattice, traits>::initialise() { //Initialise model
 
         m_ChemicalPotential.initialiseModel(0,k);
 
-        int xx = computeX(lattice::m_LY, lattice::m_LZ, k);
-
-        if (xx>=lattice::m_LX/2) m_OrderParameter.initialiseModel(1.0,k); //Set order parameter to 1 initially (This will change)
-        else m_OrderParameter.initialiseModel(-1.0,k);
+        m_OrderParameter.initialiseModel(1.0,k);
 
         double equilibriumsum = 0;
 

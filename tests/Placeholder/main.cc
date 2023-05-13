@@ -1,11 +1,9 @@
-#include "../../src/lbm.hh"
 #include <chrono>
 #include <iostream>
 #ifdef MPIPARALLEL
 #include <mpi.h>
 #endif
-#include <thread>
-#include <omp.h>
+#include "main.hh"
 //TODO
 //Swapping based streaming
 //BLAS
@@ -16,6 +14,7 @@
 //MPI object - get rid of ifdefs
 //Sort out globals
 //Adjust parallelisation basedo n solid
+//template function to add forces
 
 /**
  * \file main.cc
@@ -47,15 +46,15 @@ int main(int argc, char **argv){
     
     Parallel<Lattice,1> initialise;
     #endif
-    FlowField<Lattice> Dist0;
-    //FlowFieldBinary Dist1;
-    //Binary Dist2;
+    //FlowField<Lattice> Dist0;
+    FlowFieldBinary<Lattice> Dist1;
+    Binary<Lattice> Dist2;
+    setFluid<Lattice>();
+    Dist1.getForce<BodyForce>().setMagnitudeX(0.0001);
 
-    //Dist1.getForce<BodyForce>().setMagnitudeX(0.0001);
-
-    //Algorithm LBM(Dist1,Dist2);
-    Algorithm LBM(Dist0);
-    //ParameterSave<Density,OrderParameter,Velocity> Saver("data/");
+    Algorithm LBM(Dist1,Dist2);
+    //Algorithm LBM(Dist0);
+    ParameterSave<Lattice,Density,OrderParameter,Velocity> Saver("data/");
 
     LBM.initialise(); //Perform necessary initialisation
     auto t0=std::chrono::system_clock::now();
@@ -64,7 +63,7 @@ int main(int argc, char **argv){
     {
     for (int timestep=0;timestep<=TIMESTEPS;timestep++){
 
-        //if (timestep%50000==0) Saver.Save(timestep);
+        if (timestep%50000==0) Saver.Save(timestep);
         LBM.evolve(); //Evolve one timestep
         
     }

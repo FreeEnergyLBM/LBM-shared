@@ -148,14 +148,14 @@ class Parameter {
             
         }
 
-        inline void initialiseModel(const T val,const int k, const int idx=0){
+        static inline void initialiseModel(const T val,const int k, const int idx=0){
 
             if (!mm_Initialised.count(k*m_Num+idx)) mv_Parameter[k*m_Num+idx]=val;
             else mm_Initialised.erase(k*m_Num+idx);
 
         }
 
-        inline void initialiseUser(const T val,const int k, const int idx=0){
+        static inline void initialiseUser(const T val,const int k, const int idx=0){
 
             mm_Initialised[k*m_Num+idx]=true;
             mv_Parameter[k*m_Num+idx]=val;
