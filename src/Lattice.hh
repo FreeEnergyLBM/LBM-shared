@@ -29,6 +29,7 @@ struct LatticeProperties{
     static_assert(std::is_base_of<Parallel<LatticeProperties<data, parallel, lx, ly, lz>,1>,parallel<LatticeProperties<data, parallel, lx, ly, lz>, D2Q9,1>>::value,"ERROR: Chosen parallelisation method is not a parallelisation class.");
     
     static int m_LXdiv;
+    static int m_LXMPIOffset;
     static int m_HaloSize;
     static int m_N;
 
@@ -81,6 +82,7 @@ struct LatticePropertiesRuntime {
     static const int m_LY;
     static const int m_LZ;
     static int m_LXdiv;
+    static int m_LXMPIOffset;
     static int m_HaloSize;
     static int m_N;
     static constexpr int m_NDIM = NDIM;
@@ -110,6 +112,9 @@ template<template<class, class, class> class data, template<class, class, int> c
 int LatticePropertiesRuntime<data, parallel, NDIM>::m_LXdiv;
 
 template<template<class, class, class> class data, template<class, class, int> class parallel, int NDIM>
+int LatticePropertiesRuntime<data, parallel, NDIM>::m_LXMPIOffset=0;
+
+template<template<class, class, class> class data, template<class, class, int> class parallel, int NDIM>
 int LatticePropertiesRuntime<data, parallel, NDIM>::m_HaloSize;
 
 template<template<class, class, class> class data, template<class, class, int> class parallel, int NDIM>
@@ -120,6 +125,9 @@ double LatticePropertiesRuntime<data, parallel, NDIM>::m_DT=1.0;
 
 template<template<class, class, class> class data, template<class, class, int> class parallel, int lx, int ly, int lz>
 int LatticeProperties<data, parallel, lx, ly, lz>::m_LXdiv=lx;
+
+template<template<class, class, class> class data, template<class, class, int> class parallel, int lx, int ly, int lz>
+int LatticeProperties<data, parallel, lx, ly, lz>::m_LXMPIOffset=0;
 
 template<template<class, class, class> class data, template<class, class, int> class parallel, int lx, int ly, int lz>
 int LatticeProperties<data, parallel, lx, ly, lz>::m_HaloSize=0;

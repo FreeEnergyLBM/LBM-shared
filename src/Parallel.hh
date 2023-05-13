@@ -36,10 +36,12 @@ class Parallel {
 
             if (lattice::m_LX % NUMPROCESSORS == 0) {
                 lattice::m_LXdiv = (lattice::m_LX / NUMPROCESSORS + 2 * num_neighbors);
+                lattice::m_LXMPIOffset = lattice::m_LXdiv*CURPROCESSOR;
             }
             else{
                 throw std::runtime_error(std::string("Currently, the number of cores must be divisible by the size of the domain in the x direction."));
             }
+
             /*
             else if (CURPROCESSOR<LX%NUMPROCESSORS){
                 LXdiv=((LX-LX%NUMPROCESSORS)/NUMPROCESSORS+1+2*num_neighbors);

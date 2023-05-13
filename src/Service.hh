@@ -27,6 +27,18 @@
 template<typename lattice, typename stencil, int num_neighbors>
 class No_Parallel{};
 
+template<class lattice>
+inline int computeXGlobal(const int k) //Compute X direction from a given k, the convention in this code is that
+                          //k will iterate over the z direction first, then increment y by 1 once it reaches LZ,
+                          //then repeat the iteration over z. Once it reaches LY x will be incremented and this
+                          //process continues
+{  
+
+  return lattice::m_LXMPIOffset+int(k/(float) (lattice::m_LZ*lattice::m_LY));
+
+
+}
+
 inline int computeX(const int& LY,const int& LZ,const int k) //Compute X direction from a given k, the convention in this code is that
                           //k will iterate over the z direction first, then increment y by 1 once it reaches LZ,
                           //then repeat the iteration over z. Once it reaches LY x will be incremented and this
