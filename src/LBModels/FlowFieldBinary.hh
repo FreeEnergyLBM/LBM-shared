@@ -13,22 +13,20 @@
 //FlowField.hh: Contains the details of the LBM model to solve the Navier-Stokes and continuity equation. Each
 //Model is given a "traits" class that contains stencil, data, force and boundary information
 
-template<class properties>
+template<class lattice>
 struct DefaultTraitFlowFieldBinary{
 
-    using Stencil = std::conditional_t<std::remove_reference<properties>::type::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
+    using Stencil = std::conditional_t<std::remove_reference<lattice>::type::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
 
-    using Boundaries = std::tuple<BounceBack>;
+    using Boundaries = std::tuple<BounceBack<lattice>>;
 
-    using Forces = std::tuple<BodyForce,ChemicalForce>;
-
-    using Properties = properties;
+    using Forces = std::tuple<BodyForce<lattice>,ChemicalForce<lattice>>;
 
 };
 
 
-template<class traits = DefaultTraitFlowFieldBinary<decltype(GETPROPERTIES())>>
-class FlowFieldBinary : public FlowField<traits>{ //Inherit from base class to avoid repetition of common
+template<class lattice, class traits = DefaultTraitFlowFieldBinary<lattice>>
+class FlowFieldBinary : public FlowField<lattice, traits>{ //Inherit from base class to avoid repetition of common
                                                          //calculations
     
     public:
@@ -45,41 +43,41 @@ class FlowFieldBinary : public FlowField<traits>{ //Inherit from base class to a
                                   const double* velocity, const double& order_parameter, const double& chemical_potential, const int idx) const; //Calculate collision                                                                             //at index idx
 
 
-        OrderParameter m_OrderParameter;
-        ChemicalPotential m_ChemicalPotential;
+        OrderParameter<lattice> m_OrderParameter;
+        ChemicalPotential<lattice> m_ChemicalPotential;
 
         enum{x=0,y=1,z=2};
 
 };
 
-template<class traits>
-inline double FlowFieldBinary<traits>::computeEquilibrium(const double& density, const double* velocity, const double& order_parameter, const double& chemical_potential, const int idx, const int k) const {
+template<class lattice, class traits>
+inline double FlowFieldBinary<lattice, traits>::computeEquilibrium(const double& density, const double* velocity, const double& order_parameter, const double& chemical_potential, const int idx, const int k) const {
 
-    return density * CollisionBase<typename traits::Stencil>::computeGamma(velocity, idx) + traits::Stencil::Weights[idx] * order_parameter * chemical_potential / traits::Stencil::Cs2; //Equilibrium is density times gamma in this case
+    return density * CollisionBase<lattice, typename traits::Stencil>::computeGamma(velocity, idx) + traits::Stencil::Weights[idx] * order_parameter * chemical_potential / traits::Stencil::Cs2; //Equilibrium is density times gamma in this case
 
 }
 
-template<class traits>
-inline void FlowFieldBinary<traits>::collide() { //Collision step
+template<class lattice, class traits>
+inline void FlowFieldBinary<lattice, traits>::collide() { //Collision step
        
 
     #pragma omp for schedule(guided)
-    for (int k = GETPROPERTIES().m_HaloSize; k <GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //loop over k
+    for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
         int QQ = traits::Stencil::Q;
-        double* old_distribution = FlowField<traits>::m_Distribution.getDistributionOldPointer(0);
+        double* old_distribution = FlowField<lattice, traits>::m_Distribution.getDistributionOldPointer(0);
         double equilibriumsum = 0;
 
         for (int idx = QQ-1; idx>= 0; --idx) { //loop over discrete velocity directions
             //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
             //"computeCollisionQ"
 
-            double& density = FlowField<traits>::density[k];
-            double *velocity = &FlowField<traits>::velocity[k * traits::Stencil::D];
+            double& density = FlowField<lattice, traits>::density[k];
+            double *velocity = &FlowField<lattice, traits>::velocity[k * traits::Stencil::D];
             double& orderParameter = m_OrderParameter.getParameter(k);
             double& chemicalPotential = m_ChemicalPotential.getParameter(k);
 
             double collision = computeCollisionQ(equilibriumsum, k, old_distribution[k*QQ+idx], density, velocity, orderParameter, chemicalPotential, idx);
-            FlowField<traits>::m_Distribution.getDistributionPointer(FlowField<traits>::m_Distribution.streamIndex(k, idx))[idx] = collision;
+            FlowField<lattice, traits>::m_Distribution.getDistributionPointer(FlowField<lattice, traits>::m_Distribution.streamIndex(k, idx))[idx] = collision;
 
         }        
         
@@ -88,37 +86,37 @@ inline void FlowFieldBinary<traits>::collide() { //Collision step
     #ifdef MPIPARALLEL
     #pragma omp master
     {
-    FlowField<traits>::m_Data.communicateDistribution();
+    FlowField<lattice, traits>::m_Data.communicateDistribution();
     }
     
     #endif
     
 }
 
-template<class traits>
-inline void FlowFieldBinary<traits>::initialise() { //Initialise model
+template<class lattice, class traits>
+inline void FlowFieldBinary<lattice, traits>::initialise() { //Initialise model
 
-    FlowField<traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
+    FlowField<lattice, traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
 
     #pragma omp parallel for schedule(guided)
-    for (int k = GETPROPERTIES().m_HaloSize; k <GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //loop over k
+    for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
 
-        double* distribution = FlowField<traits>::m_Distribution.getDistributionPointer(k);
-        double* old_distribution = FlowField<traits>::m_Distribution.getDistributionOldPointer(k);
+        double* distribution = FlowField<lattice, traits>::m_Distribution.getDistributionPointer(k);
+        double* old_distribution = FlowField<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
 
-        FlowField<traits>::m_Density.initialiseModel(1.0,k); //Set density to 1 initially (This will change)
-        FlowField<traits>::m_Velocity.initialiseModel(0.0,k,x);
-        FlowField<traits>::m_Velocity.initialiseModel(0.0,k,x);
-        FlowField<traits>::m_Velocity.initialiseModel(0.0,k,x);
+        FlowField<lattice, traits>::m_Density.initialiseModel(1.0,k); //Set density to 1 initially (This will change)
+        FlowField<lattice, traits>::m_Velocity.initialiseModel(0.0,k,x);
+        FlowField<lattice, traits>::m_Velocity.initialiseModel(0.0,k,x);
+        FlowField<lattice, traits>::m_Velocity.initialiseModel(0.0,k,x);
 
         int equilibriumsum = 0;
         for (int idx = traits::Stencil::Q-1; idx>= 0; idx--) {
 
             double equilibrium;
 
-            if (idx>0) equilibrium = computeEquilibrium(FlowField<traits>::density[k],&FlowField<traits>::velocity[k * traits::Stencil::D], m_OrderParameter.getParameter(k), m_ChemicalPotential.getParameter(k), idx, k);
+            if (idx>0) equilibrium = computeEquilibrium(FlowField<lattice, traits>::density[k],&FlowField<lattice, traits>::velocity[k * traits::Stencil::D], m_OrderParameter.getParameter(k), m_ChemicalPotential.getParameter(k), idx, k);
 
-            else equilibrium = FlowField<traits>::density[k] - equilibriumsum;
+            else equilibrium = FlowField<lattice, traits>::density[k] - equilibriumsum;
 
             distribution[idx] = equilibrium; //Set distributions to equillibrium
             old_distribution[idx] = equilibrium;        
@@ -129,27 +127,27 @@ inline void FlowFieldBinary<traits>::initialise() { //Initialise model
     
 }
 
-template<class traits>
-inline double FlowFieldBinary<traits>::computeCollisionQ(double& equilibriumsum, const int k, const double& old, const double& density,
+template<class lattice, class traits>
+inline double FlowFieldBinary<lattice, traits>::computeCollisionQ(double& equilibriumsum, const int k, const double& old, const double& density,
                                                      const double* velocity, const double& order_parameter, const double& chemical_potential, const int idx) const {
                                             //Calculate collision step at a given velocity index at point k
     
     double forcexyz[traits::Stencil::D]; //Temporary array storing force in each cartesian direction
 
     //Force is the sum of model forces and given forces
-    for(int xyz = 0; xyz <traits::Stencil::D; xyz++) forcexyz[xyz] = FlowField<traits>::computeModelForce(xyz, k)+FlowField<traits>::computeForces(xyz, k);
+    for(int xyz = 0; xyz <traits::Stencil::D; xyz++) forcexyz[xyz] = FlowField<lattice, traits>::computeModelForce(xyz, k)+FlowField<lattice, traits>::computeForces(xyz, k);
     
     //Sum of collision + force contributions 
     if (idx>0) {
 
-        double eq = CollisionBase<typename traits::Stencil>::collideSRT(old, computeEquilibrium(density ,velocity ,order_parameter ,chemical_potential ,idx ,k), FlowField<traits>::m_InverseTau)
-              + CollisionBase<typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, FlowField<traits>::m_InverseTau, idx);
+        double eq = CollisionBase<lattice, typename traits::Stencil>::collideSRT(old, computeEquilibrium(density ,velocity ,order_parameter ,chemical_potential ,idx ,k), FlowField<lattice, traits>::m_InverseTau)
+              + CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, FlowField<lattice, traits>::m_InverseTau, idx);
 
         equilibriumsum += eq;
         
         return eq;
 
     }
-    else return density-equilibriumsum+CollisionBase<typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, FlowField<traits>::m_InverseTau, idx);
+    else return density-equilibriumsum+CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, FlowField<lattice, traits>::m_InverseTau, idx);
     
 }

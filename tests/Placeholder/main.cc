@@ -33,21 +33,21 @@ const int TIMESTEPS=100;
 using Lattice=LatticeProperties<Data1,X_Parallel,LX,LY,LZ>;
 //using Lattice=LatticePropertiesRuntime<Data1,X_Parallel,2>;
 
-inline auto& GETPROPERTIES(){return getGlobal<Lattice>();}
+//inline auto& GETPROPERTIES(){return getGlobal<Lattice>();}
 
 
 int main(int argc, char **argv){
     
     #ifdef MPIPARALLEL
     int provided;
-    MPI_Init(&argc, &argv);
-    //MPI_Init_thread(&argc, &argv,MPI_THREAD_FUNNELED,&provided);
+    //MPI_Init(&argc, &argv);
+    MPI_Init_thread(&argc, &argv,MPI_THREAD_FUNNELED,&provided);
     MPI_Comm_size(MPI_COMM_WORLD, &NUMPROCESSORS);                              // Store number of processors
     MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
     
-    Parallel<1> initialise;
+    Parallel<Lattice,1> initialise;
     #endif
-    FlowField Dist0;
+    FlowField<Lattice> Dist0;
     //FlowFieldBinary Dist1;
     //Binary Dist2;
 

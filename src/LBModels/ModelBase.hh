@@ -4,20 +4,18 @@
 #include "../BoundaryModels/BoundaryBase.hh"
 #include "../Forces/ForceBase.hh"
 
-template<class properties>
+template<class lattice=void>
 struct DefaultTrait{
     
-    using Stencil = std::conditional_t<std::remove_reference<properties>::type::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
+    using Stencil = std::conditional_t<std::remove_reference<lattice>::type::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
 
     using Boundaries = std::tuple<>;
 
     using Forces = std::tuple<>;
 
-    using Properties = properties;
-
 };
 
-template<class traits = DefaultTrait<decltype(GETPROPERTIES())>>
+template<class lattice, class traits = DefaultTrait<lattice>>
 class ModelBase{ //Inherit from base class to avoid repetition of common
                                                       //calculations
     static_assert(CheckBase<ForceBase, typename traits::Forces>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
@@ -29,7 +27,7 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
               m_Distribution(m_Data.getDistributionObject())
         {}
 
-        ModelBase(ModelBase<traits>& other)
+        ModelBase(ModelBase<lattice,traits>& other)
             : m_Data(other.m_Data),
               m_Distribution(other.m_Distribution)
         {}
@@ -66,32 +64,32 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
 
         }
 
-        typename std::remove_reference<typename traits::Properties>::type::template DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
-        typename std::remove_reference<typename traits::Properties>::type::template DataType<typename traits::Stencil>::DistributionData& m_Distribution = m_Data.getDistributionObject();
+        typename std::remove_reference<lattice>::type::template DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
+        typename std::remove_reference<lattice>::type::template DataType<typename traits::Stencil>::DistributionData& m_Distribution = m_Data.getDistributionObject();
             //Distributions
 
         enum{ x = 0, y = 1, z = 2 }; //Indices corresponding to x, y, z directions
 
         typename traits::Forces mt_Forces; //MOVE THIS TO BASE
         typename traits::Boundaries mt_Boundaries; //MOVE THIS TO BASE
-        Geometry m_Geometry; //MOVE THIS TO BASE
+        Geometry<lattice> m_Geometry; //MOVE THIS TO BASE
         
         std::vector<double>& distribution = m_Distribution.getDistribution(); //Reference to vector of distributions
         
 };
 
-template<class traits>
-inline const std::vector<double>& ModelBase<traits>::getDistribution() const {
+template<class lattice, class traits>
+inline const std::vector<double>& ModelBase<lattice,traits>::getDistribution() const {
 
     return distribution; //Return reference to distribution vector
 
 }
 
-template<class traits>
-inline void ModelBase<traits>::precompute() {
+template<class lattice, class traits>
+inline void ModelBase<lattice,traits>::precompute() {
 
     #pragma omp for schedule(guided)
-    for (int k = GETPROPERTIES().m_HaloSize; k <GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //loop over k
+    for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
 
         if constexpr(std::tuple_size<typename traits::Forces>::value != 0){ //Check if there is at least one element
                                                                           //in F
@@ -114,8 +112,8 @@ inline void ModelBase<traits>::precompute() {
     
 }
 
-template<class traits>
-inline double ModelBase<traits>::computeForces(int xyz, int k) const {
+template<class lattice, class traits>
+inline double ModelBase<lattice,traits>::computeForces(int xyz, int k) const {
 
     if constexpr(std::tuple_size<typename traits::Forces>::value != 0){
 
@@ -128,11 +126,11 @@ inline double ModelBase<traits>::computeForces(int xyz, int k) const {
 
 }
 
-template<class traits>
-inline void ModelBase<traits>::boundaries() {
+template<class lattice, class traits>
+inline void ModelBase<lattice,traits>::boundaries() {
 
     #pragma omp for schedule(guided)
-    for (int k = 0; k <GETPROPERTIES().m_N; k++) { //loop over k
+    for (int k = 0; k <lattice::m_N; k++) { //loop over k
 
         if constexpr(std::tuple_size<typename traits::Boundaries>::value != 0) { //Check if there are any boundary
                                                                               //models

@@ -16,7 +16,7 @@
  * MAXNEIGHBORS is updated depending on the chosen number of neighbors. LXdiv (LX for each parallel block of
  * lattice points) is set based on the number of processors and number of neighbors chosen.
  */
-template<int num_neighbors>
+template<class lattice, int num_neighbors>
 class Parallel {
     #ifdef MPIPARALLEL
     public:
@@ -24,18 +24,18 @@ class Parallel {
          * \brief Constructor that updates global parameters. This is contained within a class as I may move stuff
          *        from X_Parallel to here.
          * MAXNEIGHBORS is updated depending on the chosen number of neighbors. LXdiv (LX for each parallel block of
-         * lattice points) is set based on the number of processors and number of neighbors chosen. GETPROPERTIES().m_N is then
-         * calculated as LXdiv*GETPROPERTIES().m_LY*GETPROPERTIES().m_LZ.
+         * lattice points) is set based on the number of processors and number of neighbors chosen. lattice::m_N is then
+         * calculated as LXdiv*lattice::m_LY*lattice::m_LZ.
          */
 
         Parallel() {
 
             if(m_MaxNeighbors < num_neighbors) m_MaxNeighbors = num_neighbors;
 
-            GETPROPERTIES().m_HaloSize = GETPROPERTIES().m_LY * GETPROPERTIES().m_LZ * m_MaxNeighbors;
+            lattice::m_HaloSize = lattice::m_LY * lattice::m_LZ * m_MaxNeighbors;
 
-            if (GETPROPERTIES().m_LX % NUMPROCESSORS == 0) {
-                GETPROPERTIES().m_LXdiv = (GETPROPERTIES().m_LX / NUMPROCESSORS + 2 * num_neighbors);
+            if (lattice::m_LX % NUMPROCESSORS == 0) {
+                lattice::m_LXdiv = (lattice::m_LX / NUMPROCESSORS + 2 * num_neighbors);
             }
             else{
                 throw std::runtime_error(std::string("Currently, the number of cores must be divisible by the size of the domain in the x direction."));
@@ -48,7 +48,7 @@ class Parallel {
                 LXdiv=((LX-LX%NUMPROCESSORS)/NUMPROCESSORS+2*num_neighbors);
             }
             */
-            GETPROPERTIES().m_N = GETPROPERTIES().m_LXdiv * GETPROPERTIES().m_LY * GETPROPERTIES().m_LZ;
+            lattice::m_N = lattice::m_LXdiv * lattice::m_LY * lattice::m_LZ;
             
         }
 
@@ -63,8 +63,8 @@ class Parallel {
  * This class contains functions to communicate parameters for gradient calculations and to communicate
  * distributions for streaming.
  */
-template<class stencil, int num_neighbors>
-class X_Parallel : public Parallel<num_neighbors> {
+template<class lattice, class stencil, int num_neighbors>
+class X_Parallel : public Parallel<lattice,num_neighbors> {
     #ifdef MPIPARALLEL
     public:
 
@@ -104,29 +104,29 @@ class X_Parallel : public Parallel<num_neighbors> {
  *          communication. This means that each process does not need to wait for the other processes to communicate. At
  *          the end of this function, we have a MPI_Waitall call, to ensure all processes are synced.
  */
-template<class stencil, int num_neighbors>
+template<class lattice, class stencil, int num_neighbors>
 template<class parameter>
-inline void X_Parallel<stencil,num_neighbors>::communicate(parameter& obj) {
+inline void X_Parallel<lattice,stencil,num_neighbors>::communicate(parameter& obj) {
 
     MPI_Request comm_request[2];
     
-    MPI_Isend(&obj.getParameter()[GETPROPERTIES().m_N * obj.m_Num - (num_neighbors + 1) * GETPROPERTIES().m_LY * GETPROPERTIES().m_LZ],
-              num_neighbors * GETPROPERTIES().m_LY * GETPROPERTIES().m_LZ * obj.m_Num,
+    MPI_Isend(&obj.getParameter()[lattice::m_N * obj.m_Num - (num_neighbors + 1) * lattice::m_LY * lattice::m_LZ],
+              num_neighbors * lattice::m_LY * lattice::m_LZ * obj.m_Num,
               mpi_get_type<typename parameter::ParamType>(),
               m_RightNeighbor, 0, MPI_COMM_WORLD, &comm_request[0]);
 
-    MPI_Isend(&obj.getParameter()[num_neighbors * GETPROPERTIES().m_LY * GETPROPERTIES().m_LZ * obj.m_Num],
-              num_neighbors * GETPROPERTIES().m_LY * GETPROPERTIES().m_LZ * obj.m_Num,
+    MPI_Isend(&obj.getParameter()[num_neighbors * lattice::m_LY * lattice::m_LZ * obj.m_Num],
+              num_neighbors * lattice::m_LY * lattice::m_LZ * obj.m_Num,
               mpi_get_type<typename parameter::ParamType>(),
               m_LeftNeighbor, 1, MPI_COMM_WORLD, &comm_request[1]);
 
-    MPI_Irecv(&obj.getParameter()[GETPROPERTIES().m_N * obj.m_Num - num_neighbors * GETPROPERTIES().m_LY * GETPROPERTIES().m_LZ * obj.m_Num],
-              num_neighbors * GETPROPERTIES().m_LY * GETPROPERTIES().m_LZ * obj.m_Num,
+    MPI_Irecv(&obj.getParameter()[lattice::m_N * obj.m_Num - num_neighbors * lattice::m_LY * lattice::m_LZ * obj.m_Num],
+              num_neighbors * lattice::m_LY * lattice::m_LZ * obj.m_Num,
               mpi_get_type<typename parameter::ParamType>(),
               m_RightNeighbor, 1, MPI_COMM_WORLD, &comm_request[0]);
 
     MPI_Irecv(&obj.getParameter()[0],
-              num_neighbors * GETPROPERTIES().m_LY * GETPROPERTIES().m_LZ * obj.m_Num,
+              num_neighbors * lattice::m_LY * lattice::m_LZ * obj.m_Num,
               mpi_get_type<typename parameter::ParamType>(),
               m_LeftNeighbor, 0, MPI_COMM_WORLD, &comm_request[1]);
     
@@ -134,9 +134,9 @@ inline void X_Parallel<stencil,num_neighbors>::communicate(parameter& obj) {
 
 }
 
-template<class stencil, int num_neighbors>
+template<class lattice, class stencil, int num_neighbors>
 template<class distribution>
-inline void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribution& obj) {
+inline void X_Parallel<lattice,stencil,num_neighbors>::communicateDistribution(distribution& obj) {
 
     MPI_Request comm_dist_request[20];
 
@@ -151,11 +151,11 @@ inline void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribut
 
             if(leftorright == -1) {
             
-                MPI_Isend(&obj.getDistribution()[(num_neighbors-1) * GETPROPERTIES().m_LY * GETPROPERTIES().m_LZ * stencil::Q + idx],
+                MPI_Isend(&obj.getDistribution()[(num_neighbors-1) * lattice::m_LY * lattice::m_LZ * stencil::Q + idx],
                           1,
                           DistributionVector,
                           m_LeftNeighbor, id, MPI_COMM_WORLD, &comm_dist_request[id]);
-                MPI_Irecv(&obj.getDistribution()[GETPROPERTIES().m_N * stencil::Q - (num_neighbors + 1) * GETPROPERTIES().m_LY*GETPROPERTIES().m_LZ * stencil::Q + idx],
+                MPI_Irecv(&obj.getDistribution()[lattice::m_N * stencil::Q - (num_neighbors + 1) * lattice::m_LY*lattice::m_LZ * stencil::Q + idx],
                           1,
                           DistributionVector,
                           m_RightNeighbor, id, MPI_COMM_WORLD, &comm_dist_request[id]);
@@ -164,11 +164,11 @@ inline void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribut
             }
             else if(leftorright == 1) {
             
-                MPI_Isend(&obj.getDistribution()[GETPROPERTIES().m_N * stencil::Q - (num_neighbors) * GETPROPERTIES().m_LY * GETPROPERTIES().m_LZ * stencil::Q + idx],
+                MPI_Isend(&obj.getDistribution()[lattice::m_N * stencil::Q - (num_neighbors) * lattice::m_LY * lattice::m_LZ * stencil::Q + idx],
                           1,
                           DistributionVector,
                           m_LeftNeighbor, id, MPI_COMM_WORLD, &comm_dist_request[id]);
-                MPI_Irecv(&obj.getDistribution()[(num_neighbors) * GETPROPERTIES().m_LY * GETPROPERTIES().m_LZ * stencil::Q + idx],
+                MPI_Irecv(&obj.getDistribution()[(num_neighbors) * lattice::m_LY * lattice::m_LZ * stencil::Q + idx],
                           1,
                           DistributionVector,
                           m_RightNeighbor, id, MPI_COMM_WORLD, &comm_dist_request[id]);
@@ -184,10 +184,10 @@ inline void X_Parallel<stencil,num_neighbors>::communicateDistribution(distribut
     
 }
 
-template<class stencil, int num_neighbors>
-inline X_Parallel<stencil, num_neighbors>::X_Parallel() {
+template<class lattice, class stencil, int num_neighbors>
+inline X_Parallel<lattice,stencil, num_neighbors>::X_Parallel() {
 
-    const int bufSize = (GETPROPERTIES().m_LY * GETPROPERTIES().m_LZ * num_neighbors * (5 + 2) * 2 * 2 + 1000) * sizeof(double);
+    const int bufSize = (lattice::m_LY * lattice::m_LZ * num_neighbors * (5 + 2) * 2 * 2 + 1000) * sizeof(double);
     
     if(bufSize > MPIBUFFERSIZE) {
 
@@ -204,7 +204,7 @@ inline X_Parallel<stencil, num_neighbors>::X_Parallel() {
     m_RightNeighbor = CURPROCESSOR + 1;
     if (m_RightNeighbor == NUMPROCESSORS) m_RightNeighbor = 0;
 
-    MPI_Type_vector(GETPROPERTIES().m_LZ * GETPROPERTIES().m_LY, 1, stencil::Q, mpi_get_type<double>(), &DistributionVector);
+    MPI_Type_vector(lattice::m_LZ * lattice::m_LY, 1, stencil::Q, mpi_get_type<double>(), &DistributionVector);
     MPI_Type_commit(&DistributionVector);
     
 }

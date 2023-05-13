@@ -15,7 +15,7 @@ int MPIBUFFERSIZE; //!<Size of the MPI buffer.
 
 //extern std::function<void(void)> GETPROPERTIES;
 
-inline auto& GETPROPERTIES(); //!<Function that must be defined in your main file to return the lattice properies.
+//inline auto& GETPROPERTIES(); //!<Function that must be defined in your main file to return the lattice properies.
 
 /**
  * \brief Function that will return an object of the chosen lattice properties class.
@@ -26,10 +26,10 @@ inline auto& GETPROPERTIES(); //!<Function that must be defined in your main fil
  * \tparam args Types of optional arguments.
  * \return Object containing info for lattice properties.
  */
-template<class type, typename ...args>
-inline auto& getGlobal(args... a) {
-
-    static auto PROPERTIES = *new type(a...);
-    return PROPERTIES;
-    
-}
+//template<class type, typename ...args>
+//inline auto& getGlobal(args... a) {
+//
+//    static auto PROPERTIES = *new type(a...);
+//    return PROPERTIES;
+//    
+//}

@@ -1,9 +1,9 @@
 #pragma once
 
-template<class prop, class stencil>
+template<class lattice, class stencil>
 struct CentralXYZ{
 
-    Data_Base<stencil, typename std::remove_reference<prop>::type::template ParallelType<stencil>> m_Data;
+    Data_Base<lattice, stencil, typename std::remove_reference<lattice>::type::template ParallelType<stencil>> m_Data;
 
     template<class parameter>
     inline double computeFirstDerivative(const parameter& val, const int direciton, const int k);
@@ -11,13 +11,13 @@ struct CentralXYZ{
     template<class parameter>
     inline double computeLaplacian(const parameter& val, const int k);
 
-    Geometry m_Geometry;
+    Geometry<lattice> m_Geometry;
     
 };
 
-template<class prop, class stencil>
+template<class lattice, class stencil>
 template<class parameter>
-inline double CentralXYZ<prop, stencil>::computeFirstDerivative(const parameter& val, const int direction, const int k) {
+inline double CentralXYZ<lattice, stencil>::computeFirstDerivative(const parameter& val, const int direction, const int k) {
 
     double gradientsum=0;
 
@@ -40,9 +40,9 @@ inline double CentralXYZ<prop, stencil>::computeFirstDerivative(const parameter&
 
 }
 
-template<class prop, class stencil>
+template<class lattice, class stencil>
 template<class parameter>
-inline double CentralXYZ<prop, stencil>::computeLaplacian(const parameter& val, const int k) {
+inline double CentralXYZ<lattice, stencil>::computeLaplacian(const parameter& val, const int k) {
 
     double laplaciansum=0;
 

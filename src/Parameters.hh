@@ -99,7 +99,7 @@ struct Distribution_Base { //Distribution base class
 
 };
 
-template<class obj, typename T> //obj template will guarantee a unique instance of the class with its own
+template<template<class> class obj, class lattice, typename T, int num=1> //obj template will guarantee a unique instance of the class with its own
                                        //static vector. I pass the class to itself to guarantee this
                                        //
                                        //T determines the type stored in the vector, num
@@ -110,12 +110,12 @@ class Parameter {
 
     public:
 
-        Parameter(int num = 1) : m_Num(num) {
+        Parameter() {
 
-            mv_Parameter.resize(m_Num * GETPROPERTIES().m_N); //Resize to the desired size
+            mv_Parameter.resize(num * lattice::m_N); //Resize to the desired size
 
         }
-        Parameter(const Parameter& other) : m_Num(other.m_Num){}
+        Parameter(const Parameter& other) {}
 
         inline std::vector<T>& getParameter() const { //Returns const vector containing the parameter
 
@@ -164,7 +164,7 @@ class Parameter {
 
         static std::map<int,bool> mm_Initialised;
 
-        const int m_Num;
+        static constexpr int m_Num=num;
         using ParamType = T;
 
         inline void Save(std::string filename, int t, std::string datadir);
@@ -173,14 +173,14 @@ class Parameter {
         
 };
 
-template<class obj, typename T>
-std::vector<T> Parameter<obj, T>::mv_Parameter; //Must allocate memory for static vector outside of class
+template<template<class> class obj, class lattice, typename T, int num>
+std::vector<T> Parameter<obj, lattice, T, num>::mv_Parameter; //Must allocate memory for static vector outside of class
 
-template<class obj, typename T>
-std::map<int,bool> Parameter<obj, T>::mm_Initialised; //Must allocate memory for static vector outside of class
+template<template<class> class obj, class lattice, typename T, int num>
+std::map<int,bool> Parameter<obj, lattice, T, num>::mm_Initialised; //Must allocate memory for static vector outside of class
 
-template<class obj, typename T>
-inline void Parameter<obj, T>::Save(std::string filename, int t, std::string datadir) { //Function to save parameter stored in this class
+template<template<class> class obj,class lattice,  typename T, int num>
+inline void Parameter<obj, lattice, T, num>::Save(std::string filename, int t, std::string datadir) { //Function to save parameter stored in this class
 
     char fdump[512];
     sprintf(fdump, (datadir + filename + "_t%li.mat").c_str(), t); //Buffer containing file name and location.
@@ -191,8 +191,8 @@ inline void Parameter<obj, T>::Save(std::string filename, int t, std::string dat
 
     MPI_File_open(MPI_COMM_SELF, fdump, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh); //Open the file using mpi in write only mode
     
-    MPI_File_seek(fh, sizeof(double) * CURPROCESSOR * m_Num * (GETPROPERTIES().m_LX * GETPROPERTIES().m_LY * GETPROPERTIES().m_LZ) / NUMPROCESSORS, MPI_SEEK_SET); //Skip to a certain location in the file, currently
-    MPI_File_write(fh,&mv_Parameter[GETPROPERTIES().m_HaloSize * m_Num], m_Num * (GETPROPERTIES().m_N - 2 * GETPROPERTIES().m_HaloSize), MPI_DOUBLE, MPI_STATUSES_IGNORE);
+    MPI_File_seek(fh, sizeof(double) * CURPROCESSOR * m_Num * (lattice::m_LX * lattice::m_LY * lattice::m_LZ) / NUMPROCESSORS, MPI_SEEK_SET); //Skip to a certain location in the file, currently
+    MPI_File_write(fh,&mv_Parameter[lattice::m_HaloSize * m_Num], m_Num * (lattice::m_N - 2 * lattice::m_HaloSize), MPI_DOUBLE, MPI_STATUSES_IGNORE);
 
     MPI_File_close(&fh);
          
@@ -200,9 +200,9 @@ inline void Parameter<obj, T>::Save(std::string filename, int t, std::string dat
 
     std::ofstream fs(fdump, std::ios::out | std::ios::binary);
     
-    fs.seekp(sizeof(double) * CURPROCESSOR * m_Num * (GETPROPERTIES().m_LX * GETPROPERTIES().m_LY * GETPROPERTIES().m_LZ) / NUMPROCESSORS);
+    fs.seekp(sizeof(double) * CURPROCESSOR * m_Num * (lattice::m_LX * lattice::m_LY * lattice::m_LZ) / NUMPROCESSORS);
 
-    for (int k = GETPROPERTIES().m_HaloSize; k < GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { 
+    for (int k = lattice::m_HaloSize; k < lattice::m_N - lattice::m_HaloSize; k++) { 
 
         for(int idx = 0; idx < m_Num; idx++) fs.write((char *)(&mv_Parameter[k * m_Num + idx]), sizeof(double));
         
@@ -214,7 +214,7 @@ inline void Parameter<obj, T>::Save(std::string filename, int t, std::string dat
 
 }
 
-template<class ...parameters>
+template<class lattice, template<class> class ...parameters>
 class ParameterSave {
 
     public:
@@ -225,7 +225,7 @@ class ParameterSave {
             if (status) std::cout << "Error creating output directory" << std::endl;
 
         }
-        ParameterSave(ParameterSave<parameters...>& other) : m_SaveInterval(other.saveinterval), m_DataDir(other.datadir) {
+        ParameterSave(ParameterSave<lattice,parameters...>& other) : m_SaveInterval(other.saveinterval), m_DataDir(other.datadir) {
 
             int status = system(((std::string)"mkdir -p " + m_DataDir).c_str());
             if (status) std::cout << "Error creating output directory" << std::endl;
@@ -237,12 +237,12 @@ class ParameterSave {
 
         const int m_SaveInterval;
         std::string m_DataDir;
-        std::tuple<parameters...> mt_Parameters;
+        std::tuple<parameters<lattice>...> mt_Parameters;
         
 };
 
-template<class ...parameters>
-inline void ParameterSave<parameters...>::Save(int timestep) {
+template<class lattice, template<class> class ...parameters>
+inline void ParameterSave<lattice, parameters...>::Save(int timestep) {
 
     std::string dir = m_DataDir;
 
@@ -252,7 +252,7 @@ inline void ParameterSave<parameters...>::Save(int timestep) {
 
         if constexpr (sizeof...(parameters) != 0) {
 
-            std::apply([timestep,dir](parameters&... params) {
+            std::apply([timestep,dir](parameters<lattice>&... params) {
 
                 (params.Save(params.m_Name,timestep,dir),...);
 
@@ -263,56 +263,56 @@ inline void ParameterSave<parameters...>::Save(int timestep) {
     }
 }
 
-template<typename placeholder = void>
-struct VelocityTemplate : public Parameter<VelocityTemplate<placeholder>, double> {
+template<class lattice>
+struct Velocity : public Parameter<Velocity, lattice, double, lattice::m_NDIM> {
 
-    VelocityTemplate() : Parameter<VelocityTemplate,double>(GETPROPERTIES().m_NDIM) {};
     static constexpr char m_Name[] = "Velocity";
 
 }; //Velocity, with directions D corresponding to the number of cartesian directions in the stencilUw
 
-typedef VelocityTemplate<> Velocity;
-
-struct Density : public Parameter<Density, double> {
+template<class lattice>
+struct Density : public Parameter<Density, lattice, double> {
 
     static constexpr char m_Name[] = "Density";
 
 }; //Density
 
-struct Pressure : public Parameter<Pressure, double>{
+template<class lattice>
+struct Pressure : public Parameter<Pressure, lattice, double>{
 
     static constexpr char m_Name[] = "Pressure";
 
 }; //Presure
 
-struct OrderParameter : public Parameter<OrderParameter,double> {
+template<class lattice>
+struct OrderParameter : public Parameter<OrderParameter, lattice, double> {
 
     static constexpr char m_Name[] = "OrderParameter";
 
 }; //Order parameter representing relative concentration of the phases
 
-struct ChemicalPotential : public Parameter<ChemicalPotential, double> {
+template<class lattice>
+struct ChemicalPotential : public Parameter<ChemicalPotential, lattice, double> {
 
     static constexpr char m_Name[] = "ChemicalPotential";
 
 }; //Chemical potential for the multicomponent model
 
-struct LaplacianOrderParameter : public Parameter<LaplacianOrderParameter, double> {
+template<class lattice>
+struct LaplacianOrderParameter : public Parameter<LaplacianOrderParameter, lattice, double> {
 
     static constexpr char m_Name[] = "LaplacianOrderParameter";
 
 }; //Laplacian of the order parameter
 
-template<typename placeholder = void>
-struct GradientOrderParameterTemplate : public Parameter<GradientOrderParameterTemplate<placeholder>, double> {
+template<class lattice>
+struct GradientOrderParameter : public Parameter<GradientOrderParameter, lattice, double, lattice::m_NDIM> {
 
-    GradientOrderParameterTemplate() : Parameter<GradientOrderParameterTemplate,double>(GETPROPERTIES().m_NDIM) {};
     static constexpr char m_Name[]="GradientOrderParameter";
 
 }; //Directional first order gradients of the order parameter
 
-typedef GradientOrderParameterTemplate<> GradientOrderParameter;
-
-struct SolidLabels : public Parameter<SolidLabels, int> {
+template<class lattice>
+struct SolidLabels : public Parameter<SolidLabels, lattice, int> {
     static constexpr char m_Name[] = "SolidLabels";
 }; //Labelling of geometry

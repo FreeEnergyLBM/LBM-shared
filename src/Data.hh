@@ -26,7 +26,7 @@
  * \tparam stencil Velocity Stencil of class using this data type.
  * \tparam parallel MPI parallisation method.
  */
-template<class stencil, class parallel>
+template<class lattice, class stencil, class parallel>
 class Data_Base{
     private:
         //ADD VIRTUAL TO THIS
@@ -49,7 +49,7 @@ class Data_Base{
 
         int OppositeOffset[stencil::Q]; //!<Opposite lattice point offset in each direction.
         
-        Geometry m_Geometry; //!<Class containing geometry information (for periodic boundaries).
+        Geometry<lattice> m_Geometry; //!<Class containing geometry information (for periodic boundaries).
 
         std::vector<int> mv_Neighbors; //!<Vector containing neighbor information.
 
@@ -57,7 +57,7 @@ class Data_Base{
         
         parallel m_Parallel; //!<Object of parallelisation class.
 
-        template<class, class>
+        template<class, class, class>
         friend class Data1; //Data1 can access private members of the base class (will need to add new data
                             //types here but I will probably change how this works).
         
@@ -73,7 +73,7 @@ class Data_Base{
          * \tparam parameter type of object to be communicated.
          */
         template<class parameter>
-        inline void communicate(parameter obj);
+        inline void communicate(parameter& obj);
         #endif
 
         /**
@@ -86,17 +86,17 @@ class Data_Base{
 
             for(int idx = 0; idx <stencil::Q; idx++) {
 
-                OppositeOffset[idx] = stencil::Ci_xyz(x)[idx] * GETPROPERTIES().m_LZ * GETPROPERTIES().m_LY + stencil::Ci_xyz(y)[idx] * GETPROPERTIES().m_LZ + stencil::Ci_xyz(z)[idx];
+                OppositeOffset[idx] = stencil::Ci_xyz(x)[idx] * lattice::m_LZ * lattice::m_LY + stencil::Ci_xyz(y)[idx] * lattice::m_LZ + stencil::Ci_xyz(z)[idx];
 
             }
 
-            mv_Neighbors.resize(stencil::Q * GETPROPERTIES().m_N); //Allocate memory for neighbors array
+            mv_Neighbors.resize(stencil::Q * lattice::m_N); //Allocate memory for neighbors array
             
             generateNeighbors(); //Fill neighbors array
             
         }
 
-        Data_Base(Data_Base<stencil, parallel>& other) : mv_Neighbors(other.mv_Neighbors), OppositeOffset(other.OppositeOffset) //Construct distribution
+        Data_Base(Data_Base<lattice, stencil, parallel>& other) : mv_Neighbors(other.mv_Neighbors), OppositeOffset(other.OppositeOffset) //Construct distribution
         {}
 
         /**
@@ -117,11 +117,11 @@ class Data_Base{
  *          class is used. This will perform the necessary communications so gradients etc. can be calculated
  *          across parallel regions.
  */
-template<class stencil, class parallel>
+template<class lattice, class stencil, class parallel>
 template<class parameter>
-inline void Data_Base<stencil, parallel>::communicate(parameter obj) { //Not used in this data type
+inline void Data_Base<lattice,stencil, parallel>::communicate(parameter& obj) { //Not used in this data type
 
-    static_assert(is_base_of_template<Parameter,parameter>::value,"ERROR: The object passed to this function cannot be communicated.");
+    //static_assert(is_base_of_template<Parameter,parameter>::value,"ERROR: The object passed to this function cannot be communicated.");
     m_Parallel.communicate(obj);
 
 }
@@ -131,8 +131,8 @@ inline void Data_Base<stencil, parallel>::communicate(parameter obj) { //Not use
  * \details The function returns a reference to a vector containing the neighboring lattice point for every point
  *          in every direction in the stencil.
  */
-template<class stencil, class parallel>
-inline std::vector<int>& Data_Base<stencil, parallel>::getNeighbors() {
+template<class lattice, class stencil, class parallel>
+inline std::vector<int>& Data_Base<lattice, stencil, parallel>::getNeighbors() {
     
     return mv_Neighbors;
 
@@ -142,8 +142,8 @@ inline std::vector<int>& Data_Base<stencil, parallel>::getNeighbors() {
  * \details The neighbor of the current lattice point is calculated from the current lattice point + the offset
  *          in each direction, which is precomputed in the constructor and stored in a vector.
  */
-template<class stencil, class parallel>
-inline int Data_Base<stencil, parallel>::getOneNeighbor(const int k, const int Q) {
+template<class lattice, class stencil, class parallel>
+inline int Data_Base<lattice,stencil, parallel>::getOneNeighbor(const int k, const int Q) {
     
     return k + OppositeOffset[Q]; //The neighbor is the lattice point plus the opposite offset in direction Q
         
@@ -154,26 +154,26 @@ inline int Data_Base<stencil, parallel>::getOneNeighbor(const int k, const int Q
  *          side of the lattice so we must account for this. The function will work out if we are on the edge of
  *          of the simulation in the x, y and z directions and apply offsets in each case.
  */
-template<class stencil, class parallel>
-inline int Data_Base<stencil, parallel>::getOneNeighborPeriodic(const int k, const int Q) { 
+template<class lattice, class stencil, class parallel>
+inline int Data_Base<lattice,stencil, parallel>::getOneNeighborPeriodic(const int k, const int Q) { 
 
     int neighbor = 0;
 
-    if(GETPROPERTIES().m_LZ> 1) {
-        int localz=computeZ(GETPROPERTIES().m_LY,GETPROPERTIES().m_LZ,k);
-        if (localz==(GETPROPERTIES().m_LZ - 1) && stencil::Ci_xyz(z)[Q]> 0) { //(note that the z direction goes from 0 to GETPROPERTIES().m_LZ-1)
+    if(lattice::m_LZ> 1) {
+        int localz=computeZ(lattice::m_LY,lattice::m_LZ,k);
+        if (localz==(lattice::m_LZ - 1) && stencil::Ci_xyz(z)[Q]> 0) { //(note that the z direction goes from 0 to lattice::m_LZ-1)
                                                      //if the next lattice point in the z direction is divisible
-                                                     //by GETPROPERTIES().m_LZ (so we are at z=GETPROPERTIES().m_LZ-1) and we are pointing in the +z
+                                                     //by lattice::m_LZ (so we are at z=lattice::m_LZ-1) and we are pointing in the +z
                                                      //direction
 
-            neighbor += -(GETPROPERTIES().m_LZ - 1); //reduce k by GETPROPERTIES().m_LZ-1 so we are now at z=0
+            neighbor += -(lattice::m_LZ - 1); //reduce k by lattice::m_LZ-1 so we are now at z=0
 
         }
         else if (localz==(0) && stencil::Ci_xyz(z)[Q] <0) { //if the current lattice point in the z direction is
-                                                        //divisible by GETPROPERTIES().m_LZ (so we are at z=0) and we are pointing
+                                                        //divisible by lattice::m_LZ (so we are at z=0) and we are pointing
                                                         //in the -z direction
 
-            neighbor += (GETPROPERTIES().m_LZ - 1); //increase k by GETPROPERTIES().m_LZ-1 so we are now at z=GETPROPERTIES().m_LZ-1
+            neighbor += (lattice::m_LZ - 1); //increase k by lattice::m_LZ-1 so we are now at z=lattice::m_LZ-1
 
         }
         else if (stencil::Ci_xyz(z)[Q] != 0) { //Else calculate neighbors normally
@@ -182,42 +182,42 @@ inline int Data_Base<stencil, parallel>::getOneNeighborPeriodic(const int k, con
 
         }
     }
-    if(GETPROPERTIES().m_LY> 1) {
-        int localY=computeY(GETPROPERTIES().m_LY,GETPROPERTIES().m_LZ,k);
-        if (localY == (GETPROPERTIES().m_LY - 1) && stencil::Ci_xyz(y)[Q]> 0) { //(note that the y direction goes from 0 to GETPROPERTIES().m_LY-1)
+    if(lattice::m_LY> 1) {
+        int localY=computeY(lattice::m_LY,lattice::m_LZ,k);
+        if (localY == (lattice::m_LY - 1) && stencil::Ci_xyz(y)[Q]> 0) { //(note that the y direction goes from 0 to lattice::m_LY-1)
                                                             //if the next lattice point in the y direction is
-                                                            //divisible by GETPROPERTIES().m_LY (so we are at z=GETPROPERTIES().m_LY-1) and we are
+                                                            //divisible by lattice::m_LY (so we are at z=lattice::m_LY-1) and we are
                                                             //pointing in the +y direction
 
-            neighbor += -(GETPROPERTIES().m_LZ) * (GETPROPERTIES().m_LY - 1);
+            neighbor += -(lattice::m_LZ) * (lattice::m_LY - 1);
 
         }
         else if (localY == 0 && stencil::Ci_xyz(y)[Q] <0) { //...
 
-            neighbor += (GETPROPERTIES().m_LZ) * (GETPROPERTIES().m_LY - 1);
+            neighbor += (lattice::m_LZ) * (lattice::m_LY - 1);
 
         }
         else if (stencil::Ci_xyz(y)[Q] != 0) {
 
-            neighbor += stencil::Ci_xyz(y)[Q] * GETPROPERTIES().m_LZ;
+            neighbor += stencil::Ci_xyz(y)[Q] * lattice::m_LZ;
 
         }
     }
-    if(GETPROPERTIES().m_LXdiv> 1) {
-        int localX=computeX(GETPROPERTIES().m_LY,GETPROPERTIES().m_LZ,k);
-        if (localX == (GETPROPERTIES().m_LXdiv - 1) && stencil::Ci_xyz(x)[Q]> 0) { //...
+    if(lattice::m_LXdiv> 1) {
+        int localX=computeX(lattice::m_LY,lattice::m_LZ,k);
+        if (localX == (lattice::m_LXdiv - 1) && stencil::Ci_xyz(x)[Q]> 0) { //...
 
-            neighbor += -(GETPROPERTIES().m_LZ) * GETPROPERTIES().m_LY * (GETPROPERTIES().m_LXdiv - 1);
+            neighbor += -(lattice::m_LZ) * lattice::m_LY * (lattice::m_LXdiv - 1);
 
         }
         else if (localX == 0 && stencil::Ci_xyz(x)[Q] <0) {
 
-            neighbor += (GETPROPERTIES().m_LZ) * GETPROPERTIES().m_LY * (GETPROPERTIES().m_LXdiv - 1);
+            neighbor += (lattice::m_LZ) * lattice::m_LY * (lattice::m_LXdiv - 1);
 
         }
         else if (stencil::Ci_xyz(x)[Q] != 0) {
 
-            neighbor += stencil::Ci_xyz(x)[Q] * GETPROPERTIES().m_LZ * GETPROPERTIES().m_LY;
+            neighbor += stencil::Ci_xyz(x)[Q] * lattice::m_LZ * lattice::m_LY;
             
         }
     }
@@ -229,11 +229,11 @@ inline int Data_Base<stencil, parallel>::getOneNeighborPeriodic(const int k, con
  * \details This will iterate through the lattice and calculate the neighbors depending on whether the current
  *          lattice point is on a periodic boundary or not.
  */
-template<class stencil, class parallel>
-inline void Data_Base<stencil, parallel>::generateNeighbors() { //Loop over all lattice points and calculate the neghbor at each point
+template<class lattice, class stencil, class parallel>
+inline void Data_Base<lattice,stencil, parallel>::generateNeighbors() { //Loop over all lattice points and calculate the neghbor at each point
 
     #pragma omp parallel for schedule(guided)
-    for (int k = 0; k <GETPROPERTIES().m_N; k++) { //For loop over all lattice points
+    for (int k = 0; k <lattice::m_N; k++) { //For loop over all lattice points
         
         for(int q = 0; q < stencil::Q; q++) {
 
@@ -263,8 +263,8 @@ inline void Data_Base<stencil, parallel>::generateNeighbors() { //Loop over all 
  * \tparam stencil Velocity Stencil of class using this data type.
  * \tparam parallel MPI parallisation method.
  */
-template<class stencil, class parallel>
-class Data1 : public Data_Base<stencil, parallel> {
+template<class lattice, class stencil, class parallel>
+class Data1 : public Data_Base<lattice, stencil, parallel> {
     private:
 
         /**
@@ -287,20 +287,20 @@ class Data1 : public Data_Base<stencil, parallel> {
 
             Distribution_Derived(std::vector<int>& neighbors) : Distribution_Base<stencil>(neighbors), mv_Neighbors(neighbors) { //Initialise mv_DistNeighbors
 
-                Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q * GETPROPERTIES().m_N); //Array size is number of
+                Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q * lattice::m_N); //Array size is number of
                                                                                   //directions times number of
                                                                                   //lattice points
-                Distribution_Base<stencil>::mv_OldDistribution.resize(stencil::Q * GETPROPERTIES().m_N); //Old distributions needed
+                Distribution_Base<stencil>::mv_OldDistribution.resize(stencil::Q * lattice::m_N); //Old distributions needed
                                                                                      //in this case
                 
             }
 
             Distribution_Derived(Distribution_Derived& other) : Distribution_Base<stencil>(other.mv_Neighbors), mv_Neighbors(other.mv_Neighbors) { //Initialise mv_DistNeighbors
 
-                Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q * GETPROPERTIES().m_N); //Array size is number of
+                Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q * lattice::m_N); //Array size is number of
                                                                                   //directions times number of
                                                                                   //lattice points
-                Distribution_Base<stencil>::mv_OldDistribution.resize(stencil::Q * GETPROPERTIES().m_N); //Old distributions needed
+                Distribution_Base<stencil>::mv_OldDistribution.resize(stencil::Q * lattice::m_N); //Old distributions needed
                                                                                      //in this case
                 
             }
@@ -345,11 +345,11 @@ class Data1 : public Data_Base<stencil, parallel> {
         /**
          * \brief This constructor calls the constructor of the base disribution using the neighbor information.
          */
-        Data1() : m_Distribution(Data_Base<stencil, parallel>::mv_Neighbors) { //Construct distribution
+        Data1() : m_Distribution(Data_Base<lattice,stencil, parallel>::mv_Neighbors) { //Construct distribution
 
         }
 
-        Data1(Data1<stencil, parallel>& other) : m_Distribution(other.m_Distribution) { //Construct distribution
+        Data1(Data1<lattice,stencil, parallel>& other) : m_Distribution(other.m_Distribution) { //Construct distribution
 
         }
 
@@ -371,8 +371,8 @@ class Data1 : public Data_Base<stencil, parallel> {
  * \details The stream() function does nothing in this class as streaming is implemented using the
  *          getStreamIndex() function in this data type.
  */
-template<class stencil, class parallel>
-inline void Data1<stencil, parallel>::stream() { //Not used in this data type
+template<class lattice, class stencil, class parallel>
+inline void Data1<lattice, stencil, parallel>::stream() { //Not used in this data type
 
 }
 
@@ -381,10 +381,10 @@ inline void Data1<stencil, parallel>::stream() { //Not used in this data type
  * \details This performs the communicateDistribution() function for the chosen parallelisation method, which
  *          should perform the streaming step across MPI boundaries.
  */
-template<class stencil, class parallel>
-inline void Data1<stencil, parallel>::communicateDistribution() {
+template<class lattice, class stencil, class parallel>
+inline void Data1<lattice, stencil, parallel>::communicateDistribution() {
     
-    Data_Base<stencil, parallel>::m_Parallel.communicateDistribution(m_Distribution);
+    Data_Base<lattice, stencil, parallel>::m_Parallel.communicateDistribution(m_Distribution);
     
 }
 #endif

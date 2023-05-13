@@ -7,8 +7,8 @@
 //ExternalForce.hh: Contains the force class for a constant applied body force in a given direction. This is
 //unfinished (should be able to specify magnitude and direction).
 
-template<typename placeholder=void>
-class BodyForceTemplate : public ForceBase {
+template<class lattice>
+class BodyForce : public ForceBase {
 
     public:
 
@@ -27,45 +27,43 @@ class BodyForceTemplate : public ForceBase {
         double m_MagnitudeY = 0;
         double m_MagnitudeZ = 0;
 
-        Density m_Density; //Density<>
+        Density<lattice> m_Density; //Density<>
 
 };
 
-template<typename placeholder>
-inline void BodyForceTemplate<placeholder>::setMagnitudeX(const double magnitude) {
+template<typename lattice>
+inline void BodyForce<lattice>::setMagnitudeX(const double magnitude) {
 
     m_MagnitudeX=magnitude;
 
 }
 
-template<typename placeholder>
-inline void BodyForceTemplate<placeholder>::setMagnitudeY(const double magnitude) {
+template<typename lattice>
+inline void BodyForce<lattice>::setMagnitudeY(const double magnitude) {
 
     m_MagnitudeY=magnitude;
 
 }
 
 
-template<typename placeholder>
-inline void BodyForceTemplate<placeholder>::setMagnitudeZ(const double magnitude) {
+template<typename lattice>
+inline void BodyForce<lattice>::setMagnitudeZ(const double magnitude) {
 
     m_MagnitudeZ=magnitude;
 
 }
 
-template<typename placeholder>
-inline double BodyForceTemplate<placeholder>::compute(const int xyz, const int k) const {
+template<typename lattice>
+inline double BodyForce<lattice>::compute(const int xyz, const int k) const {
 
     return ((xyz == 0) * m_MagnitudeX + (xyz == 1) * m_MagnitudeY + (xyz == 2) * m_MagnitudeZ) * m_Density.getParameter(k); //Force is just density multiplied by magnitude
                                                                  //in given direction
 
 }
 
-template<typename placeholder>
-inline double BodyForceTemplate<placeholder>::computeVelocitySource(const int xyz, const int k) const { //Need to correct velocity
+template<class lattice>
+inline double BodyForce<lattice>::computeVelocitySource(const int xyz, const int k) const { //Need to correct velocity
 
-    return +compute(xyz, k) * GETPROPERTIES().m_DT / (2.0 * m_Density.getParameter(k));
+    return +compute(xyz, k) * lattice::m_DT / (2.0 * m_Density.getParameter(k));
     
 }
-
-typedef BodyForceTemplate<> BodyForce;

@@ -24,7 +24,7 @@
 //Sertive.hh: This will contain some commonly used functions with various uses.
 
 
-template<typename Stencil, int num_neighbors>
+template<typename lattice, typename stencil, int num_neighbors>
 class No_Parallel{};
 
 inline int computeX(const int& LY,const int& LZ,const int k) //Compute X direction from a given k, the convention in this code is that

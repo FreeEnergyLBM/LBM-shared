@@ -8,8 +8,8 @@
 //ExternalForce.hh: Contains the force class for a constant applied body force in a given direction. This is
 //unfinished (should be able to specify magnitude and direction).
 
-template<typename placeholder = void>
-class ChemicalForceTemplate : public ForceBase {
+template<class lattice>
+class ChemicalForce : public ForceBase {
     
     public:
 
@@ -26,38 +26,36 @@ class ChemicalForceTemplate : public ForceBase {
 
         double m_Kappa=0.0003;
 
-        ChemicalPotential m_ChemicalPotential;
+        ChemicalPotential<lattice> m_ChemicalPotential;
 
-        GradientOrderParameter m_GradOrderParameter;
+        GradientOrderParameter<lattice> m_GradOrderParameter;
 
-        LaplacianOrderParameter m_LaplacianOrderParameter;
+        LaplacianOrderParameter<lattice> m_LaplacianOrderParameter;
 
-        OrderParameter m_OrderParameter;
+        OrderParameter<lattice> m_OrderParameter;
 
-        Density m_Density;
+        Density<lattice> m_Density;
 
 };
 
-template<typename placeholder>
-inline double ChemicalForceTemplate<placeholder>::compute(const int xyz, const int k) const {
+template<typename lattice>
+inline double ChemicalForce<lattice>::compute(const int xyz, const int k) const {
 
     return m_ChemicalPotential.getParameter(k) * m_GradOrderParameter.getParameterPointer(k)[xyz];
 
 }
 
-template<typename placeholder>
-inline void ChemicalForceTemplate<placeholder>::precompute(const int k){ //Not necessary
+template<typename lattice>
+inline void ChemicalForce<lattice>::precompute(const int k){ //Not necessary
 
     double orderparamcubed=m_OrderParameter.getParameter(k) * m_OrderParameter.getParameter(k) * m_OrderParameter.getParameter(k);
     m_ChemicalPotential.getParameter(k) = -m_A * m_OrderParameter.getParameter(k) + m_A * orderparamcubed - m_Kappa * m_LaplacianOrderParameter.getParameter(k);
 
 }
 
-template<typename placeholder>
-inline double ChemicalForceTemplate<placeholder>::computeVelocitySource(const int xyz, const int k) const{ //Need to correct velocity
+template<typename lattice>
+inline double ChemicalForce<lattice>::computeVelocitySource(const int xyz, const int k) const{ //Need to correct velocity
 
-    return +compute(xyz,k) * GETPROPERTIES().m_DT / (2.0 * m_Density.getParameter(k));
+    return +compute(xyz,k) * lattice::m_DT / (2.0 * m_Density.getParameter(k));
     
 }
-
-typedef ChemicalForceTemplate<> ChemicalForce;

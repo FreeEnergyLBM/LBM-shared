@@ -16,8 +16,9 @@
  * point is a solid or a periodic boundary.
  * \tparam Empty template parameter, used to ensure GETPROPERTIES is defined before it is needed in this function.
  */
-template<typename placeholder = void>
-class GeometryTemplate {
+
+template<class lattice>
+class Geometry {
     public:
 
         /**
@@ -52,37 +53,37 @@ class GeometryTemplate {
  * \details This function evaluates an (unnecessarily complex for now) if statement to determine if we are on the
  *          edge of the simulation domain. Returns true if current lattice point is a periodic boundary.
  */
-template<typename placeholder>
-inline bool GeometryTemplate<placeholder>::isPeriodic(int k) {
+template<typename lattice>
+inline bool Geometry<lattice>::isPeriodic(int k) {
     
-    int yAtCurrentk = computeY(GETPROPERTIES().m_LY, GETPROPERTIES().m_LZ, k);
-    int zAtCurrentk = computeZ(GETPROPERTIES().m_LY, GETPROPERTIES().m_LZ, k);
-    int xAtCurrentk = computeX(GETPROPERTIES().m_LY, GETPROPERTIES().m_LZ, k);
+    int yAtCurrentk = computeY(lattice::m_LY, lattice::m_LZ, k);
+    int zAtCurrentk = computeZ(lattice::m_LY, lattice::m_LZ, k);
+    int xAtCurrentk = computeX(lattice::m_LY, lattice::m_LZ, k);
 
-    if(GETPROPERTIES().m_LZ <= 1 || GETPROPERTIES().m_LY <= 1 || GETPROPERTIES().m_LXdiv <= 1) return true; //If simulation is 2D
+    if(lattice::m_LZ <= 1 || lattice::m_LY <= 1 || lattice::m_LXdiv <= 1) return true; //If simulation is 2D
     else if (zAtCurrentk == 0 ||
-         zAtCurrentk == GETPROPERTIES().m_LZ-1) return true; //Edges in Z direction
+         zAtCurrentk == lattice::m_LZ-1) return true; //Edges in Z direction
 
     else if (yAtCurrentk == 0 ||
-         yAtCurrentk == GETPROPERTIES().m_LY-1) return true; //Edges in Y direction
+         yAtCurrentk == lattice::m_LY-1) return true; //Edges in Y direction
         
     else if (xAtCurrentk == 0 ||
-         xAtCurrentk == GETPROPERTIES().m_LXdiv-1) return true; //Edges in X direction
+         xAtCurrentk == lattice::m_LXdiv-1) return true; //Edges in X direction
     
     return false;
     
     /*
-    if (((GETPROPERTIES().m_LZ>1&&(k%(GETPROPERTIES().m_LZ-1)==0||
-         (k-1)%(GETPROPERTIES().m_LZ-1)==0)))||
-        (GETPROPERTIES().m_LY>1&&(k/(GETPROPERTIES().m_LZ)%(GETPROPERTIES().m_LY-1)==0||
-         ((k)/(GETPROPERTIES().m_LZ)-1)%(GETPROPERTIES().m_LY-1)==0))||
-        (GETPROPERTIES().m_LXdiv>1&&((k/(GETPROPERTIES().m_LZ)/(GETPROPERTIES().m_LY))%(GETPROPERTIES().m_LXdiv-1)==0||
-          ((k)/(GETPROPERTIES().m_LZ)/(GETPROPERTIES().m_LY)-1)%(GETPROPERTIES().m_LXdiv-1)==0||
-          ((k)/(GETPROPERTIES().m_LZ)/(GETPROPERTIES().m_LY)-1)-1<0||
-          ((k)/(GETPROPERTIES().m_LZ)/(GETPROPERTIES().m_LY)-1)+1>GETPROPERTIES().m_LXdiv-1))||
-        GETPROPERTIES().m_LZ==1||
-        GETPROPERTIES().m_LY==1||
-        GETPROPERTIES().m_LXdiv==1) return true; //These conditions just check whether the lattice point is on the edge of the 
+    if (((lattice::m_LZ>1&&(k%(lattice::m_LZ-1)==0||
+         (k-1)%(lattice::m_LZ-1)==0)))||
+        (lattice::m_LY>1&&(k/(lattice::m_LZ)%(lattice::m_LY-1)==0||
+         ((k)/(lattice::m_LZ)-1)%(lattice::m_LY-1)==0))||
+        (lattice::m_LXdiv>1&&((k/(lattice::m_LZ)/(lattice::m_LY))%(lattice::m_LXdiv-1)==0||
+          ((k)/(lattice::m_LZ)/(lattice::m_LY)-1)%(lattice::m_LXdiv-1)==0||
+          ((k)/(lattice::m_LZ)/(lattice::m_LY)-1)-1<0||
+          ((k)/(lattice::m_LZ)/(lattice::m_LY)-1)+1>lattice::m_LXdiv-1))||
+        lattice::m_LZ==1||
+        lattice::m_LY==1||
+        lattice::m_LXdiv==1) return true; //These conditions just check whether the lattice point is on the edge of the 
                             //simulation domain
     
     else return false;
@@ -94,18 +95,16 @@ inline bool GeometryTemplate<placeholder>::isPeriodic(int k) {
  *          is currently determined by this function, but in the future it will be chosen elsewhere so that no
  *          modification to the source file is needed. Returns true if current lattice point is a solid.
  */
-template<typename placeholder>
-inline bool GeometryTemplate<placeholder>::isSolid(int k) {
+template<typename lattice>
+inline bool Geometry<lattice>::isSolid(int k) {
 
-    int yAtCurrentk = computeY(GETPROPERTIES().m_LY, GETPROPERTIES().m_LZ, k);
-    //int zAtCurrentk = computeZ(GETPROPERTIES().m_LY, GETPROPERTIES().m_LZ, k);
-    //int xAtCurrentk = computeX(GETPROPERTIES().m_LY, GETPROPERTIES().m_LZ, k);
+    int yAtCurrentk = computeY(lattice::m_LY, lattice::m_LZ, k);
+    //int zAtCurrentk = computeZ(lattice::m_LY, lattice::m_LZ, k);
+    //int xAtCurrentk = computeX(lattice::m_LY, lattice::m_LZ, k);
     
-    //if (yAtCurrentk <= 1 || yAtCurrentk >= GETPROPERTIES().m_LY - 2 || xAtCurrentk <= 1 || xAtCurrentk >= GETPROPERTIES().m_LXdiv - 2 || zAtCurrentk <= 1 || zAtCurrentk >= GETPROPERTIES().m_LZ - 2 ) return true; //Change this condition to control where the solid is
+    //if (yAtCurrentk <= 1 || yAtCurrentk >= lattice::m_LY - 2 || xAtCurrentk <= 1 || xAtCurrentk >= lattice::m_LXdiv - 2 || zAtCurrentk <= 1 || zAtCurrentk >= lattice::m_LZ - 2 ) return true; //Change this condition to control where the solid is
     
-    if (yAtCurrentk <= 1 || yAtCurrentk >= GETPROPERTIES().m_LY - 2 ) return true; //Change this condition to control where the solid is
+    if (yAtCurrentk <= 1 || yAtCurrentk >= lattice::m_LY - 2 ) return true; //Change this condition to control where the solid is
     else return false;
 
 }
-
-typedef GeometryTemplate<> Geometry; //!<Typedef to avoid needing empty angle brackets

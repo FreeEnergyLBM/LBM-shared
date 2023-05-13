@@ -23,7 +23,7 @@
  * velocity depenence of equilibrium distibutions.
  * \tparam stencil Velocity stencil for the model inheriting from this class.
  */
-template<class stencil>
+template<class lattice, class stencil>
 class CollisionBase {
 
     static_assert(std::is_base_of<Stencil, stencil>(), "ERROR: invalid stencil specified in traits class.");
@@ -98,8 +98,8 @@ class CollisionBase {
  *          by density. This is calcualted as Weights*(1+velocity factor), where "velocity factor" is the velocity
  *          dependence of the equilibrium.
  */
-template<class stencil>
-inline double CollisionBase<stencil>::computeGamma(const double* velocity, const int idx) const {
+template<class lattice, class stencil>
+inline double CollisionBase<lattice,stencil>::computeGamma(const double* velocity, const int idx) const {
     
     return stencil::Weights[idx] * (1.0 + computeVelocityFactor(velocity, idx)); 
 
@@ -112,8 +112,8 @@ inline double CollisionBase<stencil>::computeGamma(const double* velocity, const
  *          calculated. These are then normalised with respect to the lattice sound speed and the velocity
  *          factor is returned.
  */
-template<class stencil>
-inline double CollisionBase<stencil>::computeVelocityFactor(const double* velocity, const int idx) const {
+template<class lattice, class stencil>
+inline double CollisionBase<lattice,stencil>::computeVelocityFactor(const double* velocity, const int idx) const {
     
     double ci_dot_velocity = 0;
     double velocity_dot_velocity = 0;
@@ -136,8 +136,8 @@ inline double CollisionBase<stencil>::computeVelocityFactor(const double* veloci
  * \details This function returns the zeroth moment of the distributions. This is just the sum of distributions
  *          in each discrete direction (so the sum over 9 directions for D2Q9);
  */
-template<class stencil>
-inline double CollisionBase<stencil>::computeZerothMoment(const double *distribution) const {
+template<class lattice, class stencil>
+inline double CollisionBase<lattice,stencil>::computeZerothMoment(const double *distribution) const {
 
     double zerothmoment = 0;
 
@@ -155,8 +155,8 @@ inline double CollisionBase<stencil>::computeZerothMoment(const double *distribu
  * \details This function returns the first moment of the distributions. This is the sum of the distributions
  *          multiplied by the stencil velocity vector c_i for each i in the choesn cartesian direction.
  */
-template<class stencil>
-inline double CollisionBase<stencil>::computeFirstMoment(const double *distribution,const int xyz) const {
+template<class lattice, class stencil>
+inline double CollisionBase<lattice,stencil>::computeFirstMoment(const double *distribution,const int xyz) const {
 
     double firstmoment = 0;
 
@@ -174,10 +174,10 @@ inline double CollisionBase<stencil>::computeFirstMoment(const double *distribut
  * \details This computes the SRT/BGK collision step. This is simply the old distribution in each direction minus
  *          the difference between the old and equilibrium distributions divided by the relaxation time, tau.
  */
-template<class stencil>
-inline double CollisionBase<stencil>::collideSRT(const double& old, const double& equilibrium, const double& itau) const{
+template<class lattice, class stencil>
+inline double CollisionBase<lattice,stencil>::collideSRT(const double& old, const double& equilibrium, const double& itau) const{
 
-    return old - GETPROPERTIES().m_DT * itau * (old - equilibrium); //SRT colision step. Old corresponds to the old distribution and itau is
+    return old - lattice::m_DT * itau * (old - equilibrium); //SRT colision step. Old corresponds to the old distribution and itau is
                                        //the inverse of the relaxation time
 
 }
@@ -186,14 +186,14 @@ inline double CollisionBase<stencil>::collideSRT(const double& old, const double
  * \details This computes the Guo forcing for the SRT collision operator. The dot product of velocity with the
  *          stencil velocity vectors is calculated and then used to calculate the forcing term.
  */
-template<class stencil>
-inline double CollisionBase<stencil>::forceGuoSRT(const double force[stencil::D],
+template<class lattice, class stencil>
+inline double CollisionBase<lattice,stencil>::forceGuoSRT(const double force[stencil::D],
                                         const double* velocity, const double& itau,
                                         const int idx) const { //Guo forcing
 
     double ci_dot_velocity = 0;
     double forceterm = 0;
-    double prefactor = (1 - GETPROPERTIES().m_DT * itau / 2.0) * stencil::Weights[idx]; //Prefactor for Guo forcing
+    double prefactor = (1 - lattice::m_DT * itau / 2.0) * stencil::Weights[idx]; //Prefactor for Guo forcing
 
     for (int xyz=0;xyz<stencil::D;xyz++){
 

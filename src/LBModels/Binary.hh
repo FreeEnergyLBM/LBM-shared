@@ -9,22 +9,20 @@
 //Binary.hh: Contains the details of the LBM model to solve an equation for phase separation. Each
 //Model is given a "traits" class that contains stencil, data, force and boundary information
 
-template<class properties>
+template<class lattice>
 struct DefaultTraitBinary{
 
-    using Stencil = std::conditional_t<std::remove_reference<properties>::type::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
+    using Stencil = std::conditional_t<std::remove_reference<lattice>::type::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
 
-    using Boundaries = std::tuple<BounceBack>;
+    using Boundaries = std::tuple<BounceBack<lattice>>;
 
-    using Forces = std::tuple<OrderParameterGradients<CentralXYZ<properties, Stencil>>>;
-
-    using Properties = properties;
+    using Forces = std::tuple<OrderParameterGradients<lattice,CentralXYZ<lattice, Stencil>>>;
 
 };
 
 
-template<class traits = DefaultTraitBinary<decltype(GETPROPERTIES())>>
-class Binary: public CollisionBase<typename traits::Stencil>, public ModelBase<traits> { //Inherit from base class to avoid repetition of common
+template<class lattice, class traits = DefaultTraitBinary<lattice>>
+class Binary: public CollisionBase<lattice, typename traits::Stencil>, public ModelBase<lattice, traits> { //Inherit from base class to avoid repetition of common
                                                       //calculations
                                                       
     public:
@@ -62,38 +60,38 @@ class Binary: public CollisionBase<typename traits::Stencil>, public ModelBase<t
         
         double m_Gamma = 1;
 
-        OrderParameter m_OrderParameter; //Order Parameter
-        Velocity m_Velocity; //Velocity
-        ChemicalPotential m_ChemicalPotential;
-        GradientOrderParameter m_GradOrderParameter;
-        LaplacianOrderParameter m_LaplacianOrderParameter;
+        OrderParameter<lattice> m_OrderParameter; //Order Parameter
+        Velocity<lattice> m_Velocity; //Velocity
+        ChemicalPotential<lattice> m_ChemicalPotential;
+        GradientOrderParameter<lattice> m_GradOrderParameter;
+        LaplacianOrderParameter<lattice> m_LaplacianOrderParameter;
 
         std::vector<double>& orderparameter = m_OrderParameter.getParameter(); //Reference to vector of order parameters
         std::vector<double>& velocity = m_Velocity.getParameter(); //Reference to vector of velocities
 
 };
 
-template<class traits>
-inline const double& Binary<traits>::getDensity(const int k) const { //This needs to be renamed
+template<class lattice, class traits>
+inline const double& Binary<lattice, traits>::getDensity(const int k) const { //This needs to be renamed
 
     return orderparameter[k]; //Return reference to order parameter at point k
 
 }
 
-template<class traits>
-inline const std::vector<double>& Binary<traits>::getVelocity() const {
+template<class lattice, class traits>
+inline const std::vector<double>& Binary<lattice, traits>::getVelocity() const {
 
     return velocity; //Return reference to velocity vector
 
 }
 
-template<class traits>
-inline void Binary<traits>::collide() {
+template<class lattice, class traits>
+inline void Binary<lattice, traits>::collide() {
 
     #pragma omp for schedule(guided)
-    for (int k = GETPROPERTIES().m_HaloSize; k < GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++){ //loop over k
+    for (int k = lattice::m_HaloSize; k < lattice::m_N - lattice::m_HaloSize; k++){ //loop over k
 
-        double* old_distribution = ModelBase<traits>::m_Distribution.getDistributionOldPointer(k);
+        double* old_distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
 
         double equilibriumsum = 0;
 
@@ -103,7 +101,7 @@ inline void Binary<traits>::collide() {
 
             double collision = computeCollisionQ(equilibriumsum, k, old_distribution[idx], orderparameter[k], &velocity[k * traits::Stencil::D], idx);
 
-            ModelBase<traits>::m_Distribution.getDistributionPointer(ModelBase<traits>::m_Distribution.streamIndex(k, idx))[idx] = collision;
+            ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(ModelBase<lattice, traits>::m_Distribution.streamIndex(k, idx))[idx] = collision;
 
         }
         
@@ -112,28 +110,28 @@ inline void Binary<traits>::collide() {
     #ifdef MPIPARALLEL
     #pragma omp master
     {
-    ModelBase<traits>::m_Data.communicateDistribution();
+    ModelBase<lattice, traits>::m_Data.communicateDistribution();
     }
     #endif
 
 }
 
-template<class traits>
-inline void Binary<traits>::initialise() { //Initialise model
+template<class lattice, class traits>
+inline void Binary<lattice, traits>::initialise() { //Initialise model
 
-    ModelBase<traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
+    ModelBase<lattice, traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
     #pragma omp parallel for schedule(guided) 
-    for (int k=GETPROPERTIES().m_HaloSize; k<GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //loop over k
+    for (int k=lattice::m_HaloSize; k<lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
 
-        double* distribution = ModelBase<traits>::m_Distribution.getDistributionPointer(k);
-        double* old_distribution = ModelBase<traits>::m_Distribution.getDistributionOldPointer(k);
+        double* distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(k);
+        double* old_distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
 
         m_ChemicalPotential.initialiseModel(0,k);
 
-        int xx = computeX(GETPROPERTIES().m_LY, GETPROPERTIES().m_LZ, k);
+        int xx = computeX(lattice::m_LY, lattice::m_LZ, k);
 
-        if (xx>=GETPROPERTIES().m_LX/2) m_OrderParameter.initialiseModel(1.0,k); //Set order parameter to 1 initially (This will change)
+        if (xx>=lattice::m_LX/2) m_OrderParameter.initialiseModel(1.0,k); //Set order parameter to 1 initially (This will change)
         else m_OrderParameter.initialiseModel(-1.0,k);
 
         double equilibriumsum = 0;
@@ -155,13 +153,13 @@ inline void Binary<traits>::initialise() { //Initialise model
 }
 
 
-template<class traits>
-inline void Binary<traits>::computeMomenta() { //Calculate order parameter
+template<class lattice, class traits>
+inline void Binary<lattice, traits>::computeMomenta() { //Calculate order parameter
 
     #pragma omp for schedule(guided)
-    for (int k = GETPROPERTIES().m_HaloSize; k <GETPROPERTIES().m_N - GETPROPERTIES().m_HaloSize; k++) { //Loop over k
+    for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //Loop over k
 
-        double* distribution = ModelBase<traits>::m_Distribution.getDistributionPointer(k);
+        double* distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(k);
 
         orderparameter[k] = computeOrderParameter(distribution, k);
 
@@ -170,65 +168,65 @@ inline void Binary<traits>::computeMomenta() { //Calculate order parameter
     #ifdef MPIPARALLEL
     #pragma omp master
     {
-    ModelBase<traits>::m_Data.communicate(m_OrderParameter);
+    ModelBase<lattice, traits>::m_Data.communicate(m_OrderParameter);
     }
     #endif
 }
 
-template<class traits>
-inline double Binary<traits>::computeCollisionQ(double& equilibriumsum, const int k, const double& old, const double& orderparam,
+template<class lattice, class traits>
+inline double Binary<lattice, traits>::computeCollisionQ(double& equilibriumsum, const int k, const double& old, const double& orderparam,
                                             const double* velocity, const int idx) const {
                                         //Calculate collision step at a given velocity index at point k
     
     double forcexyz[traits::Stencil::D]; //Temporary array storing force in each cartesian direction
 
     //Force is the sum of model forces and given forces
-    for(int xyz = 0; xyz <traits::Stencil::D; xyz++) forcexyz[xyz] = computeModelForce(xyz, k) + ModelBase<traits>::computeForces(xyz, k);
+    for(int xyz = 0; xyz <traits::Stencil::D; xyz++) forcexyz[xyz] = computeModelForce(xyz, k) + ModelBase<lattice, traits>::computeForces(xyz, k);
     
     //Sum of collision + force contributions
     if (idx> 0) {
 
-        double eq = CollisionBase<typename traits::Stencil>::collideSRT(old, computeEquilibrium(orderparam, velocity, idx, k), m_InverseTau)
-                    + CollisionBase<typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
+        double eq = CollisionBase<lattice, typename traits::Stencil>::collideSRT(old, computeEquilibrium(orderparam, velocity, idx, k), m_InverseTau)
+                    + CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
 
         equilibriumsum += eq;
         
         return eq;
     }
-    else return m_OrderParameter.getParameter(k) - equilibriumsum + CollisionBase<typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
+    else return m_OrderParameter.getParameter(k) - equilibriumsum + CollisionBase<lattice,typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
 
 }
 
 
-template<class traits>
-inline double Binary<traits>::computeEquilibrium(const double& orderparam, const double* velocity, const int idx, const int k) const {
+template<class lattice, class traits>
+inline double Binary<lattice, traits>::computeEquilibrium(const double& orderparam, const double* velocity, const int idx, const int k) const {
 
-    return traits::Stencil::Weights[idx] * (m_ChemicalPotential.getParameter(k) * m_Gamma / traits::Stencil::Cs2 + orderparam * CollisionBase<typename traits::Stencil>::computeVelocityFactor(velocity, idx));
+    return traits::Stencil::Weights[idx] * (m_ChemicalPotential.getParameter(k) * m_Gamma / traits::Stencil::Cs2 + orderparam * CollisionBase<lattice, typename traits::Stencil>::computeVelocityFactor(velocity, idx));
 
 }
 
-template<class traits>
-inline double Binary<traits>::computeModelForce(int k,int xyz) const {
+template<class lattice, class traits>
+inline double Binary<lattice, traits>::computeModelForce(int k,int xyz) const {
     
     return 0;
 
 }
 
 
-template<class traits>
-inline double Binary<traits>::computeOrderParameter(const double* distribution, const int k) const {//Order parameter calculation
+template<class lattice, class traits>
+inline double Binary<lattice, traits>::computeOrderParameter(const double* distribution, const int k) const {//Order parameter calculation
     //Order parameter is the sum of distributions plus any source/correction terms
 
     if constexpr(std::tuple_size<typename traits::Forces>::value != 0){
 
-        return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution)
+        return CollisionBase<lattice, typename traits::Stencil>::computeZerothMoment(distribution)
         + std::apply([k](auto&... tests) {
 
             return (tests.computeDensitySource(k) + ...);
 
-        }, ModelBase<traits>::mt_Forces);
+        }, ModelBase<lattice, traits>::mt_Forces);
 
     }
-    else return CollisionBase<typename traits::Stencil>::computeZerothMoment(distribution);
+    else return CollisionBase<lattice, typename traits::Stencil>::computeZerothMoment(distribution);
 
 }
