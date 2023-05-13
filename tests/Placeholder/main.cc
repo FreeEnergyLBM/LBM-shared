@@ -27,36 +27,31 @@
 
 const int LX=100;
 const int LY=100;
-const int LZ=10;
-const int TIMESTEPS=100;
+const int LZ=1;
+const int TIMESTEPS=1000;
 using Lattice=LatticeProperties<Data1,X_Parallel,LX,LY,LZ>;
-//using Lattice=LatticePropertiesRuntime<Data1,X_Parallel,2>;
-
-//inline auto& GETPROPERTIES(){return getGlobal<Lattice>();}
-
 
 int main(int argc, char **argv){
     
     #ifdef MPIPARALLEL
     int provided;
-    //MPI_Init(&argc, &argv);
     MPI_Init_thread(&argc, &argv,MPI_THREAD_FUNNELED,&provided);
     MPI_Comm_size(MPI_COMM_WORLD, &NUMPROCESSORS);                              // Store number of processors
     MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
     
     Parallel<Lattice,1> initialise;
     #endif
-    //FlowField<Lattice> Dist0;
+
     FlowFieldBinary<Lattice> Dist1;
     Binary<Lattice> Dist2;
-    
+
     setFluid<Lattice>();
     setGeometry<Lattice>();
 
-    Dist1.getForce<BodyForce>().setMagnitudeX(0.0001);
+    Dist1.getForce<BodyForce>().setMagnitudeX(0.000001);
 
     Algorithm LBM(Dist1,Dist2);
-    //Algorithm LBM(Dist0);
+
     ParameterSave<Lattice,Density,OrderParameter,Velocity> Saver("data/");
 
     LBM.initialise(); //Perform necessary initialisation
@@ -66,7 +61,7 @@ int main(int argc, char **argv){
     {
     for (int timestep=0;timestep<=TIMESTEPS;timestep++){
 
-        if (timestep%50000==0) Saver.Save(timestep);
+        if (timestep%100==0) Saver.Save(timestep);
         LBM.evolve(); //Evolve one timestep
         
     }

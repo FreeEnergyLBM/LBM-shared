@@ -157,9 +157,11 @@ class Parameter {
 
         static inline void initialiseUser(const T val,const int k, const int idx=0){
 
-            mm_Initialised.insert({k*m_Num+idx,true});
-            if (!mm_Initialised.count(k*m_Num+idx)) mv_Parameter[k*m_Num+idx]=val;
-            else mm_Initialised.erase(k*m_Num+idx);
+            if (!mm_Initialised.count(k*m_Num+idx)) {
+                mv_Parameter[k*m_Num+idx]=val;
+                mm_Initialised.insert({k*m_Num+idx,true});
+            }
+            else mm_Initialised.erase(k*m_Num+idx);            
 
         }
 

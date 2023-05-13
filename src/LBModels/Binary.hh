@@ -130,7 +130,7 @@ inline void Binary<lattice, traits>::initialise() { //Initialise model
         m_ChemicalPotential.initialise(0,k);
 
         m_OrderParameter.initialise(1.0,k);
-
+        //std::cout<<m_OrderParameter.getParameter(k)<<std::endl;
         double equilibriumsum = 0;
 
         for (int idx = traits::Stencil::Q - 1; idx>= 0; idx--) {
