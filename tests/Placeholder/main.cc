@@ -47,6 +47,8 @@ int main(int argc, char **argv){
     FlowFieldBinary<Lattice> Dist1;
     Binary<Lattice> Dist2;
 
+    Dist2.setTau1(0.51);
+
     setFluid<Lattice>();
     setGeometry<Lattice>();
 
@@ -56,8 +58,9 @@ int main(int argc, char **argv){
 
     ParameterSave<Lattice,Density,OrderParameter,Velocity> Saver("data/");
     Saver.SaveHeader(TIMESTEPS,SAVEINTERVAL);
-
+    
     LBM.initialise(); //Perform necessary initialisation
+    
     auto t0=std::chrono::system_clock::now();
     
     #pragma omp parallel

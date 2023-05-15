@@ -149,20 +149,30 @@ class Parameter {
         }
 
         static inline void initialise(const T val,const int k, const int idx=0){
-
+            #pragma omp critical
+            {
             if (!mm_Initialised.count(k*m_Num+idx)) mv_Parameter[k*m_Num+idx]=val;
-            else mm_Initialised.erase(k*m_Num+idx);
-
+            else {
+                
+                mm_Initialised.erase(k*m_Num+idx); 
+                
+            }  
+            }
         }
 
         static inline void initialiseUser(const T val,const int k, const int idx=0){
-
+            #pragma omp critical
+            {
             if (!mm_Initialised.count(k*m_Num+idx)) {
                 mv_Parameter[k*m_Num+idx]=val;
                 mm_Initialised.insert({k*m_Num+idx,true});
             }
-            else mm_Initialised.erase(k*m_Num+idx);            
-
+            else {
+                
+                mm_Initialised.erase(k*m_Num+idx); 
+                
+            }   
+            }        
         }
 
         static std::map<int,bool> mm_Initialised;
@@ -344,4 +354,14 @@ struct GradientOrderParameter : public Parameter<GradientOrderParameter, lattice
 template<class lattice>
 struct SolidLabels : public Parameter<SolidLabels, lattice, int> {
     static constexpr char m_Name[] = "SolidLabels";
+}; //Labelling of geometry
+
+template<class lattice>
+struct Tau : public Parameter<Tau, lattice, double> {
+    static constexpr char m_Name[] = "Tau";
+}; //Labelling of geometry
+
+template<class lattice>
+struct InverseTau : public Parameter<InverseTau, lattice, double> {
+    static constexpr char m_Name[] = "Tau";
 }; //Labelling of geometry

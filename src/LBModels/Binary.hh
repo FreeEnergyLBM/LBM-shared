@@ -27,6 +27,9 @@ class Binary: public CollisionBase<lattice, typename traits::Stencil>, public Mo
                                                       
     public:
 
+        inline void setTau1(double val){m_Tau1=val;}
+        inline void setTau2(double val){m_Tau2=val;}
+
         inline void collide() override; //Collision step
 
         inline void initialise() override; //Initialisation step
@@ -65,6 +68,10 @@ class Binary: public CollisionBase<lattice, typename traits::Stencil>, public Mo
         ChemicalPotential<lattice> m_ChemicalPotential;
         GradientOrderParameter<lattice> m_GradOrderParameter;
         LaplacianOrderParameter<lattice> m_LaplacianOrderParameter;
+        InverseTau<lattice> m_InvTau;
+
+        double m_Tau1=1;
+        double m_Tau2=1;
 
         std::vector<double>& orderparameter = m_OrderParameter.getParameter(); //Reference to vector of order parameters
         std::vector<double>& velocity = m_Velocity.getParameter(); //Reference to vector of velocities
@@ -122,7 +129,7 @@ inline void Binary<lattice, traits>::initialise() { //Initialise model
     ModelBase<lattice, traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
     #pragma omp parallel for schedule(guided) 
-    for (int k=lattice::m_HaloSize; k<lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
+    for (int k = 0; k<lattice::m_N; k++) { //loop over k
 
         double* distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
@@ -130,6 +137,8 @@ inline void Binary<lattice, traits>::initialise() { //Initialise model
         m_ChemicalPotential.initialise(0,k);
 
         m_OrderParameter.initialise(1.0,k);
+        
+        m_InvTau.initialise(0.5*(1.0+m_OrderParameter.getParameter(k))*(m_Tau1-m_Tau2)+m_Tau2,k);
         //std::cout<<m_OrderParameter.getParameter(k)<<std::endl;
         double equilibriumsum = 0;
 
@@ -144,9 +153,9 @@ inline void Binary<lattice, traits>::initialise() { //Initialise model
             old_distribution[idx] = equilibrium;        
 
         }
-
+        
     }
-
+    
 }
 
 
@@ -159,7 +168,7 @@ inline void Binary<lattice, traits>::computeMomenta() { //Calculate order parame
         double* distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(k);
 
         orderparameter[k] = computeOrderParameter(distribution, k);
-
+        m_InvTau.getParameter(k)=0.5*(1.0+orderparameter[k])*(m_Tau1-m_Tau2)+m_Tau2;
     }
 
     #ifdef MPIPARALLEL

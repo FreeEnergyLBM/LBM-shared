@@ -45,6 +45,7 @@ class FlowFieldBinary : public FlowField<lattice, traits>{ //Inherit from base c
 
         OrderParameter<lattice> m_OrderParameter;
         ChemicalPotential<lattice> m_ChemicalPotential;
+        InverseTau<lattice> m_InvTau; 
 
         enum{x=0,y=1,z=2};
 
@@ -99,7 +100,7 @@ inline void FlowFieldBinary<lattice, traits>::initialise() { //Initialise model
     FlowField<lattice, traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
 
     #pragma omp parallel for schedule(guided)
-    for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
+    for (int k = 0; k<lattice::m_N; k++) { //loop over k
 
         double* distribution = FlowField<lattice, traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution = FlowField<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
@@ -140,14 +141,14 @@ inline double FlowFieldBinary<lattice, traits>::computeCollisionQ(double& equili
     //Sum of collision + force contributions 
     if (idx>0) {
 
-        double eq = CollisionBase<lattice, typename traits::Stencil>::collideSRT(old, computeEquilibrium(density ,velocity ,order_parameter ,chemical_potential ,idx ,k), FlowField<lattice, traits>::m_InverseTau)
-              + CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, FlowField<lattice, traits>::m_InverseTau, idx);
+        double eq = CollisionBase<lattice, typename traits::Stencil>::collideSRT(old, computeEquilibrium(density ,velocity ,order_parameter ,chemical_potential ,idx ,k), m_InvTau.getParameter(k))
+              + CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InvTau.getParameter(k), idx);
 
         equilibriumsum += eq;
         
         return eq;
 
     }
-    else return density-equilibriumsum+CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, FlowField<lattice, traits>::m_InverseTau, idx);
+    else return density-equilibriumsum+CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InvTau.getParameter(k), idx);
     
 }
