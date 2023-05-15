@@ -33,6 +33,18 @@ const int TIMESTEPS=1000;
 const int SAVEINTERVAL=100;
 using Lattice=LatticeProperties<Data1,X_Parallel,LX,LY,LZ>;
 
+bool fluidLocation(const int k){
+    int yy=computeY(LY,LZ,k);
+    if ((yy)>LY/2) return true;
+    else return false;
+}
+
+bool solidLocation(const int k){
+    int yAtCurrentk = computeY(LY, LZ, k);
+    if (yAtCurrentk <= 1 || yAtCurrentk >= LY - 2 ) return true;
+    else return false;
+}
+
 int main(int argc, char **argv){
     
     #ifdef MPIPARALLEL
@@ -49,10 +61,13 @@ int main(int argc, char **argv){
 
     Dist2.setTau1(0.51);
 
-    setFluid<Lattice>();
-    setGeometry<Lattice>();
-
     Dist1.getForce<BodyForce>().setMagnitudeX(0.000001);
+
+    OrderParameter<Lattice> orderparam;
+    orderparam.set(fluidLocation,-1.0);
+
+    SolidLabels<Lattice> solid;
+    solid.set(solidLocation,true);
 
     Algorithm LBM(Dist1,Dist2);
 

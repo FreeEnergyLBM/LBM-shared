@@ -1,5 +1,5 @@
 #include<../../src/lbm.hh>
-
+/*
 template<class lattice>
 void setFluid(){
     OrderParameter<lattice> m_OrderParameter;
@@ -17,3 +17,18 @@ void setGeometry(){
         if (yAtCurrentk <= 1 || yAtCurrentk >= lattice::m_LY - 2 ) m_SolidLabels.initialiseUser(true,k);
     }
 }
+*/
+
+/*
+template<class lattice>
+bool fluidLocation(int k){
+    int yy=computeY(lattice::m_LY,lattice::m_LZ,k);
+    if ((yy)>lattice::m_LY/2) return true;
+}
+
+template<class lattice>
+bool solidLocation(int k){
+    int yAtCurrentk = computeY(lattice::m_LY, lattice::m_LZ, k);
+        if (yAtCurrentk <= 1 || yAtCurrentk >= lattice::m_LY - 2 ) return true;
+}
+*/

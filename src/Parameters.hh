@@ -115,6 +115,7 @@ class Parameter {
             mv_Parameter.resize(num * lattice::m_N); //Resize to the desired size
 
         }
+        
         Parameter(const Parameter& other) {}
 
         inline std::vector<T>& getParameter() const { //Returns const vector containing the parameter
@@ -147,7 +148,7 @@ class Parameter {
             return mv_Parameter[idx];
             
         }
-
+        /*
         static inline void initialise(const T val,const int k, const int idx=0){
             #pragma omp critical
             {
@@ -159,8 +160,8 @@ class Parameter {
             }  
             }
         }
-
-        static inline void initialiseUser(const T val,const int k, const int idx=0){
+        */
+        static inline void initialise(const T val,const int k, const int idx=0){
             #pragma omp critical
             {
             if (!mm_Initialised.count(k*m_Num+idx)) {
@@ -173,6 +174,29 @@ class Parameter {
                 
             }   
             }        
+        }
+
+        template<int idx=0>
+        void set(bool (*condition)(const int), T val) {
+
+            for(int k = lattice::m_HaloSize; k < lattice::m_N-lattice::m_HaloSize; k++) {
+
+                if (condition(k)) initialise(val,k,0);
+
+            }
+
+        }
+
+        template<int idx=0>
+        void set(bool (*condition)(const int), T val, T false_val) {
+
+            for(int k = lattice::m_HaloSize; k < lattice::m_N-lattice::m_HaloSize; k++) {
+
+                if (condition(k)) initialise(val,k,idx);
+                else initialise(false_val,k,idx);
+
+            }
+
         }
 
         static std::map<int,bool> mm_Initialised;
