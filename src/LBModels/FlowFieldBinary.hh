@@ -3,7 +3,7 @@
 #include "../Parameters.hh"
 #include "../Data.hh"
 #include "../BoundaryModels/Boundaries.hh"
-#include "../Forces/Forces.hh"
+#include "../AddOns/AddOns.hh"
 #include "../Parallel.hh"
 #include "../GradientStencils/GradientStencils.hh"
 #include <utility>
@@ -20,7 +20,7 @@ struct DefaultTraitFlowFieldBinary{
 
     using Boundaries = std::tuple<BounceBack<lattice>>;
 
-    using Forces = std::tuple<BodyForce<lattice>,ChemicalForce<lattice>>;
+    using AddOns = std::tuple<BodyForce<lattice>,ChemicalForce<lattice>>;
 
 };
 

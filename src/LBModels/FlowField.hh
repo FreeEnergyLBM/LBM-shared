@@ -3,7 +3,7 @@
 #include "../Parameters.hh"
 #include "../Data.hh"
 #include "../BoundaryModels/Boundaries.hh"
-#include "../Forces/Forces.hh"
+#include "../AddOns/AddOns.hh"
 #include "../Parallel.hh"
 #include "ModelBase.hh"
 #include <utility>
@@ -18,7 +18,7 @@ struct DefaultTraitFlowField{
 
     using Boundaries = std::tuple<BounceBack<lattice>>;
 
-    using Forces = std::tuple<>;
+    using AddOns = std::tuple<>;
 
 };
 
@@ -209,13 +209,13 @@ template<class lattice, class traits>
 inline double FlowField<lattice, traits>::computeDensity(const double* distribution, const int k) const { //Density<> calculation
     //Density<> is the sum of distributions plus any source/correction terms
 
-    if constexpr(std::tuple_size<typename traits::Forces>::value != 0) {
+    if constexpr(std::tuple_size<typename traits::AddOns>::value != 0) {
 
-        return CollisionBase<lattice,typename traits::Stencil>::computeZerothMoment(distribution) + std::apply([k](auto&... forces) {
+        return CollisionBase<lattice,typename traits::Stencil>::computeZerothMoment(distribution) + std::apply([k](auto&... addons) {
 
-                return (forces.computeDensitySource(k) + ...);
+                return (addons.computeDensitySource(k) + ...);
 
-            }, ModelBase<lattice, traits>::mt_Forces);
+            }, ModelBase<lattice, traits>::mt_AddOns);
 
     }
     else return CollisionBase<lattice,typename traits::Stencil>::computeZerothMoment(distribution);
@@ -228,13 +228,13 @@ inline double FlowField<lattice, traits>::computeVelocity(const double* distribu
     //Velocity in direction xyz is sum of distribution times the xyz component of the discrete velocity vector
     //in each direction plus any source/correction terms
 
-    if constexpr(std::tuple_size<typename traits::Forces>::value != 0) {
+    if constexpr(std::tuple_size<typename traits::AddOns>::value != 0) {
 
-        return CollisionBase<lattice,typename traits::Stencil>::computeFirstMoment(distribution, xyz) + std::apply([xyz, k](auto&&... forces) {
+        return CollisionBase<lattice,typename traits::Stencil>::computeFirstMoment(distribution, xyz) + std::apply([xyz, k](auto&&... addons) {
 
-                return (forces.computeVelocitySource(xyz, k) + ...);
+                return (addons.computeVelocitySource(xyz, k) + ...);
                 
-            }, ModelBase<lattice, traits>::mt_Forces);
+            }, ModelBase<lattice, traits>::mt_AddOns);
 
     }
     else return CollisionBase<lattice,typename traits::Stencil>::computeFirstMoment(distribution, xyz);

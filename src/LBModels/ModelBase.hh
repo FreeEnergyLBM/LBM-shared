@@ -2,7 +2,7 @@
 #include <utility>
 #include <memory>
 #include "../BoundaryModels/BoundaryBase.hh"
-#include "../Forces/ForceBase.hh"
+#include "../AddOns/AddOnBase.hh"
 
 template<class lattice=void>
 struct DefaultTrait{
@@ -11,14 +11,14 @@ struct DefaultTrait{
 
     using Boundaries = std::tuple<>;
 
-    using Forces = std::tuple<>;
+    using AddOns = std::tuple<>;
 
 };
 
 template<class lattice, class traits = DefaultTrait<lattice>>
 class ModelBase{ //Inherit from base class to avoid repetition of common
                                                       //calculations
-    static_assert(CheckBase<ForceBase, typename traits::Forces>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
+    static_assert(CheckBase<AddOnBase, typename traits::AddOns>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
     static_assert(CheckBase<BoundaryBase, typename traits::Boundaries>::value, "ERROR: At least one force chosen is not a force class.");
     public:
 
@@ -46,12 +46,12 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
 
         inline const std::vector<double>& getDistribution() const; //Return vector of distribution
 
-        template<template<class> class force, int inst = 0>
-        inline force<lattice>& getForce() {
+        template<template<class> class addon, int inst = 0>
+        inline addon<lattice>& getAddOn() {
 
-            auto forces = get_type<force<lattice>>(mt_Forces);
+            auto addons = get_type<addon<lattice>>(mt_AddOns);
 
-            return std::get<inst>(forces);
+            return std::get<inst>(addons);
 
         }
 
@@ -70,7 +70,7 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
 
         enum{ x = 0, y = 1, z = 2 }; //Indices corresponding to x, y, z directions
 
-        typename traits::Forces mt_Forces; //MOVE THIS TO BASE
+        typename traits::AddOns mt_AddOns; //MOVE THIS TO BASE
         typename traits::Boundaries mt_Boundaries; //MOVE THIS TO BASE
         Geometry<lattice> m_Geometry; //MOVE THIS TO BASE
         
@@ -91,14 +91,14 @@ inline void ModelBase<lattice,traits>::precompute() {
     #pragma omp for schedule(guided)
     for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
 
-        if constexpr(std::tuple_size<typename traits::Forces>::value != 0){ //Check if there is at least one element
+        if constexpr(std::tuple_size<typename traits::AddOns>::value != 0){ //Check if there is at least one element
                                                                           //in F
 
-            std::apply([k](auto&... forces){//See Algorithm.hh for explanation of std::apply
+            std::apply([k](auto&... addons){//See Algorithm.hh for explanation of std::apply
 
-                (forces.precompute(k),...);
+                (addons.precompute(k),...);
 
-            }, mt_Forces);
+            }, mt_AddOns);
 
         }
         
@@ -115,11 +115,11 @@ inline void ModelBase<lattice,traits>::precompute() {
 template<class lattice, class traits>
 inline double ModelBase<lattice,traits>::computeForces(int xyz, int k) const {
 
-    if constexpr(std::tuple_size<typename traits::Forces>::value != 0){
+    if constexpr(std::tuple_size<typename traits::AddOns>::value != 0){
 
-        return std::apply([xyz, k](auto&... forces){
-                return (forces.compute(xyz, k) + ...);
-            }, mt_Forces);
+        return std::apply([xyz, k](auto&... addons){
+                return (addons.compute(xyz, k) + ...);
+            }, mt_AddOns);
 
     }
     else return 0;

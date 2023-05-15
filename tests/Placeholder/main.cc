@@ -13,7 +13,7 @@
 //adative mesh
 //floats
 //MPI object - get rid of ifdefs
-//Adjust parallelisation basedo n solid
+//Adjust parallelisation based on solid
 //template function to add forces
 
 /**
@@ -66,7 +66,7 @@ int main(int argc, char **argv){
     FlowFieldBinary<Lattice> Model1; //Flowfield (navier stokes solver) that can be used with the binary model (there are nuances with this model)
     Binary<Lattice> Model2; //Binary model with hybrid equilibrium and forcing term
 
-    Model1.getForce<BodyForce>().setMagnitudeX(0.000001); //Get object of body force and then set the magnitude
+    Model1.getAddOn<BodyForce>().setMagnitudeX(0.000001); //Get object of body force and then set the magnitude
     Model2.setTau1(0.51); //Set the relaxation time of fluid 1
 
     OrderParameter<Lattice> orderparam;

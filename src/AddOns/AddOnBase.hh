@@ -4,8 +4,7 @@
 //ExternalForce.hh: Contains the force class for a constant applied body force in a given direction. This is
 //unfinished (should be able to specify magnitude and direction).
 
-template<typename placeholder = void>
-class ForceBaseTemplate{
+class AddOnBase{
     
     public:
 
@@ -24,35 +23,28 @@ class ForceBaseTemplate{
 
 };
 
-template<typename placeholder>
-inline double ForceBaseTemplate<placeholder>::compute(const int xyz, const int k) const {
+inline double AddOnBase::compute(const int xyz, const int k) const {
 
     return 0;
 
 }
 
-template<typename placeholder>
-inline void ForceBaseTemplate<placeholder>::precompute(const int k) { //Not necessary
+inline void AddOnBase::precompute(const int k) { //Not necessary
     
 }
 
-template<typename placeholder>
-inline void ForceBaseTemplate<placeholder>::postprocess(const int k) { //Not necessary
+inline void AddOnBase::postprocess(const int k) { //Not necessary
     
 }
 
-template<typename placeholder>
-inline double ForceBaseTemplate<placeholder>::computeDensitySource(const int k) const { //Not necessary
+inline double AddOnBase::computeDensitySource(const int k) const { //Not necessary
 
     return 0.0;
 
 }
 
-template<typename placeholder>
-inline double ForceBaseTemplate<placeholder>::computeVelocitySource(const int xyz, const int k) const { //Need to correct velocity
+inline double AddOnBase::computeVelocitySource(const int xyz, const int k) const { //Need to correct velocity
 
     return 0;
     
 }
-
-typedef ForceBaseTemplate<> ForceBase;

@@ -16,7 +16,7 @@ struct DefaultTraitBinary{
 
     using Boundaries = std::tuple<BounceBack<lattice>>;
 
-    using Forces = std::tuple<OrderParameterGradients<lattice,CentralXYZ<lattice, Stencil>>>;
+    using AddOns = std::tuple<OrderParameterGradients<lattice,CentralXYZ<lattice, Stencil>>>;
 
 };
 
@@ -223,14 +223,14 @@ template<class lattice, class traits>
 inline double Binary<lattice, traits>::computeOrderParameter(const double* distribution, const int k) const {//Order parameter calculation
     //Order parameter is the sum of distributions plus any source/correction terms
 
-    if constexpr(std::tuple_size<typename traits::Forces>::value != 0){
+    if constexpr(std::tuple_size<typename traits::AddOns>::value != 0){
 
         return CollisionBase<lattice, typename traits::Stencil>::computeZerothMoment(distribution)
-        + std::apply([k](auto&... tests) {
+        + std::apply([k](auto&... addons) {
 
-            return (tests.computeDensitySource(k) + ...);
+            return (addons.computeDensitySource(k) + ...);
 
-        }, ModelBase<lattice, traits>::mt_Forces);
+        }, ModelBase<lattice, traits>::mt_AddOns);
 
     }
     else return CollisionBase<lattice, typename traits::Stencil>::computeZerothMoment(distribution);

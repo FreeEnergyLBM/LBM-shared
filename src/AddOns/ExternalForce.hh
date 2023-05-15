@@ -1,14 +1,14 @@
 #pragma once
 #include "../Parameters.hh"
 #include "../Lattice.hh"
-#include "ForceBase.hh"
+#include "AddOnBase.hh"
 #include<iostream>
 
 //ExternalForce.hh: Contains the force class for a constant applied body force in a given direction. This is
 //unfinished (should be able to specify magnitude and direction).
 
 template<class lattice>
-class BodyForce : public ForceBase {
+class BodyForce : public AddOnBase {
 
     public:
 
