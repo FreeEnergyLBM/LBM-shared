@@ -40,7 +40,7 @@ class FlowFieldBinary : public FlowField<lattice, traits>{ //Inherit from base c
         inline double computeEquilibrium(const double& density, const double* velocity, const double& order_parameter, const double& chemical_potential, const int idx, const int k) const; //Calculate equilibrium in direction idx with a given//density and velocity
 
         inline double computeCollisionQ(double& sum, const int k, const double& old, const double& density,
-                                  const double* velocity, const double& order_parameter, const double& chemical_potential, const int idx) const; //Calculate collision                                                                             //at index idx
+                                  const double* velocity, const double& order_parameter, const double& chemical_potential, const double& inversetau, const int idx) const; //Calculate collision                                                                             //at index idx
 
 
         OrderParameter<lattice> m_OrderParameter;
@@ -76,8 +76,10 @@ inline void FlowFieldBinary<lattice, traits>::collide() { //Collision step
             double *velocity = &FlowField<lattice, traits>::velocity[k * traits::Stencil::D];
             double& orderParameter = m_OrderParameter.getParameter(k);
             double& chemicalPotential = m_ChemicalPotential.getParameter(k);
+            double& itau = m_InvTau.getParameter(k);
+            
 
-            double collision = computeCollisionQ(equilibriumsum, k, old_distribution[k*QQ+idx], density, velocity, orderParameter, chemicalPotential, idx);
+            double collision = computeCollisionQ(equilibriumsum, k, old_distribution[k*QQ+idx], density, velocity, orderParameter, chemicalPotential, itau, idx);
             FlowField<lattice, traits>::m_Distribution.getDistributionPointer(FlowField<lattice, traits>::m_Distribution.streamIndex(k, idx))[idx] = collision;
 
         }        
@@ -108,7 +110,7 @@ inline void FlowFieldBinary<lattice, traits>::initialise() { //Initialise model
         FlowField<lattice, traits>::m_Density.initialise(1.0,k); //Set density to 1 initially (This will change)
         FlowField<lattice, traits>::m_Velocity.initialise(0.0,k,x);
         FlowField<lattice, traits>::m_Velocity.initialise(0.0,k,y);
-        FlowField<lattice, traits>::m_Velocity.initialise(0.0,k,z);
+        if constexpr (lattice::m_NDIM==3) FlowField<lattice, traits>::m_Velocity.initialise(0.0,k,z);
 
         int equilibriumsum = 0;
         for (int idx = traits::Stencil::Q-1; idx>= 0; idx--) {
@@ -130,7 +132,7 @@ inline void FlowFieldBinary<lattice, traits>::initialise() { //Initialise model
 
 template<class lattice, class traits>
 inline double FlowFieldBinary<lattice, traits>::computeCollisionQ(double& equilibriumsum, const int k, const double& old, const double& density,
-                                                     const double* velocity, const double& order_parameter, const double& chemical_potential, const int idx) const {
+                                                     const double* velocity, const double& order_parameter, const double& chemical_potential, const double& inversetau, const int idx) const {
                                             //Calculate collision step at a given velocity index at point k
     
     double forcexyz[traits::Stencil::D]; //Temporary array storing force in each cartesian direction
@@ -141,14 +143,14 @@ inline double FlowFieldBinary<lattice, traits>::computeCollisionQ(double& equili
     //Sum of collision + force contributions 
     if (idx>0) {
 
-        double eq = CollisionBase<lattice, typename traits::Stencil>::collideSRT(old, computeEquilibrium(density ,velocity ,order_parameter ,chemical_potential ,idx ,k), m_InvTau.getParameter(k))
-              + CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InvTau.getParameter(k), idx);
+        double eq = CollisionBase<lattice, typename traits::Stencil>::collideSRT(old, computeEquilibrium(density ,velocity ,order_parameter ,chemical_potential ,idx ,k), inversetau)
+              + CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, inversetau, idx);
 
         equilibriumsum += eq;
         
         return eq;
 
     }
-    else return density-equilibriumsum+CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InvTau.getParameter(k), idx);
+    else return density-equilibriumsum+CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, inversetau, idx);
     
 }

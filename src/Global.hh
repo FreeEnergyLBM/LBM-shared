@@ -13,3 +13,5 @@ int NUMPROCESSORS = 1; //!<Number of processors (1 for a serial job, updated oth
 int CURPROCESSOR = 0; //!<Id of the current process (0 for a serial job).
 char* MPIBUFFER; //!<Pointer to the MPI buffer.
 int MPIBUFFERSIZE; //!<Size of the MPI buffer.
+
+enum{x = 0, y = 1, z = 2};

@@ -181,7 +181,7 @@ class Parameter {
 
             for(int k = lattice::m_HaloSize; k < lattice::m_N-lattice::m_HaloSize; k++) {
 
-                if (condition(k)) initialise(val,k,0);
+                if (condition(k)) initialise(val,k,idx);
 
             }
 
@@ -387,5 +387,5 @@ struct Tau : public Parameter<Tau, lattice, double> {
 
 template<class lattice>
 struct InverseTau : public Parameter<InverseTau, lattice, double> {
-    static constexpr char m_Name[] = "Tau";
+    static constexpr char m_Name[] = "InverseTau";
 }; //Labelling of geometry

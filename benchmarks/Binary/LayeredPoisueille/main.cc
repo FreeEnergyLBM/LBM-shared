@@ -1,4 +1,4 @@
-#include<../../src/lbm.hh>
+#include<../../../src/lbm.hh>
 #include <chrono>
 #include <iostream>
 #ifdef MPIPARALLEL
@@ -23,13 +23,13 @@
  */
 
 //Set up the lattice, including the resolution and data/parallelisation method
-const int LX = 100; //Size of domain in x direction
+const int LX = 10; //Size of domain in x direction
 const int LY = 100; //Size of domain in y direction
 const int LZ = 1; //Size of domain in z direction (Can also not specify LZ if it is 1)
 using Lattice = LatticeProperties<Data1, X_Parallel, LX, LY, LZ>;
 
-const int TIMESTEPS = 1000; //Number of iterations to perform
-const int SAVEINTERVAL = 100; //Interval to save global data
+const int TIMESTEPS = 10000; //Number of iterations to perform
+const int SAVEINTERVAL = 10000; //Interval to save global data
 
 //User defined function to define some fluid initialisation (optional)
 bool fluidLocation(const int k) {
@@ -44,9 +44,9 @@ bool fluidLocation(const int k) {
 //User defined function to define some solid initialisation
 bool solidLocation(const int k) {
 
-    int yAtCurrentk = computeY(LY, LZ, k);
+    int yy = computeY(LY, LZ, k);
 
-    if (yAtCurrentk <= 1 || yAtCurrentk >= LY - 2) return true;
+    if (yy <= 1 || yy >= LY - 2) return true;
     else return false;
 
 }
@@ -66,8 +66,8 @@ int main(int argc, char **argv){
     FlowFieldBinary<Lattice> Model1; //Flowfield (navier stokes solver) that can be used with the binary model (there are nuances with this model)
     Binary<Lattice> Model2; //Binary model with hybrid equilibrium and forcing term
 
-    Model1.getAddOn<BodyForce>().setMagnitudeX(0.000001); //Get object of body force and then set the magnitude
-    Model2.setTau1(0.51); //Set the relaxation time of fluid 1
+    Model2.setTau1(0.55); //Set the relaxation time of fluid 1
+    Model2.setTau2(1.0); //Set the relaxation time of fluid 1
 
     OrderParameter<Lattice> orderparam;
     orderparam.set(fluidLocation, -1.0, 1.0); //Set fluid to -1 where the function we defined previously is true and 1.0 where it is false
@@ -79,25 +79,19 @@ int main(int argc, char **argv){
     Algorithm LBM(Model1,Model2); //Create LBM object with the two models we have initialised
 
     //Saving class
-    ParameterSave<Lattice,Density,OrderParameter,Velocity> Saver("data/"); //Specify the lattice, the parameters you want to save and the  data directory
+    ParameterSave<Lattice,Density,OrderParameter,Velocity,InverseTau> Saver("data/"); //Specify the lattice, the parameters you want to save and the  data directory
     Saver.SaveHeader(TIMESTEPS,SAVEINTERVAL); //Save header with lattice information (LX, LY, LZ, NDIM (2D or 3D), TIMESTEPS, SAVEINTERVAL)
     
     LBM.initialise(); //Perform necessary initialisation for the models in LBM
-    
-    auto t0=std::chrono::system_clock::now(); //Start a timer
     
     //Loop over timesteps
     for (int timestep=0;timestep<=TIMESTEPS;timestep++) {
 
         if (timestep%SAVEINTERVAL==0) Saver.Save(timestep);
-
+        if (timestep==1000) Model1.getAddOn<BodyForce>().setMagnitudeX(0.000001); //Get object of body force and then set the magnitude
         LBM.evolve(); //Evolve one timestep of the algorithm
         
     }
-
-    auto tend=std::chrono::system_clock::now(); //End timer
-    std::chrono::duration<double> elapsed_seconds=tend-t0; //Work out total time (end minus start)
-    if(CURPROCESSOR==0)std::cout<<"RUNTIME: "<<elapsed_seconds.count()<<" "<<LX<<" "<<LY<<" "<<std::endl; //Print runtime
 
     #ifdef MPIPARALLEL
     MPI_Finalize(); //MPI finalisation

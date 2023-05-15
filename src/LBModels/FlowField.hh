@@ -131,7 +131,7 @@ inline void FlowField<lattice, traits>::initialise() { //Initialise model
         m_Density.initialise(1.0,k); //Set density to 1 initially (This will change)
         m_Velocity.initialise(0.0,k,x);
         m_Velocity.initialise(0.0,k,y);
-        m_Velocity.initialise(0.0,k,z);
+        if constexpr (lattice::m_NDIM==3) m_Velocity.initialise(0.0,k,z);
 
         for (int idx = 0; idx <traits::Stencil::Q; idx++) {
 
@@ -157,8 +157,8 @@ inline void FlowField<lattice, traits>::computeMomenta() { //Calculate Density<>
 
         density[k] = computeDensity(distribution, k); //Calculate density
         velocity[k * traits::Stencil::D + x] = computeVelocity(distribution, density[k], x, k); //Calculate velocities
-        velocity[k * traits::Stencil::D + y]=computeVelocity(distribution,density[k], y, k);
-        if constexpr (traits::Stencil::D == 3) velocity[k * traits::Stencil::D + z] = computeVelocity(distribution ,density[k], z, k);
+        velocity[k * traits::Stencil::D + y] = computeVelocity(distribution,density[k], y, k);
+        if constexpr (lattice::m_NDIM == 3) velocity[k * traits::Stencil::D + z] = computeVelocity(distribution ,density[k], z, k);
 
     }
 

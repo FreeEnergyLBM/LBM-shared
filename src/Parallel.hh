@@ -36,7 +36,7 @@ class Parallel {
 
             if (lattice::m_LX % NUMPROCESSORS == 0) {
                 lattice::m_LXdiv = (lattice::m_LX / NUMPROCESSORS + 2 * num_neighbors);
-                lattice::m_LXMPIOffset = lattice::m_LXdiv*CURPROCESSOR;
+                lattice::m_LXMPIOffset = (lattice::m_LXdiv-2*num_neighbors)*CURPROCESSOR;
             }
             else{
                 throw std::runtime_error(std::string("Currently, the number of cores must be divisible by the size of the domain in the x direction."));
@@ -169,11 +169,11 @@ inline void X_Parallel<lattice,stencil,num_neighbors>::communicateDistribution(d
                 MPI_Isend(&obj.getDistribution()[lattice::m_N * stencil::Q - (num_neighbors) * lattice::m_LY * lattice::m_LZ * stencil::Q + idx],
                           1,
                           DistributionVector,
-                          m_LeftNeighbor, id, MPI_COMM_WORLD, &comm_dist_request[id]);
+                          m_RightNeighbor, id, MPI_COMM_WORLD, &comm_dist_request[id]);
                 MPI_Irecv(&obj.getDistribution()[(num_neighbors) * lattice::m_LY * lattice::m_LZ * stencil::Q + idx],
                           1,
                           DistributionVector,
-                          m_RightNeighbor, id, MPI_COMM_WORLD, &comm_dist_request[id]);
+                          m_LeftNeighbor, id, MPI_COMM_WORLD, &comm_dist_request[id]);
                 id += 1;
 
             }
@@ -201,7 +201,7 @@ inline X_Parallel<lattice,stencil, num_neighbors>::X_Parallel() {
 
     }
     
-    m_LeftNeighbor = CURPROCESSOR-  1;
+    m_LeftNeighbor = CURPROCESSOR - 1;
     if (m_LeftNeighbor == -1) m_LeftNeighbor = NUMPROCESSORS - 1;
     m_RightNeighbor = CURPROCESSOR + 1;
     if (m_RightNeighbor == NUMPROCESSORS) m_RightNeighbor = 0;

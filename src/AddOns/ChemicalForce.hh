@@ -20,6 +20,10 @@ class ChemicalForce : public AddOnBase {
         inline double computeVelocitySource(const int xyz,const int k) const override; //Calculate any possible source/correction term for
                                                            //velocity
 
+        inline void setA(const double A);
+
+        inline void setKappa(const double kappa);
+
     private:
 
         double m_A=0.00015;
@@ -58,4 +62,18 @@ inline double ChemicalForce<lattice>::computeVelocitySource(const int xyz, const
 
     return +compute(xyz,k) * lattice::m_DT / (2.0 * m_Density.getParameter(k));
     
+}
+
+template<typename lattice>
+inline void ChemicalForce<lattice>::setA(const double A){ //Not necessary
+
+    m_A=A;
+
+}
+
+template<typename lattice>
+inline void ChemicalForce<lattice>::setKappa(const double kappa){ //Not necessary
+
+    m_Kappa=kappa;
+
 }

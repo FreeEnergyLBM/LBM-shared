@@ -75,6 +75,7 @@ class Binary: public CollisionBase<lattice, typename traits::Stencil>, public Mo
 
         std::vector<double>& orderparameter = m_OrderParameter.getParameter(); //Reference to vector of order parameters
         std::vector<double>& velocity = m_Velocity.getParameter(); //Reference to vector of velocities
+        std::vector<double>& itau = m_InvTau.getParameter(); //Reference to vector of velocities
 
 };
 
@@ -138,7 +139,7 @@ inline void Binary<lattice, traits>::initialise() { //Initialise model
 
         m_OrderParameter.initialise(1.0,k);
         
-        m_InvTau.initialise(0.5*(1.0+m_OrderParameter.getParameter(k))*(m_Tau1-m_Tau2)+m_Tau2,k);
+        m_InvTau.initialise(1.0/(0.5*(1.0+m_OrderParameter.getParameter(k))*(m_Tau1-m_Tau2)+m_Tau2),k);
         //std::cout<<m_OrderParameter.getParameter(k)<<std::endl;
         double equilibriumsum = 0;
 
@@ -168,7 +169,9 @@ inline void Binary<lattice, traits>::computeMomenta() { //Calculate order parame
         double* distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(k);
 
         orderparameter[k] = computeOrderParameter(distribution, k);
-        m_InvTau.getParameter(k)=0.5*(1.0+orderparameter[k])*(m_Tau1-m_Tau2)+m_Tau2;
+
+        itau[k]=1.0/(0.5*(1.0+orderparameter[k])*(m_Tau1)-0.5*(-1.0+orderparameter[k])*m_Tau2);
+
     }
 
     #ifdef MPIPARALLEL

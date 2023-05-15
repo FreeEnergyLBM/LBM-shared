@@ -1,0 +1,30 @@
+
+INCS	=	
+
+DEFS    =	   -g -O3 -Wno-deprecated -Wall -std=c++17 -I. -fopenmp -DMPIPARALLEL
+
+LIBS	=	-lm
+
+LIBPATH =
+
+COMP	=	 mpicxx
+
+DEPS    =       ../../src/%.hh ../../src/Extensions/%.hh ../../src/GradientStencils%.hh ../../src/LBModels/%.hh ../../src/BoundaryModels/%.hh main.hh 
+
+OBJ     =       main.cc
+
+all: wetP 
+#all: wetS 
+
+%.o: %.cc $(DEPS)
+	$(COMP) -c -o $@ $<$(DEFS) $(LIBS)
+
+wetP: $(OBJ)
+	$(COMP) -o wetP $(OBJ)  $(INCS) $(DEFS) $(LIBPATH) $(LIBS)
+
+#wetS: $(OBJ)
+#	$(COMP) -o wetS $(OBJ)  $(INCS) $(DEFS) $(LIBPATH) $(LIBS)
+
+clean:
+	rm -f *.o  wetP wetS wetS.exe *~ *.bak	
+
