@@ -27,7 +27,7 @@ template<class lattice, class stencil>
 class CollisionBase {
 
     static_assert(std::is_base_of<Stencil, stencil>(), "ERROR: invalid stencil specified in traits class.");
-    //static_assert(stencil::D == std::remove_reference<decltype(GETPROPERTIES())>::type::m_NDIM, "ERROR: The chosen stencil must match the number of lattice dimensions in the lattice properties.");
+    static_assert(stencil::D == lattice::m_NDIM, "ERROR: The chosen stencil must match the number of lattice dimensions in the lattice properties.");
     
     public:
         

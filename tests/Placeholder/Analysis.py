@@ -29,7 +29,7 @@ elif LX==1:
 
 print(tend)
 outDirName = "figures"
-os.system("mkdir %s"%outDirName)
+os.system("mkdir -p %s"%outDirName)
 
 for t in range(tstart,tend+1,tinc):
     print("t=%s"%t)
@@ -70,7 +70,7 @@ for t in range(tstart,tend+1,tinc):
 
     output = "%s/component_plot_%012d.png"%(outDirName,t)
 
-    ax.imshow(rho.take(indices=slicepos,axis=sliceaxis).transpose(),interpolation='nearest',origin='upper')
+    ax.imshow(np.flip(rho.take(indices=slicepos,axis=sliceaxis),0),interpolation='nearest',origin='upper')
     #ax.imshow((v.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis)),interpolation='nearest',origin='upper')
 
     step=1
@@ -78,5 +78,5 @@ for t in range(tstart,tend+1,tinc):
 
     ax.quiver(X.T,Y.T,v[:,:,:,0].take(indices=slicepos,axis=sliceaxis),v[:,:,:,3-sliceaxis].take(indices=slicepos,axis=sliceaxis),width=0.0005,headwidth=6.5,headlength=2.5)
 
-    plt.savefig(output, dpi=500, format='png')
+    plt.savefig(output, dpi=200, format='png')
     plt.close(fig)

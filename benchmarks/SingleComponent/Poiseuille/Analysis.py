@@ -29,7 +29,7 @@ elif LX==1:
 
 print(tend)
 outDirName = "figures"
-os.system("mkdir %s"%outDirName)
+os.system("mkdir -p %s"%outDirName)
 
 for t in range(tstart,tend+1,tinc):
     print("t=%s"%t)

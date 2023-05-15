@@ -79,7 +79,7 @@ int main(int argc, char **argv){
     Algorithm LBM(Model1,Model2); //Create LBM object with the two models we have initialised
 
     //Saving class
-    ParameterSave<Lattice,Density,OrderParameter,Velocity,InverseTau> Saver("data/"); //Specify the lattice, the parameters you want to save and the  data directory
+    ParameterSave<Lattice,Density,OrderParameter,Velocity> Saver("data/"); //Specify the lattice, the parameters you want to save and the  data directory
     Saver.SaveHeader(TIMESTEPS,SAVEINTERVAL); //Save header with lattice information (LX, LY, LZ, NDIM (2D or 3D), TIMESTEPS, SAVEINTERVAL)
     
     LBM.initialise(); //Perform necessary initialisation for the models in LBM
