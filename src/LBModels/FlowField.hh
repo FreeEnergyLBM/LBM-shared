@@ -123,15 +123,15 @@ inline void FlowField<lattice, traits>::initialise() { //Initialise model
     ModelBase<lattice, traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     
     #pragma omp parallel for schedule(guided)
-    for (int k = 0; k<lattice::m_N; k++) { //loop over k
+    for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
 
         double* distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
 
         m_Density.initialise(1.0,k); //Set density to 1 initially (This will change)
         m_Velocity.initialise(0.0,k,x);
-        m_Velocity.initialise(0.0,k,x);
-        m_Velocity.initialise(0.0,k,x);
+        m_Velocity.initialise(0.0,k,y);
+        m_Velocity.initialise(0.0,k,z);
 
         for (int idx = 0; idx <traits::Stencil::Q; idx++) {
 

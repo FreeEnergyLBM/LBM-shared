@@ -100,15 +100,15 @@ inline void FlowFieldBinary<lattice, traits>::initialise() { //Initialise model
     FlowField<lattice, traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
 
     #pragma omp parallel for schedule(guided)
-    for (int k = 0; k<lattice::m_N; k++) { //loop over k
+    for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
 
         double* distribution = FlowField<lattice, traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution = FlowField<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
 
         FlowField<lattice, traits>::m_Density.initialise(1.0,k); //Set density to 1 initially (This will change)
         FlowField<lattice, traits>::m_Velocity.initialise(0.0,k,x);
-        FlowField<lattice, traits>::m_Velocity.initialise(0.0,k,x);
-        FlowField<lattice, traits>::m_Velocity.initialise(0.0,k,x);
+        FlowField<lattice, traits>::m_Velocity.initialise(0.0,k,y);
+        FlowField<lattice, traits>::m_Velocity.initialise(0.0,k,z);
 
         int equilibriumsum = 0;
         for (int idx = traits::Stencil::Q-1; idx>= 0; idx--) {
