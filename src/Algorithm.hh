@@ -99,7 +99,8 @@ class Algorithm {
  */
 template<class ...Model>
 inline void Algorithm<Model...>::evolve() {
-
+    #pragma omp parallel
+    {
     precomputeStep();
 
     calculateCollisionStep();
@@ -107,7 +108,7 @@ inline void Algorithm<Model...>::evolve() {
     calculateBoundaryStep();
     
     calculateMomentaStep();
-
+    }
 }
 
 /**
