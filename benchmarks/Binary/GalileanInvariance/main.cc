@@ -36,7 +36,7 @@ const int RADIUS=20; //Droplet radius
 bool fluidLocation(const int k) {
 
     int xx = computeXGlobal<Lattice>(k);
-    int yy = computeY(LY, LZ, k);
+    int yy = computeY(LY, 1, k);
 
     const int rr2 = (xx - LX / 2) * (xx - LX / 2) + (yy - LY / 2) * (yy - LY / 2);
     

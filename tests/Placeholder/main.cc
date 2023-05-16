@@ -56,7 +56,7 @@ bool solidLocation(const int k) {
 
 }
 
-using traitBinary = AddAddOn<DefaultTraitBinary<Lattice>, LinearWetting<Lattice, DefaultTraitBinary<Lattice>::Stencil>>::NewTrait;
+using traitBinary = DefaultTraitBinary<Lattice> ::AddAddOn<LinearWetting<Lattice, DefaultTraitBinary<Lattice>::Stencil>> ::SetStencil<D2Q9>;
 
 int main(int argc, char **argv){
     

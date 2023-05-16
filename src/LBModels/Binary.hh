@@ -10,7 +10,7 @@
 //Model is given a "traits" class that contains stencil, data, force and boundary information
 
 template<class lattice>
-struct DefaultTraitBinary{
+struct DefaultTraitBinary : BaseTrait<DefaultTraitBinary<lattice>> {
 
     using Stencil = std::conditional_t<lattice::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
 

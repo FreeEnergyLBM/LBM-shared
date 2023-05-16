@@ -35,7 +35,7 @@ const int SAVEINTERVAL = 10000; //Interval to save global data
 //User defined function to define some solid initialisation
 bool solidLocation(const int k) {
 
-    int yAtCurrentk = computeY(LY, LZ, k);
+    int yAtCurrentk = computeY(LY, 1, k);
 
     if (yAtCurrentk <= 1 || yAtCurrentk >= LY - 2) return true;
     else return false;
@@ -44,11 +44,7 @@ bool solidLocation(const int k) {
 
 
 //Traits of the model. We are using the defaults but adding a body force.
-struct PoiseuilleTrait : DefaultTraitFlowField<Lattice> {
-
-    using AddOns = std::tuple<BodyForce<Lattice>>;
-
-};
+using PoiseuilleTrait = DefaultTraitBinary<Lattice> ::AddAddOn<BodyForce<Lattice>>;
 
 int main(int argc, char **argv){
     

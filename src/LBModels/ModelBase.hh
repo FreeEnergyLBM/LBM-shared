@@ -5,7 +5,7 @@
 #include "../AddOns/AddOnBase.hh"
 
 template<class lattice=void>
-struct DefaultTrait{
+struct DefaultTrait : BaseTrait<DefaultTrait<lattice>> {
     
     using Stencil = std::conditional_t<std::remove_reference<lattice>::type::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
 

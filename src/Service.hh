@@ -256,66 +256,67 @@ decltype(std::tuple_cat(
     std::declval<input_t>()...
 ));
 
+template<class trait>
+struct BaseTrait{
 
-tuple_cat_t<
-    std::tuple<int,float>,
-    std::tuple<int>
-    > test{1,1.0f,2};
+  template<class... addon>
+  struct AddAddOn : BaseTrait<AddAddOn<addon...>>  {
 
-template<class trait, class... addon>
-struct AddAddOn {
+    using Stencil = typename trait::Stencil;
 
-  struct NewTrait : trait {
+    using Boundaries = typename trait::Boundaries;
 
     using AddOns = tuple_cat_t<typename trait::AddOns, std::tuple<addon...>>;
 
   };
 
-};
+  template<class... addon>
+  struct SetAddOn : BaseTrait<SetAddOn<addon...>> {
 
-template<class trait, class... addon>
-struct SetAddOn {
+    using Stencil = typename trait::Stencil;
 
-  struct NewTrait : trait {
+    using Boundaries = typename trait::Boundaries;
 
     using AddOns = std::tuple<addon...>;
 
   };
 
-};
+  template<class... boundary>
+  struct AddBoundary : BaseTrait<AddBoundary<boundary...>> {
 
-template<class trait, class... boundary>
-struct AddBoundary {
-
-  struct NewTrait : trait {
+    using Stencil = typename trait::Stencil;
 
     using Boundaries = tuple_cat_t<typename trait::Boundaries, std::tuple<boundary...>>;
 
+    using AddOns = typename trait::AddOns;
+
   };
 
-};
+  template<class... boundary>
+  struct SetBoundary : BaseTrait<SetBoundary<boundary...>> {
 
-template<class trait, class... boundary>
-struct SetBoundary{
-
-  struct NewTrait : trait{
+    using Stencil = typename trait::Stencil;
 
     using Boundaries = std::tuple<boundary...>;
 
+    using AddOns = typename trait::AddOns;
+
   };
 
-};
-
-template<class trait, class stencil>
-struct SetStencil {
-
-  struct NewTrait : trait {
+  template<class stencil>
+  struct SetStencil : BaseTrait<SetStencil<Stencil>> {
 
     using Stencil = stencil;
 
+    using Boundaries = typename trait::Boundaries;
+
+    using AddOns = typename trait::AddOns;
+
   };
 
 };
+
+
 
 /*
 template<typename ... input_t>

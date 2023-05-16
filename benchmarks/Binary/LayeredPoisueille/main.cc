@@ -25,7 +25,7 @@
 //Set up the lattice, including the resolution and data/parallelisation method
 const int LX = 10; //Size of domain in x direction
 const int LY = 100; //Size of domain in y direction
-using Lattice = LatticePropertiesRuntime<Data1, X_Parallel, LX, LY>;
+using Lattice = LatticeProperties<Data1, X_Parallel, LX, LY>;
 
 const int TIMESTEPS = 10000; //Number of iterations to perform
 const int SAVEINTERVAL = 10000; //Interval to save global data
@@ -33,7 +33,7 @@ const int SAVEINTERVAL = 10000; //Interval to save global data
 //User defined function to define some fluid initialisation (optional)
 bool fluidLocation(const int k) {
 
-    int yy = computeY(LY, LZ, k);
+    int yy = computeY(LY, 1, k);
     
     if (yy > LY / 2) return true;
     else return false;
@@ -43,7 +43,7 @@ bool fluidLocation(const int k) {
 //User defined function to define some solid initialisation
 bool solidLocation(const int k) {
 
-    int yy = computeY(LY, LZ, k);
+    int yy = computeY(LY, 1, k);
 
     if (yy <= 1 || yy >= LY - 2) return true;
     else return false;
@@ -86,7 +86,7 @@ int main(int argc, char **argv){
     for (int timestep=0;timestep<=TIMESTEPS;timestep++) {
 
         if (timestep%SAVEINTERVAL==0) Saver.Save(timestep);
-        if (timestep==1000) Model1.getAddOn<BodyForce>().setMagnitudeX(0.000001); //Get object of body force and then set the magnitude
+        if (timestep==1000) Model1.getAddOn<BodyForce<Lattice>>().setMagnitudeX(0.000001); //Get object of body force and then set the magnitude
         LBM.evolve(); //Evolve one timestep of the algorithm
         
     }
