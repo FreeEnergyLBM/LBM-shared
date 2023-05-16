@@ -34,6 +34,8 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
 
         inline virtual void precompute(); //Perform any necessary computations before collision
 
+        inline virtual void postprocess(); //Perform any necessary computations before collision
+
         inline virtual void collide() = 0; //Collision step
 
         inline virtual void boundaries(); //Boundary calculation
@@ -46,19 +48,19 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
 
         inline const std::vector<double>& getDistribution() const; //Return vector of distribution
 
-        template<template<class> class addon, int inst = 0>
-        inline addon<lattice>& getAddOn() {
+        template<class addon, int inst = 0>
+        inline addon& getAddOn() {
 
-            auto addons = get_type<addon<lattice>>(mt_AddOns);
+            auto addons = get_type<addon>(mt_AddOns);
 
             return std::get<inst>(addons);
 
         }
 
-        template<template<class> class boundary, int inst = 0>
-        inline boundary<lattice>& getBoundary() {
+        template<class boundary, int inst = 0>
+        inline boundary& getBoundary() {
 
-            auto boundaries = get_type<boundary<lattice>>(mt_Boundaries);
+            auto boundaries = get_type<boundary>(mt_Boundaries);
 
             return std::get<inst>(boundaries);
 
@@ -91,6 +93,17 @@ inline void ModelBase<lattice,traits>::precompute() {
     #pragma omp for schedule(guided)
     for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
 
+        if constexpr(std::tuple_size<typename traits::Boundaries>::value != 0){ //Check if there is at least one element
+                                                                          //in F
+
+            std::apply([k](auto&... boundaries){//See Algorithm.hh for explanation of std::apply
+
+                (boundaries.precompute(k),...);
+
+            }, mt_Boundaries);
+
+        }
+
         if constexpr(std::tuple_size<typename traits::AddOns>::value != 0){ //Check if there is at least one element
                                                                           //in F
 
@@ -102,6 +115,70 @@ inline void ModelBase<lattice,traits>::precompute() {
 
         }
         
+    }
+    
+    #ifdef MPIPARALLEL
+    if constexpr(std::tuple_size<typename traits::AddOns>::value != 0){ //Check if there is at least one element
+                                                                        //in F
+
+        std::apply([](auto&... addons){//See Algorithm.hh for explanation of std::apply
+
+            (addons.communicatePrecompute(),...);
+
+        }, mt_AddOns);
+
+    }
+    #endif
+
+    #pragma omp master
+    {
+    m_Distribution.getDistribution().swap(m_Distribution.getDistributionOld()); //swap old and new distributions
+                                                                                //before collision
+    }
+    
+}
+
+template<class lattice, class traits>
+inline void ModelBase<lattice,traits>::postprocess() {
+
+    #pragma omp for schedule(guided)
+    for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
+
+        if constexpr(std::tuple_size<typename traits::Boundaries>::value != 0){ //Check if there is at least one element
+                                                                          //in F
+
+            std::apply([k](auto&... boundaries){//See Algorithm.hh for explanation of std::apply
+
+                (boundaries.postprocess(k),...);
+
+            }, mt_Boundaries);
+
+        }
+
+        #ifdef MPIPARALLEL
+        if constexpr(std::tuple_size<typename traits::AddOns>::value != 0){ //Check if there is at least one element
+                                                                          //in F
+
+            std::apply([k](auto&... addons){//See Algorithm.hh for explanation of std::apply
+
+                (addons.postprocess(k),...);
+
+            }, mt_AddOns);
+
+        }
+        #endif
+
+    }
+
+    if constexpr(std::tuple_size<typename traits::AddOns>::value != 0){ //Check if there is at least one element
+                                                                        //in F
+
+        std::apply([](auto&... addons){//See Algorithm.hh for explanation of std::apply
+
+            (addons.communicatePostProcess(),...);
+
+        }, mt_AddOns);
+
     }
 
     #pragma omp master

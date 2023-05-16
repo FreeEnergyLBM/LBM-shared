@@ -84,6 +84,11 @@ class Algorithm {
          */
         inline void calculateMomentaStep();
 
+        /**
+         * \brief Postprocess.
+         */
+        inline void postprocessStep();
+
         /*
          * Tuple containing references to objects of each Model... passed through the constructor.
          */
@@ -108,6 +113,8 @@ inline void Algorithm<Model...>::evolve() {
     calculateBoundaryStep();
     
     calculateMomentaStep();
+
+    postprocessStep();
     }
 }
 
@@ -148,6 +155,21 @@ inline void Algorithm<Model...>::precomputeStep() {
         std::apply([](Model&... models) {
 
             (models.precompute(), ...);
+
+        }, mt_Models);
+
+    }
+
+}
+
+template<class ...Model>
+inline void Algorithm<Model...>::postprocessStep() {
+
+    if constexpr (sizeof...(Model) != 0) {
+
+        std::apply([](Model&... models) {
+
+            (models.postprocess(), ...);
 
         }, mt_Models);
 

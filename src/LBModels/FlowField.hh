@@ -14,7 +14,7 @@
 template<class lattice>
 struct DefaultTraitFlowField{
     
-    using Stencil = std::conditional_t<std::remove_reference<lattice>::type::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
+    using Stencil = std::conditional_t<lattice::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
 
     using Boundaries = std::tuple<BounceBack<lattice>>;
 
@@ -94,14 +94,18 @@ inline void FlowField<lattice, traits>::collide() { //Collision step
     #pragma omp for schedule(guided)
     for (int k = lattice::m_HaloSize; k < lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
 
-        double* old_distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
-        
-        for (int idx = 0; idx <traits::Stencil::Q; idx++) { //loop over discrete velocity directions
-            //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
-            //"computeCollisionQ"
-            double collision = computeCollisionQ(k, old_distribution[idx], density[k], &velocity[k * traits::Stencil::D], idx);
+        if(!ModelBase<lattice, traits>::m_Geometry.isSolid(k)){
 
-            ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(ModelBase<lattice, traits>::m_Distribution.streamIndex(k, idx))[idx] = collision;
+            double* old_distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
+            
+            for (int idx = 0; idx <traits::Stencil::Q; idx++) { //loop over discrete velocity directions
+                //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
+                //"computeCollisionQ"
+                double collision = computeCollisionQ(k, old_distribution[idx], density[k], &velocity[k * traits::Stencil::D], idx);
+
+                ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(ModelBase<lattice, traits>::m_Distribution.streamIndex(k, idx))[idx] = collision;
+
+            }
 
         }
         
@@ -153,12 +157,16 @@ inline void FlowField<lattice, traits>::computeMomenta() { //Calculate Density<>
     #pragma omp for schedule(guided)
     for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //Loop over k
 
-        double* distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(k);
+        if(!ModelBase<lattice, traits>::m_Geometry.isSolid(k)){
 
-        density[k] = computeDensity(distribution, k); //Calculate density
-        velocity[k * traits::Stencil::D + x] = computeVelocity(distribution, density[k], x, k); //Calculate velocities
-        velocity[k * traits::Stencil::D + y] = computeVelocity(distribution,density[k], y, k);
-        if constexpr (lattice::m_NDIM == 3) velocity[k * traits::Stencil::D + z] = computeVelocity(distribution ,density[k], z, k);
+            double* distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(k);
+
+            density[k] = computeDensity(distribution, k); //Calculate density
+            velocity[k * traits::Stencil::D + x] = computeVelocity(distribution, density[k], x, k); //Calculate velocities
+            velocity[k * traits::Stencil::D + y] = computeVelocity(distribution,density[k], y, k);
+            if constexpr (lattice::m_NDIM == 3) velocity[k * traits::Stencil::D + z] = computeVelocity(distribution ,density[k], z, k);
+
+        }
 
     }
 
@@ -167,7 +175,7 @@ inline void FlowField<lattice, traits>::computeMomenta() { //Calculate Density<>
     {
     ModelBase<lattice, traits>::m_Data.communicate(m_Density);
     }
-    
+
     #endif
 
 }

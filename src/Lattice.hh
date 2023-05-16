@@ -6,16 +6,6 @@
 template<template<class, class, class> class data, template<class, class, int> class parallel, int lx, int ly, int lz = 1>
 struct LatticeProperties{
 
-    #ifdef MPIPARALLEL
-
-    constexpr LatticeProperties(double DT = 1.0) { m_DT=DT; }
-
-    #else
-
-    constexpr LatticeProperties(double DT = 1.0) { m_DT=DT; }
-
-    #endif
-
     constexpr LatticeProperties<data, parallel, lx, ly, lz>& operator=(const LatticeProperties<data, parallel, lx, ly, lz>&) {}
 
     static constexpr int m_LX = lx;
@@ -23,6 +13,8 @@ struct LatticeProperties{
     static constexpr int m_LZ = lz;
 
     #ifdef MPIPARALLEL
+
+    constexpr LatticeProperties(double DT = 1.0) { m_DT=DT; }
 
     template<typename Stencil>
     using ParallelType = parallel<LatticeProperties<data, parallel, lx, ly, lz>,Stencil, 1>; //!<Chosen MPI parallelisation method when MPI enabled.
@@ -34,6 +26,8 @@ struct LatticeProperties{
     static int m_N;
 
     #else
+
+    constexpr LatticeProperties(double DT = 1.0) { m_DT=DT; }
 
     template<typename Stencil>
     using ParallelType=No_Parallel<LatticeProperties<data, parallel, lx, ly, lz>, Stencil, 1>; //!<Default parallelisation when MPI disabled (Just serial).

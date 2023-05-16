@@ -25,8 +25,7 @@
 //Set up the lattice, including the resolution and data/parallelisation method
 const int LX = 10; //Size of domain in x direction
 const int LY = 100; //Size of domain in y direction
-const int LZ = 1; //Size of domain in z direction (Can also not specify LZ if it is 1)
-using Lattice = LatticeProperties<Data1, X_Parallel, LX, LY, LZ>;
+using Lattice = LatticePropertiesRuntime<Data1, X_Parallel, LX, LY>;
 
 const int TIMESTEPS = 10000; //Number of iterations to perform
 const int SAVEINTERVAL = 10000; //Interval to save global data
@@ -58,7 +57,6 @@ int main(int argc, char **argv){
     MPI_Init(&argc, &argv); 
     MPI_Comm_size(MPI_COMM_WORLD, &NUMPROCESSORS);                              // Store number of processors
     MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
-    
     Parallel<Lattice,1> initialise; //Initialise parallelisation
     #endif
 
@@ -81,9 +79,9 @@ int main(int argc, char **argv){
     //Saving class
     ParameterSave<Lattice,Density,OrderParameter,Velocity> Saver("data/"); //Specify the lattice, the parameters you want to save and the  data directory
     Saver.SaveHeader(TIMESTEPS,SAVEINTERVAL); //Save header with lattice information (LX, LY, LZ, NDIM (2D or 3D), TIMESTEPS, SAVEINTERVAL)
-    
+
     LBM.initialise(); //Perform necessary initialisation for the models in LBM
-    
+
     //Loop over timesteps
     for (int timestep=0;timestep<=TIMESTEPS;timestep++) {
 

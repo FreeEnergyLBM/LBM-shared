@@ -19,6 +19,10 @@ class AddOnBase{
 
         inline virtual void postprocess(const int k); //Perform any necessary postprocessing
 
+        inline virtual void communicatePostProcess(); //Perform any necessary postprocessing
+
+        inline virtual void communicatePrecompute(); //Perform any necessary postprocessing
+
     private:
 
 };
@@ -46,5 +50,13 @@ inline double AddOnBase::computeDensitySource(const int k) const { //Not necessa
 inline double AddOnBase::computeVelocitySource(const int xyz, const int k) const { //Need to correct velocity
 
     return 0;
+    
+}
+
+inline void AddOnBase::communicatePrecompute() { //Not necessary
+    
+}
+
+inline void AddOnBase::communicatePostProcess() { //Not necessary
     
 }

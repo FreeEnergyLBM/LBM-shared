@@ -25,8 +25,7 @@
 //Set up the lattice, including the resolution and data/parallelisation method
 const int LX = 100; //Size of domain in x direction
 const int LY = 100; //Size of domain in y direction
-const int LZ = 1; //Size of domain in z direction (Can also not specify LZ if it is 1)
-using Lattice = LatticeProperties<Data1, X_Parallel, LX, LY, LZ>;
+using Lattice = LatticeProperties<Data1, X_Parallel, LX, LY>;
 
 const int TIMESTEPS = 100000; //Number of iterations to perform
 const int SAVEINTERVAL = 100000; //Interval to save global data

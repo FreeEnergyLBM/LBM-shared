@@ -1,7 +1,6 @@
 #pragma once
 
-template<typename placeholder = void>
-class BoundaryBaseTemplate{
+class BoundaryBase{
     public:
 
         //virtual void compute(auto& m_Distribution, int k, int idx) const;
@@ -19,28 +18,22 @@ class BoundaryBaseTemplate{
 
 };
 
-template<typename placeholder>
-inline void BoundaryBaseTemplate<placeholder>::precompute(const int k) {
+inline void BoundaryBase::precompute(const int k) {
     
 }
 
-template<typename placeholder>
-inline void BoundaryBaseTemplate<placeholder>::postprocess(const int k) {
+inline void BoundaryBase::postprocess(const int k) {
     
 }
 
-template<typename placeholder>
-inline double BoundaryBaseTemplate<placeholder>::computeDensitySource(const int k) const {
+inline double BoundaryBase::computeDensitySource(const int k) const {
 
     return 0;
 
 }
 
-template<typename placeholder>
-inline double BoundaryBaseTemplate<placeholder>::computeVelocitySource(const int xyz,const int k) const {
+inline double BoundaryBase::computeVelocitySource(const int xyz,const int k) const {
 
     return 0;
 
 }
-
-typedef BoundaryBaseTemplate<> BoundaryBase;

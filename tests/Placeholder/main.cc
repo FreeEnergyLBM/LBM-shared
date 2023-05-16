@@ -28,15 +28,20 @@ const int LY = 100; //Size of domain in y direction
 const int LZ = 1; //Size of domain in z direction (Can also not specify LZ if it is 1)
 using Lattice = LatticeProperties<Data1, X_Parallel, LX, LY, LZ>;
 
-const int TIMESTEPS = 1000; //Number of iterations to perform
-const int SAVEINTERVAL = 100; //Interval to save global data
+const int TIMESTEPS = 50000; //Number of iterations to perform
+const int SAVEINTERVAL = 5000; //Interval to save global data
+
+const int RADIUS=20; //Droplet radius
 
 //User defined function to define some fluid initialisation (optional)
 bool fluidLocation(const int k) {
 
+    int xx = computeXGlobal<Lattice>(k);
     int yy = computeY(LY, LZ, k);
-    
-    if (yy > LY / 2) return true;
+
+    const int rr2 = (xx - LX / 2) * (xx - LX / 2) + (yy) * (yy);
+
+    if (rr2 < RADIUS*RADIUS) return true;
     else return false;
     
 }
@@ -51,6 +56,12 @@ bool solidLocation(const int k) {
 
 }
 
+struct traitBinary : DefaultTraitBinary<Lattice> {
+
+    using AddOns = std::tuple<OrderParameterGradients<Lattice,CentralXYZ<Lattice, Stencil>>,LinearWetting<Lattice,Stencil>>;
+
+};
+
 int main(int argc, char **argv){
     
     #ifdef MPIPARALLEL
@@ -64,10 +75,13 @@ int main(int argc, char **argv){
 
     //Chosen models
     FlowFieldBinary<Lattice> Model1; //Flowfield (navier stokes solver) that can be used with the binary model (there are nuances with this model)
-    Binary<Lattice> Model2; //Binary model with hybrid equilibrium and forcing term
+    Binary<Lattice,traitBinary> Model2; //Binary model with hybrid equilibrium and forcing term
 
-    Model1.getAddOn<BodyForce>().setMagnitudeX(0.000001); //Get object of body force and then set the magnitude
-    Model2.setTau1(0.51); //Set the relaxation time of fluid 1
+    Model1.getAddOn<ChemicalForce<Lattice>>().setA(0.00015);
+    Model1.getAddOn<ChemicalForce<Lattice>>().setKappa(0.0003);
+
+    Model2.getAddOn<LinearWetting<Lattice,typename traitBinary::Stencil>>().setPrefactor(0.00015,0.0003);
+    Model2.getAddOn<LinearWetting<Lattice,typename traitBinary::Stencil>>().setThetaDegrees(135);
 
     OrderParameter<Lattice> orderparam;
     orderparam.set(fluidLocation, -1.0, 1.0); //Set fluid to -1 where the function we defined previously is true and 1.0 where it is false

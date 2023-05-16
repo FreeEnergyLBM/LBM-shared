@@ -25,8 +25,7 @@
 //Set up the lattice, including the resolution and data/parallelisation method
 const int LX = 10; //Size of domain in x direction
 const int LY = 100; //Size of domain in y direction
-const int LZ = 1; //Size of domain in z direction (Can also not specify LZ if it is 1)
-using Lattice = LatticeProperties<Data1, X_Parallel, LX, LY, LZ>;
+using Lattice = LatticeProperties<Data1, X_Parallel, LX, LY>;
 
 const int TIMESTEPS = 10000; //Number of iterations to perform
 const int SAVEINTERVAL = 10000; //Interval to save global data
@@ -65,7 +64,7 @@ int main(int argc, char **argv){
     //Chosen models
     FlowField<Lattice,PoiseuilleTrait> Model; //Flowfield
 
-    Model.getAddOn<BodyForce>().setMagnitudeX(0.000001); //Get object of body force and then set the magnitude
+    Model.getAddOn<BodyForce<Lattice>>().setMagnitudeX(0.000001); //Get object of body force and then set the magnitude
 
     SolidLabels<Lattice> solid;
     solid.set(solidLocation,true); //Set solid to true where the function we defined previously is true (false by default so don't need to specify this)

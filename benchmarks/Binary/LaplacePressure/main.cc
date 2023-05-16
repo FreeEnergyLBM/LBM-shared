@@ -25,8 +25,7 @@
 //Set up the lattice, including the resolution and data/parallelisation method
 const int LX = 100; //Size of domain in x direction
 const int LY = 100; //Size of domain in y direction
-const int LZ = 1; //Size of domain in z direction (Can also not specify LZ if it is 1)
-using Lattice = LatticeProperties<Data1, X_Parallel, LX, LY, LZ>;
+using Lattice = LatticeProperties<Data1, X_Parallel, LX, LY>;
 
 const int TIMESTEPS = 10000; //Number of iterations to perform
 const int SAVEINTERVAL = 10000; //Interval to save global data
@@ -62,8 +61,8 @@ int main(int argc, char **argv){
     Binary<Lattice> Model2; //Binary model with hybrid equilibrium and forcing term
 
     //Set parameters relating to the interface width and surface tension
-    Model1.getAddOn<ChemicalForce>().setA(0.00015);
-    Model1.getAddOn<ChemicalForce>().setKappa(0.0003);
+    Model1.getAddOn<ChemicalForce<Lattice>>().setA(0.00015);
+    Model1.getAddOn<ChemicalForce<Lattice>>().setKappa(0.0003);
 
     OrderParameter<Lattice> orderparam;
     orderparam.set(fluidLocation, -1.0, 1.0); //Set fluid to -1 where the function we defined previously is true and 1.0 where it is false

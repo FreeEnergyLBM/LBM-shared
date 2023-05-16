@@ -12,7 +12,7 @@
 template<class lattice>
 struct DefaultTraitBinary{
 
-    using Stencil = std::conditional_t<std::remove_reference<lattice>::type::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
+    using Stencil = std::conditional_t<lattice::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
 
     using Boundaries = std::tuple<BounceBack<lattice>>;
 
@@ -69,6 +69,7 @@ class Binary: public CollisionBase<lattice, typename traits::Stencil>, public Mo
         GradientOrderParameter<lattice> m_GradOrderParameter;
         LaplacianOrderParameter<lattice> m_LaplacianOrderParameter;
         InverseTau<lattice> m_InvTau;
+        SolidLabels<lattice> m_SolidLabels;
 
         double m_Tau1=1;
         double m_Tau2=1;
@@ -98,19 +99,23 @@ inline void Binary<lattice, traits>::collide() {
 
     #pragma omp for schedule(guided)
     for (int k = lattice::m_HaloSize; k < lattice::m_N - lattice::m_HaloSize; k++){ //loop over k
+        
+        if(!ModelBase<lattice, traits>::m_Geometry.isSolid(k)){
 
-        double* old_distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
+            double* old_distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
 
-        double equilibriumsum = 0;
+            double equilibriumsum = 0;
 
-        for (int idx = traits::Stencil::Q - 1; idx>= 0; --idx) { //loop over discrete velocity directions
-            //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
-            //"computeCollisionQ"
+            for (int idx = traits::Stencil::Q - 1; idx>= 0; --idx) { //loop over discrete velocity directions
+                //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
+                //"computeCollisionQ"
 
-            double collision = computeCollisionQ(equilibriumsum, k, old_distribution[idx], orderparameter[k], &velocity[k * traits::Stencil::D], idx);
+                double collision = computeCollisionQ(equilibriumsum, k, old_distribution[idx], orderparameter[k], &velocity[k * traits::Stencil::D], idx);
 
-            ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(ModelBase<lattice, traits>::m_Distribution.streamIndex(k, idx))[idx] = collision;
+                ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(ModelBase<lattice, traits>::m_Distribution.streamIndex(k, idx))[idx] = collision;
 
+            }
+            
         }
         
     }
@@ -156,6 +161,13 @@ inline void Binary<lattice, traits>::initialise() { //Initialise model
         }
         
     }
+
+    #ifdef MPIPARALLEL
+    #pragma omp master
+    {
+    ModelBase<lattice, traits>::m_Data.communicate(m_SolidLabels);
+    }
+    #endif
     
 }
 
@@ -166,11 +178,15 @@ inline void Binary<lattice, traits>::computeMomenta() { //Calculate order parame
     #pragma omp for schedule(guided)
     for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //Loop over k
 
-        double* distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(k);
+        if(!ModelBase<lattice, traits>::m_Geometry.isSolid(k)){
 
-        orderparameter[k] = computeOrderParameter(distribution, k);
+            double* distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(k);
 
-        itau[k]=1.0/(0.5*(1.0+orderparameter[k])*(m_Tau1)-0.5*(-1.0+orderparameter[k])*m_Tau2);
+            orderparameter[k] = computeOrderParameter(distribution, k);
+
+            itau[k]=1.0/(0.5*(1.0+orderparameter[k])*(m_Tau1)-0.5*(-1.0+orderparameter[k])*m_Tau2);
+        
+        }
 
     }
 

@@ -16,7 +16,7 @@
 template<class lattice>
 struct DefaultTraitFlowFieldBinary{
 
-    using Stencil = std::conditional_t<std::remove_reference<lattice>::type::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
+    using Stencil = std::conditional_t<lattice::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
 
     using Boundaries = std::tuple<BounceBack<lattice>>;
 
@@ -61,28 +61,32 @@ inline double FlowFieldBinary<lattice, traits>::computeEquilibrium(const double&
 template<class lattice, class traits>
 inline void FlowFieldBinary<lattice, traits>::collide() { //Collision step
        
-
     #pragma omp for schedule(guided)
     for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
-        int QQ = traits::Stencil::Q;
-        double* old_distribution = FlowField<lattice, traits>::m_Distribution.getDistributionOldPointer(0);
-        double equilibriumsum = 0;
 
-        for (int idx = QQ-1; idx>= 0; --idx) { //loop over discrete velocity directions
-            //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
-            //"computeCollisionQ"
+        if(!ModelBase<lattice, traits>::m_Geometry.isSolid(k)){
 
-            double& density = FlowField<lattice, traits>::density[k];
-            double *velocity = &FlowField<lattice, traits>::velocity[k * traits::Stencil::D];
-            double& orderParameter = m_OrderParameter.getParameter(k);
-            double& chemicalPotential = m_ChemicalPotential.getParameter(k);
-            double& itau = m_InvTau.getParameter(k);
-            
+            int QQ = traits::Stencil::Q;
+            double* old_distribution = FlowField<lattice, traits>::m_Distribution.getDistributionOldPointer(0);
+            double equilibriumsum = 0;
 
-            double collision = computeCollisionQ(equilibriumsum, k, old_distribution[k*QQ+idx], density, velocity, orderParameter, chemicalPotential, itau, idx);
-            FlowField<lattice, traits>::m_Distribution.getDistributionPointer(FlowField<lattice, traits>::m_Distribution.streamIndex(k, idx))[idx] = collision;
+            for (int idx = QQ-1; idx>= 0; --idx) { //loop over discrete velocity directions
+                //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
+                //"computeCollisionQ"
 
-        }        
+                double& density = FlowField<lattice, traits>::density[k];
+                double *velocity = &FlowField<lattice, traits>::velocity[k * traits::Stencil::D];
+                double& orderParameter = m_OrderParameter.getParameter(k);
+                double& chemicalPotential = m_ChemicalPotential.getParameter(k);
+                double& itau = m_InvTau.getParameter(k);
+                
+
+                double collision = computeCollisionQ(equilibriumsum, k, old_distribution[k*QQ+idx], density, velocity, orderParameter, chemicalPotential, itau, idx);
+                FlowField<lattice, traits>::m_Distribution.getDistributionPointer(FlowField<lattice, traits>::m_Distribution.streamIndex(k, idx))[idx] = collision;
+
+            }        
+
+        }
         
     }
 
