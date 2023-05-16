@@ -90,14 +90,7 @@ inline void FlowFieldBinary<lattice, traits>::collide() { //Collision step
         
     }
 
-    #ifdef MPIPARALLEL
-    #pragma omp master
-    {
     FlowField<lattice, traits>::m_Data.communicateDistribution();
-    }
-    
-    #endif
-    
 }
 
 template<class lattice, class traits>

@@ -220,7 +220,7 @@ template<template<class> class obj,class lattice,  typename T, int num>
 inline void Parameter<obj, lattice, T, num>::Save(std::string filename, int t, std::string datadir) { //Function to save parameter stored in this class
 
     char fdump[512];
-    sprintf(fdump, (datadir + filename + "_t%li.mat").c_str(), t); //Buffer containing file name and location.
+    sprintf(fdump, "%s/%s_t%i.mat", datadir.c_str(), filename.c_str(), t); //Buffer containing file name and location.
 
 #ifdef MPIPARALLEL //When MPI is used we need a different approach for saving as all nodes are trying to write to the file
 
@@ -287,7 +287,7 @@ inline void ParameterSave<lattice, parameters...>::SaveHeader(const int& timeste
     if(CURPROCESSOR==0){
         std::cout<<"SAVING HEADER"<<std::endl;
         char fdump[256];
-        sprintf(fdump, (m_DataDir + "Header.mat").c_str()); //Buffer containing file name and location.
+        sprintf(fdump, "%s/Header.mat", m_DataDir.c_str()); //Buffer containing file name and location.
 
         std::ofstream fs(fdump, std::ios::out | std::ios::binary);
 

@@ -111,13 +111,7 @@ inline void FlowField<lattice, traits>::collide() { //Collision step
         
     }
 
-    #ifdef MPIPARALLEL
-    #pragma omp master
-    {
     ModelBase<lattice, traits>::m_Data.communicateDistribution();
-    }
-    
-    #endif
 
 }
 
@@ -170,13 +164,7 @@ inline void FlowField<lattice, traits>::computeMomenta() { //Calculate Density<>
 
     }
 
-    #ifdef MPIPARALLEL
-    #pragma omp master
-    {
     ModelBase<lattice, traits>::m_Data.communicate(m_Density);
-    }
-
-    #endif
 
 }
 

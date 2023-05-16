@@ -69,9 +69,9 @@ int main(int argc, char **argv){
     MPI_Init(&argc, &argv); 
     MPI_Comm_size(MPI_COMM_WORLD, &NUMPROCESSORS);                              // Store number of processors
     MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
+    #endif
     
     Parallel<Lattice,1> initialise; //Initialise parallelisation
-    #endif
 
     //Chosen models
     FlowFieldBinary<Lattice> Model1; //Flowfield (navier stokes solver) that can be used with the binary model (there are nuances with this model)

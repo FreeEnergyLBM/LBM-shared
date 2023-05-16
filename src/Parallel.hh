@@ -1,9 +1,9 @@
 #pragma once
 #ifdef MPIPARALLEL
 #include <mpi.h>
+#endif
 #include "Global.hh"
 #include "Service.hh"
-#endif
 /**
  * \file  Parallel.hh
  * \brief This contains classes to control the MPI parallelisation of the code.
@@ -18,7 +18,6 @@
  */
 template<class lattice, int num_neighbors>
 class Parallel {
-    #ifdef MPIPARALLEL
     public:
         /**
          * \brief Constructor that updates global parameters. This is contained within a class as I may move stuff
@@ -57,7 +56,6 @@ class Parallel {
     private:
 
         int m_MaxNeighbors = 0;
-    #endif
 };
 
 /**
@@ -67,7 +65,6 @@ class Parallel {
  */
 template<class lattice, class stencil, int num_neighbors>
 class X_Parallel : public Parallel<lattice,num_neighbors> {
-    #ifdef MPIPARALLEL
     public:
 
         /**
@@ -97,10 +94,10 @@ class X_Parallel : public Parallel<lattice,num_neighbors> {
         int m_LeftNeighbor; //!<ID of the left neighbor of this process (in the X direction).
         int m_RightNeighbor; //!<ID of the right neighbor of this process (in the X direction).
 
+        #ifdef MPIPARALLEL
         MPI_Datatype DistributionVector; //!<Datatype for streaming distributions (allows sending of one velocity index at a time) WILL NEED TO BE CHANGED BASED ON THE DATA TYPE.
-    #endif
+        #endif
 };
-#ifdef MPIPARALLEL
 /**
  * \details This will communicate the chosen parameter using MPI_Isend and MPI_Irecv, which are non-blocking methods of
  *          communication. This means that each process does not need to wait for the other processes to communicate. At
@@ -109,6 +106,9 @@ class X_Parallel : public Parallel<lattice,num_neighbors> {
 template<class lattice, class stencil, int num_neighbors>
 template<class parameter>
 inline void X_Parallel<lattice,stencil,num_neighbors>::communicate(parameter& obj) {
+    #ifdef MPIPARALLEL
+    #pragma omp master
+    {
 
     MPI_Request comm_request[2];
     
@@ -134,11 +134,16 @@ inline void X_Parallel<lattice,stencil,num_neighbors>::communicate(parameter& ob
     
     MPI_Waitall(2, comm_request, MPI_STATUSES_IGNORE);
 
+    }
+    #endif
 }
 
 template<class lattice, class stencil, int num_neighbors>
 template<class distribution>
 inline void X_Parallel<lattice,stencil,num_neighbors>::communicateDistribution(distribution& obj) {
+    #ifdef MPIPARALLEL
+    #pragma omp master
+    {
 
     MPI_Request comm_dist_request[20];
 
@@ -183,12 +188,16 @@ inline void X_Parallel<lattice,stencil,num_neighbors>::communicateDistribution(d
         MPI_Waitall(id, comm_dist_request, MPI_STATUSES_IGNORE);
 
     }
+
+    }
+    #endif
     
 }
 
 template<class lattice, class stencil, int num_neighbors>
 inline X_Parallel<lattice,stencil, num_neighbors>::X_Parallel() {
 
+    #ifdef MPIPARALLEL
     const int bufSize = (lattice::m_LY * lattice::m_LZ * num_neighbors * (5 + 2) * 2 * 2 + 1000) * sizeof(double);
     
     if(bufSize > MPIBUFFERSIZE) {
@@ -208,6 +217,6 @@ inline X_Parallel<lattice,stencil, num_neighbors>::X_Parallel() {
 
     MPI_Type_vector(lattice::m_LZ * lattice::m_LY, 1, stencil::Q, mpi_get_type<double>(), &DistributionVector);
     MPI_Type_commit(&DistributionVector);
+    #endif
     
 }
-#endif

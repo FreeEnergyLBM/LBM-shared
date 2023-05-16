@@ -1,8 +1,4 @@
 #pragma once
-#ifdef MPIPARALLEL
-#include <mpi.h>
-#endif
-#include <functional>
 
 /**
  * \file Global.hh

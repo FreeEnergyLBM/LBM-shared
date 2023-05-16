@@ -120,12 +120,7 @@ inline void Binary<lattice, traits>::collide() {
         
     }
 
-    #ifdef MPIPARALLEL
-    #pragma omp master
-    {
     ModelBase<lattice, traits>::m_Data.communicateDistribution();
-    }
-    #endif
 
 }
 
@@ -190,12 +185,7 @@ inline void Binary<lattice, traits>::computeMomenta() { //Calculate order parame
 
     }
 
-    #ifdef MPIPARALLEL
-    #pragma omp master
-    {
     ModelBase<lattice, traits>::m_Data.communicate(m_OrderParameter);
-    }
-    #endif
 }
 
 template<class lattice, class traits>

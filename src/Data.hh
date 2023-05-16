@@ -65,7 +65,6 @@ class Data_Base{
 
         using Stencil = stencil; //!<Typedef so type info can be accessed from outside the class.
 
-        #ifdef MPIPARALLEL
         /**
          * \brief This function communicates a chosen parameter (halo regions are exchanged with neighboring
          *        processors).
@@ -74,7 +73,6 @@ class Data_Base{
          */
         template<class parameter>
         inline void communicate(parameter& obj);
-        #endif
 
         /**
          * \brief The constructor for the class.
@@ -111,7 +109,6 @@ class Data_Base{
 
 };
 
-#ifdef MPIPARALLEL
 /**
  * \details The function calls the communicate(obj) function from the parallel template class chosen when the
  *          class is used. This will perform the necessary communications so gradients etc. can be calculated
@@ -125,7 +122,6 @@ inline void Data_Base<lattice,stencil, parallel>::communicate(parameter& obj) { 
     m_Parallel.communicate(obj);
 
 }
-#endif
 
 /**
  * \details The function returns a reference to a vector containing the neighboring lattice point for every point
@@ -335,12 +331,10 @@ class Data1 : public Data_Base<lattice, stencil, parallel> {
          */
         inline void stream();
 
-        #ifdef MPIPARALLEL
         /**
          * \brief This function streams the distributions to the neighboring processor.
          */
         inline void communicateDistribution();
-        #endif
 
         /**
          * \brief This constructor calls the constructor of the base disribution using the neighbor information.
@@ -376,7 +370,6 @@ inline void Data1<lattice, stencil, parallel>::stream() { //Not used in this dat
 
 }
 
-#ifdef MPIPARALLEL
 /**
  * \details This performs the communicateDistribution() function for the chosen parallelisation method, which
  *          should perform the streaming step across MPI boundaries.
@@ -387,4 +380,3 @@ inline void Data1<lattice, stencil, parallel>::communicateDistribution() {
     Data_Base<lattice, stencil, parallel>::m_Parallel.communicateDistribution(m_Distribution);
     
 }
-#endif
