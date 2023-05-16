@@ -104,9 +104,11 @@ inline void LinearWetting<lattice,stencil>::setPrefactor(const double A, const d
 template<typename lattice, typename stencil>
 inline void LinearWetting<lattice,stencil>::communicatePostProcess(){
 
+    #ifdef MPIPARALLEL
     #pragma omp master
     {
     m_Data.communicate(m_OrderParameter);
     }
+    #endif
     
 }

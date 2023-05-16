@@ -117,7 +117,7 @@ inline void ModelBase<lattice,traits>::precompute() {
         
     }
     
-    #ifdef MPIPARALLEL
+    
     if constexpr(std::tuple_size<typename traits::AddOns>::value != 0){ //Check if there is at least one element
                                                                         //in F
 
@@ -128,7 +128,7 @@ inline void ModelBase<lattice,traits>::precompute() {
         }, mt_AddOns);
 
     }
-    #endif
+    
 
     #pragma omp master
     {
@@ -155,7 +155,6 @@ inline void ModelBase<lattice,traits>::postprocess() {
 
         }
 
-        #ifdef MPIPARALLEL
         if constexpr(std::tuple_size<typename traits::AddOns>::value != 0){ //Check if there is at least one element
                                                                           //in F
 
@@ -166,7 +165,7 @@ inline void ModelBase<lattice,traits>::postprocess() {
             }, mt_AddOns);
 
         }
-        #endif
+        
 
     }
 
