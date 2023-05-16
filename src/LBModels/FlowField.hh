@@ -16,8 +16,10 @@ struct DefaultTraitFlowField : BaseTrait<DefaultTraitFlowField<lattice>> {
     
     using Stencil = std::conditional_t<lattice::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
 
+    template<typename stencil>
     using Boundaries = std::tuple<BounceBack<lattice>>;
 
+    template<typename stencil>
     using AddOns = std::tuple<>;
 
 };
@@ -205,7 +207,7 @@ template<class lattice, class traits>
 inline double FlowField<lattice, traits>::computeDensity(const double* distribution, const int k) const { //Density<> calculation
     //Density<> is the sum of distributions plus any source/correction terms
 
-    if constexpr(std::tuple_size<typename traits::AddOns>::value != 0) {
+    if constexpr(std::tuple_size<typename traits::AddOns<typename traits::Stencil>>::value != 0) {
 
         return CollisionBase<lattice,typename traits::Stencil>::computeZerothMoment(distribution) + std::apply([k](auto&... addons) {
 
@@ -224,7 +226,7 @@ inline double FlowField<lattice, traits>::computeVelocity(const double* distribu
     //Velocity in direction xyz is sum of distribution times the xyz component of the discrete velocity vector
     //in each direction plus any source/correction terms
 
-    if constexpr(std::tuple_size<typename traits::AddOns>::value != 0) {
+    if constexpr(std::tuple_size<typename traits::AddOns<typename traits::Stencil>>::value != 0) {
 
         return CollisionBase<lattice,typename traits::Stencil>::computeFirstMoment(distribution, xyz) + std::apply([xyz, k](auto&&... addons) {
 

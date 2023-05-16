@@ -14,9 +14,11 @@ struct DefaultTraitBinary : BaseTrait<DefaultTraitBinary<lattice>> {
 
     using Stencil = std::conditional_t<lattice::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
 
+    template<typename stencil>
     using Boundaries = std::tuple<BounceBack<lattice>>;
 
-    using AddOns = std::tuple<OrderParameterGradients<lattice,CentralXYZ<lattice, Stencil>>>;
+    template<typename stencil>
+    using AddOns = std::tuple<OrderParameterGradients<lattice,CentralXYZ<lattice, stencil>>,LinearWetting<lattice, stencil>>;
 
 };
 
@@ -232,7 +234,7 @@ template<class lattice, class traits>
 inline double Binary<lattice, traits>::computeOrderParameter(const double* distribution, const int k) const {//Order parameter calculation
     //Order parameter is the sum of distributions plus any source/correction terms
 
-    if constexpr(std::tuple_size<typename traits::AddOns>::value != 0){
+    if constexpr(std::tuple_size<typename traits::AddOns<typename traits::Stencil>>::value != 0){
 
         return CollisionBase<lattice, typename traits::Stencil>::computeZerothMoment(distribution)
         + std::apply([k](auto&... addons) {

@@ -264,9 +264,11 @@ struct BaseTrait{
 
     using Stencil = typename trait::Stencil;
 
-    using Boundaries = typename trait::Boundaries;
+    template<typename stencil>
+    using Boundaries = typename trait::Boundaries<stencil>;
 
-    using AddOns = tuple_cat_t<typename trait::AddOns, std::tuple<addon...>>;
+    template<typename stencil>
+    using AddOns = tuple_cat_t<typename trait::AddOns<stencil>, std::tuple<addon...>>;
 
   };
 
@@ -275,8 +277,10 @@ struct BaseTrait{
 
     using Stencil = typename trait::Stencil;
 
+    template<typename stencil>
     using Boundaries = typename trait::Boundaries;
 
+    template<typename stencil>
     using AddOns = std::tuple<addon...>;
 
   };
@@ -286,9 +290,11 @@ struct BaseTrait{
 
     using Stencil = typename trait::Stencil;
 
-    using Boundaries = tuple_cat_t<typename trait::Boundaries, std::tuple<boundary...>>;
+    template<typename stencil>
+    using Boundaries = tuple_cat_t<typename trait::Boundaries<stencil>, std::tuple<boundary...>>;
 
-    using AddOns = typename trait::AddOns;
+    template<typename stencil>
+    using AddOns = typename trait::AddOns<stencil>;
 
   };
 
@@ -297,20 +303,24 @@ struct BaseTrait{
 
     using Stencil = typename trait::Stencil;
 
+    template<typename stencil>
     using Boundaries = std::tuple<boundary...>;
 
-    using AddOns = typename trait::AddOns;
+    template<typename stencil>
+    using AddOns = typename trait::AddOns<stencil>;
 
   };
 
   template<class stencil>
-  struct SetStencil : BaseTrait<SetStencil<Stencil>> {
+  struct SetStencil : BaseTrait<SetStencil<stencil>> {
 
     using Stencil = stencil;
 
-    using Boundaries = typename trait::Boundaries;
+    template<typename stencil1>
+    using Boundaries = typename trait::Boundaries<stencil1>;
 
-    using AddOns = typename trait::AddOns;
+    template<typename stencil1>
+    using AddOns = typename trait::AddOns<stencil1>;
 
   };
 

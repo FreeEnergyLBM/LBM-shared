@@ -33,6 +33,8 @@ const int SAVEINTERVAL = 5000; //Interval to save global data
 
 const int RADIUS=20; //Droplet radius
 
+using traitBinary = DefaultTraitBinary<Lattice> ::SetStencil<D2Q5>;
+
 //User defined function to define some fluid initialisation (optional)
 bool fluidLocation(const int k) {
 
@@ -55,8 +57,6 @@ bool solidLocation(const int k) {
     else return false;
 
 }
-
-using traitBinary = DefaultTraitBinary<Lattice> ::AddAddOn<LinearWetting<Lattice, DefaultTraitBinary<Lattice>::Stencil>> ::SetStencil<D2Q9>;
 
 int main(int argc, char **argv){
     

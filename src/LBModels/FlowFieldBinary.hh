@@ -18,8 +18,10 @@ struct DefaultTraitFlowFieldBinary : BaseTrait<DefaultTraitFlowFieldBinary<latti
 
     using Stencil = std::conditional_t<lattice::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
 
+    template<typename stencil>
     using Boundaries = std::tuple<BounceBack<lattice>>;
 
+    template<typename stencil>
     using AddOns = std::tuple<BodyForce<lattice>,ChemicalForce<lattice>>;
 
 };

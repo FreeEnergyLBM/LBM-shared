@@ -63,6 +63,38 @@ struct D2Q9:Stencil { //Most commonly used 2D stencil
     }
     
 };
+
+struct D2Q5:Stencil { //Most commonly used 2D stencil
+    
+    static constexpr int D = 2; //Number of cartesian directions
+    static constexpr int Q = 5; //Number of velocity directions
+    static constexpr double Cs2 = 0.33333333333333; //Speed of sound squared
+    
+    static constexpr int Ci_x[Q] = {0, 1, -1, 0, 0}; //Vectors of velocity directions
+    static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1}; //There is no convecntion for the ordering of these
+    static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0}; //0 array because there is no z direction
+
+    enum{x = 0, y = 1, z = 2};
+    inline static auto Ci_xyz(const int d) -> const int(&)[Q] { //Returns velocity direction vector depending on input d, this is probably slow
+
+        if (d == x) {
+            return Ci_x;
+        }
+        else if (d == y) {
+            return Ci_y;
+        }
+        return Ci_z;
+
+    }
+    static constexpr int Opposites[Q] = {0, 2, 1, 4, 3}; //Opposite vector at a given index
+    
+    static constexpr double Weights[Q] = {1.0 / 3.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0}; //Lattice weights
+
+    template<int idx>
+    static constexpr int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx]; //Returns the modulus of the velocity vector at a given index, used for the MRT weight calculation
+    
+};
+
 //
 struct D3Q19:Stencil{ //Most commonly used 3D stencil
     static constexpr int D = 3;
