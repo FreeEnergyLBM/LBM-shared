@@ -250,6 +250,73 @@ std::false_type is_base_of_template_impl(...);
 template <template <typename...> class C,typename T>
 using is_base_of_template = decltype(is_base_of_template_impl<C>(std::declval<T*>()));
 
+template<typename ... input_t>
+using tuple_cat_t=
+decltype(std::tuple_cat(
+    std::declval<input_t>()...
+));
+
+
+tuple_cat_t<
+    std::tuple<int,float>,
+    std::tuple<int>
+    > test{1,1.0f,2};
+
+template<class trait, class... addon>
+struct AddAddOn {
+
+  struct NewTrait : trait {
+
+    using AddOns = tuple_cat_t<typename trait::AddOns, std::tuple<addon...>>;
+
+  };
+
+};
+
+template<class trait, class... addon>
+struct SetAddOn {
+
+  struct NewTrait : trait {
+
+    using AddOns = std::tuple<addon...>;
+
+  };
+
+};
+
+template<class trait, class... boundary>
+struct AddBoundary {
+
+  struct NewTrait : trait {
+
+    using Boundaries = tuple_cat_t<typename trait::Boundaries, std::tuple<boundary...>>;
+
+  };
+
+};
+
+template<class trait, class... boundary>
+struct SetBoundary{
+
+  struct NewTrait : trait{
+
+    using Boundaries = std::tuple<boundary...>;
+
+  };
+
+};
+
+template<class trait, class stencil>
+struct SetStencil {
+
+  struct NewTrait : trait {
+
+    using Stencil = stencil;
+
+  };
+
+};
+
 /*
 template<typename ... input_t>
 using tuple_cat_t=

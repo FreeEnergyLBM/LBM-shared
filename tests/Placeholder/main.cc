@@ -56,11 +56,7 @@ bool solidLocation(const int k) {
 
 }
 
-struct traitBinary : DefaultTraitBinary<Lattice> {
-
-    using AddOns = std::tuple<OrderParameterGradients<Lattice,CentralXYZ<Lattice, Stencil>>,LinearWetting<Lattice,Stencil>>;
-
-};
+using traitBinary = AddAddOn<DefaultTraitBinary<Lattice>, LinearWetting<Lattice, DefaultTraitBinary<Lattice>::Stencil>>::NewTrait;
 
 int main(int argc, char **argv){
     
