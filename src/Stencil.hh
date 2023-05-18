@@ -93,6 +93,16 @@ struct D2Q5:Stencil { //Most commonly used 2D stencil
     template<int idx>
     static constexpr int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx]; //Returns the modulus of the velocity vector at a given index, used for the MRT weight calculation
     
+    template<int idx>
+    static constexpr int Moments[Q]={1,
+                                    3 * (CModulus<idx>)-4,
+                                    Ci_x[idx],
+                                    Ci_y[idx],
+                                    Ci_x[idx]*Ci_x[idx]-Ci_y[idx]*Ci_y[idx]};
+    inline static std::vector<double> MRTWeights(const double& invtau){
+        return {0,0,0,1,invtau};
+    }
+
 };
 
 //

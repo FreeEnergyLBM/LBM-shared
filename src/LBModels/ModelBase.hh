@@ -20,8 +20,8 @@ struct DefaultTrait : BaseTrait<DefaultTrait<lattice>> {
 template<class lattice, class traits = DefaultTrait<lattice>>
 class ModelBase{ //Inherit from base class to avoid repetition of common
                                                       //calculations
-    static_assert(CheckBase<AddOnBase, typename traits::AddOns<typename traits::Stencil>>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
-    static_assert(CheckBase<BoundaryBase, typename traits::Boundaries<typename traits::Stencil>>::value, "ERROR: At least one force chosen is not a force class.");
+    static_assert(CheckBase<AddOnBase, typename traits::template AddOns<typename traits::Stencil>>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
+    static_assert(CheckBase<BoundaryBase, typename traits::template Boundaries<typename traits::Stencil>>::value, "ERROR: At least one force chosen is not a force class.");
     public:
 
         ModelBase()
@@ -74,8 +74,8 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
 
         enum{ x = 0, y = 1, z = 2 }; //Indices corresponding to x, y, z directions
 
-        typename traits::AddOns<typename traits::Stencil> mt_AddOns; //MOVE THIS TO BASE
-        typename traits::Boundaries<typename traits::Stencil> mt_Boundaries; //MOVE THIS TO BASE
+        typename traits::template AddOns<typename traits::Stencil> mt_AddOns; //MOVE THIS TO BASE
+        typename traits::template Boundaries<typename traits::Stencil> mt_Boundaries; //MOVE THIS TO BASE
         Geometry<lattice> m_Geometry; //MOVE THIS TO BASE
         
         std::vector<double>& distribution = m_Distribution.getDistribution(); //Reference to vector of distributions
@@ -95,7 +95,7 @@ inline void ModelBase<lattice,traits>::precompute() {
     #pragma omp for schedule(guided)
     for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
 
-        if constexpr(std::tuple_size<typename traits::Boundaries<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
+        if constexpr(std::tuple_size<typename traits::template Boundaries<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
                                                                           //in F
 
             std::apply([k](auto&... boundaries){//See Algorithm.hh for explanation of std::apply
@@ -106,7 +106,7 @@ inline void ModelBase<lattice,traits>::precompute() {
 
         }
 
-        if constexpr(std::tuple_size<typename traits::AddOns<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
+        if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
                                                                           //in F
 
             std::apply([k](auto&... addons){//See Algorithm.hh for explanation of std::apply
@@ -120,7 +120,7 @@ inline void ModelBase<lattice,traits>::precompute() {
     }
     
     
-    if constexpr(std::tuple_size<typename traits::AddOns<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
+    if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
                                                                         //in F
 
         std::apply([](auto&... addons){//See Algorithm.hh for explanation of std::apply
@@ -146,7 +146,7 @@ inline void ModelBase<lattice,traits>::postprocess() {
     #pragma omp for schedule(guided)
     for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
 
-        if constexpr(std::tuple_size<typename traits::Boundaries<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
+        if constexpr(std::tuple_size<typename traits::template Boundaries<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
                                                                           //in F
 
             std::apply([k](auto&... boundaries){//See Algorithm.hh for explanation of std::apply
@@ -157,7 +157,7 @@ inline void ModelBase<lattice,traits>::postprocess() {
 
         }
 
-        if constexpr(std::tuple_size<typename traits::AddOns<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
+        if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
                                                                           //in F
 
             std::apply([k](auto&... addons){//See Algorithm.hh for explanation of std::apply
@@ -171,7 +171,7 @@ inline void ModelBase<lattice,traits>::postprocess() {
 
     }
 
-    if constexpr(std::tuple_size<typename traits::AddOns<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
+    if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
                                                                         //in F
 
         std::apply([](auto&... addons){//See Algorithm.hh for explanation of std::apply
@@ -193,7 +193,7 @@ inline void ModelBase<lattice,traits>::postprocess() {
 template<class lattice, class traits>
 inline double ModelBase<lattice,traits>::computeForces(int xyz, int k) const {
 
-    if constexpr(std::tuple_size<typename traits::AddOns<typename traits::Stencil>>::value != 0){
+    if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0){
 
         return std::apply([xyz, k](auto&... addons){
                 return (addons.compute(xyz, k) + ...);
@@ -210,7 +210,7 @@ inline void ModelBase<lattice,traits>::boundaries() {
     #pragma omp for schedule(guided)
     for (int k = 0; k <lattice::m_N; k++) { //loop over k
 
-        if constexpr(std::tuple_size<typename traits::Boundaries<typename traits::Stencil>>::value != 0) { //Check if there are any boundary
+        if constexpr(std::tuple_size<typename traits::template Boundaries<typename traits::Stencil>>::value != 0) { //Check if there are any boundary
                                                                               //models
 
             std::apply([this, k](auto&... boundaries) {

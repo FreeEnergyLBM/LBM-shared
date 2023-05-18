@@ -57,9 +57,9 @@ struct LatticePropertiesRuntime {
 
     }
 
-    static const int m_LX;
-    static const int m_LY;
-    static const int m_LZ;
+    static int m_LX;
+    static int m_LY;
+    static int m_LZ;
     static int m_LXdiv;
     static int m_LXMPIOffset;
     static int m_HaloSize;

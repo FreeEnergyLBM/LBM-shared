@@ -10,6 +10,10 @@ template<typename lattice, typename stencil>
 class LinearWetting : public AddOnBase {
     public:
 
+        LinearWetting() = default;
+
+        LinearWetting(const LinearWetting<lattice,stencil>& other) : m_Theta(other.m_Theta), m_Omega(other.m_Omega), m_Prefactor(other.m_Prefactor) {}
+
         inline void postprocess(const int k);
 
         inline void setTheta(const double theta);

@@ -12,6 +12,12 @@ class OrderParameterGradients : public AddOnBase {
 
     public:
 
+        OrderParameterGradients() = default;
+
+        OrderParameterGradients(const OrderParameterGradients<lattice,gradientstencil>& other) {};
+
+        OrderParameterGradients(OrderParameterGradients<lattice,gradientstencil>& other) {};
+
         inline void precompute(const int k) override; //Perform any neccessary computations before force is computed
 
     private:

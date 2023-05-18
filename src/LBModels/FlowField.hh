@@ -36,7 +36,7 @@ class FlowField : public CollisionBase<lattice,typename traits::Stencil>, public
 
         inline void initialise() override; //Initialisation step
 
-        inline void computeMomenta(); //Momenta (density, velocity) calculation
+        inline void computeMomenta() override; //Momenta (density, velocity) calculation
 
         inline const double& getDensity(const int k) const; //Return density at lattice point k
 
@@ -207,7 +207,7 @@ template<class lattice, class traits>
 inline double FlowField<lattice, traits>::computeDensity(const double* distribution, const int k) const { //Density<> calculation
     //Density<> is the sum of distributions plus any source/correction terms
 
-    if constexpr(std::tuple_size<typename traits::AddOns<typename traits::Stencil>>::value != 0) {
+    if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0) {
 
         return CollisionBase<lattice,typename traits::Stencil>::computeZerothMoment(distribution) + std::apply([k](auto&... addons) {
 
@@ -226,7 +226,7 @@ inline double FlowField<lattice, traits>::computeVelocity(const double* distribu
     //Velocity in direction xyz is sum of distribution times the xyz component of the discrete velocity vector
     //in each direction plus any source/correction terms
 
-    if constexpr(std::tuple_size<typename traits::AddOns<typename traits::Stencil>>::value != 0) {
+    if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0) {
 
         return CollisionBase<lattice,typename traits::Stencil>::computeFirstMoment(distribution, xyz) + std::apply([xyz, k](auto&&... addons) {
 

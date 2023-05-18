@@ -234,7 +234,7 @@ template<class lattice, class traits>
 inline double Binary<lattice, traits>::computeOrderParameter(const double* distribution, const int k) const {//Order parameter calculation
     //Order parameter is the sum of distributions plus any source/correction terms
 
-    if constexpr(std::tuple_size<typename traits::AddOns<typename traits::Stencil>>::value != 0){
+    if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0){
 
         return CollisionBase<lattice, typename traits::Stencil>::computeZerothMoment(distribution)
         + std::apply([k](auto&... addons) {
