@@ -56,7 +56,16 @@ inline void BodyForce<lattice>::setMagnitudeZ(const double magnitude) {
 template<typename lattice>
 inline double BodyForce<lattice>::compute(const int xyz, const int k) const {
 
-    return ((xyz == 0) * m_MagnitudeX + (xyz == 1) * m_MagnitudeY + (xyz == 2) * m_MagnitudeZ) * m_Density.getParameter(k); //Force is just density multiplied by magnitude
+    if (xyz==0) return m_MagnitudeX * m_Density.getParameter(k);
+    if constexpr (lattice::m_NDIM==2){
+        return m_MagnitudeY * m_Density.getParameter(k);
+    }
+    else if constexpr (lattice::m_NDIM==3){
+        if(xyz==1) return m_MagnitudeY * m_Density.getParameter(k);
+        return m_MagnitudeZ * m_Density.getParameter(k);
+    }
+    return 0;
+    
                                                                  //in given direction
 
 }

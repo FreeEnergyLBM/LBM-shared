@@ -44,7 +44,7 @@ bool solidLocation(const int k) {
 
 
 //Traits of the model. We are using the defaults but adding a body force.
-using PoiseuilleTrait = DefaultTraitBinary<Lattice> ::AddAddOn<BodyForce<Lattice>>;
+using PoiseuilleTrait = DefaultTraitFlowField<Lattice> ::AddAddOn<BodyForce<Lattice>>;
 
 int main(int argc, char **argv){
     
