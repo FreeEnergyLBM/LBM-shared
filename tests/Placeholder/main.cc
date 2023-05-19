@@ -85,6 +85,7 @@ int main(int argc, char **argv){
     SolidLabels<Lattice> solid;
     solid.set(solidLocation,true); //Set solid to true where the function we defined previously is true (false by default so don't need to specify this)
 
+
     //Algorithm that will combine the models and run them in order
     Algorithm LBM(Model1,Model2); //Create LBM object with the two models we have initialised
 

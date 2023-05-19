@@ -14,6 +14,8 @@ export OMP_PROC_BIND=true
 export OMP_PLACES=cores
 export OMP_NUM_THREADS=2
 export OMP_AFFINITY=balaned
-mpiexec ./wetP
+export I_MPI_GTOOL="vtune -c hpc-performance -r HPC:all" 
+# mpiexec ./wetP
+mpirun -n 5 ./wetP
 #valgrind ./wetP
 #./wetP

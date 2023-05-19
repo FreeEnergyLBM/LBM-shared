@@ -1,13 +1,13 @@
 
 INCS	=	
 
-DEFS    =	   -g -O3 -Wno-deprecated -Wall -std=c++17 -I. -fopenmp -DMPIPARALLEL
+DEFS    =	   -g -O3 -Wno-deprecated -Wall -std=c++17 -I. -fiopenmp
 
 LIBS	=	-lm
 
 LIBPATH =
 
-COMP	=	 mpicxx
+COMP	=	 icpx
 
 DEPS    =       ../../src/%.hh ../../src/Extensions/%.hh ../../src/GradientStencils%.hh ../../src/LBModels/%.hh ../../src/BoundaryModels/%.hh main.hh 
 

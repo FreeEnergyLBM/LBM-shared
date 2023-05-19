@@ -177,6 +177,17 @@ class Parameter {
         }
 
         template<int idx=0>
+        void set(T (*condition)(const int)) {
+
+            for(int k = lattice::m_HaloSize; k < lattice::m_N-lattice::m_HaloSize; k++) {
+
+                initialise(condition(k),k,idx);
+
+            }
+
+        }
+
+        template<int idx=0>
         void set(bool (*condition)(const int), T val) {
 
             for(int k = lattice::m_HaloSize; k < lattice::m_N-lattice::m_HaloSize; k++) {
