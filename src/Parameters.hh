@@ -358,29 +358,29 @@ struct Pressure : public Parameter<Pressure, lattice, double>{
 
 }; //Presure
 
-template<class lattice>
-struct OrderParameter : public Parameter<OrderParameter, lattice, double> {
+template<class lattice, int number = 1>
+struct OrderParameter : public Parameter<OrderParameter, lattice, double, number> {
 
     static constexpr char m_Name[] = "OrderParameter";
 
 }; //Order parameter representing relative concentration of the phases
 
-template<class lattice>
-struct ChemicalPotential : public Parameter<ChemicalPotential, lattice, double> {
+template<class lattice, int number = 1>
+struct ChemicalPotential : public Parameter<ChemicalPotential, lattice, double, number> {
 
     static constexpr char m_Name[] = "ChemicalPotential";
 
 }; //Chemical potential for the multicomponent model
 
-template<class lattice>
-struct LaplacianOrderParameter : public Parameter<LaplacianOrderParameter, lattice, double> {
+template<class lattice, int number = 1>
+struct LaplacianOrderParameter : public Parameter<LaplacianOrderParameter, lattice, double, number> {
 
     static constexpr char m_Name[] = "LaplacianOrderParameter";
 
 }; //Laplacian of the order parameter
 
-template<class lattice>
-struct GradientOrderParameter : public Parameter<GradientOrderParameter, lattice, double, lattice::m_NDIM> {
+template<class lattice, int number = 1>
+struct GradientOrderParameter : public Parameter<GradientOrderParameter, lattice, double, lattice::m_NDIM * number> {
 
     static constexpr char m_Name[]="GradientOrderParameter";
 
