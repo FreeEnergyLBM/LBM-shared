@@ -239,7 +239,7 @@ inline void Parameter<obj, lattice, T, num>::Save(std::string filename, int t, s
 
     MPI_File_open(MPI_COMM_SELF, fdump, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh); //Open the file using mpi in write only mode
     
-    MPI_File_seek(fh, sizeof(double) * CURPROCESSOR * m_Num * (lattice::m_LX * lattice::m_LY * lattice::m_LZ) / NUMPROCESSORS, MPI_SEEK_SET); //Skip to a certain location in the file, currently
+    MPI_File_seek(fh, sizeof(double) * mpi.rank * m_Num * (lattice::m_LX * lattice::m_LY * lattice::m_LZ) / mpi.size, MPI_SEEK_SET); //Skip to a certain location in the file, currently
     
     MPI_File_write(fh,&mv_Parameter[lattice::m_HaloSize * m_Num], m_Num * (lattice::m_N - 2 * lattice::m_HaloSize), MPI_DOUBLE, MPI_STATUSES_IGNORE);
 
@@ -249,7 +249,7 @@ inline void Parameter<obj, lattice, T, num>::Save(std::string filename, int t, s
 
     std::ofstream fs(fdump, std::ios::out | std::ios::binary);
     
-    fs.seekp(sizeof(double) * CURPROCESSOR * m_Num * (lattice::m_LX * lattice::m_LY * lattice::m_LZ) / NUMPROCESSORS);
+    fs.seekp(sizeof(double) * mpi.rank * m_Num * (lattice::m_LX * lattice::m_LY * lattice::m_LZ) / mpi.size);
 
     for (int k = lattice::m_HaloSize; k < lattice::m_N - lattice::m_HaloSize; k++) { 
 
@@ -295,7 +295,7 @@ class ParameterSave {
 template<class lattice, template<class> class ...parameters>
 inline void ParameterSave<lattice, parameters...>::SaveHeader(const int& timestep, const int& saveinterval) { //Function to save parameter stored in this class
     
-    if(CURPROCESSOR==0){
+    if(mpi.rank==0){
         std::cout<<"SAVING HEADER"<<std::endl;
         char fdump[256];
         sprintf(fdump, "%s/Header.mat", m_DataDir.c_str()); //Buffer containing file name and location.
@@ -322,7 +322,7 @@ inline void ParameterSave<lattice, parameters...>::Save(int timestep) {
 
     if (timestep % m_SaveInterval == 0) {
 
-        if (CURPROCESSOR == 0) std::cout << "SAVING at timestep " << timestep << std::endl;
+        if (mpi.rank == 0) std::cout << "SAVING at timestep " << timestep << std::endl;
 
         if constexpr (sizeof...(parameters) != 0) {
 

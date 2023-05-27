@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "gtest-mpi-listener.hpp"
 #include <vector>
+#include "Parallel.hh"
 
 
 template<typename T>
@@ -33,6 +34,7 @@ int main(int argc, char** argv) {
 
   #ifdef MPIPARALLEL
   MPI_Init(&argc, &argv);
+  mpi.getSizeRank(MPI_COMM_WORLD);
 
   // Add an MPI listener (https://github.com/LLNL/gtest-mpi-listener)
   ::testing::AddGlobalTestEnvironment(new GTestMPIListener::MPIEnvironment);

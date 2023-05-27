@@ -12,7 +12,7 @@ CXXFLAGS = -std=c++17 -Wall -DMPIPARALLEL -fopenmp
 
 # Use 'failed' file to determine success so that all tests are performed even if one fails
 all: $(TESTS) $(RUN_TESTS) cleantests
-	@[-f failed] && rm failed && exit 1 || exit 0
+	@[ -f failed ] && rm failed && exit 1 || exit 0
 
 clean:
 	rm -f $(TESTS) gtest.a gtest_main.a *.o

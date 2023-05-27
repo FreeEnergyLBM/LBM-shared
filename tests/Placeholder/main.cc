@@ -59,14 +59,7 @@ bool solidLocation(const int k) {
 }
 
 int main(int argc, char **argv){
-    
-    #ifdef MPIPARALLEL
-    //MPI initialisation
-    MPI_Init(&argc, &argv); 
-    MPI_Comm_size(MPI_COMM_WORLD, &NUMPROCESSORS);                              // Store number of processors
-    MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
-    #endif
-    
+
     Parallel<Lattice,1> initialise; //Initialise parallelisation
 
     //Chosen models
@@ -107,12 +100,8 @@ int main(int argc, char **argv){
 
     auto tend=std::chrono::system_clock::now(); //End timer
     std::chrono::duration<double> elapsed_seconds=tend-t0; //Work out total time (end minus start)
-    if(CURPROCESSOR==0)std::cout<<"RUNTIME: "<<elapsed_seconds.count()<<" "<<LX<<" "<<LY<<" "<<std::endl; //Print runtime
+    if(mpi.rank==0)std::cout<<"RUNTIME: "<<elapsed_seconds.count()<<" "<<LX<<" "<<LY<<" "<<std::endl; //Print runtime
 
-    #ifdef MPIPARALLEL
-    MPI_Finalize(); //MPI finalisation
-    #endif
-    
     return 0;
 
 }

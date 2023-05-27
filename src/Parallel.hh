@@ -2,18 +2,70 @@
 #ifdef MPIPARALLEL
 #include <mpi.h>
 #endif
+#include <stdexcept>
 #include "Global.hh"
 #include "Service.hh"
 /**
  * \file  Parallel.hh
  * \brief This contains classes to control the MPI parallelisation of the code.
  * The file contains a base class that will perform initialisation of the global MPI parameters. Other classes
- * inherit from this and provide funcions to communicate between processes.
+ * inherit from this and provide functions to communicate between processes.
  */
+
+
+/**
+ * \brief This class and its associated 'mpi' object provide a simple interface to access the MPI
+ * rank and size and to automate MPI initialisation and finalisation.
+ * No additional instances of this class should be created.
+ */
+class MpiClass {
+    public:
+        int rank = 0;
+        int size = 1;
+
+        void init(int* argc, char*** argv) {
+            #ifdef MPIPARALLEL
+            if (!initialised) {
+              MPI_Init(argc, argv);
+              initialisedHere = true;
+            }
+            getSizeRank(MPI_COMM_WORLD);
+            #endif
+            initialised = true;
+        }
+
+        #ifdef MPIPARALLEL
+        void getSizeRank(MPI_Comm comm) {
+            MPI_Comm_size(comm, &size);
+            MPI_Comm_rank(comm, &rank);
+            initialised = true;
+        }
+        #endif
+
+        ~MpiClass() {
+            if (!initialisedHere) return;
+            #ifdef MPIPARALLEL
+            #pragma omp master
+            {
+            MPI_Finalize();
+            }
+            #endif
+        }
+
+        MpiClass() { throw std::runtime_error("Error: Do not create new instances of MpiClass"); };
+        MpiClass(int) {};
+
+    private:
+        bool initialised = false;
+        bool initialisedHere = false;
+};
+
+MpiClass mpi(0);
+
 
 /**
  * \brief This class simply initialises global MPI parameters when constructed.
- * MAXNEIGHBORS is updated depending on the chosen number of neighbors. LXdiv (LX for each parallel block of
+ * MaxNeighbors is updated depending on the chosen number of neighbors. LXdiv (LX for each parallel block of
  * lattice points) is set based on the number of processors and number of neighbors chosen.
  */
 template<class lattice, int num_neighbors>
@@ -22,41 +74,50 @@ class Parallel {
         /**
          * \brief Constructor that updates global parameters. This is contained within a class as I may move stuff
          *        from X_Parallel to here.
-         * MAXNEIGHBORS is updated depending on the chosen number of neighbors. LXdiv (LX for each parallel block of
+         * MaxNeighbors is updated depending on the chosen number of neighbors. LXdiv (LX for each parallel block of
          * lattice points) is set based on the number of processors and number of neighbors chosen. lattice::m_N is then
          * calculated as LXdiv*lattice::m_LY*lattice::m_LZ.
          */
-
-        Parallel() {
-
-            if(m_MaxNeighbors < num_neighbors) m_MaxNeighbors = num_neighbors;
-
-            lattice::m_HaloSize = lattice::m_LY * lattice::m_LZ * m_MaxNeighbors;
-
-            if (lattice::m_LX % NUMPROCESSORS == 0) {
-                lattice::m_LXdiv = (lattice::m_LX / NUMPROCESSORS + 2 * num_neighbors);
-                lattice::m_LXMPIOffset = (lattice::m_LXdiv-2*num_neighbors)*CURPROCESSOR;
-            }
-            else{
-                throw std::runtime_error(std::string("Currently, the number of cores must be divisible by the size of the domain in the x direction."));
-            }
-
-            /*
-            else if (CURPROCESSOR<LX%NUMPROCESSORS){
-                LXdiv=((LX-LX%NUMPROCESSORS)/NUMPROCESSORS+1+2*num_neighbors);
-            }
-            else {
-                LXdiv=((LX-LX%NUMPROCESSORS)/NUMPROCESSORS+2*num_neighbors);
-            }
-            */
-            lattice::m_N = lattice::m_LXdiv * lattice::m_LY * lattice::m_LZ;
-            
-        }
+        Parallel();
+        Parallel(int* argc, char*** argv);
 
     private:
-
         int m_MaxNeighbors = 0;
 };
+
+
+template<class lattice, int num_neighbors>
+Parallel<lattice,num_neighbors>::Parallel() {
+  Parallel(nullptr, nullptr);
+}
+
+template<class lattice, int num_neighbors>
+Parallel<lattice,num_neighbors>::Parallel(int* argc, char*** argv) {
+    mpi.init(argc, argv);
+
+    if(m_MaxNeighbors < num_neighbors) m_MaxNeighbors = num_neighbors;
+
+    lattice::m_HaloSize = lattice::m_LY * lattice::m_LZ * m_MaxNeighbors;
+
+    if (lattice::m_LX % mpi.size == 0) {
+        lattice::m_LXdiv = (lattice::m_LX / mpi.size + 2 * num_neighbors);
+        lattice::m_LXMPIOffset = (lattice::m_LXdiv-2*num_neighbors)*mpi.rank;
+    }
+    else{
+        throw std::runtime_error(std::string("Currently, the number of cores must be divisible by the size of the domain in the x direction."));
+    }
+
+    /*
+    else if (mpi.rank<LX%mpi.size){
+        LXdiv=((LX-LX%mpi.size)/mpi.size+1+2*num_neighbors);
+    }
+    else {
+        LXdiv=((LX-LX%mpi.size)/mpi.size+2*num_neighbors);
+    }
+    */
+    lattice::m_N = lattice::m_LXdiv * lattice::m_LY * lattice::m_LZ;
+}
+
 
 /**
  * \brief X_Parallel contains functions and data for MPI parallelisation divided evenly in the X direction.
@@ -147,7 +208,7 @@ inline void X_Parallel<lattice,stencil,num_neighbors>::communicateDistribution(d
 
     MPI_Request comm_dist_request[20];
 
-    if (CURPROCESSOR < NUMPROCESSORS){
+    if (mpi.rank < mpi.size){
 
         int leftorright;
         int id = 0;
@@ -210,10 +271,10 @@ inline X_Parallel<lattice,stencil, num_neighbors>::X_Parallel() {
 
     }
     
-    m_LeftNeighbor = CURPROCESSOR - 1;
-    if (m_LeftNeighbor == -1) m_LeftNeighbor = NUMPROCESSORS - 1;
-    m_RightNeighbor = CURPROCESSOR + 1;
-    if (m_RightNeighbor == NUMPROCESSORS) m_RightNeighbor = 0;
+    m_LeftNeighbor = mpi.rank - 1;
+    if (m_LeftNeighbor == -1) m_LeftNeighbor = mpi.size - 1;
+    m_RightNeighbor = mpi.rank + 1;
+    if (m_RightNeighbor == mpi.size) m_RightNeighbor = 0;
 
 
     MPI_Type_vector(lattice::m_LZ * lattice::m_LY, 1, stencil::Q, mpi_get_type<double>(), &DistributionVector);
