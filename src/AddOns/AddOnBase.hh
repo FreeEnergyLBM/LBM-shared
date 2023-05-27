@@ -8,7 +8,9 @@ class AddOnBase{
     
     public:
 
-        inline virtual double compute(const int xyz, const int k) const; //Return force at lattice point k in direction xyz
+        inline virtual double computeXYZ(const int xyz, const int k) const; //Return force at lattice point k in direction xyz
+
+        inline virtual double computeQ(const int xyz, const int k) const; //Return force at lattice point k in direction xyz
 
         inline virtual void precompute(const int k); //Perform any neccessary computations before force is computed
 
@@ -27,7 +29,7 @@ class AddOnBase{
 
 };
 
-inline double AddOnBase::compute(const int xyz, const int k) const {
+inline double AddOnBase::computeXYZ(const int xyz, const int k) const {
 
     return 0;
 

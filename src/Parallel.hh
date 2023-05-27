@@ -215,8 +215,10 @@ inline X_Parallel<lattice,stencil, num_neighbors>::X_Parallel() {
     m_RightNeighbor = CURPROCESSOR + 1;
     if (m_RightNeighbor == NUMPROCESSORS) m_RightNeighbor = 0;
 
+
     MPI_Type_vector(lattice::m_LZ * lattice::m_LY, 1, stencil::Q, mpi_get_type<double>(), &DistributionVector);
     MPI_Type_commit(&DistributionVector);
+
     #endif
     
 }

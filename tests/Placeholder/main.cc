@@ -36,12 +36,12 @@ const int RADIUS=20; //Droplet radius
 using traitBinary = DefaultTraitBinary<Lattice> ::SetStencil<D2Q5>;
 
 //User defined function to define some fluid initialisation (optional)
-bool fluidLocation(const int k) {
+bool fluidLocation(int k) {
 
     int xx = computeXGlobal<Lattice>(k);
     int yy = computeY(LY, LZ, k);
 
-    const int rr2 = (xx - LX / 2) * (xx - LX / 2) + (yy) * (yy);
+    int rr2 = (xx - LX / 2) * (xx - LX / 2) + (yy) * (yy);
 
     if (rr2 < RADIUS*RADIUS) return true;
     else return false;
@@ -73,8 +73,8 @@ int main(int argc, char **argv){
     FlowFieldBinary<Lattice> Model1; //Flowfield (navier stokes solver) that can be used with the binary model (there are nuances with this model)
     Binary<Lattice,traitBinary> Model2; //Binary model with hybrid equilibrium and forcing term
 
-    Model1.getAddOn<ChemicalForce<Lattice>>().setA(0.00015);
-    Model1.getAddOn<ChemicalForce<Lattice>>().setKappa(0.0003);
+    Model1.getAddOn<ChemicalForceBinary<Lattice>>().setA(0.00015);
+    Model1.getAddOn<ChemicalForceBinary<Lattice>>().setKappa(0.0003);
 
     Model2.getAddOn<LinearWetting<Lattice,typename traitBinary::Stencil>>().setPrefactor(0.00015,0.0003);
     Model2.getAddOn<LinearWetting<Lattice,typename traitBinary::Stencil>>().setThetaDegrees(135);
@@ -84,7 +84,6 @@ int main(int argc, char **argv){
 
     SolidLabels<Lattice> solid;
     solid.set(solidLocation,true); //Set solid to true where the function we defined previously is true (false by default so don't need to specify this)
-
 
     //Algorithm that will combine the models and run them in order
     Algorithm LBM(Model1,Model2); //Create LBM object with the two models we have initialised

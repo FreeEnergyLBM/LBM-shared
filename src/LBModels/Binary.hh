@@ -18,7 +18,12 @@ struct DefaultTraitBinary : BaseTrait<DefaultTraitBinary<lattice>> {
     using Boundaries = std::tuple<BounceBack<lattice>>;
 
     template<typename stencil>
+    using Forces = 
+
+    template<typename stencil>
     using AddOns = std::tuple<OrderParameterGradients<lattice,CentralXYZ<lattice, stencil>>,LinearWetting<lattice, stencil>>;
+
+    using CollisionOperator = SRT;
 
 };
 
@@ -198,14 +203,16 @@ inline double Binary<lattice, traits>::computeCollisionQ(double& equilibriumsum,
     double forcexyz[traits::Stencil::D]; //Temporary array storing force in each cartesian direction
 
     //Force is the sum of model forces and given forces
-    for(int xyz = 0; xyz <traits::Stencil::D; xyz++) forcexyz[xyz] = computeModelForce(xyz, k) + ModelBase<lattice, traits>::computeForces(xyz, k);
+    for(int xyz = 0; xyz < traits::Stencil::D; xyz++) forcexyz[xyz] = computeModelForce(xyz, k) + ModelBase<lattice, traits>::computeForces(xyz, k);
     
     //Sum of collision + force contributions
     if (idx> 0) {
 
         double eq = CollisionBase<lattice, typename traits::Stencil>::collideSRT(old, computeEquilibrium(orderparam, velocity, idx, k), m_InverseTau)
-                    + CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
-
+                    + std::apply([idx, k](auto&... forceType){
+                        return (forceType.compute(idx, k) + ...);
+                    }, mt_ForceTypes);
+                    //+ CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
         equilibriumsum += eq;
         
         return eq;

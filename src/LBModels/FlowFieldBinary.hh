@@ -22,7 +22,7 @@ struct DefaultTraitFlowFieldBinary : BaseTrait<DefaultTraitFlowFieldBinary<latti
     using Boundaries = std::tuple<BounceBack<lattice>>;
 
     template<typename stencil>
-    using AddOns = std::tuple<BodyForce<lattice>,ChemicalForce<lattice>>;
+    using AddOns = std::tuple<BodyForce<lattice>,ChemicalForceBinary<lattice>>;
 
 };
 
