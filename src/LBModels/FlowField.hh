@@ -185,10 +185,14 @@ inline double FlowField<lattice, traits>::computeCollisionQ(methods& forcemethod
     //for(int xyz = 0; xyz <traits::Stencil::D; xyz++) forcexyz[xyz] = computeModelForce(xyz, k) + ModelBase<lattice, traits>::computeForces(xyz, k);
     
     //Sum of collision + force contributions
-    return CollisionBase<lattice,typename traits::Stencil>::collideSRT(old, computeEquilibrium(density, velocity, idx, k), m_InverseTau)
-              + std::apply([idx, k](auto&... forcetype){
-                        return (forcetype.compute(idx, k) + ...);
-                    }, forcemethods);
+     
+    if constexpr(std::tuple_size<methods>::value != 0){
+        return CollisionBase<lattice,typename traits::Stencil>::collideSRT(old, computeEquilibrium(density, velocity, idx, k), m_InverseTau) 
+        + std::apply([idx, k](auto&... forcetype){
+            return (forcetype.compute(idx, k) + ...);
+        }, forcemethods);
+    }
+    else return CollisionBase<lattice,typename traits::Stencil>::collideSRT(old, computeEquilibrium(density, velocity, idx, k), m_InverseTau);
               //+ CollisionBase<lattice,typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
 
 }

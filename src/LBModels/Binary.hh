@@ -203,20 +203,28 @@ inline double Binary<lattice, traits>::computeCollisionQ(methods& forcemethods, 
     
     //Sum of collision + force contributions
     if (idx> 0) {
-
-        double eq = CollisionBase<lattice, typename traits::Stencil>::collideSRT(old, computeEquilibrium(orderparam, velocity, idx, k), m_InverseTau)
-                    + std::apply([idx, k](auto&... forcetype){
+        
+        double eq = CollisionBase<lattice, typename traits::Stencil>::collideSRT(old, computeEquilibrium(orderparam, velocity, idx, k), m_InverseTau);
+        if constexpr(std::tuple_size<methods>::value != 0){
+                    eq += std::apply([idx, k](auto&... forcetype){
                         return (forcetype.compute(idx, k) + ...);
                     }, forcemethods);
+        }
                     //+ CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
         equilibriumsum += eq;
         
         return eq;
     }
-    else return m_OrderParameter.getParameter(k) - equilibriumsum
+    else {
+        double collision0=m_OrderParameter.getParameter(k) - equilibriumsum;
+        if constexpr(std::tuple_size<methods>::value != 0) {
+            return collision0
                 + std::apply([idx, k](auto&... forcetype){
                         return (forcetype.compute(idx, k) + ...);
-                    }, forcemethods); //CollisionBase<lattice,typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
+                    }, forcemethods);
+        }
+        return collision0;//CollisionBase<lattice,typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
+    }
 
 }
 

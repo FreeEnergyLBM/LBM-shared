@@ -114,21 +114,26 @@ void ModelBase<lattice,traits>::precomputeForces(force& f,forcetuple& forcemetho
 template<class lattice, class traits>
 inline auto ModelBase<lattice,traits>::getForceCalculator(int k){
 
-    auto tempforce=std::apply([k](auto&... forces){//See Algorithm.hh for explanation of std::apply
+    if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0){
+        
+        auto tempforce=std::apply([k](auto&... forces){//See Algorithm.hh for explanation of std::apply
 
-        return std::make_unique<decltype(make_tuple_unique(std::make_tuple(getMethod(forces))...))>();
+            return std::make_unique<decltype(make_tuple_unique(std::make_tuple(getMethod(forces))...))>();
 
-    }, mt_AddOns);
+        }, mt_AddOns);
 
-    tempforce=std::apply([this,tempforce=std::move(tempforce),k](auto&... forces) mutable {//See Algorithm.hh for explanation of std::apply
-        //std::cout<<std::get<0>(*tempforce).ma_Force[0]<<std::endl;
-        (this->precomputeForces(forces,*tempforce,k),...);
-        //std::cout<<std::get<0>(*tempforce).compute(1,k)<<std::endl;
-        return std::move(tempforce);
-    }, mt_AddOns);
-    //std::cout<<std::get<0>(*tempforce).compute(1,k)<<std::endl;
-    //exit(1);
-    return tempforce;
+        tempforce=std::apply([this,tempforce=std::move(tempforce),k](auto&... forces) mutable {//See Algorithm.hh for explanation of std::apply
+            
+            (this->precomputeForces(forces,*tempforce,k),...);
+            return std::move(tempforce);
+        
+        }, mt_AddOns);
+
+        return tempforce;
+
+    }
+    else return std::make_unique<std::tuple<>>();
+
 }
 
 template<class lattice, class traits>

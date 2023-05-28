@@ -146,10 +146,12 @@ inline double FlowFieldBinary<lattice, traits>::computeCollisionQ(methods& force
     //Sum of collision + force contributions 
     if (idx>0) {
 
-        double eq = CollisionBase<lattice, typename traits::Stencil>::collideSRT(old, computeEquilibrium(density ,velocity ,order_parameter ,chemical_potential ,idx ,k), inversetau)
-              + std::apply([idx, k](auto&... forcetype){
-                        return (forcetype.compute(idx, k) + ...);
-                    }, forcemethods);
+        double eq = CollisionBase<lattice, typename traits::Stencil>::collideSRT(old, computeEquilibrium(density ,velocity ,order_parameter ,chemical_potential ,idx ,k), inversetau);
+        if constexpr(std::tuple_size<methods>::value != 0){
+            eq += std::apply([idx, k](auto&... forcetype){
+                return (forcetype.compute(idx, k) + ...);
+            }, forcemethods);
+        }
               //+ CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, inversetau, idx);
         
         equilibriumsum += eq;
@@ -157,10 +159,16 @@ inline double FlowFieldBinary<lattice, traits>::computeCollisionQ(methods& force
         return eq;
 
     }
-    else return density-equilibriumsum
+    else {
+        double collision0=density-equilibriumsum;
+        if constexpr(std::tuple_size<methods>::value != 0) {
+            return collision0
                 + std::apply([idx, k](auto&... forcetype){
                         return (forcetype.compute(idx, k) + ...);
                     }, forcemethods);
+        }
+        return collision0;
+    }
                 //+CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, inversetau, idx);
     
 }
