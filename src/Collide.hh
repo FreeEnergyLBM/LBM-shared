@@ -67,19 +67,9 @@ class CollisionBase {
          * \param tau Relaxation time (chosen to provide a desired viscosity).
          * \return Post collision distribution.
          */
-        inline double collideSRT(const double& old, const double& equilibrium, const double& tau) const;
+        template<class>
+        inline double collide(const double& old, const double& equilibrium, const double& tau) const;
 
-        /**
-         * \brief This will compute the forcing term using Guo forcing.
-         * \param force Array containing the total force in the cartesian directions.
-         * \param velocity Pointer to velocity vector at the current lattice point.
-         * \param itau Inverse relaxation time (1.0/tau) (chosen to provide a desired viscosity).
-         * \param idx The discrete velocity index (e.g. 0-8 for D2Q9).
-         * \return Forcing term in chosen velocity index direction.
-         */
-        inline double forceGuoSRT(const double force[stencil::D ],const double* velocity,
-                            const double& itau, const int idx) const;
-        
         /**
          * \brief computeGamma computes first and second order velocity dependence of the equilibrium distributions.
          * \param velocity Pointer to velocity vector at the current lattice point.
@@ -180,38 +170,10 @@ inline double CollisionBase<lattice,stencil>::computeFirstMoment(const double *d
  *          the difference between the old and equilibrium distributions divided by the relaxation time, tau.
  */
 template<class lattice, class stencil>
-inline double CollisionBase<lattice,stencil>::collideSRT(const double& old, const double& equilibrium, const double& itau) const{
+template<class collisionmodel>
+inline double CollisionBase<lattice,stencil>::collide(const double& old, const double& equilibrium, const double& itau) const{
 
-    return old - lattice::m_DT * SRT::Omega(itau) * (old - equilibrium); //SRT colision step. Old corresponds to the old distribution and itau is
+    return old - lattice::m_DT * collisionmodel::Omega(itau) * (old - equilibrium); //SRT colision step. Old corresponds to the old distribution and itau is
                                        //the inverse of the relaxation time
-
-}
-
-/**
- * \details This computes the Guo forcing for the SRT collision operator. The dot product of velocity with the
- *          stencil velocity vectors is calculated and then used to calculate the forcing term.
- */
-template<class lattice, class stencil>
-inline double CollisionBase<lattice,stencil>::forceGuoSRT(const double force[stencil::D],
-                                        const double* velocity, const double& itau,
-                                        const int idx) const { //Guo forcing
-
-    double ci_dot_velocity = 0;
-    double forceterm = 0;
-    double prefactor = (1 - lattice::m_DT * itau / 2.0) * stencil::Weights[idx]; //Prefactor for Guo forcing
-
-    for (int xyz=0;xyz<stencil::D;xyz++){
-
-        ci_dot_velocity += (stencil::Ci_xyz(xyz)[idx] * velocity[xyz]); //Dot product of discrete velocity vector
-                                                                    //with velocity
-    }
-    for (int xyz = 0; xyz <stencil::D; xyz++) {
-
-        forceterm += prefactor * (((stencil::Ci_xyz(xyz)[idx] - velocity[xyz]) / m_Cs2
-                               + ci_dot_velocity * stencil::Ci_xyz(xyz)[idx] / (m_Cs2 * m_Cs2)) * force[xyz]); //Force
-                                                                                                     //Calculation
-    }
-    
-    return forceterm;
 
 }

@@ -22,7 +22,7 @@ cleantests:
 
 $(RUN_TESTS): run_%: %
 	@echo "Running $*"
-	@mpirun ./$* || touch failed
+	@mpirun -np 1 ./$* || touch failed
 
 # Googletest rules and parameters, see:
 # https://github.com/google/googletest/blob/release-1.8.1/googletest/make/Makefile

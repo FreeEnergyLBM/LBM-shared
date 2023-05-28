@@ -270,6 +270,8 @@ struct BaseTrait{
     template<typename stencil>
     using AddOns = tuple_cat_t<typename trait::template AddOns<stencil>, std::tuple<addon...>>;
 
+    using CollisionModel = typename trait::CollisionModel;
+
   };
 
   template<class... addon>
@@ -283,6 +285,8 @@ struct BaseTrait{
     template<typename stencil>
     using AddOns = std::tuple<addon...>;
 
+    using CollisionModel = typename trait::CollisionModel;
+
   };
 
   template<class... boundary>
@@ -295,6 +299,8 @@ struct BaseTrait{
 
     template<typename stencil>
     using AddOns = typename trait::template AddOns<stencil>;
+    
+    using CollisionModel = typename trait::CollisionModel;
 
   };
 
@@ -309,6 +315,8 @@ struct BaseTrait{
     template<typename stencil>
     using AddOns = typename trait::template AddOns<stencil>;
 
+    using CollisionModel = typename trait::CollisionModel;
+
   };
 
   template<class stencil>
@@ -321,6 +329,23 @@ struct BaseTrait{
 
     template<typename stencil1>
     using AddOns = typename trait::template AddOns<stencil1>;
+
+    using CollisionModel = typename trait::CollisionModel;
+
+  };
+
+  template<class model>
+  struct SetCollisionModel : BaseTrait<SetCollisionModel<model>> {
+
+    using Stencil = typename trait::Stencil;
+
+    template<typename stencil1>
+    using Boundaries = typename trait::template Boundaries<stencil1>;
+
+    template<typename stencil1>
+    using AddOns = typename trait::template AddOns<stencil1>;
+
+    using CollisionModel = model;
 
   };
 

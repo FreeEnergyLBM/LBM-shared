@@ -3,7 +3,7 @@
 #include <memory>
 #include "../BoundaryModels/BoundaryBase.hh"
 #include "../AddOns/AddOnBase.hh"
-#include "../Forcing.hh"
+#include "../Collide.hh"
 
 template<class lattice=void>
 struct DefaultTrait : BaseTrait<DefaultTrait<lattice>> {
@@ -15,6 +15,8 @@ struct DefaultTrait : BaseTrait<DefaultTrait<lattice>> {
 
     template<typename stencil>
     using AddOns = std::tuple<>;
+
+    using CollisionModel = SRT;
 
 };
 

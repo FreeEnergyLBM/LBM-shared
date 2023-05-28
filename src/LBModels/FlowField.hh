@@ -22,6 +22,8 @@ struct DefaultTraitFlowField : BaseTrait<DefaultTraitFlowField<lattice>> {
     template<typename stencil>
     using AddOns = std::tuple<>;
 
+    using CollisionModel = SRT;
+
 };
 
 
@@ -187,12 +189,12 @@ inline double FlowField<lattice, traits>::computeCollisionQ(methods& forcemethod
     //Sum of collision + force contributions
      
     if constexpr(std::tuple_size<methods>::value != 0){
-        return CollisionBase<lattice,typename traits::Stencil>::collideSRT(old, computeEquilibrium(density, velocity, idx, k), m_InverseTau) 
+        return CollisionBase<lattice,typename traits::Stencil>::template collide<typename traits::CollisionModel>(old, computeEquilibrium(density, velocity, idx, k), m_InverseTau) 
         + std::apply([idx, k](auto&... forcetype){
             return (forcetype.compute(idx, k) + ...);
         }, forcemethods);
     }
-    else return CollisionBase<lattice,typename traits::Stencil>::collideSRT(old, computeEquilibrium(density, velocity, idx, k), m_InverseTau);
+    else return CollisionBase<lattice,typename traits::Stencil>::template collide<typename traits::CollisionModel>(old, computeEquilibrium(density, velocity, idx, k), m_InverseTau);
               //+ CollisionBase<lattice,typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
 
 }

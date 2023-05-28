@@ -24,6 +24,8 @@ struct DefaultTraitFlowFieldBinary : BaseTrait<DefaultTraitFlowFieldBinary<latti
     template<typename stencil>
     using AddOns = std::tuple<BodyForce<lattice,Guo<lattice,stencil>>,ChemicalForceBinary<lattice,Guo<lattice,stencil>>>;
 
+    using CollisionModel = SRT;
+
 };
 
 
@@ -146,7 +148,7 @@ inline double FlowFieldBinary<lattice, traits>::computeCollisionQ(methods& force
     //Sum of collision + force contributions 
     if (idx>0) {
 
-        double eq = CollisionBase<lattice, typename traits::Stencil>::collideSRT(old, computeEquilibrium(density ,velocity ,order_parameter ,chemical_potential ,idx ,k), inversetau);
+        double eq = CollisionBase<lattice, typename traits::Stencil>::template collide<typename traits::CollisionModel>(old, computeEquilibrium(density ,velocity ,order_parameter ,chemical_potential ,idx ,k), inversetau);
         if constexpr(std::tuple_size<methods>::value != 0){
             eq += std::apply([idx, k](auto&... forcetype){
                 return (forcetype.compute(idx, k) + ...);

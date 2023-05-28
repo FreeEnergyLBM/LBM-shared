@@ -38,13 +38,13 @@ struct Guo{
 
         for (int xyz=0;xyz<stencil::D;xyz++){
 
-            ci_dot_velocity += (stencil::Ci_xyz(xyz)[idx] * m_Velocity.getParameter()[k * stencil::D]); //Dot product of discrete velocity vector
+            ci_dot_velocity += (stencil::Ci_xyz(xyz)[idx] * m_Velocity.getParameter()[k * stencil::D + xyz]); //Dot product of discrete velocity vector
                                                                         //with velocity
         }
         
         for (int xyz = 0; xyz <stencil::D; xyz++) {
 
-            forceterm += prefactor * (((stencil::Ci_xyz(xyz)[idx] - m_Velocity.getParameter()[k * stencil::D]) / stencil::Cs2
+            forceterm += prefactor * (((stencil::Ci_xyz(xyz)[idx] - m_Velocity.getParameter()[k * stencil::D + xyz]) / stencil::Cs2
                                 + ci_dot_velocity * stencil::Ci_xyz(xyz)[idx] / (stencil::Cs2 * stencil::Cs2)) * ma_Force[xyz]); //Force
                                                                                                         //Calculation
         }
