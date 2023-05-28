@@ -66,8 +66,8 @@ int main(int argc, char **argv){
     FlowFieldBinary<Lattice> Model1; //Flowfield (navier stokes solver) that can be used with the binary model (there are nuances with this model)
     Binary<Lattice,traitBinary> Model2; //Binary model with hybrid equilibrium and forcing term
 
-    Model1.getAddOn<ChemicalForceBinary<Lattice>>().setA(0.00015);
-    Model1.getAddOn<ChemicalForceBinary<Lattice>>().setKappa(0.0003);
+    Model1.getAddOn<ChemicalForceBinary<Lattice,Guo<Lattice,typename DefaultTraitFlowFieldBinary<Lattice>::Stencil>>>().setA(0.00015);
+    Model1.getAddOn<ChemicalForceBinary<Lattice,Guo<Lattice,typename DefaultTraitFlowFieldBinary<Lattice>::Stencil>>>().setKappa(0.0003);
 
     Model2.getAddOn<LinearWetting<Lattice,typename traitBinary::Stencil>>().setPrefactor(0.00015,0.0003);
     Model2.getAddOn<LinearWetting<Lattice,typename traitBinary::Stencil>>().setThetaDegrees(135);

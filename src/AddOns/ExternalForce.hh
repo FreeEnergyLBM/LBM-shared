@@ -12,6 +12,8 @@ class BodyForce : public AddOnBase {
 
     public:
 
+        using Method = method;
+
         inline double computeXYZ(const int xyz, const int k) const override; //Return force at lattice point k in direction xyz
 
         inline double computeVelocitySource(const int xyz, const int k) const override; //Calculate any possible source/correction term for velocity
@@ -32,14 +34,14 @@ class BodyForce : public AddOnBase {
 };
 
 template<typename lattice, class method>
-inline void BodyForce<lattice>::setMagnitudeX(const double magnitude) {
+inline void BodyForce<lattice,method>::setMagnitudeX(const double magnitude) {
 
     m_MagnitudeX=magnitude;
 
 }
 
 template<typename lattice, class method>
-inline void BodyForce<lattice>::setMagnitudeY(const double magnitude) {
+inline void BodyForce<lattice, method>::setMagnitudeY(const double magnitude) {
 
     m_MagnitudeY=magnitude;
 
@@ -47,14 +49,14 @@ inline void BodyForce<lattice>::setMagnitudeY(const double magnitude) {
 
 
 template<typename lattice, class method>
-inline void BodyForce<lattice>::setMagnitudeZ(const double magnitude) {
+inline void BodyForce<lattice, method>::setMagnitudeZ(const double magnitude) {
 
     m_MagnitudeZ=magnitude;
 
 }
 
 template<typename lattice, class method>
-inline double BodyForce<lattice>::computeXYZ(const int xyz, const int k) const {
+inline double BodyForce<lattice, method>::computeXYZ(const int xyz, const int k) const {
 
     if (xyz==0) return m_MagnitudeX * m_Density.getParameter(k);
     if constexpr (lattice::m_NDIM==2){
@@ -70,8 +72,8 @@ inline double BodyForce<lattice>::computeXYZ(const int xyz, const int k) const {
 }
 
 template<class lattice, class method>
-inline double BodyForce<lattice>::computeVelocitySource(const int xyz, const int k) const { //Need to correct velocity
+inline double BodyForce<lattice, method>::computeVelocitySource(const int xyz, const int k) const { //Need to correct velocity
 
-    return +compute(xyz, k) * lattice::m_DT / (2.0 * m_Density.getParameter(k));
+    return +computeXYZ(xyz, k) * lattice::m_DT / (2.0 * m_Density.getParameter(k));
     
 }

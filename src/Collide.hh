@@ -18,52 +18,8 @@
 
 
 struct SRT{
-    static constexpr Omega(const double& itau){return itau;}
-}
-
-template<class lattice, class stencil>
-struct Guo{
-    Guo(){
-        force[0]=0.;
-        force[1]=0.;
-        force[2]=0.;
-    }
-    Guo(Guo& other) : force(other.force) {}
-    Guo(const Guo& other) : force(other.force) {}
-
-    InverseTau<lattice> m_InvTau;
-    Velocity<lattice> m_Velocity;
-
-    double force[lattice::m_NDIM];
-    
-    template<class force>
-    static double precompute(force& f, int k){
-        force[0]+=f.computeXYZ(0,k);
-        force[1]+=f.computeXYZ(1,k);
-        if constexpr (lattice::m_NDIM==3) force[2]+=f.computeXYZ(2,k);
-    }
-    static double compute(const int idx) const { //Guo forcing
-
-        double ci_dot_velocity = 0;
-        double forceterm = 0;
-        double prefactor = (1 - lattice::m_DT * m_InvTau.getParameter(k) / 2.0) * stencil::Weights[idx]; //Prefactor for Guo forcing
-
-        for (int xyz=0;xyz<stencil::D;xyz++){
-
-            ci_dot_velocity += (stencil::Ci_xyz(xyz)[idx] * m_Velocity.getParameter()[k * traits::Stencil::D]); //Dot product of discrete velocity vector
-                                                                        //with velocity
-        }
-        for (int xyz = 0; xyz <stencil::D; xyz++) {
-
-            forceterm += prefactor * (((stencil::Ci_xyz(xyz)[idx] - m_Velocity.getParameter()[k * traits::Stencil::D]) / m_Cs2
-                                + ci_dot_velocity * stencil::Ci_xyz(xyz)[idx] / (m_Cs2 * m_Cs2)) * force[xyz]); //Force
-                                                                                                        //Calculation
-        }
-        
-        return forceterm;
-
-    }
-}
+    static const double& Omega(const double& itau) {return itau;}
+};
 
 /**
  * \brief The CollisionBase class provides functions that perform basic LBM calculations e.g. collision operators.

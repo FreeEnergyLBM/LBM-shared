@@ -11,5 +11,7 @@
 #include "Algorithm.hh"
 #include "Service.hh"
 #include "Parallel.hh"
+#include "Collide.hh"
+#include "Forcing.hh"
 
 

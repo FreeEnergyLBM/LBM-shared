@@ -3,6 +3,7 @@
 #include <memory>
 #include "../BoundaryModels/BoundaryBase.hh"
 #include "../AddOns/AddOnBase.hh"
+#include "../Forcing.hh"
 
 template<class lattice=void>
 struct DefaultTrait : BaseTrait<DefaultTrait<lattice>> {
@@ -50,6 +51,14 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
 
         inline const std::vector<double>& getDistribution() const; //Return vector of distribution
 
+        inline auto getForceCalculator(int k);
+
+        template<class force>
+        typename force::Method getMethod(force& f);
+
+        template<class force, class forcetuple>
+        void precomputeForces(force& f,forcetuple& forcemethods,int k);
+
         template<class addon, int inst = 0>
         inline addon& getAddOn() {
 
@@ -77,6 +86,7 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
         typename traits::template AddOns<typename traits::Stencil> mt_AddOns; //MOVE THIS TO BASE
         typename traits::template Boundaries<typename traits::Stencil> mt_Boundaries; //MOVE THIS TO BASE
         Geometry<lattice> m_Geometry; //MOVE THIS TO BASE
+
         
         std::vector<double>& distribution = m_Distribution.getDistribution(); //Reference to vector of distributions
         
@@ -87,6 +97,38 @@ inline const std::vector<double>& ModelBase<lattice,traits>::getDistribution() c
 
     return distribution; //Return reference to distribution vector
 
+}
+
+template<class lattice, class traits>
+template<class force>
+typename force::Method ModelBase<lattice,traits>::getMethod(force& f){
+    return std::declval<typename force::Method>();
+}
+
+template<class lattice, class traits>
+template<class force, class forcetuple>
+void ModelBase<lattice,traits>::precomputeForces(force& f,forcetuple& forcemethods,int k){
+    std::get<decltype(getMethod(f))>(forcemethods).precompute(f,k);
+}
+
+template<class lattice, class traits>
+inline auto ModelBase<lattice,traits>::getForceCalculator(int k){
+
+    auto tempforce=std::apply([k](auto&... forces){//See Algorithm.hh for explanation of std::apply
+
+        return std::make_unique<decltype(make_tuple_unique(std::make_tuple(getMethod(forces))...))>();
+
+    }, mt_AddOns);
+
+    tempforce=std::apply([this,tempforce=std::move(tempforce),k](auto&... forces) mutable {//See Algorithm.hh for explanation of std::apply
+        //std::cout<<std::get<0>(*tempforce).ma_Force[0]<<std::endl;
+        (this->precomputeForces(forces,*tempforce,k),...);
+        //std::cout<<std::get<0>(*tempforce).compute(1,k)<<std::endl;
+        return std::move(tempforce);
+    }, mt_AddOns);
+    //std::cout<<std::get<0>(*tempforce).compute(1,k)<<std::endl;
+    //exit(1);
+    return tempforce;
 }
 
 template<class lattice, class traits>
@@ -196,7 +238,7 @@ inline double ModelBase<lattice,traits>::computeForces(int xyz, int k) const {
     if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0){
 
         return std::apply([xyz, k](auto&... addons){
-                return (addons.compute(xyz, k) + ...);
+                return (addons.computeXYZ(xyz, k) + ...);
             }, mt_AddOns);
 
     }

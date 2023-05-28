@@ -326,7 +326,30 @@ struct BaseTrait{
 
 };
 
+template<std::size_t i, class Tuple, std::size_t... is>
+constexpr auto element_as_tuple(const Tuple tuple, std::index_sequence<is...>)
+{
+    if constexpr (!(std::is_same_v<std::tuple_element_t<i, Tuple>, 
+                  std::tuple_element_t<is, Tuple>> || ...))
+        return std::make_tuple(std::get<i>(tuple));
+    else
+        return std::make_tuple();
+}
 
+template<class Tuple, std::size_t... is>
+constexpr auto make_tuple_unique(const Tuple tuple, std::index_sequence<is...>)
+{
+    return std::tuple_cat(element_as_tuple<is>(tuple, 
+                          std::make_index_sequence<is>{})...);
+}
+
+template<class... Tuples>
+constexpr auto make_tuple_unique(const Tuples... tuples)
+{
+    auto all = std::tuple_cat(tuples...);
+    constexpr auto size = std::tuple_size_v<decltype(all)>;
+    return make_tuple_unique(all, std::make_index_sequence<size>{});
+}
 
 /*
 template<typename ... input_t>

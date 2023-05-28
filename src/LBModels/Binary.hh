@@ -6,6 +6,8 @@
 #include "ModelBase.hh"
 #include <utility>
 
+#include "../Forcing.hh"
+
 //Binary.hh: Contains the details of the LBM model to solve an equation for phase separation. Each
 //Model is given a "traits" class that contains stencil, data, force and boundary information
 
@@ -18,12 +20,7 @@ struct DefaultTraitBinary : BaseTrait<DefaultTraitBinary<lattice>> {
     using Boundaries = std::tuple<BounceBack<lattice>>;
 
     template<typename stencil>
-    using Forces = 
-
-    template<typename stencil>
     using AddOns = std::tuple<OrderParameterGradients<lattice,CentralXYZ<lattice, stencil>>,LinearWetting<lattice, stencil>>;
-
-    using CollisionOperator = SRT;
 
 };
 
@@ -55,7 +52,8 @@ class Binary: public CollisionBase<lattice, typename traits::Stencil>, public Mo
 
         inline double computeModelForce(int xyz, int k) const; //Calculate forces specific to the model in direction xyz
 
-        inline double computeCollisionQ(double& sum, int k, const double& old, const double& orderparam,
+        template<class methods>
+        inline double computeCollisionQ(methods& forcemethods, double& sum, int k, const double& old, const double& orderparam,
                                   const double* velocity, const int idx) const; //Calculate collision
                                                                                            //at index idx
 
@@ -108,6 +106,8 @@ inline void Binary<lattice, traits>::collide() {
     for (int k = lattice::m_HaloSize; k < lattice::m_N - lattice::m_HaloSize; k++){ //loop over k
         
         if(!ModelBase<lattice, traits>::m_Geometry.isSolid(k)){
+            
+            auto forcemethods=ModelBase<lattice,traits>::getForceCalculator(k);
 
             double* old_distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
 
@@ -117,12 +117,12 @@ inline void Binary<lattice, traits>::collide() {
                 //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
                 //"computeCollisionQ"
 
-                double collision = computeCollisionQ(equilibriumsum, k, old_distribution[idx], orderparameter[k], &velocity[k * traits::Stencil::D], idx);
+                double collision = computeCollisionQ(*forcemethods,equilibriumsum, k, old_distribution[idx], orderparameter[k], &velocity[k * traits::Stencil::D], idx);
 
                 ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(ModelBase<lattice, traits>::m_Distribution.streamIndex(k, idx))[idx] = collision;
 
             }
-            
+
         }
         
     }
@@ -196,28 +196,27 @@ inline void Binary<lattice, traits>::computeMomenta() { //Calculate order parame
 }
 
 template<class lattice, class traits>
-inline double Binary<lattice, traits>::computeCollisionQ(double& equilibriumsum, const int k, const double& old, const double& orderparam,
+template<class methods>
+inline double Binary<lattice, traits>::computeCollisionQ(methods& forcemethods, double& equilibriumsum, const int k, const double& old, const double& orderparam,
                                             const double* velocity, const int idx) const {
                                         //Calculate collision step at a given velocity index at point k
-    
-    double forcexyz[traits::Stencil::D]; //Temporary array storing force in each cartesian direction
-
-    //Force is the sum of model forces and given forces
-    for(int xyz = 0; xyz < traits::Stencil::D; xyz++) forcexyz[xyz] = computeModelForce(xyz, k) + ModelBase<lattice, traits>::computeForces(xyz, k);
     
     //Sum of collision + force contributions
     if (idx> 0) {
 
         double eq = CollisionBase<lattice, typename traits::Stencil>::collideSRT(old, computeEquilibrium(orderparam, velocity, idx, k), m_InverseTau)
-                    + std::apply([idx, k](auto&... forceType){
-                        return (forceType.compute(idx, k) + ...);
-                    }, mt_ForceTypes);
+                    + std::apply([idx, k](auto&... forcetype){
+                        return (forcetype.compute(idx, k) + ...);
+                    }, forcemethods);
                     //+ CollisionBase<lattice, typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
         equilibriumsum += eq;
         
         return eq;
     }
-    else return m_OrderParameter.getParameter(k) - equilibriumsum + CollisionBase<lattice,typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
+    else return m_OrderParameter.getParameter(k) - equilibriumsum
+                + std::apply([idx, k](auto&... forcetype){
+                        return (forcetype.compute(idx, k) + ...);
+                    }, forcemethods); //CollisionBase<lattice,typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
 
 }
 

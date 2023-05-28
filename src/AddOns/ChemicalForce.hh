@@ -13,6 +13,8 @@ class ChemicalForceBase : public AddOnBase {
     
     public:
 
+        using Method = method;
+
         virtual inline double computeXYZ(const int xyz, const int k) const override; //Return force at lattice point k in direction xyz
 
         virtual inline double computeVelocitySource(const int xyz,const int k) const override; //Calculate any possible source/correction term for
@@ -40,7 +42,7 @@ inline double ChemicalForceBase<lattice, method, num>::computeXYZ(const int xyz,
 template<class lattice, class method, int num>
 inline double ChemicalForceBase<lattice, method, num>::computeVelocitySource(const int xyz, const int k) const{ //Need to correct velocity
 
-    return +compute(xyz,k) * lattice::m_DT / (2.0 * m_Density.getParameter(k));
+    return +computeXYZ(xyz,k) * lattice::m_DT / (2.0 * m_Density.getParameter(k));
     
 }
 
@@ -66,8 +68,8 @@ class ChemicalForceBinary : public ChemicalForceBase<lattice, method, 2> {
 template<typename lattice, class method>
 inline void ChemicalForceBinary<lattice,method>::precompute(const int k){ //Not necessary
 
-    double orderparamcubed=ChemicalForceBase<lattice, 2>::m_OrderParameter.getParameter(k) * ChemicalForceBase<lattice, 2>::m_OrderParameter.getParameter(k) * ChemicalForceBase<lattice, 2>::m_OrderParameter.getParameter(k);
-    ChemicalForceBase<lattice, 2>::m_ChemicalPotential.getParameter(k) = -m_A * ChemicalForceBase<lattice, 2>::m_OrderParameter.getParameter(k) + m_A * orderparamcubed - m_Kappa * ChemicalForceBase<lattice, 2>::m_LaplacianOrderParameter.getParameter(k);
+    double orderparamcubed=ChemicalForceBase<lattice, method, 2>::m_OrderParameter.getParameter(k) * ChemicalForceBase<lattice, method, 2>::m_OrderParameter.getParameter(k) * ChemicalForceBase<lattice, method, 2>::m_OrderParameter.getParameter(k);
+    ChemicalForceBase<lattice, method, 2>::m_ChemicalPotential.getParameter(k) = -m_A * ChemicalForceBase<lattice, method, 2>::m_OrderParameter.getParameter(k) + m_A * orderparamcubed - m_Kappa * ChemicalForceBase<lattice, method, 2>::m_LaplacianOrderParameter.getParameter(k);
 
 }
 

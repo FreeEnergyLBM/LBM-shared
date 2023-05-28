@@ -53,7 +53,8 @@ class FlowField : public CollisionBase<lattice,typename traits::Stencil>, public
 
         inline double computeModelForce(int xyz, int k) const; //Calculate forces specific to the model in direction xyz
 
-        inline double computeCollisionQ(int k, const double& old, const double& density,
+        template<class methods>
+        inline double computeCollisionQ(methods& forcemethods, int k, const double& old, const double& density,
                                  const double* velocity, const int idx) const; //Calculate collision
                                                                                            //at index idx
 
@@ -98,12 +99,14 @@ inline void FlowField<lattice, traits>::collide() { //Collision step
 
         if(!ModelBase<lattice, traits>::m_Geometry.isSolid(k)){
 
+            auto forcemethods=ModelBase<lattice,traits>::getForceCalculator(k);
+
             double* old_distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
             
             for (int idx = 0; idx <traits::Stencil::Q; idx++) { //loop over discrete velocity directions
                 //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
                 //"computeCollisionQ"
-                double collision = computeCollisionQ(k, old_distribution[idx], density[k], &velocity[k * traits::Stencil::D], idx);
+                double collision = computeCollisionQ(*forcemethods, k, old_distribution[idx], density[k], &velocity[k * traits::Stencil::D], idx);
 
                 ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(ModelBase<lattice, traits>::m_Distribution.streamIndex(k, idx))[idx] = collision;
 
@@ -171,18 +174,22 @@ inline void FlowField<lattice, traits>::computeMomenta() { //Calculate Density<>
 }
 
 template<class lattice, class traits>
-inline double FlowField<lattice, traits>::computeCollisionQ(const int k, const double& old, const double& density,
+template<class methods>
+inline double FlowField<lattice, traits>::computeCollisionQ(methods& forcemethods, const int k, const double& old, const double& density,
                                                const double* velocity, const int idx) const {
                                             //Calculate collision step at a given velocity index at point k
 
-    double forcexyz[traits::Stencil::D]; //Temporary array storing force in each cartesian direction
+    //double forcexyz[traits::Stencil::D]; //Temporary array storing force in each cartesian direction
 
     //Force is the sum of model forces and given forces
-    for(int xyz = 0; xyz <traits::Stencil::D; xyz++) forcexyz[xyz] = computeModelForce(xyz, k) + ModelBase<lattice, traits>::computeForces(xyz, k);
+    //for(int xyz = 0; xyz <traits::Stencil::D; xyz++) forcexyz[xyz] = computeModelForce(xyz, k) + ModelBase<lattice, traits>::computeForces(xyz, k);
     
     //Sum of collision + force contributions
     return CollisionBase<lattice,typename traits::Stencil>::collideSRT(old, computeEquilibrium(density, velocity, idx, k), m_InverseTau)
-              + CollisionBase<lattice,typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
+              + std::apply([idx, k](auto&... forcetype){
+                        return (forcetype.compute(idx, k) + ...);
+                    }, forcemethods);
+              //+ CollisionBase<lattice,typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
 
 }
 
