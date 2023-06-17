@@ -2,7 +2,7 @@ ROOT_DIR = ..
 INC_DIR = $(ROOT_DIR)/src
 INC = $(addprefix -I, $(INC_DIR))
 
-TESTS = Collide_test BounceBack_test FlowField_test
+TESTS = Parallel_test Collide_test BounceBack_test FlowField_test
 RUN_TESTS = $(addprefix run_, $(TESTS))
 
 CXX = mpicxx
@@ -22,7 +22,7 @@ cleantests:
 
 $(RUN_TESTS): run_%: %
 	@echo "Running $*"
-	@mpirun -np 1 ./$* || touch failed
+	@mpirun -np 2 ./$* || touch failed
 
 # Googletest rules and parameters, see:
 # https://github.com/google/googletest/blob/release-1.8.1/googletest/make/Makefile

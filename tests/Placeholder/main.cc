@@ -1,9 +1,6 @@
 #include<../../src/lbm.hh>
 #include <chrono>
 #include <iostream>
-#ifdef MPIPARALLEL
-#include <mpi.h>
-#endif
 
 //TODO
 //Swapping based streaming
@@ -26,7 +23,7 @@
 const int LX = 100; //Size of domain in x direction
 const int LY = 100; //Size of domain in y direction
 const int LZ = 1; //Size of domain in z direction (Can also not specify LZ if it is 1)
-using Lattice = LatticeProperties<Data1, X_Parallel, LX, LY, LZ>;
+using Lattice = LatticeProperties<Data1, X_Parallel<1>, LX, LY, LZ>;
 
 const int TIMESTEPS = 50000; //Number of iterations to perform
 const int SAVEINTERVAL = 5000; //Interval to save global data
@@ -59,8 +56,7 @@ bool solidLocation(const int k) {
 }
 
 int main(int argc, char **argv){
-
-    Parallel<Lattice,1> initialise; //Initialise parallelisation
+    mpi.init();
 
     //Chosen models
     FlowFieldBinary<Lattice> Model1; //Flowfield (navier stokes solver) that can be used with the binary model (there are nuances with this model)

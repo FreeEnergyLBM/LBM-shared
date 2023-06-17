@@ -97,6 +97,7 @@ struct Distribution_Base { //Distribution base class
 
     int m_Q = stencil::Q;
 
+    using Stencil = stencil;
 };
 
 template<template<class> class obj, class lattice, typename T, int num=1> //obj template will guarantee a unique instance of the class with its own

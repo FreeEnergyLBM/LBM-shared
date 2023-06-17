@@ -33,7 +33,7 @@ class LinearWetting : public AddOnBase {
         OrderParameter<lattice> m_OrderParameter;
         Geometry<lattice> m_Geometry;
 
-        Data_Base<lattice, stencil, typename lattice::template ParallelType<stencil>> m_Data;
+        Data_Base<lattice, stencil> m_Data;
 
         double m_Theta = M_PI / 2.0;
         double m_Omega;

@@ -20,13 +20,11 @@
  * \brief The Data_Base class provides information for the layout of neighboring lattice points and communication
           for non-distribution parameters.
  * This class takes a stencil as a template argument, as the velocity discretisation information and weights is 
- * needed. It also takes the MPI parallelisation method as a template argument as the communication may change
- * based on the data layout. The class has public functions for communication, generating neighbors based on the
+ * needed. The class has public functions for communication, generating neighbors based on the
  * stencil and a function to get a reference to the vector of neighbor indices.
  * \tparam stencil Velocity Stencil of class using this data type.
- * \tparam parallel MPI parallisation method.
  */
-template<class lattice, class stencil, class parallel>
+template<class lattice, class stencil>
 class Data_Base{
     private:
         //ADD VIRTUAL TO THIS
@@ -55,9 +53,7 @@ class Data_Base{
 
         enum{ x = 0, y = 1, z = 2 }; //!<Indices corresponding to x, y, z.
         
-        parallel m_Parallel; //!<Object of parallelisation class.
-
-        template<class, class, class>
+        template<class, class>
         friend class Data1; //Data1 can access private members of the base class (will need to add new data
                             //types here but I will probably change how this works).
         
@@ -76,8 +72,8 @@ class Data_Base{
 
         /**
          * \brief The constructor for the class.
-         * This constructor will call the constructor for the given parallel class, calculate the opposite points
-         * at each index Q, allocate memory for neighbors and fill the array of neighbors.
+         * This constructor will calculate the opposite points at each index Q,
+         * allocate memory for neighbors and fill the array of neighbors.
          */
         Data_Base() //Construct distribution
         {
@@ -94,7 +90,7 @@ class Data_Base{
             
         }
 
-        Data_Base(Data_Base<lattice, stencil, parallel>& other) : mv_Neighbors(other.mv_Neighbors), OppositeOffset(other.OppositeOffset) //Construct distribution
+        Data_Base(Data_Base<lattice, stencil>& other) : mv_Neighbors(other.mv_Neighbors), OppositeOffset(other.OppositeOffset) //Construct distribution
         {}
 
         /**
@@ -114,12 +110,12 @@ class Data_Base{
  *          class is used. This will perform the necessary communications so gradients etc. can be calculated
  *          across parallel regions.
  */
-template<class lattice, class stencil, class parallel>
+template<class lattice, class stencil>
 template<class parameter>
-inline void Data_Base<lattice,stencil, parallel>::communicate(parameter& obj) { //Not used in this data type
+inline void Data_Base<lattice,stencil>::communicate(parameter& obj) { //Not used in this data type
 
     //static_assert(is_base_of_template<Parameter,parameter>::value,"ERROR: The object passed to this function cannot be communicated.");
-    m_Parallel.communicate(obj);
+    lattice::communicate(obj);
 
 }
 
@@ -127,8 +123,8 @@ inline void Data_Base<lattice,stencil, parallel>::communicate(parameter& obj) { 
  * \details The function returns a reference to a vector containing the neighboring lattice point for every point
  *          in every direction in the stencil.
  */
-template<class lattice, class stencil, class parallel>
-inline std::vector<int>& Data_Base<lattice, stencil, parallel>::getNeighbors() {
+template<class lattice, class stencil>
+inline std::vector<int>& Data_Base<lattice, stencil>::getNeighbors() {
     
     return mv_Neighbors;
 
@@ -138,8 +134,8 @@ inline std::vector<int>& Data_Base<lattice, stencil, parallel>::getNeighbors() {
  * \details The neighbor of the current lattice point is calculated from the current lattice point + the offset
  *          in each direction, which is precomputed in the constructor and stored in a vector.
  */
-template<class lattice, class stencil, class parallel>
-inline int Data_Base<lattice,stencil, parallel>::getOneNeighbor(const int k, const int Q) {
+template<class lattice, class stencil>
+inline int Data_Base<lattice,stencil>::getOneNeighbor(const int k, const int Q) {
     
     return k + OppositeOffset[Q]; //The neighbor is the lattice point plus the opposite offset in direction Q
         
@@ -150,8 +146,8 @@ inline int Data_Base<lattice,stencil, parallel>::getOneNeighbor(const int k, con
  *          side of the lattice so we must account for this. The function will work out if we are on the edge of
  *          of the simulation in the x, y and z directions and apply offsets in each case.
  */
-template<class lattice, class stencil, class parallel>
-inline int Data_Base<lattice,stencil, parallel>::getOneNeighborPeriodic(const int k, const int Q) { 
+template<class lattice, class stencil>
+inline int Data_Base<lattice,stencil>::getOneNeighborPeriodic(const int k, const int Q) {
 
     int neighbor = 0;
 
@@ -225,8 +221,8 @@ inline int Data_Base<lattice,stencil, parallel>::getOneNeighborPeriodic(const in
  * \details This will iterate through the lattice and calculate the neighbors depending on whether the current
  *          lattice point is on a periodic boundary or not.
  */
-template<class lattice, class stencil, class parallel>
-inline void Data_Base<lattice,stencil, parallel>::generateNeighbors() { //Loop over all lattice points and calculate the neghbor at each point
+template<class lattice, class stencil>
+inline void Data_Base<lattice,stencil>::generateNeighbors() { //Loop over all lattice points and calculate the neghbor at each point
 
     #pragma omp parallel for schedule(guided)
     for (int k = 0; k <lattice::m_N; k++) { //For loop over all lattice points
@@ -257,10 +253,9 @@ inline void Data_Base<lattice,stencil, parallel>::generateNeighbors() { //Loop o
  * data type in the class. The stream() and getStreamIndex() function determine how streaming occurs for this data
  * type.
  * \tparam stencil Velocity Stencil of class using this data type.
- * \tparam parallel MPI parallisation method.
  */
-template<class lattice, class stencil, class parallel>
-class Data1 : public Data_Base<lattice, stencil, parallel> {
+template<class lattice, class stencil>
+class Data1 : public Data_Base<lattice, stencil> {
     private:
 
         /**
@@ -339,11 +334,11 @@ class Data1 : public Data_Base<lattice, stencil, parallel> {
         /**
          * \brief This constructor calls the constructor of the base disribution using the neighbor information.
          */
-        Data1() : m_Distribution(Data_Base<lattice,stencil, parallel>::mv_Neighbors) { //Construct distribution
+        Data1() : m_Distribution(Data_Base<lattice,stencil>::mv_Neighbors) { //Construct distribution
 
         }
 
-        Data1(Data1<lattice,stencil, parallel>& other) : m_Distribution(other.m_Distribution) { //Construct distribution
+        Data1(Data1<lattice,stencil>& other) : m_Distribution(other.m_Distribution) { //Construct distribution
 
         }
 
@@ -365,8 +360,8 @@ class Data1 : public Data_Base<lattice, stencil, parallel> {
  * \details The stream() function does nothing in this class as streaming is implemented using the
  *          getStreamIndex() function in this data type.
  */
-template<class lattice, class stencil, class parallel>
-inline void Data1<lattice, stencil, parallel>::stream() { //Not used in this data type
+template<class lattice, class stencil>
+inline void Data1<lattice, stencil>::stream() { //Not used in this data type
 
 }
 
@@ -374,9 +369,9 @@ inline void Data1<lattice, stencil, parallel>::stream() { //Not used in this dat
  * \details This performs the communicateDistribution() function for the chosen parallelisation method, which
  *          should perform the streaming step across MPI boundaries.
  */
-template<class lattice, class stencil, class parallel>
-inline void Data1<lattice, stencil, parallel>::communicateDistribution() {
+template<class lattice, class stencil>
+inline void Data1<lattice, stencil>::communicateDistribution() {
     
-    Data_Base<lattice, stencil, parallel>::m_Parallel.communicateDistribution(m_Distribution);
+    lattice::communicateDistribution(m_Distribution);
     
 }

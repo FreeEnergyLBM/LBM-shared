@@ -1,9 +1,6 @@
 #include<../../../src/lbm.hh>
 #include <chrono>
 #include <iostream>
-#ifdef MPIPARALLEL
-#include <mpi.h>
-#endif
 
 //TODO
 //Swapping based streaming
@@ -25,7 +22,7 @@
 //Set up the lattice, including the resolution and data/parallelisation method
 const int LX = 10; //Size of domain in x direction
 const int LY = 100; //Size of domain in y direction
-using Lattice = LatticeProperties<Data1, X_Parallel, LX, LY>;
+using Lattice = LatticeProperties<Data1, X_Parallel<1>, LX, LY>;
 
 const int TIMESTEPS = 10000; //Number of iterations to perform
 const int SAVEINTERVAL = 10000; //Interval to save global data
@@ -47,15 +44,7 @@ bool solidLocation(const int k) {
 using PoiseuilleTrait = DefaultTraitFlowField<Lattice> ::AddAddOn<BodyForce<Lattice>>;
 
 int main(int argc, char **argv){
-    
-    #ifdef MPIPARALLEL
-    //MPI initialisation
-    MPI_Init(&argc, &argv); 
-    MPI_Comm_size(MPI_COMM_WORLD, &NUMPROCESSORS);                              // Store number of processors
-    MPI_Comm_rank(MPI_COMM_WORLD, &CURPROCESSOR);                              // Store processor IDs
-    
-    Parallel<Lattice,1> initialise; //Initialise parallelisation
-    #endif
+    mpi.init();
 
     //Chosen models
     FlowField<Lattice,PoiseuilleTrait> Model; //Flowfield
@@ -82,10 +71,6 @@ int main(int argc, char **argv){
         LBM.evolve(); //Evolve one timestep of the algorithm
         
     }
-
-    #ifdef MPIPARALLEL
-    MPI_Finalize(); //MPI finalisation
-    #endif
     
     return 0;
 

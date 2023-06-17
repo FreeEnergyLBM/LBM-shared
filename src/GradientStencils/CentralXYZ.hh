@@ -3,7 +3,7 @@
 template<class lattice, class stencil>
 struct CentralXYZ{
 
-    Data_Base<lattice, stencil, typename lattice::template ParallelType<stencil>> m_Data;
+    Data_Base<lattice, stencil> m_Data;
 
     template<class parameter>
     inline double computeFirstDerivative(const parameter& val, const int direciton, const int k);

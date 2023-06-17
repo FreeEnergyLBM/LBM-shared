@@ -30,7 +30,9 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
         ModelBase()
             : m_Data(),
               m_Distribution(m_Data.getDistributionObject())
-        {}
+        {
+            lattice latticeInit; // Initialise the lattice and parallelisation
+        }
 
         ModelBase(ModelBase<lattice,traits>& other)
             : m_Data(other.m_Data),

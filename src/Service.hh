@@ -20,12 +20,10 @@
 #include <mpi.h>
 #endif
 #include "Stencil.hh"
+#include "Mpi.hh"
 
-//Sertive.hh: This will contain some commonly used functions with various uses.
+//Service.hh: This will contain some commonly used functions with various uses.
 
-
-template<typename lattice, typename stencil, int num_neighbors>
-class No_Parallel{};
 
 template<class lattice>
 inline int computeXGlobal(const int k) //Compute X direction from a given k, the convention in this code is that
@@ -62,6 +60,46 @@ inline int computeZ(const int& LY,const int& LZ,const int k) //Compute Y directi
 
   return k-computeX(LY,LZ,k)*LZ*LY-computeY(LY,LZ,k)*LZ;
 
+}
+
+
+void print() {
+    if (mpi.rank != 0) return;
+    std::cout << std::endl;
+}
+
+template <typename T, typename ... Args>
+void print(std::vector<T> first, Args ... args) {
+    if (mpi.rank != 0) return;
+    for (auto elem : first) {
+      std::cout << elem << " ";
+    }
+    print(args...);
+}
+
+template <typename T, typename ... Args>
+void print(T first, Args ... args) {
+    if (mpi.rank != 0) return;
+    std::cout << first << " ";
+    print(args...);
+}
+
+void printAll() {
+    std::cout << std::endl;
+}
+
+template <typename T, typename ... Args>
+void printAll(std::vector<T> first, Args ... args) {
+    for (auto elem : first) {
+      std::cout << elem << " ";
+    }
+    printAll(args...);
+}
+
+template <typename T, typename ... Args>
+void printAll(T first, Args ... args) {
+    std::cout << first << " ";
+    printAll(args...);
 }
 
 
