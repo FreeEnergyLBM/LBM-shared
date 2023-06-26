@@ -1,6 +1,6 @@
 [submodule "tests/googletest"]
-	path = tests/googletest
+	path = tests/unit/googletest
 	url = https://github.com/google/googletest
 [submodule "tests/gtest-mpi-listener"]
-	path = tests/gtest-mpi-listener
+	path = tests/unit/gtest-mpi-listener
 	url = https://github.com/LLNL/gtest-mpi-listener
