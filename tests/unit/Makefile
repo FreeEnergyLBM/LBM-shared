@@ -1,4 +1,4 @@
-ROOT_DIR = ..
+ROOT_DIR = ../..
 INC_DIR = $(ROOT_DIR)/src
 INC = $(addprefix -I, $(INC_DIR))
 

@@ -1,4 +1,4 @@
-#include<../../../src/lbm.hh>
+#include <../../../../src/lbm.hh>
 #include <chrono>
 #include <iostream>
 
