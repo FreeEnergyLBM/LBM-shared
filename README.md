@@ -1,31 +1,24 @@
-# WIP: TernaryLBM workflow
+# LBM library
 
-## Workflow: Modularisation, classes
+This library is a work in progress, so its functionality is subject to change.
 
-Q. What modules will be part of the software? Software requirements?
+This is a header-only library, so to use it simply link to the 'src/' directory when compiling and include the 'lbm.hh' file within your script.
+To run in parallel using MPI, ensure that the `-DMPIPARALLEL` flag is used during compilation.
+You must use C++17 or later.
 
-Note: Introduce goals and DLs
-Note: Milestones (MS): MS may belong or may not belong to WP
+See the 'examples/' directory for scripts showing the library in use.
 
-Example:
+## Library overview
 
-1) Module Evaporation
-  - Issue ## will be connected with a ML; when everything has been implemented and issues have been resolved --> ML is achieved
-2) Module Condensation
+This library makes heavy use of templates to specify methods to use and to pass information about the lattice (stored within the `LatticeProperties` class).
 
-Breaking into steps.
+The library is centered around various models which contain the functions to solve a given lattice Boltzmann equation (e.g. the collision, equilibrium distributions, etc.).
+These are stored in the 'src/LBModels/' directory.
 
-1) (One LP) Calculating on single lattice point. 2 weeks.
+Each model is given a traits template parameter that contains the stencil, boundary methods, collision method, and any 'AddOns' such as forces or the calculation of additional values.
+The models each have a default trait, e.g. `DefaultTraitFlowField` for `FlowField`, but these can be modified if desired.
 
-2) (Many LPs) Implementing different datatypes, the way you access data. Load balancing, how data accessed
-2a) Sequential (one process without communication)
-2b) Parallel
-Note for (2) - inbetween: some test cases, benchmarking, in the next 2-3 weeks --> then we dıscuss and do how we benchmark ıt
-
-3) Performance analysis and optimisation of SW as a whole.
-
-Q. How do we measure (approaches, tools)? Where are the bottlenecks? How do we deal will them
-
-4) While adding new modules, documentation, correctness, results.
-
-Q. Which results are we interested? How do we check correctness? What will be demonstrated?
+Values that vary across the lattice such as velocity and density are stored as `Parameter` objects.
+Several functions are provided to set these values and to read them out.
+They can also be passed as templates to the `ParameterSave` class in order to write them to a file during the simulation.
+A list of the various parameters can be found in 'src/Parameters.hh'.
