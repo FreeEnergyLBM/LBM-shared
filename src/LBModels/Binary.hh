@@ -20,7 +20,7 @@ struct DefaultTraitBinary : BaseTrait<DefaultTraitBinary<lattice>> {
     using Boundaries = std::tuple<BounceBack<lattice>>;
 
     template<typename stencil>
-    using AddOns = std::tuple<OrderParameterGradients<lattice,CentralXYZ<lattice, stencil>>,LinearWetting<lattice, stencil>>;
+    using AddOns = std::tuple<OrderParameterGradients<lattice,CentralXYZ<lattice, stencil>>, CubicWetting<lattice, stencil>>;
 
     using CollisionModel = SRT;
 

@@ -2,3 +2,4 @@
 #include "ChemicalForce.hh"
 #include "OrderParameterGradients.hh"
 #include "LinearWetting.hh"
+#include "CubicWetting.hh"
