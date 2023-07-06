@@ -1,7 +1,7 @@
 #pragma once
 #include "../Parameters.hh"
+#include "../Lattice.hh"
 #include "AddOnBase.hh"
-#include "Lattice.hh"
 #include <math.h>
 
 class CubicWetting : public AddOnBase {
