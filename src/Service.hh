@@ -12,9 +12,9 @@
 #include <cstdint>
 #include <type_traits>
 #include <cstddef>
-
 #include <utility>
 #include <tuple>
+#include <type_traits>
 #include <iostream>
 #ifdef MPIPARALLEL
 #include <mpi.h>
@@ -279,6 +279,7 @@ struct CheckBase;
 template<class Base, typename... Types>
 struct CheckBase<Base, std::tuple<Types...>> : std::conjunction<std::is_base_of<Base,Types>...> {};
 
+
 template <template <typename...> class C, typename...Ts>
 std::true_type is_base_of_template_impl(const C<Ts...>*);
 
@@ -287,6 +288,12 @@ std::false_type is_base_of_template_impl(...);
 
 template <template <typename...> class C,typename T>
 using is_base_of_template = decltype(is_base_of_template_impl<C>(std::declval<T*>()));
+
+template<template<class> class Base, typename Tuple>
+struct CheckBaseTemplate;
+
+template<template<class> class Base, typename... Types>
+struct CheckBaseTemplate<Base, std::tuple<Types...>> : std::conjunction<is_base_of_template<Base,Types>...> {};
 
 template<typename ... input_t>
 using tuple_cat_t=
@@ -297,33 +304,135 @@ decltype(std::tuple_cat(
 template<class trait>
 struct BaseTrait{
 
-  template<class... addon>
-  struct AddAddOn : BaseTrait<AddAddOn<addon...>>  {
+  template<class... preprocessor>
+  struct AddPreProcessor : BaseTrait<AddPreProcessor<preprocessor...>>  {
 
     using Stencil = typename trait::Stencil;
 
-    template<typename stencil>
-    using Boundaries = typename trait::template Boundaries<stencil>;
+    using Boundaries = typename trait::Boundaries;
 
-    template<typename stencil>
-    using AddOns = tuple_cat_t<typename trait::template AddOns<stencil>, std::tuple<addon...>>;
+    using PreProcessors = tuple_cat_t<typename trait::PreProcessors, std::tuple<preprocessor...>>;
 
-    using CollisionModel = typename trait::CollisionModel;
+    using PostProcessors = typename trait::PostProcessors;
+
+    using Forces = typename trait::Forces;
+
+    template<class stencil>
+    using CollisionModel = typename trait::template CollisionModel<stencil>;
+
+    using Lattice = typename trait::Lattice;
+
+    static constexpr int NumberOfComponents = trait::NumberOfComponents;
 
   };
 
-  template<class... addon>
-  struct SetAddOn : BaseTrait<SetAddOn<addon...>> {
+  template<class... preprocessor>
+  struct SetPreProcessor : BaseTrait<SetPreProcessor<preprocessor...>> {
 
     using Stencil = typename trait::Stencil;
 
-    template<typename stencil>
     using Boundaries = typename trait::Boundaries;
 
-    template<typename stencil>
-    using AddOns = std::tuple<addon...>;
+    using PreProcessors = std::tuple<preprocessor...>;
 
-    using CollisionModel = typename trait::CollisionModel;
+    using PostProcessors = typename trait::PostProcessors;
+
+    using Forces = typename trait::Forces;
+
+    template<class stencil>
+    using CollisionModel = typename trait::template CollisionModel<stencil>;
+
+    using Lattice = typename trait::Lattice;
+
+    static constexpr int NumberOfComponents = trait::NumberOfComponents;
+
+  };
+
+  template<class... postprocessor>
+  struct AddPostProcessor : BaseTrait<AddPostProcessor<postprocessor...>>  {
+
+    using Stencil = typename trait::Stencil;
+
+    using Boundaries = typename trait::Boundaries;
+
+    using PreProcessors = typename trait::PreProcessors;
+
+    using PostProcessors = tuple_cat_t<typename trait::PostProcessors, std::tuple<postprocessor...>>;
+
+    using Forces = typename trait::Forces;
+
+    template<class stencil>
+    using CollisionModel = typename trait::template CollisionModel<stencil>;
+
+    using Lattice = typename trait::Lattice;
+
+    static constexpr int NumberOfComponents = trait::NumberOfComponents;
+
+  };
+
+  template<class... postprocessor>
+  struct SetPostProcessor : BaseTrait<SetPostProcessor<postprocessor...>> {
+
+    using Stencil = typename trait::Stencil;
+
+    using Boundaries = typename trait::Boundaries;
+
+    using PreProcessors = typename trait::PreProcessors;
+
+    using PostProcessors = std::tuple<postprocessor...>;
+
+    using Forces = typename trait::Forces;
+
+    template<class stencil>
+    using CollisionModel = typename trait::template CollisionModel<stencil>;
+
+    using Lattice = typename trait::Lattice;
+
+    static constexpr int NumberOfComponents = trait::NumberOfComponents;
+
+  };
+  
+  template<class... force>
+  struct AddForce : BaseTrait<AddForce<force...>>  {
+
+    using Stencil = typename trait::Stencil;
+
+    using Boundaries = typename trait::Boundaries;
+
+    using PreProcessors = typename trait::PreProcessors;
+
+    using PostProcessors = typename trait::PostProcessors;
+
+    using Forces = tuple_cat_t<typename trait::Forces, std::tuple<force...>>;
+
+    template<class stencil>
+    using CollisionModel = typename trait::template CollisionModel<stencil>;
+
+    using Lattice = typename trait::Lattice;
+
+    static constexpr int NumberOfComponents = trait::NumberOfComponents;
+
+  };
+
+  template<class... force>
+  struct SetForce : BaseTrait<SetForce<force...>> {
+
+    using Stencil = typename trait::Stencil;
+
+    using Boundaries = typename trait::Boundaries;
+
+    using PreProcessors = typename trait::PreProcessors;
+
+    using PostProcessors = typename trait::PostProcessors;
+
+    using Forces = std::tuple<force...>;
+
+    template<class stencil>
+    using CollisionModel = typename trait::template CollisionModel<stencil>;
+
+    using Lattice = typename trait::Lattice;
+
+    static constexpr int NumberOfComponents = trait::NumberOfComponents;
 
   };
 
@@ -332,13 +441,20 @@ struct BaseTrait{
 
     using Stencil = typename trait::Stencil;
 
-    template<typename stencil>
-    using Boundaries = tuple_cat_t<typename trait::template Boundaries<stencil>, std::tuple<boundary...>>;
+    using Boundaries = tuple_cat_t<typename trait::Boundaries, std::tuple<boundary...>>;
 
-    template<typename stencil>
-    using AddOns = typename trait::template AddOns<stencil>;
+    using PreProcessors = typename trait::PreProcessors;
+
+    using PostProcessors = typename trait::PostProcessors;
+
+    using Forces = typename trait::Forces;
     
-    using CollisionModel = typename trait::CollisionModel;
+    template<class stencil>
+    using CollisionModel = typename trait::template CollisionModel<stencil>;
+
+    using Lattice = typename trait::Lattice;
+
+    static constexpr int NumberOfComponents = trait::NumberOfComponents;
 
   };
 
@@ -347,13 +463,20 @@ struct BaseTrait{
 
     using Stencil = typename trait::Stencil;
 
-    template<typename stencil>
     using Boundaries = std::tuple<boundary...>;
 
-    template<typename stencil>
-    using AddOns = typename trait::template AddOns<stencil>;
+    using PreProcessors = typename trait::PreProcessors;
 
-    using CollisionModel = typename trait::CollisionModel;
+    using PostProcessors = typename trait::PostProcessors;
+
+    using Forces = typename trait::Forces;
+
+    template<class stencil>
+    using CollisionModel = typename trait::template CollisionModel<stencil>;
+
+    using Lattice = typename trait::Lattice;
+
+    static constexpr int NumberOfComponents = trait::NumberOfComponents;
 
   };
 
@@ -362,28 +485,42 @@ struct BaseTrait{
 
     using Stencil = stencil;
 
-    template<typename stencil1>
-    using Boundaries = typename trait::template Boundaries<stencil1>;
+    using Boundaries = typename trait::Boundaries;
 
-    template<typename stencil1>
-    using AddOns = typename trait::template AddOns<stencil1>;
+    using PreProcessors = typename trait::PreProcessors;
 
-    using CollisionModel = typename trait::CollisionModel;
+    using PostProcessors = typename trait::PostProcessors;
+
+    using Forces = typename trait::Forces;
+
+    template<class stencil1>
+    using CollisionModel = typename trait::template CollisionModel<stencil1>;
+
+    using Lattice = typename trait::Lattice;
+
+    static constexpr int NumberOfComponents = trait::NumberOfComponents;
 
   };
 
-  template<class model>
+  template<template<class> class model>
   struct SetCollisionModel : BaseTrait<SetCollisionModel<model>> {
 
     using Stencil = typename trait::Stencil;
 
-    template<typename stencil1>
-    using Boundaries = typename trait::template Boundaries<stencil1>;
+    using Boundaries = typename trait::Boundaries;
 
-    template<typename stencil1>
-    using AddOns = typename trait::template AddOns<stencil1>;
+    using PreProcessors = typename trait::PreProcessors;
 
-    using CollisionModel = model;
+    using PostProcessors = typename trait::PostProcessors;
+
+    using Forces = typename trait::Forces;
+
+    template<class stencil>
+    using CollisionModel = model<stencil>;
+
+    using Lattice = typename trait::Lattice;
+
+    static constexpr int NumberOfComponents = trait::NumberOfComponents;
 
   };
 
@@ -413,6 +550,24 @@ constexpr auto make_tuple_unique(const Tuples... tuples)
     constexpr auto size = std::tuple_size_v<decltype(all)>;
     return make_tuple_unique(all, std::make_index_sequence<size>{});
 }
+
+
+
+template <typename T, typename Tuple>
+struct has_type;
+
+template <typename T>
+struct has_type<T, std::tuple<>> : std::false_type {};
+
+template <typename T, typename U, typename... Ts>
+struct has_type<T, std::tuple<U, Ts...>> : has_type<T, std::tuple<Ts...>> {};
+
+template <typename T, typename... Ts>
+struct has_type<T, std::tuple<T, Ts...>> : std::true_type {};
+
+struct Cartesian{};
+struct AllDirections{};
+struct One{};
 
 /*
 template<typename ... input_t>

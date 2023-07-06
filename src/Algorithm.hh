@@ -38,7 +38,7 @@ class Algorithm {
          */
         Algorithm(Model&... Models) 
             : mt_Models(Models...)
-        {}
+        {initialise();}
 
         /**
          * \brief Constructor for the class that will fill the tuple "mt_Models" with given objects of each model.
@@ -50,7 +50,7 @@ class Algorithm {
         
         Algorithm()
             : mt_Models(*new Model...)
-        {}
+        {initialise();}
 
         /**
          * \brief Function that will evolve the lattice Boltzmann algorithm by one timestep.
@@ -104,12 +104,13 @@ class Algorithm {
  */
 template<class ...Model>
 inline void Algorithm<Model...>::evolve() {
+    
     #pragma omp parallel
-    {
+    { 
     precomputeStep();
-
+    
     calculateCollisionStep();
-
+    
     calculateBoundaryStep();
     
     calculateMomentaStep();

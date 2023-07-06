@@ -41,7 +41,7 @@ bool solidLocation(const int k) {
 
 
 //Traits of the model. We are using the defaults but adding a body force.
-using PoiseuilleTrait = DefaultTraitFlowField<Lattice> ::AddAddOn<BodyForce<Lattice>>;
+using PoiseuilleTrait = DefaultTraitFlowField<Lattice> ::AddForce<BodyForce<Lattice,Guo<Lattice,D2Q9>>>;
 
 int main(int argc, char **argv){
     mpi.init();
@@ -49,7 +49,7 @@ int main(int argc, char **argv){
     //Chosen models
     FlowField<Lattice,PoiseuilleTrait> Model; //Flowfield
 
-    Model.getAddOn<BodyForce<Lattice>>().setMagnitudeX(0.000001); //Get object of body force and then set the magnitude
+    Model.getForce<BodyForce<Lattice,Guo<Lattice,D2Q9>>>().setMagnitudeX(0.000001); //Get object of body force and then set the magnitude
 
     SolidLabels<Lattice> solid;
     solid.set(solidLocation,true); //Set solid to true where the function we defined previously is true (false by default so don't need to specify this)
@@ -58,7 +58,7 @@ int main(int argc, char **argv){
     Algorithm LBM(Model); //Create LBM object with the model we have initialised
 
     //Saving class
-    ParameterSave<Lattice,Density,OrderParameter,Velocity> Saver("data/"); //Specify the lattice, the parameters you want to save and the  data directory
+    ParameterSave<Lattice,Density<Lattice>,OrderParameter<Lattice>,Velocity<Lattice>> Saver("data/"); //Specify the lattice, the parameters you want to save and the  data directory
     Saver.SaveHeader(TIMESTEPS,SAVEINTERVAL); //Save header with lattice information (LX, LY, LZ, NDIM (2D or 3D), TIMESTEPS, SAVEINTERVAL)
     
     LBM.initialise(); //Perform necessary initialisation for the models in LBM

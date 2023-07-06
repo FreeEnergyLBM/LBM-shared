@@ -67,6 +67,7 @@ def plot(phi):
         plt.contourf(phi2d.T, cmap='Blues', zorder=i)
         plt.contour(phi2d.T, levels=[0], colors='k', zorder=i)
         plt.pause(0.5)
+    plt.show()
 
 
 def measure_angle(phi, it=-1):
@@ -88,6 +89,5 @@ def measure_angle(phi, it=-1):
 
 
 phi, vel, solid = read_data('data')
-# plot(phi)
-for it in range(len(phi)):
-    measure_angle(phi, it)
+measure_angle(phi)
+plot(phi)

@@ -16,7 +16,7 @@
  * MaxNeighbors is updated depending on the chosen number of neighbors. LXdiv (LX for each parallel block of
  * lattice points) is set based on the number of processors and number of neighbors chosen.
  */
-template<class TDerived, int num_neighbors>
+template<class TDerived, int num_neighbors=1>
 class Parallel {
     public:
         /**
@@ -76,13 +76,13 @@ inline void Parallel<TDerived,num_neighbors>::communicate(TParameter& obj) {
 
     for (int iNeighbor=0; iNeighbor<nNeighbors; iNeighbor++) {
         int tag = iNeighbor;
-        MPI_Isend(&obj.getParameter()[m_I0Send[iNeighbor]*obj.m_Num],
+        MPI_Isend(&obj.mv_Parameter[m_I0Send[iNeighbor]*obj.m_Num],
                   num_neighbors * TLattice::m_LY * TLattice::m_LZ * obj.m_Num,
                   mpi_get_type<typename TParameter::ParamType>(),
                   m_Neighbors[iNeighbor], tag, MPI_COMM_WORLD, &comm_request[2*iNeighbor]);
 
         tag = (iNeighbor%2==0) ? iNeighbor+1 : iNeighbor-1;
-        MPI_Irecv(&obj.getParameter()[m_I0Recv[iNeighbor]*obj.m_Num],
+        MPI_Irecv(&obj.mv_Parameter[m_I0Recv[iNeighbor]*obj.m_Num],
                   num_neighbors * TLattice::m_LY * TLattice::m_LZ * obj.m_Num,
                   mpi_get_type<typename TParameter::ParamType>(),
                   m_Neighbors[iNeighbor], tag, MPI_COMM_WORLD, &comm_request[2*iNeighbor+1]);

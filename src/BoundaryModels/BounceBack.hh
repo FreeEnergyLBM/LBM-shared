@@ -4,22 +4,19 @@
 #include<iostream>
 
 
-
-template<typename lattice>
 class BounceBack : public BoundaryBase {
     public:
 
-        template<class distribution>
-        inline void compute(distribution& m_Distribution, const int k, const int idx) const;
+        template<class traits, class distributiontype>
+        inline void compute(distributiontype& m_Distribution, const int k, const int idx) const;
 
     private:
 
 };
 
-template<typename lattice>
-template<class distribution>
-inline void BounceBack<lattice>::compute(distribution& m_Distribution, const int k, const int idx) const {
+template<class traits, class distributiontype>
+inline void BounceBack::compute(distributiontype& distribution, const int k, const int idx) const {
 
-    m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k,idx))[idx] = m_Distribution.getDistributionPointer(k)[m_Distribution.getOpposite(idx)];
+    distribution.getDistributionPointer(distribution.streamIndex(k,idx))[idx] = distribution.getDistributionPointer(k)[distribution.getOpposite(idx)];
 
 }

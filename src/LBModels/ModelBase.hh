@@ -1,30 +1,43 @@
 #pragma once
 #include <utility>
 #include <memory>
+#include "../Forces/ForceBase.hh"
 #include "../BoundaryModels/BoundaryBase.hh"
-#include "../AddOns/AddOnBase.hh"
+#include "../AddOns/AddOns.hh"
 #include "../Collide.hh"
+#include "../Service.hh"
 
-template<class lattice=void>
-struct DefaultTrait : BaseTrait<DefaultTrait<lattice>> {
+template<class t_Lattice=void, int t_NumberOfComponents=1>
+struct DefaultTrait : BaseTrait<DefaultTrait<t_Lattice,t_NumberOfComponents>> {
     
-    using Stencil = std::conditional_t<std::remove_reference<lattice>::type::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
+    using Stencil = std::conditional_t<t_Lattice::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
 
-    template<typename stencil>
     using Boundaries = std::tuple<>;
 
-    template<typename stencil>
-    using AddOns = std::tuple<>;
+    using PreProcessors = std::tuple<>;
 
-    using CollisionModel = SRT;
+    using PostProcessors = std::tuple<>;
+
+    using Forces = std::tuple<>;
+
+    template<class stencil>
+    using CollisionModel = SRT<stencil>;
+
+    using Lattice = t_Lattice;
+
+    static constexpr int NumberOfComponents = t_NumberOfComponents;
 
 };
 
 template<class lattice, class traits = DefaultTrait<lattice>>
 class ModelBase{ //Inherit from base class to avoid repetition of common
                                                       //calculations
-    static_assert(CheckBase<AddOnBase, typename traits::template AddOns<typename traits::Stencil>>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
-    static_assert(CheckBase<BoundaryBase, typename traits::template Boundaries<typename traits::Stencil>>::value, "ERROR: At least one force chosen is not a force class.");
+    static_assert(std::is_base_of<StencilBase, typename traits::Stencil>(), "ERROR: invalid stencil specified in traits class.");
+    static_assert(traits::Stencil::D == lattice::m_NDIM, "ERROR: The chosen stencil must match the number of lattice dimensions in the lattice properties.");
+    static_assert(CheckBaseTemplate<ForceBase, typename traits::Forces>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
+    static_assert(CheckBase<AddOnBase, typename traits::PreProcessors>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
+    static_assert(CheckBase<AddOnBase, typename traits::PostProcessors>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
+    static_assert(CheckBase<BoundaryBase, typename traits::Boundaries>::value, "ERROR: At least one boundary chosen is not a boundary class.");
     public:
 
         ModelBase()
@@ -41,7 +54,25 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
 
         inline virtual void precompute(); //Perform any necessary computations before collision
 
+        template<class tupletype>
+        inline void computeTuple(tupletype& tup,int k); //Perform any necessary computations before collision
+
+        template<class tupletype>
+        inline void precomputeTuple(tupletype& tup,int k); //Perform any necessary computations before collision
+
         inline virtual void postprocess(); //Perform any necessary computations before collision
+
+        template<class tupletype>
+        inline void postprocessTuple(tupletype& tup,int k);
+
+        template<class tupletype>
+        inline void communicateTuple(tupletype& tup);
+
+        template<class tupletype>
+        inline void communicatePrecomputeTuple(tupletype& tup);
+
+        template<class tupletype>
+        inline void communicatePostprocessTuple(tupletype& tup);
 
         inline virtual void collide() = 0; //Collision step
 
@@ -55,7 +86,8 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
 
         inline const std::vector<double>& getDistribution() const; //Return vector of distribution
 
-        inline auto getForceCalculator(int k);
+        template<class tupletype>
+        inline auto getForceCalculator(tupletype& forcetuple, int k);
 
         template<class force>
         typename force::Method getMethod(force& f);
@@ -63,12 +95,30 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
         template<class force, class forcetuple>
         void precomputeForces(force& f,forcetuple& forcemethods,int k);
 
-        template<class addon, int inst = 0>
-        inline addon& getAddOn() {
+        template<class preprocessor, int inst = 0>
+        inline preprocessor& getPreProcessor() {
 
-            auto addons = get_type<addon>(mt_AddOns);
+            auto preprocessors = get_type<preprocessor>(mt_PreProcessors);
 
-            return std::get<inst>(addons);
+            return std::get<inst>(preprocessors);
+
+        }
+
+        template<class postprocessor, int inst = 0>
+        inline postprocessor& getPostProcessor() {
+
+            auto postprocessors = get_type<postprocessor>(mt_PostProcessors);
+
+            return std::get<inst>(postprocessors);
+
+        }
+
+        template<class force, int inst = 0>
+        inline force& getForce() {
+
+            auto forces = get_type<force>(mt_Forces);
+
+            return std::get<inst>(forces);
 
         }
 
@@ -81,14 +131,35 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
 
         }
 
+        inline void collisionQ(const double* forces, const double* equilibriums, const double* olddistributions, const double& inversetau, int k) {
+
+            for (int idx = 0; idx <traits::Stencil::Q; idx++) { //loop over discrete velocity directions
+                //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
+                //"computeCollisionQ"
+                //std::cout<<(olddistributions[idx])<<" "<<(equilibriums[idx])<<std::endl;
+                double collision=traits::template CollisionModel<typename traits::Stencil>::template collide<typename traits::Lattice>(olddistributions,equilibriums,inversetau,idx);
+
+                if constexpr(std::tuple_size<typename traits::Forces>::value != 0){
+                    collision += traits::template CollisionModel<typename traits::Stencil>::template forcing<typename traits::Lattice>(forces,inversetau,idx);
+                    
+                }
+
+                m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k, idx))[idx] = collision;
+
+            }
+
+        }
+
         typename std::remove_reference<lattice>::type::template DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
         typename std::remove_reference<lattice>::type::template DataType<typename traits::Stencil>::DistributionData& m_Distribution = m_Data.getDistributionObject();
             //Distributions
 
         enum{ x = 0, y = 1, z = 2 }; //Indices corresponding to x, y, z directions
 
-        typename traits::template AddOns<typename traits::Stencil> mt_AddOns; //MOVE THIS TO BASE
-        typename traits::template Boundaries<typename traits::Stencil> mt_Boundaries; //MOVE THIS TO BASE
+        typename traits:: PreProcessors mt_PreProcessors; //MOVE THIS TO BASE
+        typename traits:: PostProcessors mt_PostProcessors; //MOVE THIS TO BASE
+        typename traits:: Forces mt_Forces; //MOVE THIS TO BASE
+        typename traits:: Boundaries mt_Boundaries; //MOVE THIS TO BASE
         Geometry<lattice> m_Geometry; //MOVE THIS TO BASE
 
         
@@ -112,26 +183,27 @@ typename force::Method ModelBase<lattice,traits>::getMethod(force& f){
 template<class lattice, class traits>
 template<class force, class forcetuple>
 void ModelBase<lattice,traits>::precomputeForces(force& f,forcetuple& forcemethods,int k){
-    std::get<decltype(getMethod(f))>(forcemethods).precompute(f,k);
+    std::get<decltype(getMethod(f))>(forcemethods).template precompute<traits>(f,k);
 }
 
 template<class lattice, class traits>
-inline auto ModelBase<lattice,traits>::getForceCalculator(int k){
+template<class tupletype>
+inline auto ModelBase<lattice,traits>::getForceCalculator(tupletype& forcetuple, int k){
 
-    if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0){
+    if constexpr(std::tuple_size<tupletype>::value != 0){
         
         auto tempforce=std::apply([k](auto&... forces){//See Algorithm.hh for explanation of std::apply
 
             return std::make_unique<decltype(make_tuple_unique(std::make_tuple(getMethod(forces))...))>();
 
-        }, mt_AddOns);
+        }, forcetuple);
 
         tempforce=std::apply([this,tempforce=std::move(tempforce),k](auto&... forces) mutable {//See Algorithm.hh for explanation of std::apply
             
             (this->precomputeForces(forces,*tempforce,k),...);
             return std::move(tempforce);
         
-        }, mt_AddOns);
+        }, forcetuple);
 
         return tempforce;
 
@@ -146,47 +218,123 @@ inline void ModelBase<lattice,traits>::precompute() {
     #pragma omp for schedule(guided)
     for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
 
-        if constexpr(std::tuple_size<typename traits::template Boundaries<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
-                                                                          //in F
+        precomputeTuple(mt_Boundaries,k);
 
-            std::apply([k](auto&... boundaries){//See Algorithm.hh for explanation of std::apply
+        computeTuple(mt_PreProcessors,k);
 
-                (boundaries.precompute(k),...);
-
-            }, mt_Boundaries);
-
-        }
-
-        if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
-                                                                          //in F
-
-            std::apply([k](auto&... addons){//See Algorithm.hh for explanation of std::apply
-
-                (addons.precompute(k),...);
-
-            }, mt_AddOns);
-
-        }
+        precomputeTuple(mt_Forces,k);
         
     }
-    
-    
-    if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
-                                                                        //in F
-
-        std::apply([](auto&... addons){//See Algorithm.hh for explanation of std::apply
-
-            (addons.communicatePrecompute(),...);
-
-        }, mt_AddOns);
-
-    }
-    
+  
+    communicateTuple(mt_PreProcessors);
+    communicatePrecomputeTuple(mt_Forces);
 
     #pragma omp master
     {
     m_Distribution.getDistribution().swap(m_Distribution.getDistributionOld()); //swap old and new distributions
                                                                                 //before collision
+    }
+    
+}
+
+template<class lattice, class traits>
+template<class tupletype>
+inline void ModelBase<lattice,traits>::computeTuple(tupletype& tup, int k) {
+
+    if constexpr(std::tuple_size<tupletype>::value != 0){ //Check if there is at least one element
+                                                                        //in F
+
+        std::apply([k](auto&... obj){//See Algorithm.hh for explanation of std::apply
+
+            (obj.template compute<traits>(k),...);
+
+        }, tup);
+
+    }
+    
+}
+
+template<class lattice, class traits>
+template<class tupletype>
+inline void ModelBase<lattice,traits>::precomputeTuple(tupletype& tup, int k) {
+
+    if constexpr(std::tuple_size<tupletype>::value != 0){ //Check if there is at least one element
+                                                                        //in F
+
+        std::apply([k](auto&... obj){//See Algorithm.hh for explanation of std::apply
+
+            (obj.template precompute<traits>(k),...);
+
+        }, tup);
+
+    }
+    
+}
+
+template<class lattice, class traits>
+template<class tupletype>
+inline void ModelBase<lattice,traits>::postprocessTuple(tupletype& tup, int k) {
+
+    if constexpr(std::tuple_size<tupletype>::value != 0){ //Check if there is at least one element
+                                                                        //in F
+
+        std::apply([k](auto&... obj){//See Algorithm.hh for explanation of std::apply
+
+            (obj.template postprocess<traits>(k),...);
+
+        }, tup);
+
+    }
+    
+}
+
+template<class lattice, class traits>
+template<class tupletype>
+inline void ModelBase<lattice,traits>::communicateTuple(tupletype& tup) {
+
+    if constexpr(std::tuple_size<tupletype>::value != 0){ //Check if there is at least one element
+                                                                        //in F
+
+        std::apply([](auto&... obj){//See Algorithm.hh for explanation of std::apply
+
+            (obj.template communicate<traits>(),...);
+
+        }, tup);
+
+    }
+    
+}
+
+template<class lattice, class traits>
+template<class tupletype>
+inline void ModelBase<lattice,traits>::communicatePrecomputeTuple(tupletype& tup) {
+
+    if constexpr(std::tuple_size<tupletype>::value != 0){ //Check if there is at least one element
+                                                                        //in F
+
+        std::apply([](auto&... obj){//See Algorithm.hh for explanation of std::apply
+
+            (obj.template communicatePrecompute<traits>(),...);
+
+        }, tup);
+
+    }
+    
+}
+
+template<class lattice, class traits>
+template<class tupletype>
+inline void ModelBase<lattice,traits>::communicatePostprocessTuple(tupletype& tup) {
+
+    if constexpr(std::tuple_size<tupletype>::value != 0){ //Check if there is at least one element
+                                                                        //in F
+
+        std::apply([](auto&... obj){//See Algorithm.hh for explanation of std::apply
+
+            (obj.template communicatePostProcess<traits>(),...);
+
+        }, tup);
+
     }
     
 }
@@ -197,62 +345,17 @@ inline void ModelBase<lattice,traits>::postprocess() {
     #pragma omp for schedule(guided)
     for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
 
-        if constexpr(std::tuple_size<typename traits::template Boundaries<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
-                                                                          //in F
+        postprocessTuple(mt_Boundaries,k);
 
-            std::apply([k](auto&... boundaries){//See Algorithm.hh for explanation of std::apply
+        computeTuple(mt_PostProcessors,k);
 
-                (boundaries.postprocess(k),...);
-
-            }, mt_Boundaries);
-
-        }
-
-        if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
-                                                                          //in F
-
-            std::apply([k](auto&... addons){//See Algorithm.hh for explanation of std::apply
-
-                (addons.postprocess(k),...);
-
-            }, mt_AddOns);
-
-        }
+        postprocessTuple(mt_Forces,k);
         
-
     }
-
-    if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0){ //Check if there is at least one element
-                                                                        //in F
-
-        std::apply([](auto&... addons){//See Algorithm.hh for explanation of std::apply
-
-            (addons.communicatePostProcess(),...);
-
-        }, mt_AddOns);
-
-    }
-
-    #pragma omp master
-    {
-    m_Distribution.getDistribution().swap(m_Distribution.getDistributionOld()); //swap old and new distributions
-                                                                                //before collision
-    }
+  
+    communicateTuple(mt_PostProcessors);
+    communicatePostprocessTuple(mt_Forces);
     
-}
-
-template<class lattice, class traits>
-inline double ModelBase<lattice,traits>::computeForces(int xyz, int k) const {
-
-    if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0){
-
-        return std::apply([xyz, k](auto&... addons){
-                return (addons.computeXYZ(xyz, k) + ...);
-            }, mt_AddOns);
-
-    }
-    else return 0;
-
 }
 
 template<class lattice, class traits>
@@ -261,22 +364,19 @@ inline void ModelBase<lattice,traits>::boundaries() {
     #pragma omp for schedule(guided)
     for (int k = 0; k <lattice::m_N; k++) { //loop over k
 
-        if constexpr(std::tuple_size<typename traits::template Boundaries<typename traits::Stencil>>::value != 0) { //Check if there are any boundary
+        if constexpr(std::tuple_size<typename traits::Boundaries>::value != 0) { //Check if there are any boundary
                                                                               //models
+            for (int idx = 0; idx <traits::Stencil::Q; idx++) {
 
-            std::apply([this, k](auto&... boundaries) {
-                // Make this a sub function for readability
-                for (int idx = 0; idx <traits::Stencil::Q; idx++) {
+                if(m_Geometry.isSolid(k) && !m_Geometry.isSolid(m_Distribution.streamIndex(k, idx))) {
+                    std::apply([this, k, idx](auto&... boundaries) {
+                        // Make this a sub function for readability
+                                (boundaries.template compute<traits>(this -> m_Distribution, k, idx) , ...);
 
-                    if(m_Geometry.isSolid(k) && !m_Geometry.isSolid(m_Distribution.streamIndex(k, idx))) {
-
-                        (boundaries.compute(this -> m_Distribution, k, idx) , ...);
-
-                    }
-
+                    }, mt_Boundaries);
                 }
 
-            }, mt_Boundaries);
+            }
             
         }
 

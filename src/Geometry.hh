@@ -24,29 +24,22 @@ class Geometry {
     public:
 
         /**
-         * \brief Initialise the geometry vector for the system based on some conditions in this function.
-         */
-        inline void initialise();
-
-        /**
          * \brief Returns true if the current lattice point lies on a periodic boundary.
          * \param k Index of current lattice point.
          * \return True if lattice point lies on a periodic boundary.
          */
-        inline bool isPeriodic(int k);
+        static inline bool isPeriodic(int k);
 
         /**
          * \brief Returns true if the current lattice point lies on a solid boundary.
          * \param k Index of current lattice point.
          * \return True if lattice point lies on a solid
          */
-        inline bool isSolid(int k);
+        static inline bool isSolid(int k);
 
     private:
 
         enum{Periodic = 3, Solid = 2, Wall = 1, Fluid = 0}; //!<IDs for each boundary type.
-
-        SolidLabels<lattice> m_SolidLabels;
 
 };
 
@@ -99,7 +92,7 @@ inline bool Geometry<lattice>::isPeriodic(int k) {
 template<typename lattice>
 inline bool Geometry<lattice>::isSolid(int k) {
 
-    return m_SolidLabels.getParameter(k);
+    return SolidLabels<>::get<lattice>(k);
     //int yAtCurrentk = computeY(lattice::m_LY, lattice::m_LZ, k);
     //int zAtCurrentk = computeZ(lattice::m_LY, lattice::m_LZ, k);
     //int xAtCurrentk = computeX(lattice::m_LY, lattice::m_LZ, k);

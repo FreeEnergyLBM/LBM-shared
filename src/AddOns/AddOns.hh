@@ -1,5 +1,5 @@
-#include "ExternalForce.hh"
-#include "ChemicalForce.hh"
-#include "OrderParameterGradients.hh"
+#include "ChemicalPotentialCalculator.hh"
 #include "LinearWetting.hh"
 #include "CubicWetting.hh"
+#include "Gradients.hh"
+#include "AddOnBase.hh"

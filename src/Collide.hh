@@ -16,10 +16,158 @@
  * all models.
  */
 
-
-struct SRT{
-    static const double& Omega(const double& itau) {return itau;}
+template<class stencil>
+class SRT{
+    public:
+        static const inline double& Omega(const double& itau) {return itau;}
+        template<class lattice>
+        static const inline double ForcePrefactor(const double& itau) {return 1.-0.5*lattice::m_DT*itau;}
+        template<class lattice>
+        static inline void initialise(double tau1,double tau2){}; 
+        template<class lattice>
+        static inline double collide(const double* old, const double* equilibrium, const double& itau, int idx){
+            return old[idx] - lattice::m_DT * Omega(itau) * (old[idx] - equilibrium[idx]); 
+        }
+        template<class lattice>
+        static inline double forcing(const double* forces, const double& itau, int idx){
+            return ForcePrefactor<lattice>(itau)*forces[idx]; 
+        }
 };
+
+template<class stencil>
+class MRT{
+    private:
+        static constexpr int numberofelements = 5000;
+        double m_Taumax;
+        double m_Taumin;
+        
+        double m_MRTMatrix[numberofelements*stencil::Q*stencil::Q];
+        double m_MRTMatrixForcing[numberofelements*stencil::Q*stencil::Q];
+        template<class lattice>
+        inline void generateMRTTau(double tau,int tauidx,const double (&inverse)[stencil::Q*stencil::Q]); 
+        MRT(){}
+        inline int getTauIdx(double tau){
+            int tauidx = (numberofelements-1)*(tau-m_Taumin)
+            /(m_Taumax-m_Taumin);
+            
+            if(tauidx < 0) tauidx = 0; 
+            if(tauidx > numberofelements-1) tauidx = numberofelements-1;
+            //if(tau>0.6&&tau<0.9)std::cout<<tau<<" "<<tauidx<<std::endl;
+            return tauidx;
+        }
+    public:
+        static inline MRT& getInstance(){
+            static MRT instance;
+            return instance;
+        } 
+        MRT(MRT const&)             = delete;
+        void operator=(MRT const&)  = delete;
+        static const inline double* Omega(const double& itau) {
+            return &(getInstance().m_MRTMatrix[getInstance().getTauIdx(1./itau)*stencil::Q*stencil::Q]);
+        }
+        static const inline double* ForcePrefactor(const double& itau){
+            return &(getInstance().m_MRTMatrixForcing[getInstance().getTauIdx(1./itau)*stencil::Q*stencil::Q]);
+        }
+        template<class lattice>
+        static inline void initialise(double tau1,double tau2);  
+
+        template<class lattice>
+        static inline double collide(const double* old, const double* equilibrium, const double& itau, int idx){
+            double collisionsum=0;
+            for (int sumidx=0; sumidx<stencil::Q; sumidx++){
+                collisionsum+=lattice::m_DT * getInstance().Omega(itau)[idx*stencil::Q+sumidx] * (old[sumidx] - equilibrium[sumidx]);
+                
+            }
+            
+            return old[idx]-collisionsum;
+        }
+
+        template<class lattice>
+        static inline double forcing(const double* forces, const double& itau, int idx){
+            double forcesum=0;
+            for (int sumidx=0; sumidx<stencil::Q; sumidx++){
+                forcesum+=getInstance().template ForcePrefactor(itau)[idx*stencil::Q+sumidx] * (forces[sumidx]);
+            }
+            return forcesum;
+        }
+         
+};
+
+template<class stencil>
+template<class lattice>
+inline void MRT<stencil>::generateMRTTau(double tau,int tauidx,const double (&Minverse)[stencil::Q*stencil::Q]) {
+
+    double weightmatrix[stencil::Q*stencil::Q] = {};
+    double weightmatrixforcing[stencil::Q*stencil::Q] = {};
+    double weightedmoments[stencil::Q*stencil::Q] = {};
+    double weightedmomentsforcing[stencil::Q*stencil::Q] = {};
+
+    for(int i = 0; i < stencil::Q; i++){
+        weightmatrix[i*stencil::Q+i] = stencil::MRTWeights(1./tau)[i];
+        weightmatrixforcing[i*stencil::Q+i] = 1.0-lattice::m_DT*0.5*weightmatrix[i*stencil::Q+i]; 
+    }
+    
+    for(int i = 0; i < stencil::Q; i++){
+        for(int j = 0; j < stencil::Q; j++){
+            
+            for(int ii = 0; ii < stencil::Q; ii++) {
+                weightedmoments[j*stencil::Q+i] += weightmatrix[j*stencil::Q+ii]*stencil::MRTMatrix[ii*stencil::Q+i];
+                
+                weightedmomentsforcing[j*stencil::Q+i] += weightmatrixforcing[j*stencil::Q+ii]*stencil::MRTMatrix[ii*stencil::Q+i];
+            }
+            
+            
+        }
+    }
+    
+    for(int i = 0; i < stencil::Q; i++){
+        for(int j = 0; j < stencil::Q; j++){
+            for(int ii = 0; ii < stencil::Q; ii++) { 
+                m_MRTMatrix[tauidx*stencil::Q*stencil::Q+j*stencil::Q+i] += Minverse[j*stencil::Q+ii]*weightedmoments[ii*stencil::Q+i];
+                m_MRTMatrixForcing[tauidx*stencil::Q*stencil::Q+j*stencil::Q+i] += Minverse[j*stencil::Q+ii]*weightedmomentsforcing[ii*stencil::Q+i];
+            }
+            
+        }
+    }
+
+}
+
+template<class stencil>
+template<class lattice>
+inline void MRT<stencil>::initialise(double tau1,double tau2) {
+    #pragma omp master
+    {
+
+    getInstance().m_Taumax=std::max(tau1,tau2);
+    getInstance().m_Taumin=std::min(tau1,tau2);
+
+    double MomentsInverse[stencil::Q*stencil::Q] = {};
+    double mag[stencil::Q] = {};
+
+    for(int j = 0; j < stencil::Q; j++){ 
+        mag[j] = 0; 
+        for(int i = 0; i < stencil::Q; i++){
+            mag[j] += stencil::MRTMatrix[j*stencil::Q+i]*stencil::MRTMatrix[j*stencil::Q+i];
+        }
+        for(int i = 0; i < stencil::Q; i++){
+            MomentsInverse[i*stencil::Q+j] = stencil::MRTMatrix[j*stencil::Q+i]/mag[j];
+            //std::cout<<stencil::MRTMatrix[j*stencil::Q+i]<<std::endl;
+            
+        }
+    }
+
+    for(int tauidx = 0; tauidx < numberofelements; tauidx++){
+
+        double tau = getInstance().m_Taumin + (double)tauidx*(getInstance().m_Taumax-getInstance().m_Taumin)/((double)numberofelements-1.0);
+
+        getInstance().template generateMRTTau<lattice>(tau,tauidx,MomentsInverse);
+        
+
+    }
+    
+    }
+
+}
 
 /**
  * \brief The CollisionBase class provides functions that perform basic LBM calculations e.g. collision operators.
@@ -30,9 +178,6 @@ struct SRT{
  */
 template<class lattice, class stencil>
 class CollisionBase {
-
-    static_assert(std::is_base_of<Stencil, stencil>(), "ERROR: invalid stencil specified in traits class.");
-    static_assert(stencil::D == lattice::m_NDIM, "ERROR: The chosen stencil must match the number of lattice dimensions in the lattice properties.");
     
     public:
         
@@ -42,14 +187,14 @@ class CollisionBase {
          * \param idx The discrete velocity index (e.g. 0-8 for D2Q9).
          * \return 1 + velocity dependence of equilibrium.
          */
-        inline double computeGamma(const double* velocity, const int idx) const;
+        static inline double computeGamma(const double* velocity, const int idx);
 
         /**
          * \brief This will sum the distributions in each direction to calculate the zeroth moment.
          * \param distribution Pointer to distribution vector at the current lattice point.
          * \return Zeroth moment distributions in each direction.
          */
-        inline double computeZerothMoment(const double *distribution) const;
+        static inline double computeZerothMoment(const double *distribution);
 
         /**
          * \brief This will sum the distributions times the velocity vector
@@ -58,17 +203,7 @@ class CollisionBase {
          * \param xyz Cartesian direction of to calculate zeroth moment.
          * \return First moment of distributions.
          */
-        inline double computeFirstMoment(const double *distribution, const int xyz) const; 
-
-        /**
-         * \brief This will compute the single relaxation time (BGK) collision step.
-         * \param old Distribution at previous timestep.
-         * \param equilibrium Equilibrium distribution at the current timestep.
-         * \param tau Relaxation time (chosen to provide a desired viscosity).
-         * \return Post collision distribution.
-         */
-        template<class>
-        inline double collide(const double& old, const double& equilibrium, const double& tau) const;
+        static inline double computeFirstMoment(const double *distribution, const int xyz); 
 
         /**
          * \brief computeGamma computes first and second order velocity dependence of the equilibrium distributions.
@@ -76,15 +211,13 @@ class CollisionBase {
          * \param idx The discrete velocity index (e.g. 0-8 for D2Q9).
          * \return Velocity dependence of equilibrium.
          */
-        inline double computeVelocityFactor(const double* velocity, const int idx) const;
+        static inline double computeVelocityFactor(const double* velocity, const int idx);
         
     private:
 
         enum{ x = 0, y = 1, z = 2 };
         
         //static constexpr auto& ma_Weights = stencil::Weights;
-
-        static constexpr double m_Cs2 = stencil::Cs2;
 
 };
 
@@ -94,7 +227,7 @@ class CollisionBase {
  *          dependence of the equilibrium.
  */
 template<class lattice, class stencil>
-inline double CollisionBase<lattice,stencil>::computeGamma(const double* velocity, const int idx) const {
+inline double CollisionBase<lattice,stencil>::computeGamma(const double* velocity, const int idx) {
     
     return stencil::Weights[idx] * (1.0 + computeVelocityFactor(velocity, idx)); 
 
@@ -108,7 +241,7 @@ inline double CollisionBase<lattice,stencil>::computeGamma(const double* velocit
  *          factor is returned.
  */
 template<class lattice, class stencil>
-inline double CollisionBase<lattice,stencil>::computeVelocityFactor(const double* velocity, const int idx) const {
+inline double CollisionBase<lattice,stencil>::computeVelocityFactor(const double* velocity, const int idx) {
     
     double ci_dot_velocity = 0;
     double velocity_dot_velocity = 0;
@@ -121,9 +254,9 @@ inline double CollisionBase<lattice,stencil>::computeVelocityFactor(const double
 
     }
 
-    return (ci_dot_velocity) / m_Cs2
-           + (ci_dot_velocity * ci_dot_velocity) / (2.0 * m_Cs2 * m_Cs2) //Return velocity factor
-           - (velocity_dot_velocity) / (2.0 * m_Cs2);
+    return (ci_dot_velocity) / stencil::Cs2
+           + (ci_dot_velocity * ci_dot_velocity) / (2.0 * stencil::Cs2 * stencil::Cs2) //Return velocity factor
+           - (velocity_dot_velocity) / (2.0 * stencil::Cs2);
 
 };
 
@@ -132,7 +265,7 @@ inline double CollisionBase<lattice,stencil>::computeVelocityFactor(const double
  *          in each discrete direction (so the sum over 9 directions for D2Q9);
  */
 template<class lattice, class stencil>
-inline double CollisionBase<lattice,stencil>::computeZerothMoment(const double *distribution) const {
+inline double CollisionBase<lattice,stencil>::computeZerothMoment(const double *distribution) {
 
     double zerothmoment = 0;
 
@@ -151,7 +284,7 @@ inline double CollisionBase<lattice,stencil>::computeZerothMoment(const double *
  *          multiplied by the stencil velocity vector c_i for each i in the choesn cartesian direction.
  */
 template<class lattice, class stencil>
-inline double CollisionBase<lattice,stencil>::computeFirstMoment(const double *distribution,const int xyz) const {
+inline double CollisionBase<lattice,stencil>::computeFirstMoment(const double *distribution,const int xyz) {
 
     double firstmoment = 0;
 
@@ -162,18 +295,5 @@ inline double CollisionBase<lattice,stencil>::computeFirstMoment(const double *d
     }
     
     return firstmoment; //Return first moment corresponding to velocity in given direction ("xyz")
-
-}
-
-/**
- * \details This computes the SRT/BGK collision step. This is simply the old distribution in each direction minus
- *          the difference between the old and equilibrium distributions divided by the relaxation time, tau.
- */
-template<class lattice, class stencil>
-template<class collisionmodel>
-inline double CollisionBase<lattice,stencil>::collide(const double& old, const double& equilibrium, const double& itau) const{
-
-    return old - lattice::m_DT * collisionmodel::Omega(itau) * (old - equilibrium); //SRT colision step. Old corresponds to the old distribution and itau is
-                                       //the inverse of the relaxation time
 
 }

@@ -1,6 +1,5 @@
 #include "test_main.hh"
 #include "Lattice.hh"
-// #include "Data.hh"
 #include "Parallel.hh"
 
 using Lattice = LatticeProperties<Data1, X_Parallel<1>, 6, 1>;
@@ -8,17 +7,17 @@ using Lattice = LatticeProperties<Data1, X_Parallel<1>, 6, 1>;
 
 TEST(ParallelTest, TestCommunicate) {
   Lattice lattice;
-  Density<Lattice> density;
-  ASSERT_EQ(density.mv_Parameter.size(), 5);
+  std::vector<double> &density = Density<>::getInstance<Lattice>().mv_Parameter;
+  ASSERT_EQ(density.size(), 5);
   if (mpi.rank == 0) {
-    density.mv_Parameter = {0, 1, 2, 3, 0};
+    density = {0, 1, 2, 3, 0};
   } else if (mpi.rank == 1) {
-    density.mv_Parameter = {0, 4, 5, 6, 0};
+    density = {0, 4, 5, 6, 0};
   }
 
-  lattice.communicate(density);
+  lattice.communicate(Density<>::getInstance<Lattice>());
   std::vector<double> densityArray = (mpi.rank==0) ? std::vector<double>{6,1,2,3,4} : std::vector<double>{3,4,5,6,1};
-  EXPECT_TRUE(ArraysMatch(density.mv_Parameter, densityArray));
+  EXPECT_TRUE(ArraysMatch(density, densityArray));
 }
 
 

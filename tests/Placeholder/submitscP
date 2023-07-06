@@ -2,20 +2,21 @@
 
 # This job requests number_of_tasks MPI tasks (without OpenMP)
 # SBATCH -N 1
-#SBATCH -n 5
-#SBATCH -c 2
-#SBATCH -t 00:05:00
+#SBATCH -n 10
+#SBATCH -c 4
+#SBATCH -t 00:15:00
 #SBATCH --ntasks-per-socket=5
-#SBATCH --cpus-per-task=2
+#SBATCH --cpus-per-task=4
 #SBATCH -p test
 #SBATCH -o ./out/output.%j.out # STDOUT
 # SBATCH --mem=8G 
 export OMP_PROC_BIND=true
 export OMP_PLACES=cores
-export OMP_NUM_THREADS=2
+export OMP_NUM_THREADS=4
 export OMP_AFFINITY=balanced
 # export I_MPI_GTOOL="vtune -c hpc-performance -r HPC:all" 
 # mpiexec ./wetP
-mpirun -n 5 ./wetP
+mpirun -n 10 ./wetP
+# ./wetP
 #valgrind ./wetP
 #./wetP

@@ -26,6 +26,11 @@
  */
 template<class lattice, class stencil>
 class Data_Base{
+    public:
+        static Data_Base<lattice,stencil>& getInstance() {
+            static Data_Base<lattice,stencil> instance;
+            return instance;
+        }
     private:
         //ADD VIRTUAL TO THIS
         /**
@@ -45,7 +50,7 @@ class Data_Base{
          */
         inline int getOneNeighborPeriodic(const int k, const int Q);
 
-        int OppositeOffset[stencil::Q]; //!<Opposite lattice point offset in each direction.
+        std::array<int,stencil::Q> OppositeOffset; //!<Opposite lattice point offset in each direction.
         
         Geometry<lattice> m_Geometry; //!<Class containing geometry information (for periodic boundaries).
 
@@ -56,19 +61,6 @@ class Data_Base{
         template<class, class>
         friend class Data1; //Data1 can access private members of the base class (will need to add new data
                             //types here but I will probably change how this works).
-        
-    public:
-
-        using Stencil = stencil; //!<Typedef so type info can be accessed from outside the class.
-
-        /**
-         * \brief This function communicates a chosen parameter (halo regions are exchanged with neighboring
-         *        processors).
-         * \param obj Object of chosen parameter.
-         * \tparam parameter type of object to be communicated.
-         */
-        template<class parameter>
-        inline void communicate(parameter& obj);
 
         /**
          * \brief The constructor for the class.
@@ -89,9 +81,22 @@ class Data_Base{
             generateNeighbors(); //Fill neighbors array
             
         }
+        
+    public:
 
-        Data_Base(Data_Base<lattice, stencil>& other) : mv_Neighbors(other.mv_Neighbors), OppositeOffset(other.OppositeOffset) //Construct distribution
-        {}
+        Data_Base(Data_Base<lattice, stencil> const& other) = delete;
+        void operator=(Data_Base<lattice, stencil> const& other) = delete;
+
+        using Stencil = stencil; //!<Typedef so type info can be accessed from outside the class.
+
+        /**
+         * \brief This function communicates a chosen parameter (halo regions are exchanged with neighboring
+         *        processors).
+         * \param obj Object of chosen parameter.
+         * \tparam parameter type of object to be communicated.
+         */
+        template<class parameter>
+        inline void communicate(parameter& obj);
 
         /**
          * \brief Function to fill neighbor array with neighbor information.
@@ -102,6 +107,7 @@ class Data_Base{
          * \brief Returns the neighbor array
          */
         inline std::vector<int>& getNeighbors();
+        const inline std::vector<int>& getNeighbors() const;
 
 };
 
@@ -125,6 +131,13 @@ inline void Data_Base<lattice,stencil>::communicate(parameter& obj) { //Not used
  */
 template<class lattice, class stencil>
 inline std::vector<int>& Data_Base<lattice, stencil>::getNeighbors() {
+    
+    return mv_Neighbors;
+
+}
+
+template<class lattice, class stencil>
+const inline std::vector<int>& Data_Base<lattice, stencil>::getNeighbors() const {
     
     return mv_Neighbors;
 
@@ -334,7 +347,7 @@ class Data1 : public Data_Base<lattice, stencil> {
         /**
          * \brief This constructor calls the constructor of the base disribution using the neighbor information.
          */
-        Data1() : m_Distribution(Data_Base<lattice,stencil>::mv_Neighbors) { //Construct distribution
+        Data1() : m_Distribution(Data_Base<lattice,stencil>::getInstance().mv_Neighbors) { //Construct distribution
 
         }
 

@@ -100,7 +100,7 @@ struct Distribution_Base { //Distribution base class
     using Stencil = stencil;
 };
 
-template<template<class> class obj, class lattice, typename T, int num=1> //obj template will guarantee a unique instance of the class with its own
+template<class obj, class lattice, typename T, int num=1> //obj template will guarantee a unique instance of the class with its own
                                        //static vector. I pass the class to itself to guarantee this
                                        //
                                        //T determines the type stored in the vector, num
@@ -111,6 +111,20 @@ class Parameter {
 
     public:
 
+        std::map<int,bool> mm_Initialised;
+
+        static constexpr int m_Num=num;
+        using ParamType = T;
+
+        inline void Save(std::string filename, int t, std::string datadir);
+
+        std::vector<T> mv_Parameter; //Static vector (Does not change between objects of the class)
+
+        template<class, class, int>
+        friend class ParameterSingleton;
+
+    private:
+
         Parameter() {
 
             mv_Parameter.resize(num * lattice::m_N); //Resize to the desired size
@@ -119,116 +133,131 @@ class Parameter {
         
         Parameter(const Parameter& other) {}
 
-        inline std::vector<T>& getParameter() const { //Returns const vector containing the parameter
+        
+        
+};
 
-            return mv_Parameter;
+template<class obj, typename T=double, int numprefactor=1>
+class ParameterSingleton {
+
+    public:
+        static constexpr int instances=numprefactor;
+        static constexpr bool multipleinstances = (instances>1);
+        
+        template<class lattice, int num=1>
+        static Parameter<obj,lattice,T,numprefactor*num>& getInstance() { static Parameter<obj,lattice,T,numprefactor*num> instance;
+                                                                          return instance;};
+
+        template<class lattice, int num=1>
+        static inline std::vector<T>& get() { //Returns vector containing the parameter
+
+            return getInstance<lattice,num>().mv_Parameter;
 
         }
-        inline std::vector<T>& getParameter() { //Returns vector containing the parameter
 
-            return mv_Parameter;
-
-        }
-        inline T* getParameterPointer(const int k) const {  //Returns const pointer to parameter at lattice point k and
-                                                    //direction 0
-            return &mv_Parameter[k * m_Num];
-
-        }
-        inline T* getParameterPointer(const int k) { //Returns pointer to parameter at lattice point k and
+        template<class lattice, int num=1>
+        static inline T* getAddress(const int idx) { //Returns pointer to parameter at lattice point k and
                                              //direction 0
-            return &mv_Parameter[k * m_Num];
+            return &getInstance<lattice,num>().mv_Parameter[idx];
 
         }
-        inline T& getParameter(const int idx) const { //Returns const parameter at index idx
 
-            return mv_Parameter[idx];
+
+        template<class lattice, int num=1>
+        static inline T* getAddress(int idx1, int idx2, int idx3=0) { //Returns pointer to parameter at lattice point k and
+                                             //direction 0
+            constexpr bool multipledirections = (num>1);
+
+            return &getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)];
 
         }
-        inline T& getParameter(const int idx) { //Returns const parameter at index idx
 
-            return mv_Parameter[idx];
+        template<class lattice, int num=1>
+        static inline T& get(const int idx) { //Returns const parameter at index idx
+
+            return getInstance<lattice,num>().mv_Parameter[idx];
             
         }
-        /*
-        static inline void initialise(const T val,const int k, const int idx=0){
-            #pragma omp critical
-            {
-            if (!mm_Initialised.count(k*m_Num+idx)) mv_Parameter[k*m_Num+idx]=val;
-            else {
-                
-                mm_Initialised.erase(k*m_Num+idx); 
-                
-            }  
-            }
+
+        template<class lattice, int num=1>
+        static inline T& get(int idx1, int idx2, int idx3=0) { //Returns const parameter at index idx
+
+            constexpr bool multipledirections = (num>1);
+
+            return getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)];
+            
         }
-        */
-        static inline void initialise(const T val,const int k, const int idx=0){
+
+        template<class lattice, int num=1>
+        static inline void initialise(const T val,const int idx1, const int idx2=0, const int idx3=0){
+            constexpr bool multipledirections = (num>1);
             #pragma omp critical
             {
-            if (!mm_Initialised.count(k*m_Num+idx)) {
-                mv_Parameter[k*m_Num+idx]=val;
-                mm_Initialised.insert({k*m_Num+idx,true});
+            if (!getInstance<lattice,num>().mm_Initialised.count(idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3))) {
+                getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)]=val;
+                getInstance<lattice,num>().mm_Initialised.insert({idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3),true});
             }
             else {
                 
-                mm_Initialised.erase(k*m_Num+idx); 
+                getInstance<lattice,num>().mm_Initialised.erase(idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)); 
                 
             }   
             }        
         }
 
-        template<int idx=0>
-        void set(T (*condition)(const int)) {
+        template<class lattice, int num=1, int idx1=0, int idx2=0>
+        static void set(T (*condition)(const int)) {
 
             for(int k = lattice::m_HaloSize; k < lattice::m_N-lattice::m_HaloSize; k++) {
 
-                initialise(condition(k),k,idx);
+                initialise<lattice,num>(condition(k),k,idx1,idx2);
 
             }
 
         }
 
-        template<int idx=0>
-        void set(bool (*condition)(const int), T val) {
+        template<class lattice, int num=1, int idx1=0, int idx2=0>
+        static void set(bool (*condition)(const int), T val) {
 
             for(int k = lattice::m_HaloSize; k < lattice::m_N-lattice::m_HaloSize; k++) {
 
-                if (condition(k)) initialise(val,k,idx);
+                if (condition(k)) initialise<lattice,num>(val,k,idx1,idx2);
 
             }
 
         }
 
-        template<int idx=0>
-        void set(bool (*condition)(const int), T val, T false_val) {
+        template<class lattice, int num=1, int idx1=0, int idx2=0>
+        static void set(bool (*condition)(const int), T val, T false_val) {
 
             for(int k = lattice::m_HaloSize; k < lattice::m_N-lattice::m_HaloSize; k++) {
 
-                if (condition(k)) initialise(val,k,idx);
-                else initialise(false_val,k,idx);
+                if (condition(k)) initialise<lattice,num>(val,k,idx1,idx2);
+                else initialise<lattice,num>(false_val,k,idx1,idx2);
 
             }
 
         }
 
-        static std::map<int,bool> mm_Initialised;
 
-        static constexpr int m_Num=num;
-        using ParamType = T;
+        ParameterSingleton(ParameterSingleton<obj,T,numprefactor> const&)=delete;
 
-        inline void Save(std::string filename, int t, std::string datadir);
+        void operator=(ParameterSingleton<obj,T,numprefactor> const&)=delete;
 
-        static std::vector<T> mv_Parameter; //Static vector (Does not change between objects of the class)
-        
+    private:
+
+        ParameterSingleton(){};
+
+
 };
 
-template<template<class> class obj, class lattice, typename T, int num>
-std::vector<T> Parameter<obj, lattice, T, num>::mv_Parameter; //Must allocate memory for static vector outside of class
+//template<class obj, class lattice, typename T, int num>
+//std::vector<T> Parameter<obj, lattice, T, num>::mv_Parameter; //Must allocate memory for static vector outside of class
 
-template<template<class> class obj, class lattice, typename T, int num>
-std::map<int,bool> Parameter<obj, lattice, T, num>::mm_Initialised;
+//template<class obj, class lattice, typename T, int num>
+//std::map<int,bool> Parameter<obj, lattice, T, num>::mm_Initialised;
 
-template<template<class> class obj,class lattice,  typename T, int num>
+template<class obj,class lattice,  typename T, int num>
 inline void Parameter<obj, lattice, T, num>::Save(std::string filename, int t, std::string datadir) { //Function to save parameter stored in this class
 
     char fdump[512];
@@ -264,37 +293,39 @@ inline void Parameter<obj, lattice, T, num>::Save(std::string filename, int t, s
 
 }
 
-template<class lattice, template<class> class ...parameters>
+template<class lattice>
 class ParameterSave {
 
     public:
 
-        ParameterSave(std::string datadir, int saveinterval = 1) : m_SaveInterval(saveinterval), m_DataDir(datadir) {
+        ParameterSave(std::string datadir) : m_DataDir(datadir){
 
             int status = system(((std::string)"mkdir -p " + m_DataDir).c_str());
             if (status) std::cout << "Error creating output directory" << std::endl;
 
         }
-        ParameterSave(ParameterSave<lattice,parameters...>& other) : m_SaveInterval(other.saveinterval), m_DataDir(other.datadir) {
+        ParameterSave(ParameterSave& other) : m_DataDir(other.datadir){
 
             int status = system(((std::string)"mkdir -p " + m_DataDir).c_str());
             if (status) std::cout << "Error creating output directory" << std::endl;
 
         }
-        inline void Save(int timestep);
 
         inline void SaveHeader(const int& timestep, const int& saveinterval);
 
+        template<class parameter, int numdir=1>
+        void SaveParameter(int timestep){
+            parameter::template getInstance<lattice,numdir>().Save(parameter::m_Name,timestep,m_DataDir);
+        }
+
     private:
 
-        const int m_SaveInterval;
         std::string m_DataDir;
-        std::tuple<parameters<lattice>...> mt_Parameters;
         
 };
 
-template<class lattice, template<class> class ...parameters>
-inline void ParameterSave<lattice, parameters...>::SaveHeader(const int& timestep, const int& saveinterval) { //Function to save parameter stored in this class
+template<class lattice>
+inline void ParameterSave<lattice>::SaveHeader(const int& timestep, const int& saveinterval) { //Function to save parameter stored in this class
     
     if(mpi.rank==0){
         std::cout<<"SAVING HEADER"<<std::endl;
@@ -316,88 +347,143 @@ inline void ParameterSave<lattice, parameters...>::SaveHeader(const int& timeste
 
 }
 
-template<class lattice, template<class> class ...parameters>
-inline void ParameterSave<lattice, parameters...>::Save(int timestep) {
 
-    std::string dir = m_DataDir;
 
-    if (timestep % m_SaveInterval == 0) {
-
-        if (mpi.rank == 0) std::cout << "SAVING at timestep " << timestep << std::endl;
-
-        if constexpr (sizeof...(parameters) != 0) {
-
-            std::apply([timestep,dir](parameters<lattice>&... params) {
-
-                (params.Save(params.m_Name,timestep,dir),...);
-
-            }, mt_Parameters);
-
-        }
-        
-    }
-}
-
-template<class lattice>
-struct Velocity : public Parameter<Velocity, lattice, double, lattice::m_NDIM> {
+template<int instances=1>
+struct Velocity : public ParameterSingleton<Velocity<instances>, double, instances> {
 
     static constexpr char m_Name[] = "Velocity";
 
 }; //Velocity, with directions D corresponding to the number of cartesian directions in the stencilUw
 
-template<class lattice>
-struct Density : public Parameter<Density, lattice, double> {
+template<int instances=1>
+struct Density : public ParameterSingleton<Density<instances>, double, instances> {
 
     static constexpr char m_Name[] = "Density";
 
 }; //Density
 
-template<class lattice>
-struct Pressure : public Parameter<Pressure, lattice, double>{
+template<int instances=1>
+struct Pressure : public ParameterSingleton<Pressure<instances>, double, instances>{
 
     static constexpr char m_Name[] = "Pressure";
 
 }; //Presure
 
-template<class lattice, int number = 1>
-struct OrderParameter : public Parameter<OrderParameter, lattice, double, number> {
+template<int instances=1>
+struct OrderParameter : public ParameterSingleton<OrderParameter<instances>, double, instances> {
 
     static constexpr char m_Name[] = "OrderParameter";
 
 }; //Order parameter representing relative concentration of the phases
 
-template<class lattice, int number = 1>
-struct ChemicalPotential : public Parameter<ChemicalPotential, lattice, double, number> {
+template<int instances=1>
+struct ChemicalPotential : public ParameterSingleton<ChemicalPotential<instances>> {
 
     static constexpr char m_Name[] = "ChemicalPotential";
 
 }; //Chemical potential for the multicomponent model
 
-template<class lattice, int number = 1>
-struct LaplacianOrderParameter : public Parameter<LaplacianOrderParameter, lattice, double, number> {
+template<class obj,int instances = 1>
+struct Laplacian : public ParameterSingleton<Laplacian<obj,instances>,double,instances> {}; //Directional first order gradients of the order parameter
+
+template<int instances = 1>
+struct LaplacianChemicalPotential : public Laplacian<ChemicalPotential<instances>,instances> {
+
+    static constexpr char m_Name[] = "LaplacianChemicalPotential";
+
+}; //Laplacian of the order parameter
+
+template<int instances = 1>
+struct LaplacianDensity : public Laplacian<Density<instances>,instances> {
+
+    static constexpr char m_Name[] = "LaplacianDensity";
+
+}; //Laplacian of the order parameter
+
+template<int instances = 1>
+struct LaplacianOrderParameter : public Laplacian<OrderParameter<instances>,instances> {
 
     static constexpr char m_Name[] = "LaplacianOrderParameter";
 
 }; //Laplacian of the order parameter
 
-template<class lattice, int number = 1>
-struct GradientOrderParameter : public Parameter<GradientOrderParameter, lattice, double, lattice::m_NDIM * number> {
+template<class obj,int instances=1>
+struct Gradient : public ParameterSingleton<Gradient<obj,instances>, double, instances> {}; //Directional first order gradients of the order parameter
+
+template<class obj,int instances = 1>
+struct GradientMixed : public ParameterSingleton<GradientMixed<obj,instances>, double, instances> {}; //Directional first order gradients of the order parameter
+
+template<int instances = 1>
+struct GradientOrderParameter : public Gradient<OrderParameter<instances>,instances> {
 
     static constexpr char m_Name[]="GradientOrderParameter";
 
 }; //Directional first order gradients of the order parameter
 
-template<class lattice>
-struct SolidLabels : public Parameter<SolidLabels, lattice, int> {
+template<int instances = 1>
+struct GradientDensity : public Gradient<Density<instances>,instances> {
+
+    static constexpr char m_Name[]="GradientDensity";
+
+}; //Directional first order gradients of the order parameter
+
+template<int instances = 1>
+struct GradientChemicalPotential : public Gradient<ChemicalPotential<instances>,instances> {
+
+    static constexpr char m_Name[]="GradientChemicalPotential";
+
+}; //Directional first order gradients of the order parameter
+
+template<int instances = 1>
+struct GradientPressure : public Gradient<Pressure<instances>,instances> {
+
+    static constexpr char m_Name[]="GradientPressure";
+
+}; //Directional first order gradients of the order parameter
+
+template<int instances = 1>
+struct MixedGradientOrderParameter : public GradientMixed<OrderParameter<instances>,instances> {
+
+    static constexpr char m_Name[]="MixedGradientOrderParameter";
+
+}; //Directional first order gradients of the order parameter
+
+template<int instances = 1>
+struct MixedGradientDensity : public GradientMixed<Density<instances>,instances> {
+
+    static constexpr char m_Name[]="MixedGradientDensity";
+
+}; //Directional first order gradients of the order parameter
+
+template<int instances = 1>
+struct MixedGradientPressure : public GradientMixed<Pressure<instances>,instances> {
+
+    static constexpr char m_Name[]="MixedGradientPressure";
+
+}; //Directional first order gradients of the order parameter
+
+template<int instances = 1>
+struct SolidLabels : public ParameterSingleton<SolidLabels<instances>,int,instances> {
     static constexpr char m_Name[] = "SolidLabels";
 }; //Labelling of geometry
 
-template<class lattice>
-struct Tau : public Parameter<Tau, lattice, double> {
+template<int instances = 1>
+struct Tau : public ParameterSingleton<Tau<instances>,double,instances> {
     static constexpr char m_Name[] = "Tau";
 }; //Labelling of geometry
 
-template<class lattice>
-struct InverseTau : public Parameter<InverseTau, lattice, double> {
+template<int instances = 1>
+struct InverseTau : public ParameterSingleton<InverseTau<instances>,double,instances> {
     static constexpr char m_Name[] = "InverseTau";
+}; //Labelling of geometry
+
+template<int instances = 1>
+struct LogFugacity : public ParameterSingleton<LogFugacity<instances>,double,instances> {
+    static constexpr char m_Name[] = "Fugacity";
+}; //Labelling of geometry
+
+template<int instances = 1>
+struct GradientLogFugacity : public ParameterSingleton<GradientLogFugacity<instances>,double,instances> {
+    static constexpr char m_Name[] = "Fugacity";
 }; //Labelling of geometry

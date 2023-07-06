@@ -1,4 +1,5 @@
 #include "LBModels/Models.hh"
+#include "Forces/Forces.hh"
 #include "AddOns/AddOns.hh"
 #include "BoundaryModels/Boundaries.hh"
 #include "GradientStencils/GradientStencils.hh"

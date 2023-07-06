@@ -1,46 +1,30 @@
 #pragma once
+#include "../Service.hh"
+#include "GradientBase.hh"
 
-template<class lattice, class stencil>
-struct CentralXYZ{
+struct CentralXYZ : GradientBase<Cartesian> {
 
-    Data_Base<lattice, stencil> m_Data;
+    template<class traits, class parameter>
+    static inline double compute(const int direction, const int k, int num = 0);
 
-    template<class parameter>
-    inline double computeFirstDerivative(const parameter& val, const int direciton, const int k);
-
-    template<class parameter>
-    inline double computeLaplacian(const parameter& val, const int k);
-
-    Geometry<lattice> m_Geometry;
+    template<class obj>
+    using GradientType = Gradient<obj,obj::instances>;
     
 };
 
-template<class lattice, class stencil>
-template<class parameter>
-inline double CentralXYZ<lattice, stencil>::computeFirstDerivative(const parameter& val, const int direction, const int k) {
+template<class traits, class parameter>
+inline double CentralXYZ::compute(const int direction, const int k, int num){
+    
+    using DataType = Data_Base<typename traits::Lattice, typename traits::Stencil>;
 
     double gradientsum=0;
 
-    for (int idx = 0; idx <stencil::Q; idx++) {
+    for (int idx = 1; idx <traits::Stencil::Q; idx++) {
 
-            gradientsum += 1.0 / stencil::Cs2 * stencil::Weights[idx] * stencil::Ci_xyz(direction)[idx] * 0.5 * (val.getParameter(m_Data.getNeighbors()[k * stencil::Q+idx]));
+            gradientsum += 0.5*traits::Stencil::Weights[idx] * traits::Stencil::Ci_xyz(direction)[idx] *(parameter::template get<typename traits::Lattice>(DataType::getInstance().getNeighbors()[k * traits::Stencil::Q+idx],num)-parameter::template get<typename traits::Lattice>(DataType::getInstance().getNeighbors()[k * traits::Stencil::Q + traits::Stencil::Opposites[idx]],num)); //TEMPORARY
         
     }
 
-    return gradientsum;
+    return 1.0 / (traits::Stencil::Cs2*traits::Lattice::m_DT) * gradientsum;
 
-}
-
-template<class lattice, class stencil>
-template<class parameter>
-inline double CentralXYZ<lattice, stencil>::computeLaplacian(const parameter& val, const int k) {
-
-    double laplaciansum=0;
-
-    for (int idx = 1; idx <stencil::Q; idx++) {
-
-            laplaciansum += 1.0 / stencil::Cs2 * stencil::Weights[idx] * 2 * (val.getParameter(m_Data.getNeighbors()[k * stencil::Q + stencil::Opposites[idx]]) - val.getParameter(k));
-
-    }
-    return laplaciansum;
 }

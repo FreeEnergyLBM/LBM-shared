@@ -4,6 +4,8 @@
 #include "../Data.hh"
 #include "../BoundaryModels/Boundaries.hh"
 #include "../AddOns/AddOns.hh"
+#include "../Forces/Forces.hh"
+#include "../GradientStencils/GradientStencils.hh"
 #include "../Parallel.hh"
 #include "ModelBase.hh"
 #include <utility>
@@ -12,21 +14,7 @@
 //Model is given a "traits" class that contains stencil, data, force and boundary information
 
 template<class lattice>
-struct DefaultTraitFlowField : BaseTrait<DefaultTraitFlowField<lattice>> {
-    
-    using Stencil = std::conditional_t<lattice::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
-
-    template<typename stencil>
-    using Boundaries = std::tuple<BounceBack<lattice>>;
-
-    template<typename stencil>
-    using AddOns = std::tuple<>;
-
-    using CollisionModel = SRT;
-
-};
-
-
+using DefaultTraitFlowField = typename DefaultTrait<lattice> :: template SetBoundary<BounceBack>;
 
 template<class lattice, class traits = DefaultTraitFlowField<lattice>>
 class FlowField : public CollisionBase<lattice,typename traits::Stencil>, public ModelBase<lattice, traits> { //Inherit from base class to avoid repetition of common
@@ -53,12 +41,6 @@ class FlowField : public CollisionBase<lattice,typename traits::Stencil>, public
                                   const int idx, const int k) const; //Calculate equilibrium in direction idx with a given
                                                         //density and velocity
 
-        inline double computeModelForce(int xyz, int k) const; //Calculate forces specific to the model in direction xyz
-
-        template<class methods>
-        inline double computeCollisionQ(methods& forcemethods, int k, const double& old, const double& density,
-                                 const double* velocity, const int idx) const; //Calculate collision
-                                                                                           //at index idx
 
         inline double computeDensity(const double* distribution, const int k) const; //Calculate density
 
@@ -67,12 +49,9 @@ class FlowField : public CollisionBase<lattice,typename traits::Stencil>, public
 
         static constexpr double m_Tau = 1.0; //TEMPORARY relaxation time
         static constexpr double m_InverseTau = 1.0 / m_Tau; //TEMPORARY inverse relaxation time
-
-        Density<lattice> m_Density; //Density<>
-        Velocity<lattice> m_Velocity; //Velocity
     
-        std::vector<double>& density = m_Density.getParameter(); //Reference to vector of densities
-        std::vector<double>& velocity = m_Velocity.getParameter(); //Reference to vector of velocities
+        std::vector<double>& density = Density<>::get<typename traits::Lattice>(); //Reference to vector of densities
+        std::vector<double>& velocity = Velocity<>::get<typename traits::Lattice,traits::Lattice::m_NDIM>(); //Reference to vector of velocities
 
         enum{ x = 0, y = 1, z = 2 }; //Indices corresponding to x, y, z directions
         
@@ -101,18 +80,23 @@ inline void FlowField<lattice, traits>::collide() { //Collision step
 
         if(!ModelBase<lattice, traits>::m_Geometry.isSolid(k)){
 
-            auto forcemethods=ModelBase<lattice,traits>::getForceCalculator(k);
+            auto forcemethods=ModelBase<lattice,traits>::getForceCalculator(ModelBase<lattice,traits>::mt_Forces,k);
 
             double* old_distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
-            
-            for (int idx = 0; idx <traits::Stencil::Q; idx++) { //loop over discrete velocity directions
-                //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
-                //"computeCollisionQ"
-                double collision = computeCollisionQ(*forcemethods, k, old_distribution[idx], density[k], &velocity[k * traits::Stencil::D], idx);
 
-                ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(ModelBase<lattice, traits>::m_Distribution.streamIndex(k, idx))[idx] = collision;
+            double equilibriums[traits::Stencil::Q];
+            double forces[traits::Stencil::Q];
 
+            for (int idx = 0; idx <traits::Stencil::Q; idx++) {
+                equilibriums[idx]=computeEquilibrium(density[k], &velocity[k*traits::Lattice::m_NDIM], idx, k);
+                if constexpr(std::tuple_size<typename std::remove_reference<decltype(*forcemethods)>::type>::value != 0){
+                    forces[idx]=std::apply([idx, k](auto&... forcetype){
+                                return (forcetype.template compute<traits>(idx, k) + ...);
+                            }, *forcemethods);
+                }
             }
+            
+            this->collisionQ(forces,equilibriums,old_distribution,m_InverseTau,k);
 
         }
         
@@ -126,17 +110,18 @@ template<class lattice, class traits>
 inline void FlowField<lattice, traits>::initialise() { //Initialise model
 
     ModelBase<lattice, traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
-    
+    traits::template CollisionModel<typename traits::Stencil>::template initialise<typename traits::Lattice>(m_InverseTau,m_InverseTau);
+
     #pragma omp parallel for schedule(guided)
     for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
 
         double* distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(k);
         double* old_distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionOldPointer(k);
 
-        m_Density.initialise(1.0,k); //Set density to 1 initially (This will change)
-        m_Velocity.initialise(0.0,k,x);
-        m_Velocity.initialise(0.0,k,y);
-        if constexpr (lattice::m_NDIM==3) m_Velocity.initialise(0.0,k,z);
+        Density<>::initialise<lattice>(1.0,k); //Set density to 1 initially (This will change)
+        Velocity<>::initialise<lattice,lattice::m_NDIM>(0.0,k,x);
+        Velocity<>::initialise<lattice,lattice::m_NDIM>(0.0,k,y);
+        if constexpr (lattice::m_NDIM==3) Velocity<>::initialise<lattice,lattice::m_NDIM>(0.0,k,z);
 
         for (int idx = 0; idx <traits::Stencil::Q; idx++) {
 
@@ -158,44 +143,20 @@ inline void FlowField<lattice, traits>::computeMomenta() { //Calculate Density<>
     #pragma omp for schedule(guided)
     for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //Loop over k
 
-        if(!ModelBase<lattice, traits>::m_Geometry.isSolid(k)){
+        if(!Geometry<lattice>::isSolid(k)){
 
             double* distribution = ModelBase<lattice, traits>::m_Distribution.getDistributionPointer(k);
-
-            density[k] = computeDensity(distribution, k); //Calculate density
             velocity[k * traits::Stencil::D + x] = computeVelocity(distribution, density[k], x, k); //Calculate velocities
             velocity[k * traits::Stencil::D + y] = computeVelocity(distribution,density[k], y, k);
             if constexpr (lattice::m_NDIM == 3) velocity[k * traits::Stencil::D + z] = computeVelocity(distribution ,density[k], z, k);
-
+            density[k] = computeDensity(distribution, k); //Calculate density
+            
+            
         }
 
     }
 
-    ModelBase<lattice, traits>::m_Data.communicate(m_Density);
-
-}
-
-template<class lattice, class traits>
-template<class methods>
-inline double FlowField<lattice, traits>::computeCollisionQ(methods& forcemethods, const int k, const double& old, const double& density,
-                                               const double* velocity, const int idx) const {
-                                            //Calculate collision step at a given velocity index at point k
-
-    //double forcexyz[traits::Stencil::D]; //Temporary array storing force in each cartesian direction
-
-    //Force is the sum of model forces and given forces
-    //for(int xyz = 0; xyz <traits::Stencil::D; xyz++) forcexyz[xyz] = computeModelForce(xyz, k) + ModelBase<lattice, traits>::computeForces(xyz, k);
-    
-    //Sum of collision + force contributions
-     
-    if constexpr(std::tuple_size<methods>::value != 0){
-        return CollisionBase<lattice,typename traits::Stencil>::template collide<typename traits::CollisionModel>(old, computeEquilibrium(density, velocity, idx, k), m_InverseTau) 
-        + std::apply([idx, k](auto&... forcetype){
-            return (forcetype.compute(idx, k) + ...);
-        }, forcemethods);
-    }
-    else return CollisionBase<lattice,typename traits::Stencil>::template collide<typename traits::CollisionModel>(old, computeEquilibrium(density, velocity, idx, k), m_InverseTau);
-              //+ CollisionBase<lattice,typename traits::Stencil>::forceGuoSRT(forcexyz, velocity, m_InverseTau, idx);
+    //ModelBase<lattice, traits>::m_Data.communicate(Density<>::getInstance<lattice>());
 
 }
 
@@ -210,23 +171,16 @@ inline double FlowField<lattice, traits>::computeEquilibrium(const double& densi
 }
 
 template<class lattice, class traits>
-inline double FlowField<lattice, traits>::computeModelForce(int k, int xyz) const {
-
-    return 0.0; //No model force in this case
-
-}
-
-template<class lattice, class traits>
 inline double FlowField<lattice, traits>::computeDensity(const double* distribution, const int k) const { //Density<> calculation
     //Density<> is the sum of distributions plus any source/correction terms
 
-    if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0) {
+    if constexpr(std::tuple_size<typename traits::Forces>::value != 0) {
 
-        return CollisionBase<lattice,typename traits::Stencil>::computeZerothMoment(distribution) + std::apply([k](auto&... addons) {
+        return CollisionBase<lattice,typename traits::Stencil>::computeZerothMoment(distribution) + std::apply([k](auto&... forces) {
 
-                return (addons.computeDensitySource(k) + ...);
+                return (forces.template computeDensitySource<traits>(k) + ...);
 
-            }, ModelBase<lattice, traits>::mt_AddOns);
+            }, ModelBase<lattice, traits>::mt_Forces);
 
     }
     else return CollisionBase<lattice,typename traits::Stencil>::computeZerothMoment(distribution);
@@ -239,15 +193,15 @@ inline double FlowField<lattice, traits>::computeVelocity(const double* distribu
     //Velocity in direction xyz is sum of distribution times the xyz component of the discrete velocity vector
     //in each direction plus any source/correction terms
 
-    if constexpr(std::tuple_size<typename traits::template AddOns<typename traits::Stencil>>::value != 0) {
+    if constexpr(std::tuple_size<typename traits::Forces>::value != 0) {
 
-        return CollisionBase<lattice,typename traits::Stencil>::computeFirstMoment(distribution, xyz) + std::apply([xyz, k](auto&&... addons) {
+        return (1./(Density<>::get<lattice>(k)))*CollisionBase<lattice,typename traits::Stencil>::computeFirstMoment(distribution, xyz) + (1./(Density<>::get<lattice>(k)))*std::apply([xyz, k](auto&&... forces) {
 
-                return (addons.computeVelocitySource(xyz, k) + ...);
+                return (forces.template computeVelocitySource<traits>(xyz, k) + ...);
                 
-            }, ModelBase<lattice, traits>::mt_AddOns);
+            }, ModelBase<lattice, traits>::mt_Forces);
 
     }
-    else return CollisionBase<lattice,typename traits::Stencil>::computeFirstMoment(distribution, xyz);
+    else return (1./(Density<>::get<lattice>(k)))*CollisionBase<lattice,typename traits::Stencil>::computeFirstMoment(distribution, xyz);
 
 }

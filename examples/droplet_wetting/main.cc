@@ -1,14 +1,14 @@
 #include <lbm.hh>
 
-// This script simulates a droplet on a flat surface with a given contact angle
+// This script simulates a droplet on a flat surface with a given contact angle.
 
 
 const int lx = 100; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 const int lz = 1; // Size of domain in z direction
 
-const int timesteps = 100000; // Number of iterations to perform
-const int saveInterval = 10000; // Interval to save global data
+const int timesteps = 10000; // Number of iterations to perform
+const int saveInterval = 1000; // Interval to save global data
 
 const double contactAngle = 135; // Contact angle of the liquid on the solid
 const double dropRadius = 20; // Radius to initialise the droplet
@@ -42,44 +42,45 @@ double initFluid(int k) {
 
 
 
-// Modify the traits of the binary model
-using TraitBinary = DefaultTraitBinary<Lattice> ::SetCollisionModel<SRT>;
+// Modify the traits of the binary model to use MRT
+using TraitFlowField = DefaultTraitFlowField<Lattice> ::SetCollisionModel<SRT>;
 
 
 int main(int argc, char **argv){
     mpi.init();
 
     // Define the models to be used
-    FlowFieldBinary<Lattice> model1; //Flowfield (navier stokes solver) that can be used with the binary model (there are nuances with this model)
-    Binary<Lattice,TraitBinary> model2; //Binary model with hybrid equilibrium and forcing term
+    FlowFieldBinary<Lattice,TraitFlowField> flowFieldModel; //Flowfield (navier stokes solver) that can be used with the binary model
+    Binary<Lattice> componentSeparationModel; //Binary model with hybrid equilibrium and forcing term
 
-    model1.getAddOn<ChemicalForceBinary<Lattice,Guo<Lattice,typename DefaultTraitFlowFieldBinary<Lattice>::Stencil>>>().setA(0.00015);
-    model1.getAddOn<ChemicalForceBinary<Lattice,Guo<Lattice,typename DefaultTraitFlowFieldBinary<Lattice>::Stencil>>>().setKappa(0.0003);
+    componentSeparationModel.getPreProcessor<ChemicalPotentialCalculatorBinary>().setA(0.00015);
+    componentSeparationModel.getPreProcessor<ChemicalPotentialCalculatorBinary>().setKappa(0.0003);
 
     // Define the contact angle on the solid
-    model2.getAddOn<CubicWetting<Lattice,typename TraitBinary::Stencil>>().setThetaDegrees(contactAngle);
+    componentSeparationModel.getPreProcessor<CubicWetting>().setThetaDegrees(contactAngle);
+
 
     // Define the solid using the function above
-    SolidLabels<Lattice> solid;
-    solid.set(initSolid);
+    SolidLabels<>::set<Lattice>(initSolid);
 
     // Initialise the liquid and gas using the function above
-    OrderParameter<Lattice> orderParam;
-    orderParam.set(initFluid);
+    OrderParameter<>::set<Lattice>(initFluid);
 
     // Algorithm creates an object that combines the lattice models and runs them in order
-    Algorithm lbm(model1, model2);
+    Algorithm lbm(flowFieldModel, componentSeparationModel);
 
     // Set up the handler object for saving data
-    ParameterSave<Lattice,SolidLabels,OrderParameter,Velocity> saver("data/"); // The templates specify the parameters you want to save (and the lattice)
+    ParameterSave<Lattice> saver("data/");
     saver.SaveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)
-
-    // Perform necessary initialisation for the models in LBM
-    lbm.initialise();
 
     // Perform the main LBM loop
     for (int timestep=0; timestep<=timesteps; timestep++) {
-        if (timestep%saveInterval==0) saver.Save(timestep);
+        if (timestep%saveInterval==0) {
+            std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
+            saver.SaveParameter<SolidLabels<>>(timestep);
+            saver.SaveParameter<OrderParameter<>>(timestep);
+            saver.SaveParameter<Velocity<>,Lattice::m_NDIM>(timestep);
+        }
         lbm.evolve();
     }
 

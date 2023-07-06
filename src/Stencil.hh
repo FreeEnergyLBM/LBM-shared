@@ -15,9 +15,59 @@
 //currently not implemented array of MRT moments "Moments[Q]" and a function to calculate MRT relaxation times
 //"MRTWeights()".
 
-struct Stencil {};
 
-struct D2Q9:Stencil { //Most commonly used 2D stencil
+struct Stencil3D{};
+
+struct StencilQ{};
+
+struct StencilBase {};
+
+template<int N,template<int> class moment>
+struct MRTRowSetter{
+    
+    static constexpr void setMRTRow(int* matrix,int idx){
+        matrix[N]=moment<N>::ma_Moments[idx];
+        MRTRowSetter<N-1,moment>::setMRTRow(matrix,idx);
+    }
+
+};
+
+template<template<int> class moment>
+struct MRTRowSetter<0,moment>{
+    
+    static constexpr void setMRTRow(int* matrix,int idx){
+        matrix[0]=moment<0>::ma_Moments[idx];
+    }
+
+};
+
+template<int N, int Q,template<int> class moment>
+struct MRTMatrixSetter{
+    
+    static constexpr void setMRTMatrix(int* matrix){
+        MRTRowSetter<Q-1,moment>::setMRTRow(&matrix[Q*N],N);
+        MRTMatrixSetter<N-1,Q,moment>::setMRTMatrix(matrix);
+    }
+
+};
+
+template<int Q,template<int> class moment>
+struct MRTMatrixSetter<0,Q,moment>{
+    
+    static constexpr void setMRTMatrix(int* matrix){
+        MRTRowSetter<Q-1,moment>::setMRTRow(&matrix[0],0);
+    }
+
+};
+
+template<int Q,template<int> class moment>
+static constexpr std::array<int,Q*Q> GenerateMRTMatrix(){
+    std::array<int,Q*Q> matrix{};
+    MRTMatrixSetter<Q-1,Q,moment>::setMRTMatrix(&matrix[0]);
+    return matrix;
+}
+
+struct D2Q9:StencilBase { //Most commonly used 2D stencil
     
     static constexpr int D = 2; //Number of cartesian directions
     static constexpr int Q = 9; //Number of velocity directions
@@ -46,16 +96,21 @@ struct D2Q9:Stencil { //Most commonly used 2D stencil
     template<int idx>
     static constexpr int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx]; //Returns the modulus of the velocity vector at a given index, used for the MRT weight calculation
 
-    template<int idx> //CURRENTLY NOT IMPLEMENTED BUT WILL GENERATE AN MRT MATRIX FOR EACH STENCIL
-    static constexpr int Moments[Q] = {1,
-                                    3 * (CModulus<idx>) - 4,
-                                    (9 * (CModulus<idx> * CModulus<idx>) - 21 * (CModulus<idx>) + 8) / 2,
-                                    Ci_x[idx],
-                                    (3 * (CModulus<idx>) - 5) * Ci_x[idx],
-                                    Ci_y[idx],
-                                    (3 * (CModulus<idx>) - 5) * Ci_y[idx],
-                                    Ci_x[idx] * Ci_x[idx] - Ci_y[idx] * Ci_y[idx],
-                                    Ci_x[idx] * Ci_y[idx]};
+    template<int idx>
+    struct Moments{
+        static constexpr int ma_Moments[Q] = {1,
+                                            3 * (CModulus<idx>) - 4,
+                                            (9 * (CModulus<idx> * CModulus<idx>) - 21 * (CModulus<idx>) + 8) / 2,
+                                            Ci_x[idx],
+                                            (3 * (CModulus<idx>) - 5) * Ci_x[idx],
+                                            Ci_y[idx],
+                                            (3 * (CModulus<idx>) - 5) * Ci_y[idx],
+                                            Ci_x[idx] * Ci_x[idx] - Ci_y[idx] * Ci_y[idx],
+                                            Ci_x[idx] * Ci_y[idx]};
+    };
+
+    static constexpr std::array<int,Q*Q> MRTMatrix = GenerateMRTMatrix<Q,Moments>();
+
     inline static std::vector<double> MRTWeights(const double& invtau) { //MRT relaxation rates
 
         return {0, 1, 1, 0, 1, 0, 1, invtau, invtau};
@@ -64,7 +119,7 @@ struct D2Q9:Stencil { //Most commonly used 2D stencil
     
 };
 
-struct D2Q5:Stencil { //Most commonly used 2D stencil
+struct D2Q5 : StencilBase { //Most commonly used 2D stencil
     
     static constexpr int D = 2; //Number of cartesian directions
     static constexpr int Q = 5; //Number of velocity directions
@@ -94,11 +149,16 @@ struct D2Q5:Stencil { //Most commonly used 2D stencil
     static constexpr int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx]; //Returns the modulus of the velocity vector at a given index, used for the MRT weight calculation
     
     template<int idx>
-    static constexpr int Moments[Q]={1,
-                                    3 * (CModulus<idx>)-4,
-                                    Ci_x[idx],
-                                    Ci_y[idx],
-                                    Ci_x[idx]*Ci_x[idx]-Ci_y[idx]*Ci_y[idx]};
+    struct Moments{
+        static constexpr int ma_Moments[Q]={1,
+                                        3 * (CModulus<idx>)-4,
+                                        Ci_x[idx],
+                                        Ci_y[idx],
+                                        Ci_x[idx]*Ci_x[idx]-Ci_y[idx]*Ci_y[idx]};
+    };
+
+    static constexpr std::array<int,Q*Q> MRTMatrix = GenerateMRTMatrix<Q,Moments>();
+
     inline static std::vector<double> MRTWeights(const double& invtau){
         return {0,0,0,1,invtau};
     }
@@ -106,7 +166,7 @@ struct D2Q5:Stencil { //Most commonly used 2D stencil
 };
 
 //
-struct D3Q19:Stencil{ //Most commonly used 3D stencil
+struct D3Q19:StencilBase{ //Most commonly used 3D stencil
     static constexpr int D = 3;
 
     static constexpr int Q = 19;
@@ -136,25 +196,30 @@ struct D3Q19:Stencil{ //Most commonly used 3D stencil
     static const int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx] + Ci_z[idx] * Ci_z[idx];
 
     template<int idx>
-    static constexpr int Moments[Q] = {1,
-                                       19 * (CModulus<idx>) - 30,
-                                       (21 * (CModulus<idx> * CModulus<idx>) - 53 * (CModulus<idx>) + 24) / 2,
-                                       Ci_x[idx],
-                                       (5 * (CModulus<idx>) - 9) * Ci_x[idx],
-                                       Ci_y[idx],
-                                       (5 * (CModulus<idx>) - 9) * Ci_y[idx],
-                                       Ci_z[idx],
-                                       (5 * (CModulus<idx>) - 9) * Ci_z[idx],
-                                       3 * Ci_x[idx] * Ci_x[idx] - CModulus<idx>,
-                                       (3 * CModulus<idx> - 5) * (3 * Ci_x[idx] * Ci_x[idx] - CModulus<idx>),
-                                       Ci_y[idx] * Ci_y[idx] - Ci_z[idx] * Ci_z[idx],
-                                       (3 * CModulus<idx> - 5) * (Ci_y[idx] * Ci_y[idx] - Ci_z[idx] * Ci_z[idx]),
-                                       Ci_x[idx] * Ci_y[idx],
-                                       Ci_y[idx] * Ci_z[idx],
-                                       Ci_x[idx] * Ci_z[idx],
-                                       Ci_x[idx] * (Ci_y[idx] * Ci_y[idx] - Ci_z[idx] * Ci_z[idx]),
-                                       Ci_y[idx] * (Ci_z[idx] * Ci_z[idx] - Ci_x[idx] * Ci_x[idx]),
-                                       Ci_z[idx] * (Ci_x[idx] * Ci_x[idx] - Ci_y[idx] * Ci_y[idx])};
+    struct Moments{
+        static constexpr int ma_Moments[Q] = {1,
+                                        19 * (CModulus<idx>) - 30,
+                                        (21 * (CModulus<idx> * CModulus<idx>) - 53 * (CModulus<idx>) + 24) / 2,
+                                        Ci_x[idx],
+                                        (5 * (CModulus<idx>) - 9) * Ci_x[idx],
+                                        Ci_y[idx],
+                                        (5 * (CModulus<idx>) - 9) * Ci_y[idx],
+                                        Ci_z[idx],
+                                        (5 * (CModulus<idx>) - 9) * Ci_z[idx],
+                                        3 * Ci_x[idx] * Ci_x[idx] - CModulus<idx>,
+                                        (3 * CModulus<idx> - 5) * (3 * Ci_x[idx] * Ci_x[idx] - CModulus<idx>),
+                                        Ci_y[idx] * Ci_y[idx] - Ci_z[idx] * Ci_z[idx],
+                                        (3 * CModulus<idx> - 5) * (Ci_y[idx] * Ci_y[idx] - Ci_z[idx] * Ci_z[idx]),
+                                        Ci_x[idx] * Ci_y[idx],
+                                        Ci_y[idx] * Ci_z[idx],
+                                        Ci_x[idx] * Ci_z[idx],
+                                        Ci_x[idx] * (Ci_y[idx] * Ci_y[idx] - Ci_z[idx] * Ci_z[idx]),
+                                        Ci_y[idx] * (Ci_z[idx] * Ci_z[idx] - Ci_x[idx] * Ci_x[idx]),
+                                        Ci_z[idx] * (Ci_x[idx] * Ci_x[idx] - Ci_y[idx] * Ci_y[idx])};
+    };
+
+    static constexpr std::array<int,Q*Q> MRTMatrix = GenerateMRTMatrix<Q,Moments>();
+
     inline static std::vector<double> MRTWeights(const double& invtau) {
 
         return {0, 1, 1, 0, 1, 0, 1, 0, 1, invtau, 1, invtau, 1, invtau, invtau, invtau, 1, 1, 1};
