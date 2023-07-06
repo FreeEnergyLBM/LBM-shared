@@ -43,7 +43,7 @@ double initFluid(int k) {
 
 
 // Modify the traits of the binary model to use MRT
-using TraitFlowField = DefaultTraitFlowField<Lattice> ::SetCollisionModel<SRT>;
+using TraitFlowField = DefaultTraitFlowField<Lattice> ::SetCollisionModel<MRT>;
 
 
 int main(int argc, char **argv){

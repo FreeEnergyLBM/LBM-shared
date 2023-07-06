@@ -17,9 +17,9 @@
 //Model is given a "traits" class that contains stencil, data, force and boundary information
 
 template<class lattice>
-using DefaultTraitBinary = typename DefaultTrait<lattice> :: template SetBoundary<BounceBack> 
-                                                          :: template SetPreProcessor<ChemicalPotentialCalculatorBinary,CubicWetting> 
-                                                          :: template SetPostProcessor<GradientsMultiStencil<OrderParameter<>,CentralXYZ,LaplacianCentral>>;
+using DefaultTraitBinary = typename DefaultTrait<lattice,2> :: template SetBoundary<BounceBack>
+                                                            :: template SetPreProcessor<ChemicalPotentialCalculatorBinary,CubicWetting>
+                                                            :: template SetPostProcessor<GradientsMultiStencil<OrderParameter<>,CentralXYZ,LaplacianCentral>>;
 
 
 template<class lattice, class traits = DefaultTraitBinary<lattice>>
@@ -227,13 +227,13 @@ inline double Binary<lattice, traits>::computeOrderParameter(const double* distr
 //Model is given a "traits" class that contains stencil, data, force and boundary information
 
 template<class lattice>
-using DefaultTraitFlowFieldBinary = typename DefaultTrait<lattice> :: template SetBoundary<BounceBack>
-                                                                   :: template SetForce<ChemicalForce<Guo,Gradient>>;
+using DefaultTraitFlowFieldBinary = typename DefaultTrait<lattice,2> :: template SetBoundary<BounceBack>
+                                                                     :: template SetForce<ChemicalForce<Guo,Gradient>>;
 
 template<class lattice, class traits = DefaultTraitFlowFieldBinary<lattice>>
 class FlowFieldBinary : public FlowField<lattice, traits>{ //Inherit from base class to avoid repetition of common
                                                          //calculations
-    
+
     public:
 
         inline void setTau1(double val){m_Tau1=val;}
