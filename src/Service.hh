@@ -32,7 +32,7 @@ inline int computeXGlobal(const int k) //Compute X direction from a given k, the
                           //process continues
 {  
 
-  return lattice::m_LXMPIOffset+int((k-lattice::m_HaloSize)/(float) (lattice::m_LZ*lattice::m_LY));
+  return lattice::LXMPIOffset+int((k-lattice::HaloSize)/(float) (lattice::LZ*lattice::LY));
 
 
 }

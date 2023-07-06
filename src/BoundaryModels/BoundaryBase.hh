@@ -3,17 +3,17 @@
 class BoundaryBase{
     public:
 
-        template<class traits>
-        inline void precompute(const int k){};
+        template<class T_traits>
+        inline void precompute(int k){};
 
-        template<class traits>
+        template<class T_traits>
         inline void communicatePrecompute(){};
 
-        template<class traits>
+        template<class T_traits>
         inline void communicatePostProcess(){};
 
-        template<class traits>
-        inline void postprocess(const int k){};
+        template<class T_traits>
+        inline void postprocess(int k){};
 
     private:
 

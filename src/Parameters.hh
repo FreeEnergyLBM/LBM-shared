@@ -127,7 +127,7 @@ class Parameter {
 
         Parameter() {
 
-            mv_Parameter.resize(num * lattice::m_N); //Resize to the desired size
+            mv_Parameter.resize(num * lattice::N); //Resize to the desired size
 
         }
         
@@ -208,7 +208,7 @@ class ParameterSingleton {
         template<class lattice, int num=1, int idx1=0, int idx2=0>
         static void set(T (*condition)(const int)) {
 
-            for(int k = lattice::m_HaloSize; k < lattice::m_N-lattice::m_HaloSize; k++) {
+            for(int k = lattice::HaloSize; k < lattice::N-lattice::HaloSize; k++) {
 
                 initialise<lattice,num>(condition(k),k,idx1,idx2);
 
@@ -219,7 +219,7 @@ class ParameterSingleton {
         template<class lattice, int num=1, int idx1=0, int idx2=0>
         static void set(bool (*condition)(const int), T val) {
 
-            for(int k = lattice::m_HaloSize; k < lattice::m_N-lattice::m_HaloSize; k++) {
+            for(int k = lattice::HaloSize; k < lattice::N-lattice::HaloSize; k++) {
 
                 if (condition(k)) initialise<lattice,num>(val,k,idx1,idx2);
 
@@ -230,7 +230,7 @@ class ParameterSingleton {
         template<class lattice, int num=1, int idx1=0, int idx2=0>
         static void set(bool (*condition)(const int), T val, T false_val) {
 
-            for(int k = lattice::m_HaloSize; k < lattice::m_N-lattice::m_HaloSize; k++) {
+            for(int k = lattice::HaloSize; k < lattice::N-lattice::HaloSize; k++) {
 
                 if (condition(k)) initialise<lattice,num>(val,k,idx1,idx2);
                 else initialise<lattice,num>(false_val,k,idx1,idx2);
@@ -269,9 +269,9 @@ inline void Parameter<obj, lattice, T, num>::Save(std::string filename, int t, s
 
     MPI_File_open(MPI_COMM_SELF, fdump, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh); //Open the file using mpi in write only mode
     
-    MPI_File_seek(fh, sizeof(double) * mpi.rank * m_Num * (lattice::m_LX * lattice::m_LY * lattice::m_LZ) / mpi.size, MPI_SEEK_SET); //Skip to a certain location in the file, currently
+    MPI_File_seek(fh, sizeof(double) * mpi.rank * m_Num * (lattice::LX * lattice::LY * lattice::LZ) / mpi.size, MPI_SEEK_SET); //Skip to a certain location in the file, currently
     
-    MPI_File_write(fh,&mv_Parameter[lattice::m_HaloSize * m_Num], m_Num * (lattice::m_N - 2 * lattice::m_HaloSize), MPI_DOUBLE, MPI_STATUSES_IGNORE);
+    MPI_File_write(fh,&mv_Parameter[lattice::HaloSize * m_Num], m_Num * (lattice::N - 2 * lattice::HaloSize), MPI_DOUBLE, MPI_STATUSES_IGNORE);
 
     MPI_File_close(&fh);
          
@@ -279,9 +279,9 @@ inline void Parameter<obj, lattice, T, num>::Save(std::string filename, int t, s
 
     std::ofstream fs(fdump, std::ios::out | std::ios::binary);
     
-    fs.seekp(sizeof(double) * mpi.rank * m_Num * (lattice::m_LX * lattice::m_LY * lattice::m_LZ) / mpi.size);
+    fs.seekp(sizeof(double) * mpi.rank * m_Num * (lattice::LX * lattice::LY * lattice::LZ) / mpi.size);
 
-    for (int k = lattice::m_HaloSize; k < lattice::m_N - lattice::m_HaloSize; k++) { 
+    for (int k = lattice::HaloSize; k < lattice::N - lattice::HaloSize; k++) { 
 
         for(int idx = 0; idx < m_Num; idx++) fs.write((char *)(&mv_Parameter[k * m_Num + idx]), sizeof(double));
         
@@ -334,10 +334,10 @@ inline void ParameterSave<lattice>::SaveHeader(const int& timestep, const int& s
 
         std::ofstream fs(fdump, std::ios::out | std::ios::binary);
 
-        fs.write((char *)(&lattice::m_LX), sizeof(int));
-        fs.write((char *)(&lattice::m_LY), sizeof(int));
-        fs.write((char *)(&lattice::m_LZ), sizeof(int));
-        fs.write((char *)(&lattice::m_NDIM), sizeof(int));
+        fs.write((char *)(&lattice::LX), sizeof(int));
+        fs.write((char *)(&lattice::LY), sizeof(int));
+        fs.write((char *)(&lattice::LZ), sizeof(int));
+        fs.write((char *)(&lattice::NDIM), sizeof(int));
         fs.write((char *)(&timestep), sizeof(int));
         fs.write((char *)(&saveinterval), sizeof(int));
 

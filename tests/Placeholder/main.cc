@@ -116,7 +116,7 @@ int main(int argc, char **argv){
         if (timestep%SAVEINTERVAL==0) {
             std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
             Saver.SaveParameter<OrderParameter<>>(timestep);
-            Saver.SaveParameter<Velocity<>,Lattice::m_NDIM>(timestep);
+            Saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }
          
         LBM.evolve(); //Evolve one timestep of the algorithm

@@ -5,44 +5,44 @@
 #include "AddOnBase.hh"
 #include<iostream>
 #include<utility>
+#include<math.h>
 
 class ChemicalPotentialCalculatorBinary : public AddOnBase {
     
     public:
 
         template<typename traits>
-        inline void compute(const int k); //Perform any neccessary computations before force is computed
+        inline void compute(int k);
 
-        inline void setA(const double A);
+        inline void setA(double A);
 
-        inline void setKappa(const double kappa);
+        inline void setKappa(double kappa);
 
-        double m_A;//=0.00015;
+        double m_A;
 
-        double m_Kappa;//=0.0003;
+        double m_Kappa;
     
 };
 
-template<typename traits>
-inline void ChemicalPotentialCalculatorBinary::compute(const int k){ //Not necessary
+template<typename T_traits>
+inline void ChemicalPotentialCalculatorBinary::compute(int k){
 
-    double& orderparam = OrderParameter<>::get<typename traits::Lattice>(k);
-    double& chemicalpotential = ChemicalPotential<>::get<typename traits::Lattice>(k);
-    double& laplacianorderparameter = LaplacianOrderParameter<>::get<typename traits::Lattice>(k);
+    using Lattice = typename T_traits::Lattice;
 
-    double orderparamcubed =  orderparam * orderparam * orderparam;
-    chemicalpotential = -m_A * orderparam + m_A * orderparamcubed - m_Kappa * laplacianorderparameter;
-
-}
-
-inline void ChemicalPotentialCalculatorBinary::setA(const double A){ //Not necessary
-
-    m_A=A;
+    ChemicalPotential<>::get<Lattice>(k) = -m_A * OrderParameter<>::get<Lattice>(k)
+                                                            + m_A * pow(OrderParameter<>::get<Lattice>(k), 3)
+                                                            - m_Kappa * LaplacianOrderParameter<>::get<Lattice>(k);
 
 }
 
-inline void ChemicalPotentialCalculatorBinary::setKappa(const double kappa){ //Not necessary
+inline void ChemicalPotentialCalculatorBinary::setA(double A){
 
-    m_Kappa=kappa;
+    m_A = A;
+
+}
+
+inline void ChemicalPotentialCalculatorBinary::setKappa(double kappa){
+
+    m_Kappa = kappa;
 
 }

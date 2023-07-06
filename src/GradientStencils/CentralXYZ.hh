@@ -4,27 +4,35 @@
 
 struct CentralXYZ : GradientBase<Cartesian> {
 
-    template<class traits, class parameter>
-    static inline double compute(const int direction, const int k, int num = 0);
+    template<class T_traits, class T_parameter>
+    static inline double compute(int direction, int k, int num = 0);
 
-    template<class obj>
-    using GradientType = Gradient<obj,obj::instances>;
+    template<class T_obj>
+    using GradientType = Gradient<T_obj,T_obj::instances>;
     
 };
 
-template<class traits, class parameter>
-inline double CentralXYZ::compute(const int direction, const int k, int num){
+template<class T_traits, class T_parameter>
+inline double CentralXYZ::compute(int direction, int k, int num){
     
-    using DataType = Data_Base<typename traits::Lattice, typename traits::Stencil>;
+    using Lattice = typename T_traits::Lattice;
+    using Stencil = typename T_traits::Stencil;
 
-    double gradientsum=0;
+    using DataType = Data_Base<Lattice, Stencil>;
 
-    for (int idx = 1; idx <traits::Stencil::Q; idx++) {
+    DataType& data = DataType::getInstance();
 
-            gradientsum += 0.5*traits::Stencil::Weights[idx] * traits::Stencil::Ci_xyz(direction)[idx] *(parameter::template get<typename traits::Lattice>(DataType::getInstance().getNeighbors()[k * traits::Stencil::Q+idx],num)-parameter::template get<typename traits::Lattice>(DataType::getInstance().getNeighbors()[k * traits::Stencil::Q + traits::Stencil::Opposites[idx]],num)); //TEMPORARY
+    double gradientsum = 0;
+
+    for (int idx = 1; idx <Stencil::Q; idx++) {
+
+            const double& param1 = T_parameter::template get<Lattice>(data.getNeighbor(k, idx), num);
+            const double& param2 = T_parameter::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[idx]), num);
+
+            gradientsum += 0.5 * Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (param1 - param2);
         
     }
 
-    return 1.0 / (traits::Stencil::Cs2*traits::Lattice::m_DT) * gradientsum;
+    return 1.0 / (Stencil::Cs2 * Lattice::DT) * gradientsum;
 
 }

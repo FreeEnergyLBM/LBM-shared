@@ -1,15 +1,15 @@
 #pragma once
 #include "../Service.hh"
 
-template<class Directions=Cartesian>
+template<class T_Directions=Cartesian>
 struct GradientBase{
 
-    template<class stencil>
+    template<class T_stencil>
     inline static constexpr int getNumberOfDirections(){
-        if constexpr (std::is_same_v<Directions,Cartesian>) return stencil::D; 
-        else if constexpr (std::is_same_v<Directions,AllDirections>) return stencil::Q;
-        else if constexpr (std::is_same_v<Directions,One>) return 1;
-        else return stencil::D; 
+        if constexpr (std::is_same_v<T_Directions,Cartesian>) return T_stencil::D; 
+        else if constexpr (std::is_same_v<T_Directions,AllDirections>) return T_stencil::Q;
+        else if constexpr (std::is_same_v<T_Directions,One>) return 1;
+        else return T_stencil::D; 
     } 
     
 };

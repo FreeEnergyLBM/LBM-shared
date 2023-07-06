@@ -4,36 +4,41 @@
 
 struct CentralXYZNoSolid : GradientBase<Cartesian> {
     
-    template<class traits, class parameter>
-    static inline double compute(const int direction, const int k, int num = 0);
+    template<class T_traits, class T_parameter>
+    static inline double compute( int direction, int k, int num = 0);
 
-    template<class obj>
-    using GradientType = Gradient<obj,obj::instances>;
+    template<class T_obj>
+    using GradientType = Gradient<T_obj,T_obj::instances>;
     
 };
 
-template<class traits, class parameter>
-inline double CentralXYZNoSolid::compute(const int direction, const int k, int num) {
+template<class T_traits, class T_parameter>
+inline double CentralXYZNoSolid::compute(int direction, int k, int num) {
     
-    using DataType = Data_Base<typename traits::Lattice, typename traits::Stencil>;
+    using Lattice = typename T_traits::Lattice;
+    using Stencil = typename T_traits::Stencil;
 
-    double gradientsum=0;
+    using DataType = Data_Base<Lattice, Stencil>;
 
-    for (int idx = 1; idx <traits::Stencil::Q; idx++) {
+    DataType& data = DataType::getInstance();
+
+    double gradientsum = 0;
+
+    for (int idx = 1; idx <Stencil::Q; idx++) {
         
-        if ((Geometry<typename traits::Lattice>::isSolid(DataType::getInstance().getNeighbors()[k * traits::Stencil::Q + idx]))) {
+        if ((Geometry<Lattice>::isSolid(data.getNeighbor(k,idx)))) {
 
-            gradientsum += traits::Stencil::Weights[idx] * traits::Stencil::Ci_xyz(direction)[idx] * (parameter::template get<typename traits::Lattice>(k,num));
+            gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (T_parameter::template get<Lattice>(k, num));
 
         }
         else {
 
-            gradientsum += traits::Stencil::Weights[idx] * traits::Stencil::Ci_xyz(direction)[idx] * (parameter::template get<typename traits::Lattice>(DataType::getInstance().getNeighbors()[k * traits::Stencil::Q+idx],num));
+            gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (T_parameter::template get<Lattice>(data.getNeighbor(k, idx), num));
 
         }
         
     }
 
-    return 1.0 / (traits::Stencil::Cs2*traits::Lattice::m_DT) * gradientsum;
+    return 1.0 / (Stencil::Cs2 * Lattice::DT) * gradientsum;
 
 }

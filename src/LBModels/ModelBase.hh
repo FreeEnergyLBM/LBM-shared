@@ -10,7 +10,7 @@
 template<class t_Lattice=void, int t_NumberOfComponents=1>
 struct DefaultTrait : BaseTrait<DefaultTrait<t_Lattice,t_NumberOfComponents>> {
     
-    using Stencil = std::conditional_t<t_Lattice::m_NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
+    using Stencil = std::conditional_t<t_Lattice::NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
 
     using Boundaries = std::tuple<>;
 
@@ -30,10 +30,10 @@ struct DefaultTrait : BaseTrait<DefaultTrait<t_Lattice,t_NumberOfComponents>> {
 };
 
 template<class lattice, class traits = DefaultTrait<lattice>>
-class ModelBase{ //Inherit from base class to avoid repetition of common
+class ModelBase { //Inherit from base class to avoid repetition of common
                                                       //calculations
     static_assert(std::is_base_of<StencilBase, typename traits::Stencil>(), "ERROR: invalid stencil specified in traits class.");
-    static_assert(traits::Stencil::D == lattice::m_NDIM, "ERROR: The chosen stencil must match the number of lattice dimensions in the lattice properties.");
+    static_assert(traits::Stencil::D == lattice::NDIM, "ERROR: The chosen stencil must match the number of lattice dimensions in the lattice properties.");
     static_assert(CheckBaseTemplate<ForceBase, typename traits::Forces>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
     static_assert(CheckBase<AddOnBase, typename traits::PreProcessors>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
     static_assert(CheckBase<AddOnBase, typename traits::PostProcessors>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
@@ -150,6 +150,22 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
 
         }
 
+        template<class T_forcetypes>
+        void updateForces(double& force, T_forcetypes& forcetypes, int k, int idx) {
+            if constexpr(std::tuple_size<T_forcetypes>::value != 0){
+
+                force=std::apply([idx, k](auto&... forcetype){
+                            return (forcetype.template compute<traits>(idx, k) + ...);
+                                                                    }, forcetypes);
+
+            }
+        }
+
+        inline double computeDensity(const double* distribution, const int k) const; //Calculate density
+
+        inline double computeVelocity(const double* distribution, const double& density,
+                                const int xyz, const int k) const; //Calculate velocity
+
         typename std::remove_reference<lattice>::type::template DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
         typename std::remove_reference<lattice>::type::template DataType<typename traits::Stencil>::DistributionData& m_Distribution = m_Data.getDistributionObject();
             //Distributions
@@ -166,6 +182,42 @@ class ModelBase{ //Inherit from base class to avoid repetition of common
         std::vector<double>& distribution = m_Distribution.getDistribution(); //Reference to vector of distributions
         
 };
+
+template<class T_lattice, class T_traits>
+inline double ModelBase<T_lattice, T_traits>::computeDensity(const double* distribution, const int k) const { //Density<> calculation
+    //Density<> is the sum of distributions plus any source/correction terms
+
+    if constexpr(std::tuple_size<typename T_traits::Forces>::value != 0) {
+
+        return CollisionBase<T_lattice,typename T_traits::Stencil>::computeZerothMoment(distribution) + std::apply([k](auto&... forces) {
+
+                return (forces.template computeDensitySource<T_traits>(k) + ...);
+
+            }, mt_Forces);
+
+    }
+    else return CollisionBase<T_lattice,typename T_traits::Stencil>::computeZerothMoment(distribution);
+
+}
+
+template<class T_lattice, class T_traits>
+inline double ModelBase<T_lattice, T_traits>::computeVelocity(const double* distribution, const double& density,
+                                             const int xyz, const int k) const { //Velocity calculation in direction xyz
+    //Velocity in direction xyz is sum of distribution times the xyz component of the discrete velocity vector
+    //in each direction plus any source/correction terms
+
+    if constexpr(std::tuple_size<typename T_traits::Forces>::value != 0) {
+
+        return (1./(Density<>::get<T_lattice>(k)))*CollisionBase<T_lattice,typename T_traits::Stencil>::computeFirstMoment(distribution, xyz) + (1./(Density<>::get<T_lattice>(k)))*std::apply([xyz, k](auto&&... forces) {
+
+                return (forces.template computeVelocitySource<T_traits>(xyz, k) + ...);
+                
+            }, mt_Forces);
+
+    }
+    else return (1./(Density<>::get<T_lattice>(k)))*CollisionBase<T_lattice,typename T_traits::Stencil>::computeFirstMoment(distribution, xyz);
+
+}
 
 template<class lattice, class traits>
 inline const std::vector<double>& ModelBase<lattice,traits>::getDistribution() const {
@@ -216,7 +268,7 @@ template<class lattice, class traits>
 inline void ModelBase<lattice,traits>::precompute() {
 
     #pragma omp for schedule(guided)
-    for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
+    for (int k = lattice::HaloSize; k <lattice::N - lattice::HaloSize; k++) { //loop over k
 
         precomputeTuple(mt_Boundaries,k);
 
@@ -343,7 +395,7 @@ template<class lattice, class traits>
 inline void ModelBase<lattice,traits>::postprocess() {
 
     #pragma omp for schedule(guided)
-    for (int k = lattice::m_HaloSize; k <lattice::m_N - lattice::m_HaloSize; k++) { //loop over k
+    for (int k = lattice::HaloSize; k <lattice::N - lattice::HaloSize; k++) { //loop over k
 
         postprocessTuple(mt_Boundaries,k);
 
@@ -362,7 +414,7 @@ template<class lattice, class traits>
 inline void ModelBase<lattice,traits>::boundaries() {
 
     #pragma omp for schedule(guided)
-    for (int k = 0; k <lattice::m_N; k++) { //loop over k
+    for (int k = 0; k <lattice::N; k++) { //loop over k
 
         if constexpr(std::tuple_size<typename traits::Boundaries>::value != 0) { //Check if there are any boundary
                                                                               //models

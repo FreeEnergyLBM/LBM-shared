@@ -11,14 +11,14 @@ class CubicWetting : public AddOnBase {
 
         CubicWetting(const CubicWetting& other) : m_Prefactor(other.m_Prefactor) {}
 
-        template<typename traits>
-        inline void compute(const int k);
+        template<typename T_traits>
+        inline void compute(int k);
 
-        template<typename traits>
+        template<typename T_traits>
         inline void communicate();
 
-        inline void setTheta(const double theta);
-        inline void setThetaDegrees(const double theta);
+        inline void setTheta(double theta);
+        inline void setThetaDegrees(double theta);
 
     private:
 
@@ -27,22 +27,35 @@ class CubicWetting : public AddOnBase {
 
 };
 
-template<typename traits>
+template<typename T_traits>
 inline void CubicWetting::compute(const int k) {
-    using data = Data_Base<typename traits::Lattice, typename traits::Stencil>;
+
+    using Lattice = typename T_traits::Lattice;
+    using Stencil = typename T_traits::Stencil;
+
+    using data = Data_Base<Lattice, Stencil>;
+
     const std::vector<int>& mv_Neighbors = data::getInstance().getNeighbors();
-    Geometry<typename traits::Lattice> m_Geometry;
-    if (m_Geometry.isSolid(k)) {
+
+    if (Geometry<Lattice>::isSolid(k)) {
+
         double phiAvg = 0;
         int count = 0;
-        for (int idx = 0; idx < traits::Stencil::Q; idx++) {
-            if (!m_Geometry.isSolid(mv_Neighbors[k * traits::Stencil::Q+idx])) {
-                phiAvg += OrderParameter<>::get<typename traits::Lattice>(mv_Neighbors[k * traits::Stencil::Q+idx]);
+
+        for (int idx = 0; idx < Stencil::Q; idx++) {
+
+            if (!Geometry<Lattice>::isSolid(mv_Neighbors[k * Stencil::Q+idx])) {
+
+                phiAvg += OrderParameter<>::get<Lattice>(mv_Neighbors[k * Stencil::Q+idx]);
                 count++;
+
             }
+
         }
+
         phiAvg /= count;
-        OrderParameter<>::get<typename traits::Lattice>(k) = phiAvg - m_Prefactor * (pow(phiAvg,2) - 1.0);
+        OrderParameter<>::get<Lattice>(k) = phiAvg - m_Prefactor * (pow(phiAvg,2) - 1.0);
+
     }
 }
 
@@ -57,10 +70,10 @@ inline void CubicWetting::setThetaDegrees(const double theta){
 }
 
 
-template<typename traits>
+template<typename T_traits>
 inline void CubicWetting::communicate(){
 
-    using Lattice = typename traits::Lattice;
+    using Lattice = typename T_traits::Lattice;
     Lattice::communicate(OrderParameter<>::getInstance<Lattice>());
     
 }

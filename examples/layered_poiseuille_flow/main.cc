@@ -85,7 +85,7 @@ int main(int argc, char **argv){
             std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
             saver.SaveParameter<SolidLabels<>>(timestep);
             saver.SaveParameter<OrderParameter<>>(timestep);
-            saver.SaveParameter<Velocity<>,Lattice::m_NDIM>(timestep);
+            saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }
 
         // Evolve by one timestep

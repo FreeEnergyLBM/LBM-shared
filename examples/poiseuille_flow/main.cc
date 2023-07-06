@@ -49,7 +49,7 @@ int main(int argc, char **argv){
         if (timestep%saveInterval==0) {
             // Use the save handler to save the solid and the velocity
             saver.SaveParameter<SolidLabels<>>(timestep);
-            saver.SaveParameter<Velocity<>,Lattice::m_NDIM>(timestep);
+            saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
             std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
         }
         lbm.evolve();

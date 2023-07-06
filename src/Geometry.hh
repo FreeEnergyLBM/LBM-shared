@@ -50,34 +50,34 @@ class Geometry {
 template<typename lattice>
 inline bool Geometry<lattice>::isPeriodic(int k) {
     
-    int yAtCurrentk = computeY(lattice::m_LY, lattice::m_LZ, k);
-    int zAtCurrentk = computeZ(lattice::m_LY, lattice::m_LZ, k);
-    int xAtCurrentk = computeX(lattice::m_LY, lattice::m_LZ, k);
+    int yAtCurrentk = computeY(lattice::LY, lattice::LZ, k);
+    int zAtCurrentk = computeZ(lattice::LY, lattice::LZ, k);
+    int xAtCurrentk = computeX(lattice::LY, lattice::LZ, k);
 
-    if(lattice::m_LZ <= 1 || lattice::m_LY <= 1 || lattice::m_LXdiv <= 1) return true; //If simulation is 2D
+    if(lattice::LZ <= 1 || lattice::LY <= 1 || lattice::LXdiv <= 1) return true; //If simulation is 2D
     else if (zAtCurrentk == 0 ||
-         zAtCurrentk == lattice::m_LZ-1) return true; //Edges in Z direction
+         zAtCurrentk == lattice::LZ-1) return true; //Edges in Z direction
 
     else if (yAtCurrentk == 0 ||
-         yAtCurrentk == lattice::m_LY-1) return true; //Edges in Y direction
+         yAtCurrentk == lattice::LY-1) return true; //Edges in Y direction
         
     else if (xAtCurrentk == 0 ||
-         xAtCurrentk == lattice::m_LXdiv-1) return true; //Edges in X direction
+         xAtCurrentk == lattice::LXdiv-1) return true; //Edges in X direction
     
     return false;
     
     /*
-    if (((lattice::m_LZ>1&&(k%(lattice::m_LZ-1)==0||
-         (k-1)%(lattice::m_LZ-1)==0)))||
-        (lattice::m_LY>1&&(k/(lattice::m_LZ)%(lattice::m_LY-1)==0||
-         ((k)/(lattice::m_LZ)-1)%(lattice::m_LY-1)==0))||
-        (lattice::m_LXdiv>1&&((k/(lattice::m_LZ)/(lattice::m_LY))%(lattice::m_LXdiv-1)==0||
-          ((k)/(lattice::m_LZ)/(lattice::m_LY)-1)%(lattice::m_LXdiv-1)==0||
-          ((k)/(lattice::m_LZ)/(lattice::m_LY)-1)-1<0||
-          ((k)/(lattice::m_LZ)/(lattice::m_LY)-1)+1>lattice::m_LXdiv-1))||
-        lattice::m_LZ==1||
-        lattice::m_LY==1||
-        lattice::m_LXdiv==1) return true; //These conditions just check whether the lattice point is on the edge of the 
+    if (((lattice::LZ>1&&(k%(lattice::LZ-1)==0||
+         (k-1)%(lattice::LZ-1)==0)))||
+        (lattice::LY>1&&(k/(lattice::LZ)%(lattice::LY-1)==0||
+         ((k)/(lattice::LZ)-1)%(lattice::LY-1)==0))||
+        (lattice::LXdiv>1&&((k/(lattice::LZ)/(lattice::LY))%(lattice::LXdiv-1)==0||
+          ((k)/(lattice::LZ)/(lattice::LY)-1)%(lattice::LXdiv-1)==0||
+          ((k)/(lattice::LZ)/(lattice::LY)-1)-1<0||
+          ((k)/(lattice::LZ)/(lattice::LY)-1)+1>lattice::LXdiv-1))||
+        lattice::LZ==1||
+        lattice::LY==1||
+        lattice::LXdiv==1) return true; //These conditions just check whether the lattice point is on the edge of the 
                             //simulation domain
     
     else return false;
@@ -93,13 +93,13 @@ template<typename lattice>
 inline bool Geometry<lattice>::isSolid(int k) {
 
     return SolidLabels<>::get<lattice>(k);
-    //int yAtCurrentk = computeY(lattice::m_LY, lattice::m_LZ, k);
-    //int zAtCurrentk = computeZ(lattice::m_LY, lattice::m_LZ, k);
-    //int xAtCurrentk = computeX(lattice::m_LY, lattice::m_LZ, k);
+    //int yAtCurrentk = computeY(lattice::LY, lattice::LZ, k);
+    //int zAtCurrentk = computeZ(lattice::LY, lattice::LZ, k);
+    //int xAtCurrentk = computeX(lattice::LY, lattice::LZ, k);
     
-    //if (yAtCurrentk <= 1 || yAtCurrentk >= lattice::m_LY - 2 || xAtCurrentk <= 1 || xAtCurrentk >= lattice::m_LXdiv - 2 || zAtCurrentk <= 1 || zAtCurrentk >= lattice::m_LZ - 2 ) return true; //Change this condition to control where the solid is
+    //if (yAtCurrentk <= 1 || yAtCurrentk >= lattice::LY - 2 || xAtCurrentk <= 1 || xAtCurrentk >= lattice::LXdiv - 2 || zAtCurrentk <= 1 || zAtCurrentk >= lattice::LZ - 2 ) return true; //Change this condition to control where the solid is
     
-    //if (yAtCurrentk <= 1 || yAtCurrentk >= lattice::m_LY - 2 ) return true; //Change this condition to control where the solid is
+    //if (yAtCurrentk <= 1 || yAtCurrentk >= lattice::LY - 2 ) return true; //Change this condition to control where the solid is
     //else return false;
 
 }

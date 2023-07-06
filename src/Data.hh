@@ -72,11 +72,11 @@ class Data_Base{
 
             for(int idx = 0; idx <stencil::Q; idx++) {
 
-                OppositeOffset[idx] = stencil::Ci_xyz(x)[idx] * lattice::m_LZ * lattice::m_LY + stencil::Ci_xyz(y)[idx] * lattice::m_LZ + stencil::Ci_xyz(z)[idx];
+                OppositeOffset[idx] = stencil::Ci_xyz(x)[idx] * lattice::LZ * lattice::LY + stencil::Ci_xyz(y)[idx] * lattice::LZ + stencil::Ci_xyz(z)[idx];
 
             }
 
-            mv_Neighbors.resize(stencil::Q * lattice::m_N); //Allocate memory for neighbors array
+            mv_Neighbors.resize(stencil::Q * lattice::N); //Allocate memory for neighbors array
             
             generateNeighbors(); //Fill neighbors array
             
@@ -107,6 +107,7 @@ class Data_Base{
          * \brief Returns the neighbor array
          */
         inline std::vector<int>& getNeighbors();
+        inline int& getNeighbor(int k,int q){return mv_Neighbors[k*stencil::Q+q];};
         const inline std::vector<int>& getNeighbors() const;
 
 };
@@ -164,21 +165,21 @@ inline int Data_Base<lattice,stencil>::getOneNeighborPeriodic(const int k, const
 
     int neighbor = 0;
 
-    if(lattice::m_LZ> 1) {
-        int localz=computeZ(lattice::m_LY,lattice::m_LZ,k);
-        if (localz==(lattice::m_LZ - 1) && stencil::Ci_xyz(z)[Q]> 0) { //(note that the z direction goes from 0 to lattice::m_LZ-1)
+    if(lattice::LZ> 1) {
+        int localz=computeZ(lattice::LY,lattice::LZ,k);
+        if (localz==(lattice::LZ - 1) && stencil::Ci_xyz(z)[Q]> 0) { //(note that the z direction goes from 0 to lattice::LZ-1)
                                                      //if the next lattice point in the z direction is divisible
-                                                     //by lattice::m_LZ (so we are at z=lattice::m_LZ-1) and we are pointing in the +z
+                                                     //by lattice::LZ (so we are at z=lattice::LZ-1) and we are pointing in the +z
                                                      //direction
 
-            neighbor += -(lattice::m_LZ - 1); //reduce k by lattice::m_LZ-1 so we are now at z=0
+            neighbor += -(lattice::LZ - 1); //reduce k by lattice::LZ-1 so we are now at z=0
 
         }
         else if (localz==(0) && stencil::Ci_xyz(z)[Q] <0) { //if the current lattice point in the z direction is
-                                                        //divisible by lattice::m_LZ (so we are at z=0) and we are pointing
+                                                        //divisible by lattice::LZ (so we are at z=0) and we are pointing
                                                         //in the -z direction
 
-            neighbor += (lattice::m_LZ - 1); //increase k by lattice::m_LZ-1 so we are now at z=lattice::m_LZ-1
+            neighbor += (lattice::LZ - 1); //increase k by lattice::LZ-1 so we are now at z=lattice::LZ-1
 
         }
         else if (stencil::Ci_xyz(z)[Q] != 0) { //Else calculate neighbors normally
@@ -187,42 +188,42 @@ inline int Data_Base<lattice,stencil>::getOneNeighborPeriodic(const int k, const
 
         }
     }
-    if(lattice::m_LY> 1) {
-        int localY=computeY(lattice::m_LY,lattice::m_LZ,k);
-        if (localY == (lattice::m_LY - 1) && stencil::Ci_xyz(y)[Q]> 0) { //(note that the y direction goes from 0 to lattice::m_LY-1)
+    if(lattice::LY> 1) {
+        int localY=computeY(lattice::LY,lattice::LZ,k);
+        if (localY == (lattice::LY - 1) && stencil::Ci_xyz(y)[Q]> 0) { //(note that the y direction goes from 0 to lattice::LY-1)
                                                             //if the next lattice point in the y direction is
-                                                            //divisible by lattice::m_LY (so we are at z=lattice::m_LY-1) and we are
+                                                            //divisible by lattice::LY (so we are at z=lattice::LY-1) and we are
                                                             //pointing in the +y direction
 
-            neighbor += -(lattice::m_LZ) * (lattice::m_LY - 1);
+            neighbor += -(lattice::LZ) * (lattice::LY - 1);
 
         }
         else if (localY == 0 && stencil::Ci_xyz(y)[Q] <0) { //...
 
-            neighbor += (lattice::m_LZ) * (lattice::m_LY - 1);
+            neighbor += (lattice::LZ) * (lattice::LY - 1);
 
         }
         else if (stencil::Ci_xyz(y)[Q] != 0) {
 
-            neighbor += stencil::Ci_xyz(y)[Q] * lattice::m_LZ;
+            neighbor += stencil::Ci_xyz(y)[Q] * lattice::LZ;
 
         }
     }
-    if(lattice::m_LXdiv> 1) {
-        int localX=computeX(lattice::m_LY,lattice::m_LZ,k);
-        if (localX == (lattice::m_LXdiv - 1) && stencil::Ci_xyz(x)[Q]> 0) { //...
+    if(lattice::LXdiv> 1) {
+        int localX=computeX(lattice::LY,lattice::LZ,k);
+        if (localX == (lattice::LXdiv - 1) && stencil::Ci_xyz(x)[Q]> 0) { //...
 
-            neighbor += -(lattice::m_LZ) * lattice::m_LY * (lattice::m_LXdiv - 1);
+            neighbor += -(lattice::LZ) * lattice::LY * (lattice::LXdiv - 1);
 
         }
         else if (localX == 0 && stencil::Ci_xyz(x)[Q] <0) {
 
-            neighbor += (lattice::m_LZ) * lattice::m_LY * (lattice::m_LXdiv - 1);
+            neighbor += (lattice::LZ) * lattice::LY * (lattice::LXdiv - 1);
 
         }
         else if (stencil::Ci_xyz(x)[Q] != 0) {
 
-            neighbor += stencil::Ci_xyz(x)[Q] * lattice::m_LZ * lattice::m_LY;
+            neighbor += stencil::Ci_xyz(x)[Q] * lattice::LZ * lattice::LY;
             
         }
     }
@@ -238,7 +239,7 @@ template<class lattice, class stencil>
 inline void Data_Base<lattice,stencil>::generateNeighbors() { //Loop over all lattice points and calculate the neghbor at each point
 
     #pragma omp parallel for schedule(guided)
-    for (int k = 0; k <lattice::m_N; k++) { //For loop over all lattice points
+    for (int k = 0; k <lattice::N; k++) { //For loop over all lattice points
         
         for(int q = 0; q < stencil::Q; q++) {
 
@@ -291,20 +292,20 @@ class Data1 : public Data_Base<lattice, stencil> {
 
             Distribution_Derived(std::vector<int>& neighbors) : Distribution_Base<stencil>(neighbors), mv_Neighbors(neighbors) { //Initialise mv_DistNeighbors
 
-                Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q * lattice::m_N); //Array size is number of
+                Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q * lattice::N); //Array size is number of
                                                                                   //directions times number of
                                                                                   //lattice points
-                Distribution_Base<stencil>::mv_OldDistribution.resize(stencil::Q * lattice::m_N); //Old distributions needed
+                Distribution_Base<stencil>::mv_OldDistribution.resize(stencil::Q * lattice::N); //Old distributions needed
                                                                                      //in this case
                 
             }
 
             Distribution_Derived(Distribution_Derived& other) : Distribution_Base<stencil>(other.mv_Neighbors), mv_Neighbors(other.mv_Neighbors) { //Initialise mv_DistNeighbors
 
-                Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q * lattice::m_N); //Array size is number of
+                Distribution_Base<stencil>::mv_Distribution.resize(stencil::Q * lattice::N); //Array size is number of
                                                                                   //directions times number of
                                                                                   //lattice points
-                Distribution_Base<stencil>::mv_OldDistribution.resize(stencil::Q * lattice::m_N); //Old distributions needed
+                Distribution_Base<stencil>::mv_OldDistribution.resize(stencil::Q * lattice::N); //Old distributions needed
                                                                                      //in this case
                 
             }

@@ -5,100 +5,100 @@
 //ExternalForce.hh: Contains the force class for a constant applied body force in a given direction. This is
 //unfinished (should be able to specify magnitude and direction).
 
-//template<template class objtype, class method,size_t... Is>
+//template<template class objtype, class T_method,size_t... Is>
 //auto constexpr ForceStencilTupleType(std::index_sequence<Is...> is){
-//    std::tuple<objtype<method::ForceStencils()[Is]>...> t = std::tie(objtype<method::ForceStencils()[Is]>::getInstance()...);
+//    std::tuple<objtype<T_method::ForceStencils()[Is]>...> t = std::tie(objtype<T_method::ForceStencils()[Is]>::getInstance()...);
 //    return t;
 //}
 
-template<class method=Guo>
+template<class T_method = Guo>
 class ForceBase{
     
     public:
 
-        using Method = method;
+        using Method = T_method;
 
-        template<class traits>
-        inline double computeXYZ(const int xyz, const int k) const; //Return force at lattice point k in direction xyz
+        template<class T_traits>
+        inline double computeXYZ(int xyz, int k); //Return force at lattice point k in direction xyz
 
-        template<class traits>
-        inline double computeQ(const int Q, const int k) const; //Return force at lattice point k in direction xyz
+        template<class T_traits>
+        inline double computeQ(int Q, int k); //Return force at lattice point k in direction xyz
 
-        template<class traits>
-        inline void precompute(const int k); //Perform any neccessary computations before force is computed
+        template<class T_traits>
+        inline void precompute(int k); //Perform any neccessary computations before force is computed
 
-        template<class traits>
-        inline double computeDensitySource(const int k) const; //Calculate any possible source/correction term for density
+        template<class T_traits>
+        inline double computeDensitySource(int k); //Calculate any possible source/correction term for density
 
-        template<class traits>
-        inline double computeVelocitySource(const int xyz, const int k) const; //Calculate any possible source/correction term for
+        template<class T_traits>
+        inline double computeVelocitySource(int xyz, int k); //Calculate any possible source/correction term for
                                                            //velocity
 
-        template<class traits>
-        inline void postprocess(const int k); //Perform any necessary postprocessing
+        template<class T_traits>
+        inline void postprocess(int k); //Perform any necessary postprocessing
 
-        template<class traits>
+        template<class T_traits>
         inline void communicatePostProcess(); //Perform any necessary postprocessing
 
-        template<class traits>
+        template<class T_traits>
         inline void communicatePrecompute(); //Perform any necessary postprocessing
 
     private:
 
 };
 
-template<class method>
-template<class traits>
-inline double ForceBase<method>::computeXYZ(const int xyz, const int k) const {
+template<class T_method>
+template<class T_traits>
+inline double ForceBase<T_method>::computeXYZ(int xyz, int k) {
 
     return 0;
 
 }
 
-template<class method>
-template<class traits>
-inline double ForceBase<method>::computeQ(const int Q, const int k) const {
+template<class T_method>
+template<class T_traits>
+inline double ForceBase<T_method>::computeQ(int Q, int k) {
 
     return 0;
 
 }
 
-template<class method>
-template<class traits>
-inline void ForceBase<method>::precompute(const int k) { //Not necessary
+template<class T_method>
+template<class T_traits>
+inline void ForceBase<T_method>::precompute(int k) { //Not necessary
     
 }
 
-template<class method>
-template<class traits>
-inline void ForceBase<method>::postprocess(const int k) { //Not necessary
+template<class T_method>
+template<class T_traits>
+inline void ForceBase<T_method>::postprocess(int k) { //Not necessary
     
 }
 
-template<class method>
-template<class traits>
-inline double ForceBase<method>::computeDensitySource(const int k) const { //Not necessary
+template<class T_method>
+template<class T_traits>
+inline double ForceBase<T_method>::computeDensitySource(int k) { //Not necessary
 
     return 0.0;
 
 }
 
-template<class method>
-template<class traits>
-inline double ForceBase<method>::computeVelocitySource(const int xyz, const int k) const { //Need to correct velocity
+template<class T_method>
+template<class T_traits>
+inline double ForceBase<T_method>::computeVelocitySource(int xyz, int k) { //Need to correct velocity
 
     return 0;
     
 }
 
-template<class method>
-template<class traits>
-inline void ForceBase<method>::communicatePrecompute() { //Not necessary
+template<class T_method>
+template<class T_traits>
+inline void ForceBase<T_method>::communicatePrecompute() { //Not necessary
     
 }
 
-template<class method>
-template<class traits>
-inline void ForceBase<method>::communicatePostProcess() { //Not necessary
+template<class T_method>
+template<class T_traits>
+inline void ForceBase<T_method>::communicatePostProcess() { //Not necessary
     
 }

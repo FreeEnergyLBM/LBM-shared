@@ -21,12 +21,12 @@ class SRT{
     public:
         static const inline double& Omega(const double& itau) {return itau;}
         template<class lattice>
-        static const inline double ForcePrefactor(const double& itau) {return 1.-0.5*lattice::m_DT*itau;}
+        static const inline double ForcePrefactor(const double& itau) {return 1.-0.5*lattice::DT*itau;}
         template<class lattice>
         static inline void initialise(double tau1,double tau2){}; 
         template<class lattice>
         static inline double collide(const double* old, const double* equilibrium, const double& itau, int idx){
-            return old[idx] - lattice::m_DT * Omega(itau) * (old[idx] - equilibrium[idx]); 
+            return old[idx] - lattice::DT * Omega(itau) * (old[idx] - equilibrium[idx]); 
         }
         template<class lattice>
         static inline double forcing(const double* forces, const double& itau, int idx){
@@ -75,7 +75,7 @@ class MRT{
         static inline double collide(const double* old, const double* equilibrium, const double& itau, int idx){
             double collisionsum=0;
             for (int sumidx=0; sumidx<stencil::Q; sumidx++){
-                collisionsum+=lattice::m_DT * getInstance().Omega(itau)[idx*stencil::Q+sumidx] * (old[sumidx] - equilibrium[sumidx]);
+                collisionsum+=lattice::DT * getInstance().Omega(itau)[idx*stencil::Q+sumidx] * (old[sumidx] - equilibrium[sumidx]);
                 
             }
             
@@ -104,7 +104,7 @@ inline void MRT<stencil>::generateMRTTau(double tau,int tauidx,const double (&Mi
 
     for(int i = 0; i < stencil::Q; i++){
         weightmatrix[i*stencil::Q+i] = stencil::MRTWeights(1./tau)[i];
-        weightmatrixforcing[i*stencil::Q+i] = 1.0-lattice::m_DT*0.5*weightmatrix[i*stencil::Q+i]; 
+        weightmatrixforcing[i*stencil::Q+i] = 1.0-lattice::DT*0.5*weightmatrix[i*stencil::Q+i]; 
     }
     
     for(int i = 0; i < stencil::Q; i++){

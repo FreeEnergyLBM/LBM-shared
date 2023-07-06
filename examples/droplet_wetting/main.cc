@@ -7,11 +7,11 @@ const int lx = 100; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 const int lz = 1; // Size of domain in z direction
 
-const int timesteps = 10000; // Number of iterations to perform
-const int saveInterval = 1000; // Interval to save global data
+const int timesteps = 100000; // Number of iterations to perform
+const int saveInterval = 10000; // Interval to save global data
 
 const double contactAngle = 135; // Contact angle of the liquid on the solid
-const double dropRadius = 20; // Radius to initialise the droplet
+const double dropRadius = 30; // Radius to initialise the droplet
 
 
 // Set up the lattice, including the resolution and data/parallelisation method
@@ -79,7 +79,7 @@ int main(int argc, char **argv){
             std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
             saver.SaveParameter<SolidLabels<>>(timestep);
             saver.SaveParameter<OrderParameter<>>(timestep);
-            saver.SaveParameter<Velocity<>,Lattice::m_NDIM>(timestep);
+            saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }
         lbm.evolve();
     }
