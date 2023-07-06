@@ -16,17 +16,10 @@
 //Binary.hh: Contains the details of the LBM model to solve an equation for phase separation. Each
 //Model is given a "T_traits" class that contains stencil, data, force and boundary information
 
-<<<<<<< HEAD
-template<class lattice>
-using DefaultTraitBinary = typename DefaultTrait<lattice,2> :: template SetBoundary<BounceBack>
-                                                            :: template SetPreProcessor<ChemicalPotentialCalculatorBinary,CubicWetting>
-                                                            :: template SetPostProcessor<GradientsMultiStencil<OrderParameter<>,CentralXYZ,LaplacianCentral>>;
-=======
 template<class T_lattice>
 using DefaultTraitBinary = typename DefaultTrait<T_lattice,2> :: template SetBoundary<BounceBack> 
                                                           :: template SetPreProcessor<ChemicalPotentialCalculatorBinary,CubicWetting> 
                                                           :: template SetPostProcessor<GradientsMultiStencil<OrderParameter<>,CentralXYZ,LaplacianCentral>>;
->>>>>>> MRTTemporary
 
 
 template<class T_lattice, class T_traits = DefaultTraitBinary<T_lattice>>
