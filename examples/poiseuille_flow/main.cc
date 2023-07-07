@@ -2,7 +2,7 @@
 
 // This script simulates a Poiseuille flow in a channel driven by an external force
 
-const int lx = 100; // Size of domain in x direction
+const int lx = 1; // Size of domain in x direction
 const int ly = 50; // Size of domain in y direction
 
 const int timesteps = 10000; // Number of iterations to perform

@@ -1,7 +1,7 @@
 #include <lbm.hh>
 #include <math.h>
 
-// This script simulates a Poiseuille flow in a channel with two immiscible layers of fluid driven by an external force. You can modify tau1 and tau2 to see how the profile changes. tau1 and tau2 should be less than 10 or the accuracy degrades. They should never be less than 0.5, and values very close to 0.5 are prone to instability. 
+// This script simulates a Poiseuille flow in a channel with two immiscible layers of fluid driven by an external force. You can modify tau1 and tau2 to see how the velocity profile changes. tau1 and tau2 should be less than 10 or the accuracy degrades. They should never be less than 0.5, and values very close to 0.5 are prone to instability. 
 
 
 const int lx = 100; // Size of domain in x direction

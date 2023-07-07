@@ -18,21 +18,19 @@
  */
 
 //Set up the lattice, including the resolution and data/parallelisation method
-const int LX = 100; //Size of domain in x direction
-const int LY = 100; //Size of domain in y direction
-const int LZ = 1; //Size of domain in z direction (Can also not specify LZ if it is 1)
-using Lattice = LatticeProperties<Data1, X_Parallel<1>, LX, LY, LZ>;
-
-const int TIMESTEPS =1000; //Number of iterations to perform
-const int SAVEINTERVAL = 1000; //Interval to save global data
-
-const double RADIUS=30.; //Droplet radius
-
+int LX = 100; //Size of domain in x direction
+int LY = 100; //Size of domain in y direction
+int LZ = 1; //Size of domain in z direction (Can also not specify LZ if it is 1)
+int TIMESTEPS =1000; //Number of iterations to perform
+int SAVEINTERVAL = 1000; //Interval to save global data
+double RADIUS=30.; //Droplet radius
 double A = 0.00025;
 double kappa = 0.0004;
-
 double tau1 = 1.;
 double tau2 = 0.6;
+
+using Lattice = LatticePropertiesRuntime<Data1, X_Parallel<1>, 3>;
+
 
 //User defined function to define some fluid initialisation (optional)
 bool fluidLocation(int k) {
@@ -78,7 +76,7 @@ using flowfieldtraits = DefaultTraitFlowFieldBinary<Lattice> :: SetCollisionMode
 
 int main(int argc, char **argv){
     mpi.init();
-
+    Lattice l1(LX,LY,LZ);
     //Chosen models
     FlowFieldBinary<Lattice,flowfieldtraits> FlowFieldModel;
     Binary<Lattice> ComponentSeparationModel;

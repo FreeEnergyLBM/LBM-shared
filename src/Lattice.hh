@@ -14,9 +14,9 @@ struct LatticeProperties{
 
     template<typename Stencil>
     using DataType = TData<TLattice, Stencil>;//!<This will change the "DataType" implementation, which will govern the access of non-local data
-    static_assert(std::is_base_of< Data_Base<TLattice,D2Q9>, DataType<D2Q9> >::value, "ERROR: Chosen data method is not a data class.");
+    static_assert(std::is_base_of< Data_Base<TLattice,D1Q3>, DataType<D1Q3> >::value, "ERROR: Chosen data method is not a data class.");
 
-    static constexpr int NDIM = 3 - (lx <= 1 || ly <= 1 || lz <=1 );
+    static constexpr int NDIM = 3 - (lx <= 1 || ly <= 1 || lz <=1 ) * (1 + ((lx <= 1 && ly <=1)||(lx <= 1 && lz <=1)||(ly <= 1 && lz <=1)));
     static constexpr int LX = lx;
     static constexpr int LY = ly;
     static constexpr int LZ = lz;
@@ -59,6 +59,7 @@ struct LatticePropertiesRuntime {
     constexpr LatticePropertiesRuntime(int lx, int ly, double DT=1.0) : LatticePropertiesRuntime(lx, ly, 1, DT) {}
 
     constexpr LatticePropertiesRuntime(int lx, int ly, int lz, double DT=1.0) {
+        if(T_NDIM<=2&&lz>1) throw std::runtime_error("lz cannot be greater than 1 for a 2D simulation");
         LX = lx;
         LY = ly;
         LZ = lz;
@@ -86,6 +87,6 @@ struct LatticePropertiesRuntime {
     template<typename Stencil>
     using DataType = TData<TLattice, Stencil>;//!<This will change the "DataType" implementation, which will govern the access of non-local data
 
-    static_assert(std::is_base_of< Data_Base<TLattice,D2Q9>, DataType<D2Q9> >::value,
+    static_assert(std::is_base_of< Data_Base<TLattice,D1Q3>, DataType<D1Q3> >::value,
                   "ERROR: Chosen data method is not a data class.");
 };

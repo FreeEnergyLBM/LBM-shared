@@ -10,7 +10,7 @@
 template<class t_Lattice=void, int t_NumberOfComponents=1>
 struct DefaultTrait : BaseTrait<DefaultTrait<t_Lattice,t_NumberOfComponents>> {
     
-    using Stencil = std::conditional_t<t_Lattice::NDIM == 2, D2Q9, D3Q19>; //Here, D refers to the number of cartesian dimensions
+    using Stencil = std::conditional_t<t_Lattice::NDIM == 1, D1Q3, std::conditional_t<t_Lattice::NDIM == 2, D2Q9, D3Q19>>; //Here, D refers to the number of cartesian dimensions
 
     using Boundaries = std::tuple<>;
 
@@ -136,7 +136,7 @@ class ModelBase { //Inherit from base class to avoid repetition of common
             for (int idx = 0; idx <traits::Stencil::Q; idx++) { //loop over discrete velocity directions
                 //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
                 //"computeCollisionQ"
-                //std::cout<<(olddistributions[idx])<<" "<<(equilibriums[idx])<<std::endl;
+                
                 double collision=traits::template CollisionModel<typename traits::Stencil>::template collide<typename traits::Lattice>(olddistributions,equilibriums,inversetau,idx);
 
                 if constexpr(std::tuple_size<typename traits::Forces>::value != 0){
@@ -161,10 +161,10 @@ class ModelBase { //Inherit from base class to avoid repetition of common
             }
         }
 
-        inline double computeDensity(const double* distribution, const int k) const; //Calculate density
+        inline double computeDensity(const double* distribution, const int k); //Calculate density
 
         inline double computeVelocity(const double* distribution, const double& density,
-                                const int xyz, const int k) const; //Calculate velocity
+                                const int xyz, const int k); //Calculate velocity
 
         typename std::remove_reference<lattice>::type::template DataType<typename traits::Stencil> m_Data; //MOVE THIS TO BASE
         typename std::remove_reference<lattice>::type::template DataType<typename traits::Stencil>::DistributionData& m_Distribution = m_Data.getDistributionObject();
@@ -184,7 +184,7 @@ class ModelBase { //Inherit from base class to avoid repetition of common
 };
 
 template<class T_lattice, class T_traits>
-inline double ModelBase<T_lattice, T_traits>::computeDensity(const double* distribution, const int k) const { //Density<> calculation
+inline double ModelBase<T_lattice, T_traits>::computeDensity(const double* distribution, const int k) { //Density<> calculation
     //Density<> is the sum of distributions plus any source/correction terms
 
     if constexpr(std::tuple_size<typename T_traits::Forces>::value != 0) {
@@ -200,16 +200,21 @@ inline double ModelBase<T_lattice, T_traits>::computeDensity(const double* distr
 
 }
 
+template<int i>
+void test(){}
+
 template<class T_lattice, class T_traits>
 inline double ModelBase<T_lattice, T_traits>::computeVelocity(const double* distribution, const double& density,
-                                             const int xyz, const int k) const { //Velocity calculation in direction xyz
+                                             const int xyz, const int k) { //Velocity calculation in direction xyz
     //Velocity in direction xyz is sum of distribution times the xyz component of the discrete velocity vector
     //in each direction plus any source/correction terms
 
     if constexpr(std::tuple_size<typename T_traits::Forces>::value != 0) {
+        std::get<BodyForce<>>(mt_Forces);
+        //test<decltype(std::get<BodyForce>(mt_Forces))>();
+        return (1./(Density<>::get<T_lattice>(k)))*CollisionBase<T_lattice,typename T_traits::Stencil>::computeFirstMoment(distribution, xyz) + (1./(Density<>::get<T_lattice>(k)))*std::apply([xyz, k](auto&&... forces) mutable {
 
-        return (1./(Density<>::get<T_lattice>(k)))*CollisionBase<T_lattice,typename T_traits::Stencil>::computeFirstMoment(distribution, xyz) + (1./(Density<>::get<T_lattice>(k)))*std::apply([xyz, k](auto&&... forces) {
-
+                //return (test<decltype(forces)>() + ...);
                 return (forces.template computeVelocitySource<T_traits>(xyz, k) + ...);
                 
             }, mt_Forces);

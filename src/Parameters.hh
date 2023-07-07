@@ -114,6 +114,9 @@ class Parameter {
         std::map<int,bool> mm_Initialised;
 
         static constexpr int m_Num=num;
+        static constexpr int m_Instances=obj::instances;
+        static constexpr int m_Directions=m_Num/obj::instances;
+
         using ParamType = T;
 
         inline void Save(std::string filename, int t, std::string datadir);
@@ -318,6 +321,11 @@ class ParameterSave {
             parameter::template getInstance<lattice,numdir>().Save(parameter::m_Name,timestep,m_DataDir);
         }
 
+        template<class... parameter>
+        void SaveParameter(int timestep, parameter&... params){
+            (params.Save(parameter::m_Name,timestep,m_DataDir),...);
+        }
+
     private:
 
         std::string m_DataDir;
@@ -351,7 +359,7 @@ inline void ParameterSave<lattice>::SaveHeader(const int& timestep, const int& s
 
 template<int instances=1>
 struct Velocity : public ParameterSingleton<Velocity<instances>, double, instances> {
-
+    
     static constexpr char m_Name[] = "Velocity";
 
 }; //Velocity, with directions D corresponding to the number of cartesian directions in the stencilUw
@@ -385,7 +393,9 @@ struct ChemicalPotential : public ParameterSingleton<ChemicalPotential<instances
 }; //Chemical potential for the multicomponent model
 
 template<class obj,int instances = 1>
-struct Laplacian : public ParameterSingleton<Laplacian<obj,instances>,double,instances> {}; //Directional first order gradients of the order parameter
+struct Laplacian : public ParameterSingleton<Laplacian<obj,instances>,double,instances> {
+    static constexpr char m_Name[9+sizeof(obj::m_Name)] = "Laplacian"+obj::m_Name;
+}; //Directional first order gradients of the order parameter
 
 template<int instances = 1>
 struct LaplacianChemicalPotential : public Laplacian<ChemicalPotential<instances>,instances> {
@@ -409,10 +419,14 @@ struct LaplacianOrderParameter : public Laplacian<OrderParameter<instances>,inst
 }; //Laplacian of the order parameter
 
 template<class obj,int instances=1>
-struct Gradient : public ParameterSingleton<Gradient<obj,instances>, double, instances> {}; //Directional first order gradients of the order parameter
+struct Gradient : public ParameterSingleton<Gradient<obj,instances>, double, instances> {
+    static constexpr char m_Name[8+sizeof(obj::m_Name)] = "Gradient"+obj::m_Name;
+}; //Directional first order gradients of the order parameter
 
 template<class obj,int instances = 1>
-struct GradientMixed : public ParameterSingleton<GradientMixed<obj,instances>, double, instances> {}; //Directional first order gradients of the order parameter
+struct GradientMixed : public ParameterSingleton<GradientMixed<obj,instances>, double, instances> {
+    static constexpr char m_Name[13+sizeof(obj::m_Name)] = "GradientMixed"+obj::m_Name;
+}; //Directional first order gradients of the order parameter
 
 template<int instances = 1>
 struct GradientOrderParameter : public Gradient<OrderParameter<instances>,instances> {

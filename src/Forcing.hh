@@ -42,7 +42,7 @@ struct Guo : ForcingBase<Cartesian> {
     inline void precompute(force& f, int k){
         if (ma_Force.size()<traits::Lattice::NDIM) ma_Force.resize(traits::Lattice::NDIM);
         ma_Force[0]=f.template computeXYZ<traits>(0,k);
-        ma_Force[1]=f.template computeXYZ<traits>(1,k);
+        if constexpr (traits::Lattice::NDIM>=2) ma_Force[1]=f.template computeXYZ<traits>(1,k);
         if constexpr (traits::Lattice::NDIM==3) ma_Force[2]=f.template computeXYZ<traits>(2,k);
     }
     

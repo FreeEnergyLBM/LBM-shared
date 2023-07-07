@@ -100,7 +100,7 @@ inline double BodyForce<T_method>::computeQ(int idx, int k) {
            + m_MagnitudeZ * density * Stencil::Ci_xyz(2)[idx] );
     }
 
-    return 0;
+    return density * ( m_MagnitudeX * Stencil::Ci_xyz(0)[idx] );
 
 }
 
