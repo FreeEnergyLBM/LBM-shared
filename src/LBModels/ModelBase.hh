@@ -210,11 +210,9 @@ inline double ModelBase<T_lattice, T_traits>::computeVelocity(const double* dist
     //in each direction plus any source/correction terms
 
     if constexpr(std::tuple_size<typename T_traits::Forces>::value != 0) {
-        std::get<BodyForce<>>(mt_Forces);
-        //test<decltype(std::get<BodyForce>(mt_Forces))>();
+
         return (1./(Density<>::get<T_lattice>(k)))*CollisionBase<T_lattice,typename T_traits::Stencil>::computeFirstMoment(distribution, xyz) + (1./(Density<>::get<T_lattice>(k)))*std::apply([xyz, k](auto&&... forces) mutable {
 
-                //return (test<decltype(forces)>() + ...);
                 return (forces.template computeVelocitySource<T_traits>(xyz, k) + ...);
                 
             }, mt_Forces);
