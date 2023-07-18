@@ -265,6 +265,7 @@ inline void FlowFieldBinary<T_lattice, T_traits>::initialise() { //Initialise mo
 
     this -> m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     T_traits::template CollisionModel<Stencil>::template initialise<T_lattice>(m_Tau1,m_Tau2);
+    //T_traits::template CollisionModel<Stencil>::template initialiseForcing<T_lattice>(mt_Forces,m_Tau1,m_Tau2);
 
     #pragma omp parallel for schedule(guided)
     for (int k = T_lattice::HaloSize; k <T_lattice::N - T_lattice::HaloSize; k++) { //loop over k

@@ -96,7 +96,7 @@ inline void FlowField<T_lattice, T_traits>::initialise() { //Initialise model
 
         Density<>::initialise<T_lattice>(1.0 ,k); //Set density to 1 initially (This will change)
         Velocity<>::initialise<T_lattice, m_NDIM>(0.0, k, x);
-        Velocity<>::initialise<T_lattice, m_NDIM>(0.0, k, y);
+        if constexpr (m_NDIM >= 2) Velocity<>::initialise<T_lattice, m_NDIM>(0.0, k, y);
         if constexpr (m_NDIM == 3) Velocity<>::initialise<T_lattice, m_NDIM>(0.0, k, z);
 
         for (int idx = 0; idx <Stencil::Q; idx++) {
@@ -123,7 +123,7 @@ inline void FlowField<T_lattice, T_traits>::computeMomenta() { //Calculate Densi
 
             double* distribution = this -> m_Distribution.getDistributionPointer(k);
             velocity[k * Stencil::D + x] = this -> computeVelocity(distribution, density[k], x, k); //Calculate velocities
-            velocity[k * Stencil::D + y] = this -> computeVelocity(distribution,density[k], y, k);
+            if constexpr (m_NDIM >= 2) velocity[k * Stencil::D + y] = this -> computeVelocity(distribution,density[k], y, k);
             if constexpr (m_NDIM == 3) velocity[k * Stencil::D + z] = this -> computeVelocity(distribution ,density[k], z, k);
             density[k] = this -> computeDensity(distribution, k); //Calculate density
             

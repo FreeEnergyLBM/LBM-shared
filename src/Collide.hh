@@ -24,6 +24,8 @@ class SRT{
         static const inline double ForcePrefactor(const double& itau) {return 1.-0.5*lattice::DT*itau;}
         template<class lattice>
         static inline void initialise(double tau1,double tau2){}; 
+        template<class forcetuple, class lattice>
+        static inline void initialiseForcing(const forcetuple& forces, double tau1,double tau2){}; 
         template<class lattice>
         static inline double collide(const double* old, const double* equilibrium, const double& itau, int idx){
             return old[idx] - lattice::DT * Omega(itau) * (old[idx] - equilibrium[idx]); 
@@ -70,6 +72,8 @@ class MRT{
         }
         template<class lattice>
         static inline void initialise(double tau1,double tau2);  
+        template<class forcetuple, class lattice>
+        static inline void initialiseForcing(const forcetuple& forces, double tau1,double tau2); 
 
         template<class lattice>
         static inline double collide(const double* old, const double* equilibrium, const double& itau, int idx){
