@@ -62,6 +62,16 @@ inline int computeZ(const int& LY,const int& LZ,const int k) //Compute Y directi
 
 }
 
+template<class force>
+typename force::Method getMethod(force& f){
+    return std::declval<typename force::Method>();
+}
+
+template<class force>
+decltype(force::Prefactor) getForcePrefactor(force& f){
+    return std::declval<decltype(force::Prefactor)>();
+}
+
 
 void print() {
     if (mpi.rank != 0) return;

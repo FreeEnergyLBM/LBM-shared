@@ -1,6 +1,9 @@
 #pragma once
 #include <utility>
 #include <memory>
+#include <typeindex>
+#include <typeinfo>
+#include <unordered_map>
 #include "../Forces/ForceBase.hh"
 #include "../BoundaryModels/BoundaryBase.hh"
 #include "../AddOns/AddOns.hh"
@@ -131,7 +134,32 @@ class ModelBase { //Inherit from base class to avoid repetition of common
 
         }
 
-        inline void collisionQ(const double* forces, const double* equilibriums, const double* olddistributions, const double& inversetau, int k) {
+        template<class forcetype>
+        inline void setForceSums(std::unordered_map<std::type_index, std::array<double,traits::Stencil::Q>>& forcesums, forcetype& f, int idx, int k) {
+            forcesums[typeid(decltype(forcetype::Prefactor))][idx] += f.template compute<traits>(idx, k);
+            //std::cout<<forcesums[typeid(GuoPrefactor)][idx]<<std::endl;
+        }
+
+        inline void collisionQ(const double* equilibriums, const double* olddistributions, const double& inversetau, int k) {
+
+            auto forcemethods = getForceCalculator(mt_Forces,k);
+
+            std::unordered_map<std::type_index, std::array<double,traits::Stencil::Q>> forcesums;
+
+            for (int idx = 0; idx < traits::Stencil::Q; idx++) {
+                std::apply([this,&forcesums, idx, k](auto&... forces) mutable{
+                    (this->setForceSums(forcesums, forces, idx, k) , ...);
+                    
+                                                                }, *forcemethods);
+                //std::cout<<forcesums[typeid(GuoPrefactor)][idx]<<std::endl;
+            }
+            
+            //double i = forcesums[typeid(decltype(Guo::Prefactor))][0];
+            auto tempforceprefactors=std::apply([](auto&... methods){//See Algorithm.hh for explanation of std::apply
+
+                return std::make_unique<decltype(make_tuple_unique(std::make_tuple(getForcePrefactor(methods))...))>();
+
+            }, *forcemethods);
 
             for (int idx = 0; idx <traits::Stencil::Q; idx++) { //loop over discrete velocity directions
                 //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
@@ -140,7 +168,16 @@ class ModelBase { //Inherit from base class to avoid repetition of common
                 double collision=traits::template CollisionModel<typename traits::Stencil>::template collide<typename traits::Lattice>(olddistributions,equilibriums,inversetau,idx);
 
                 if constexpr(std::tuple_size<typename traits::Forces>::value != 0){
-                    collision += traits::template CollisionModel<typename traits::Stencil>::template forcing<typename traits::Lattice>(forces,inversetau,idx);
+
+                    
+                    collision += std::apply([forcesums, inversetau,idx](auto&... prefactors) mutable {
+                        //std::cout<<forcesums[typeid(GuoPrefactor)][1]<<std::endl;
+                        return (traits::template CollisionModel<typename traits::Stencil>::template forcing<typename traits::Lattice,decltype(prefactors)>(&(forcesums[typeid(typename std::remove_reference<decltype(prefactors)>::type)][0]),inversetau,idx) + ...);
+                                                                                }, *tempforceprefactors);
+                                    
+                    
+                    
+                    
                     
                 }
 
@@ -227,12 +264,6 @@ inline const std::vector<double>& ModelBase<lattice,traits>::getDistribution() c
 
     return distribution; //Return reference to distribution vector
 
-}
-
-template<class lattice, class traits>
-template<class force>
-typename force::Method ModelBase<lattice,traits>::getMethod(force& f){
-    return std::declval<typename force::Method>();
 }
 
 template<class lattice, class traits>

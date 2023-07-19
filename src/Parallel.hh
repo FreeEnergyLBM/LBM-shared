@@ -206,7 +206,7 @@ void X_Parallel<num_neighbors>::init() {
         TLattice::LXMPIOffset = (TLattice::LXdiv-2*num_neighbors)*mpi.rank;
     }
     else{
-        throw std::runtime_error(std::string("Currently, the number of cores must be divisible by the size of the domain in the x direction."));
+        throw std::runtime_error(std::string("Currently, the size of the domain in the x direction must be divisible by the number of mpi ranks."));
     }
     /*
     else if (mpi.rank<LX%mpi.size){

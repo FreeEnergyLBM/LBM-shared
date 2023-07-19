@@ -34,9 +34,12 @@ struct ForcingBase{
 };
 
 
+
 struct Guo : ForcingBase<Cartesian> {
 
     std::vector<double> ma_Force;
+
+    static GuoPrefactor Prefactor;
     
     template<class traits, class force>
     inline void precompute(force& f, int k){
@@ -71,3 +74,5 @@ struct Guo : ForcingBase<Cartesian> {
 
     }
 };
+
+GuoPrefactor Guo::Prefactor;

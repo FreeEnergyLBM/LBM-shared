@@ -7,7 +7,7 @@
 const int lx = 100; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 
-const int timesteps = 50000; // Number of iterations to perform
+const int timesteps = 5000; // Number of iterations to perform
 const int saveInterval = 1000; // Interval to save global data
 
 const double force = 1e-6; // Driving force, equivalent to the pressure gradient
@@ -87,9 +87,10 @@ int main(int argc, char **argv){
             saver.SaveParameter<OrderParameter<>>(timestep);
             saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }
-
+        
         // Evolve by one timestep
         lbm.evolve();
+        
     }
 
     return 0;

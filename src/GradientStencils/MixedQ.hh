@@ -22,7 +22,7 @@ inline double MixedQ::compute(const int direction, const int k, int num){
 
     DataType& data = DataType::getInstance();
 
-    return 0.25 * (-T_parameter::template get<Lattice>(data.getNeighbors()[data.getNeighbors()[k * traits::Stencil::Q + direction] * Stencil::Q + direction], num)
+    return 0.25 * (-T_parameter::template get<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction], num)
                    + 5 * T_parameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction], num) 
                    - 3 * T_parameter::template get<Lattice>(k, num) 
                    - T_parameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));

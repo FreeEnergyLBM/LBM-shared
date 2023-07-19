@@ -58,21 +58,21 @@ inline void FlowField<T_lattice, T_traits>::collide() { //Collision step
 
         if(!Geometry<T_lattice>::isSolid(k)){
 
-            auto forcemethods = this -> getForceCalculator(this -> mt_Forces, k);
+            //auto forcemethods = this -> getForceCalculator(this -> mt_Forces, k);
 
             double* old_distribution = this -> m_Distribution.getDistributionOldPointer(k);
 
             double equilibriums[Stencil::Q];
-            double forces[Stencil::Q]; 
+            //double forces[Stencil::Q]; 
 
             for (int idx = 0; idx < Stencil::Q; idx++) {
 
                 equilibriums[idx] = computeEquilibrium(density[k], &velocity[k * m_NDIM], idx, k);
 
-                this -> updateForces(forces[idx], *forcemethods, k, idx);
+                //this -> updateForces(forces[idx], *forcemethods, k, idx);
             }
             
-            this -> collisionQ(forces, equilibriums, old_distribution, m_InverseTau,k); // CHANGE NEEDED If no forces, don't require them to be passed
+            this -> collisionQ(equilibriums, old_distribution, m_InverseTau,k); // CHANGE NEEDED If no forces, don't require them to be passed
 
         }
         
@@ -86,7 +86,7 @@ template<class T_lattice, class T_traits>
 inline void FlowField<T_lattice, T_traits>::initialise() { //Initialise model
 
     this -> m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
-    T_traits::template CollisionModel<Stencil>::template initialise<T_lattice>(m_InverseTau, m_InverseTau);
+    T_traits::template CollisionModel<Stencil>::template initialise<T_lattice>(this -> mt_Forces,m_Tau,m_Tau);
 
     #pragma omp parallel for schedule(guided)
     for (int k = T_lattice::HaloSize; k < T_lattice::N - T_lattice::HaloSize; k++) { //loop over k

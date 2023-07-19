@@ -2,7 +2,7 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct CentralQ : GradientBase<AllDirections> {
+struct CentralQNoSolid : GradientBase<AllDirections> {
 
     template<class T_traits, class T_parameter>
     static inline double compute(const int direction, const int k, int num = 0);

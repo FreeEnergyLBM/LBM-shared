@@ -4,6 +4,9 @@
 #include <utility>
 #include <vector>
 #include <iostream>
+#include <typeindex>
+#include <typeinfo>
+#include <unordered_map>
 #include "Lattice.hh"
 #include "Global.hh"
 #include "Stencil.hh"
@@ -16,23 +19,36 @@
  * all models.
  */
 
+struct NoTauDependence {
+    template<class lattice>
+    static inline double calculateTauPrefactor(const double& itau) { 
+        return 1.;
+    } 
+};
+
+struct GuoPrefactor {
+    template<class lattice>
+    static inline double calculateTauPrefactor(const double& itau) { 
+        return 1.-0.5*lattice::DT*itau;
+    } 
+};
+
 template<class stencil>
 class SRT{
     public:
         static const inline double& Omega(const double& itau) {return itau;}
         template<class lattice>
-        static const inline double ForcePrefactor(const double& itau) {return 1.-0.5*lattice::DT*itau;}
-        template<class lattice>
         static inline void initialise(double tau1,double tau2){}; 
-        template<class forcetuple, class lattice>
-        static inline void initialiseForcing(const forcetuple& forces, double tau1,double tau2){}; 
+        template<class lattice,class forcetuple>
+        static inline void initialise(const forcetuple& forces, double tau1,double tau2){}; 
         template<class lattice>
         static inline double collide(const double* old, const double* equilibrium, const double& itau, int idx){
             return old[idx] - lattice::DT * Omega(itau) * (old[idx] - equilibrium[idx]); 
         }
-        template<class lattice>
+        template<class lattice, class prefactortype>
         static inline double forcing(const double* forces, const double& itau, int idx){
-            return ForcePrefactor<lattice>(itau)*forces[idx]; 
+            //std::cout<<forces[idx]<<std::endl;
+            return std::remove_reference<prefactortype>::type::template calculateTauPrefactor<lattice>(itau)*forces[idx]; 
         }
 };
 
@@ -44,9 +60,11 @@ class MRT{
         double m_Taumin;
         
         double m_MRTMatrix[numberofelements*stencil::Q*stencil::Q];
-        double m_MRTMatrixForcing[numberofelements*stencil::Q*stencil::Q];
+        std::unordered_map<std::type_index, std::array<double,numberofelements*stencil::Q*stencil::Q>> mM_MRTMatrixForcing;
         template<class lattice>
         inline void generateMRTTau(double tau,int tauidx,const double (&inverse)[stencil::Q*stencil::Q]); 
+        template<class lattice,class tauprefactor>
+        inline void generateMRTTauForcing(const tauprefactor& ForcePrefactor, double tau,int tauidx,const double (&inverse)[stencil::Q*stencil::Q]); 
         MRT(){}
         inline int getTauIdx(double tau){
             int tauidx = (numberofelements-1)*(tau-m_Taumin)
@@ -67,13 +85,15 @@ class MRT{
         static const inline double* Omega(const double& itau) {
             return &(getInstance().m_MRTMatrix[getInstance().getTauIdx(1./itau)*stencil::Q*stencil::Q]);
         }
+        template<class tauprefactor>
         static const inline double* ForcePrefactor(const double& itau){
-            return &(getInstance().m_MRTMatrixForcing[getInstance().getTauIdx(1./itau)*stencil::Q*stencil::Q]);
+            //std::cout<<typeid(tauprefactor).name()<<std::endl;
+            return &(getInstance().mM_MRTMatrixForcing[typeid(tauprefactor)][getInstance().getTauIdx(1./itau)*stencil::Q*stencil::Q]);
         }
         template<class lattice>
         static inline void initialise(double tau1,double tau2);  
-        template<class forcetuple, class lattice>
-        static inline void initialiseForcing(const forcetuple& forces, double tau1,double tau2); 
+        template<class lattice,class forcetuple>
+        static inline void initialise(const forcetuple& forces, double tau1,double tau2); 
 
         template<class lattice>
         static inline double collide(const double* old, const double* equilibrium, const double& itau, int idx){
@@ -86,11 +106,12 @@ class MRT{
             return old[idx]-collisionsum;
         }
 
-        template<class lattice>
+        template<class lattice, class prefactortype>
         static inline double forcing(const double* forces, const double& itau, int idx){
             double forcesum=0;
             for (int sumidx=0; sumidx<stencil::Q; sumidx++){
-                forcesum+=getInstance().template ForcePrefactor(itau)[idx*stencil::Q+sumidx] * (forces[sumidx]);
+                forcesum+=getInstance().template ForcePrefactor<typename std::remove_reference<prefactortype>::type>(itau)[idx*stencil::Q+sumidx] * (forces[sumidx]);
+                //std::cout<<forces[sumidx]<<std::endl;
             }
             return forcesum;
         }
@@ -102,13 +123,10 @@ template<class lattice>
 inline void MRT<stencil>::generateMRTTau(double tau,int tauidx,const double (&Minverse)[stencil::Q*stencil::Q]) {
 
     double weightmatrix[stencil::Q*stencil::Q] = {};
-    double weightmatrixforcing[stencil::Q*stencil::Q] = {};
     double weightedmoments[stencil::Q*stencil::Q] = {};
-    double weightedmomentsforcing[stencil::Q*stencil::Q] = {};
 
     for(int i = 0; i < stencil::Q; i++){
         weightmatrix[i*stencil::Q+i] = stencil::MRTWeights(1./tau)[i];
-        weightmatrixforcing[i*stencil::Q+i] = 1.0-lattice::DT*0.5*weightmatrix[i*stencil::Q+i]; 
     }
     
     for(int i = 0; i < stencil::Q; i++){
@@ -116,10 +134,7 @@ inline void MRT<stencil>::generateMRTTau(double tau,int tauidx,const double (&Mi
             
             for(int ii = 0; ii < stencil::Q; ii++) {
                 weightedmoments[j*stencil::Q+i] += weightmatrix[j*stencil::Q+ii]*stencil::MRTMatrix[ii*stencil::Q+i];
-                
-                weightedmomentsforcing[j*stencil::Q+i] += weightmatrixforcing[j*stencil::Q+ii]*stencil::MRTMatrix[ii*stencil::Q+i];
             }
-            
             
         }
     }
@@ -128,12 +143,43 @@ inline void MRT<stencil>::generateMRTTau(double tau,int tauidx,const double (&Mi
         for(int j = 0; j < stencil::Q; j++){
             for(int ii = 0; ii < stencil::Q; ii++) { 
                 m_MRTMatrix[tauidx*stencil::Q*stencil::Q+j*stencil::Q+i] += Minverse[j*stencil::Q+ii]*weightedmoments[ii*stencil::Q+i];
-                m_MRTMatrixForcing[tauidx*stencil::Q*stencil::Q+j*stencil::Q+i] += Minverse[j*stencil::Q+ii]*weightedmomentsforcing[ii*stencil::Q+i];
             }
-            
         }
     }
 
+}
+
+template<class stencil>
+template<class lattice,class tauprefactor>
+inline void MRT<stencil>::generateMRTTauForcing(const tauprefactor& ForcePrefactor, double tau,int tauidx,const double (&Minverse)[stencil::Q*stencil::Q]) {
+    //std::cout<<"init "<<typeid(tauprefactor).name()<<std::endl;
+    if (!mM_MRTMatrixForcing.count(typeid(tauprefactor))){
+        double weightmatrixforcing[stencil::Q*stencil::Q] = {};
+        double weightedmomentsforcing[stencil::Q*stencil::Q] = {};
+
+        for(int i = 0; i < stencil::Q; i++){
+            weightmatrixforcing[i*stencil::Q+i] = ForcePrefactor.template calculateTauPrefactor<lattice>(stencil::MRTWeights(1./tau)[i]); 
+        }
+        
+        for(int i = 0; i < stencil::Q; i++){
+            for(int j = 0; j < stencil::Q; j++){
+                
+                for(int ii = 0; ii < stencil::Q; ii++) {                
+                    weightedmomentsforcing[j*stencil::Q+i] += weightmatrixforcing[j*stencil::Q+ii]*stencil::MRTMatrix[ii*stencil::Q+i];
+                }
+                
+            }
+        }
+        
+        for(int i = 0; i < stencil::Q; i++){
+            for(int j = 0; j < stencil::Q; j++){
+                for(int ii = 0; ii < stencil::Q; ii++) { 
+                    mM_MRTMatrixForcing[typeid(tauprefactor)][tauidx*stencil::Q*stencil::Q+j*stencil::Q+i] += Minverse[j*stencil::Q+ii]*weightedmomentsforcing[ii*stencil::Q+i];
+                }
+            }
+        }
+    }
+    
 }
 
 template<class stencil>
@@ -166,6 +212,48 @@ inline void MRT<stencil>::initialise(double tau1,double tau2) {
 
         getInstance().template generateMRTTau<lattice>(tau,tauidx,MomentsInverse);
         
+
+    }
+    
+    }
+
+}
+
+template<class stencil>
+template<class lattice,class forcetuple>
+inline void MRT<stencil>::initialise(const forcetuple& forces, double tau1,double tau2) {
+    #pragma omp master
+    {
+
+    getInstance().m_Taumax=std::max(tau1,tau2);
+    getInstance().m_Taumin=std::min(tau1,tau2);
+
+    double MomentsInverse[stencil::Q*stencil::Q] = {};
+    double mag[stencil::Q] = {};
+
+    for(int j = 0; j < stencil::Q; j++){ 
+        mag[j] = 0; 
+        for(int i = 0; i < stencil::Q; i++){
+            mag[j] += stencil::MRTMatrix[j*stencil::Q+i]*stencil::MRTMatrix[j*stencil::Q+i];
+        }
+        for(int i = 0; i < stencil::Q; i++){
+            MomentsInverse[i*stencil::Q+j] = stencil::MRTMatrix[j*stencil::Q+i]/mag[j];
+            //std::cout<<stencil::MRTMatrix[j*stencil::Q+i]<<std::endl;
+            
+        }
+    }
+
+    for(int tauidx = 0; tauidx < numberofelements; tauidx++){
+
+        double tau = getInstance().m_Taumin + (double)tauidx*(getInstance().m_Taumax-getInstance().m_Taumin)/((double)numberofelements-1.0);
+
+        getInstance().template generateMRTTau<lattice>(tau,tauidx,MomentsInverse);
+        std::apply([tau,tauidx,MomentsInverse](auto&... force) {
+
+                (getInstance().template generateMRTTauForcing<lattice>(decltype(getMethod(force))::Prefactor,tau,tauidx,MomentsInverse),...);
+
+            }, forces);
+            
 
     }
     

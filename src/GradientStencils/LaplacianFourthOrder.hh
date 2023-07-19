@@ -2,7 +2,7 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct LaplacianCentral : GradientBase<One> {
+struct LaplacianCentralFourthOrder : GradientBase<One> {
 
     template<class T_traits, class T_parameter>
     static inline double compute(int direction, int k, int num = 0);
@@ -14,7 +14,7 @@ struct LaplacianCentral : GradientBase<One> {
 
 
 template<class T_traits, class T_parameter>
-inline double LaplacianCentral::compute(int direction, int k, int num){
+inline double LaplacianCentralFourthOrder::compute(int direction, int k, int num){
 
     using Lattice = typename T_traits::Lattice;
     using Stencil = typename T_traits::Stencil;

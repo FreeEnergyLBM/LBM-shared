@@ -21,8 +21,7 @@ inline double CentralQ::compute(const int direction, const int k, const int num)
     using DataType = Data_Base<Lattice, Stencil>;
 
     DataType& data = DataType::getInstance();
-
     
-    return 0.5 * (T_parameter::template get<Lattice>(data.getNeighbors()[k * CStencil::Q + direction], num) - T_parameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
+    return 0.5 * (T_parameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction], num) - T_parameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
         
 }
