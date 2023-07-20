@@ -354,15 +354,18 @@ inline double CollisionBase<lattice,stencil>::computeGamma(const double* velocit
 template<class lattice, class stencil>
 inline double CollisionBase<lattice,stencil>::computeVelocityFactor(const double* velocity, const int idx) {
     
-    double ci_dot_velocity = 0;
-    double velocity_dot_velocity = 0;
+    double ci_dot_velocity = (stencil::Ci_x[idx] * velocity[0]);
+    double velocity_dot_velocity = pow(velocity[0],2);
 
-    for (int xyz = 0; xyz <stencil::D; xyz++) {
-
-        ci_dot_velocity += (stencil::Ci_xyz(xyz)[idx] * velocity[xyz]); //Dot product of Ci (discrete velocity)
+    if constexpr (stencil::D>1) {
+        ci_dot_velocity += (stencil::Ci_y[idx] * velocity[1]); //Dot product of Ci (discrete velocity)
                                                                     //vector and velocity
-        velocity_dot_velocity += (velocity[xyz] * velocity[xyz]); //Dot product of velocity and velocity
-
+        velocity_dot_velocity += pow(velocity[1],2);
+    }
+    if constexpr (stencil::D>2) {
+        ci_dot_velocity += (stencil::Ci_z[idx] * velocity[2]); //Dot product of Ci (discrete velocity)
+                                                                    //vector and velocity
+        velocity_dot_velocity += pow(velocity[2],2);
     }
 
     return (ci_dot_velocity) / stencil::Cs2

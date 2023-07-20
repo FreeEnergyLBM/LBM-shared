@@ -65,9 +65,8 @@ inline double BodyForce<T_method>::computeXYZ(int xyz, int k) {
 
     double& density = Density<>::get<Lattice>(k);
     
-    if (xyz == 0) return m_MagnitudeX * density;
-
     if constexpr (Lattice::NDIM == 2){
+        if (xyz == 0) return m_MagnitudeX * density;
         return m_MagnitudeY * density;
     }
 
@@ -76,7 +75,7 @@ inline double BodyForce<T_method>::computeXYZ(int xyz, int k) {
         return m_MagnitudeZ * density;
     }
 
-    return 0;
+    return m_MagnitudeX * density;
 
 }
 
