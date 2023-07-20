@@ -58,7 +58,7 @@ class MRT{
         static constexpr int numberofelements = 5000;
         double m_Taumax;
         double m_Taumin;
-        
+        int m_TauIdxPrefactor;
         double m_MRTMatrix[numberofelements*stencil::Q*stencil::Q];
         template<typename forcetuple>
         inline auto& getForcingMap(const forcetuple& ft){
@@ -81,11 +81,11 @@ class MRT{
         inline void generateMRTTauForcing(const tauprefactor& ForcePrefactor, const forcetuple& forces, double tau,int tauidx,const double (&inverse)[stencil::Q*stencil::Q]); 
         MRT(){}
         inline int getTauIdx(double tau){
-            int tauidx = (numberofelements-1)*(tau-m_Taumin)
-            /(m_Taumax-m_Taumin);
+            static 
+            int tauidx = m_TauIdxPrefactor*(tau-m_Taumin);
             
-            if(tauidx < 0) tauidx = 0; 
-            if(tauidx > numberofelements-1) tauidx = numberofelements-1;
+            if(tauidx < 0) return 0;
+            if(tauidx > numberofelements-1) return numberofelements-1;
             //if(tau>0.6&&tau<0.9)std::cout<<tau<<" "<<tauidx<<std::endl;
             return tauidx;
         }
@@ -112,8 +112,9 @@ class MRT{
         template<class lattice>
         static inline double collide(const double* old, const double* equilibrium, const double& itau, int idx){
             double collisionsum=0;
+            auto MRTArray = getInstance().Omega(itau);
             for (int sumidx=0; sumidx<stencil::Q; sumidx++){
-                collisionsum+=lattice::DT * getInstance().Omega(itau)[idx*stencil::Q+sumidx] * (old[sumidx] - equilibrium[sumidx]);
+                collisionsum+=lattice::DT * MRTArray[idx*stencil::Q+sumidx] * (old[sumidx] - equilibrium[sumidx]);
                 
             }
             
@@ -124,8 +125,9 @@ class MRT{
         static inline double forcing(const forcetuple& forces, const double* forcearray, const double& itau, int idx){
             double forcesum=0;
             auto& prefactor = std::remove_reference<decltype(getInstance().getForcingMap(forces))>::type::template get<prefactortype>::val;
+            auto MRTForcingArray = getInstance().template ForcePrefactor(prefactor,itau);
             for (int sumidx=0; sumidx<stencil::Q; sumidx++){
-                forcesum+=getInstance().template ForcePrefactor(prefactor,itau)[idx*stencil::Q+sumidx] * (forcearray[sumidx]);
+                forcesum+=MRTForcingArray[idx*stencil::Q+sumidx] * (forcearray[sumidx]);
                 //std::cout<<forces[sumidx]<<std::endl;
             }
             return forcesum;
@@ -207,7 +209,7 @@ inline void MRT<stencil>::initialise(double tau1,double tau2) {
 
     getInstance().m_Taumax=std::max(tau1,tau2);
     getInstance().m_Taumin=std::min(tau1,tau2);
-
+    getInstance().m_TauIdxPrefactor=(numberofelements-1)/(getInstance().m_Taumax-getInstance().m_Taumax);
     double MomentsInverse[stencil::Q*stencil::Q] = {};
     double mag[stencil::Q] = {};
 
