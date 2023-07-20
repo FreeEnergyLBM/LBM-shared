@@ -33,6 +33,6 @@ inline double MixedXYZ::compute(const int direction, const int k, int num){
         
     }
 
-    return 0.25 / (Stencil::Cs2*Lattice::m_DT) * gradientsum;
+    return 0.25 / (Stencil::Cs2*Lattice::DT) * gradientsum;
 
 }

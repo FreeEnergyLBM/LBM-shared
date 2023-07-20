@@ -148,7 +148,7 @@ class ParameterSingleton {
         static constexpr bool multipleinstances = (instances>1);
         
         template<class lattice, int num=1>
-        static Parameter<obj,lattice,T,numprefactor*num>& getInstance() { static Parameter<obj,lattice,T,numprefactor*num> instance;
+        static inline Parameter<obj,lattice,T,numprefactor*num>& getInstance() { static Parameter<obj,lattice,T,numprefactor*num> instance;
                                                                           return instance;};
 
         template<class lattice, int num=1>

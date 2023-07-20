@@ -46,9 +46,6 @@ class Binary: public CollisionBase<T_lattice, typename T_traits::Stencil>, publi
 
         inline double computeModelForce(int xyz, int k); //Calculate forces specific to the model in direction xyz
 
-        inline double computeCollisionQ(const double* forcemethods,const double* equilibriums, int k, const double* old, int idx); //Calculate collision
-                                                                                           //at index idx
-
         static constexpr double m_Tau = 1.0; //TEMPORARY relaxation time
         static constexpr double m_InverseTau = 1.0 / m_Tau; //TEMPORARY inverse relaxation time
 

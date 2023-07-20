@@ -33,6 +33,13 @@ struct GuoPrefactor {
     } 
 };
 
+struct SplitGuoPrefactor {
+    template<class lattice>
+    static inline double calculateTauPrefactor(const double& itau) { 
+        return -0.5*lattice::DT*itau;
+    } 
+};
+
 template<class stencil>
 class SRT{
     public:
@@ -48,7 +55,7 @@ class SRT{
         template<class lattice, class prefactortype, typename forcetuple>
         static inline double forcing(const forcetuple& forces, const double* forcearray, const double& itau, int idx){
             //std::cout<<forces[idx]<<std::endl;
-            return std::remove_reference<prefactortype>::type::template calculateTauPrefactor<lattice>(itau)*forcearray[idx]; 
+            return std::remove_const<typename std::remove_reference<prefactortype>::type>::type::template calculateTauPrefactor<lattice>(itau)*forcearray[idx]; 
         }
 };
 
@@ -59,13 +66,27 @@ class MRT{
         double m_Taumax;
         double m_Taumin;
         double m_TauIdxPrefactor;
+        static constexpr int Qsquared = stencil::Q*stencil::Q;
         double m_MRTMatrix[numberofelements*stencil::Q*stencil::Q];
         template<typename forcetuple>
         inline auto& getForcingMap(const forcetuple& ft){
 
             static auto ForcingMap = std::apply([this](auto&... forces){//See Algorithm.hh for explanation of std::apply
 
-                ct_map<kv<decltype(std::remove_reference<decltype(forces)>::type::Method::Prefactor),std::array<double,this->numberofelements*stencil::Q*stencil::Q>>...> tempmap;
+                ct_map<kv<decltype(std::remove_const<typename std::remove_reference<decltype(forces)>::type>::type::Method::Prefactor),std::array<double,this->numberofelements*stencil::Q*stencil::Q>>...> tempmap;
+
+                return tempmap;
+
+            }, ft);
+            return ForcingMap;
+
+        }
+        template<typename forcetuple>
+        inline auto& getForcingMap(const forcetuple& ft) const{
+
+            static auto ForcingMap = std::apply([this](auto&... forces){//See Algorithm.hh for explanation of std::apply
+
+                ct_map<kv<typename std::remove_const<decltype(std::remove_reference<decltype(forces)>::type::Method::Prefactor)>::type,std::array<double,this->numberofelements*Qsquared>>...> tempmap;
 
                 return tempmap;
 
@@ -76,11 +97,11 @@ class MRT{
         //std::unordered_map<std::type_index, std::array<double,numberofelements*stencil::Q*stencil::Q>> mM_MRTMatrixForcing;
         
         template<class lattice>
-        inline void generateMRTTau(double tau,int tauidx,const double (&inverse)[stencil::Q*stencil::Q]); 
+        inline void generateMRTTau(double tau,int tauidx,const double (&inverse)[Qsquared]); 
         template<class lattice,class tauprefactor,class forcetuple>
-        inline void generateMRTTauForcing(const tauprefactor& ForcePrefactor, const forcetuple& forces, double tau,int tauidx,const double (&inverse)[stencil::Q*stencil::Q]); 
+        inline void generateMRTTauForcing(const tauprefactor& ForcePrefactor, const forcetuple& forces, double tau,int tauidx,const double (&inverse)[Qsquared]); 
         MRT(){}
-        inline int getTauIdx(double tau){
+        const inline int getTauIdx(double tau) const{
 
             int tauidx = m_TauIdxPrefactor*(tau-m_Taumin);
             
@@ -97,12 +118,15 @@ class MRT{
         MRT(MRT const&)             = delete;
         void operator=(MRT const&)  = delete;
         static const inline double* Omega(const double& itau) {
-            return &(getInstance().m_MRTMatrix[getInstance().getTauIdx(1./itau)*stencil::Q*stencil::Q]);
+            static const MRT& mrt=getInstance();
+            return &(mrt.m_MRTMatrix[mrt.getTauIdx(1./itau)*Qsquared]);
         }
         template<class tauprefactor>
         static const inline double* ForcePrefactor(tauprefactor& prefactor, const double& itau){
             //std::cout<<typeid(tauprefactor).name()<<std::endl;
-            return &(prefactor[getInstance().getTauIdx(1./itau)*stencil::Q*stencil::Q]);
+            static const MRT& mrt=getInstance();
+            
+            return &(prefactor[mrt.getTauIdx(1./itau)*Qsquared]);
         }
         template<class lattice>
         static inline void initialise(double tau1,double tau2);  
@@ -112,7 +136,7 @@ class MRT{
         template<class lattice>
         static inline double collide(const double* old, const double* equilibrium, const double& itau, int idx){
             double collisionsum=0;
-            auto MRTArray = getInstance().Omega(itau);
+            auto MRTArray = Omega(itau);
             for (int sumidx=0; sumidx<stencil::Q; sumidx++){
                 collisionsum+=lattice::DT * MRTArray[idx*stencil::Q+sumidx] * (old[sumidx] - equilibrium[sumidx]);
                 
@@ -124,8 +148,9 @@ class MRT{
         template<class lattice, class prefactortype,class forcetuple>
         static inline double forcing(const forcetuple& forces, const double* forcearray, const double& itau, int idx){
             double forcesum=0;
-            auto& prefactor = std::remove_reference<decltype(getInstance().getForcingMap(forces))>::type::template get<prefactortype>::val;
-            auto MRTForcingArray = getInstance().template ForcePrefactor(prefactor,itau);
+            static const MRT& mrt=getInstance();
+            const auto& prefactor = std::remove_const<typename std::remove_reference<decltype(mrt.getForcingMap(forces))>::type>::type::template get<typename std::remove_const<prefactortype>::type>::val;
+            auto MRTForcingArray = ForcePrefactor(prefactor,itau);
             for (int sumidx=0; sumidx<stencil::Q; sumidx++){
                 forcesum+=MRTForcingArray[idx*stencil::Q+sumidx] * (forcearray[sumidx]);
                 //std::cout<<forces[sumidx]<<std::endl;
@@ -137,7 +162,7 @@ class MRT{
 
 template<class stencil>
 template<class lattice>
-inline void MRT<stencil>::generateMRTTau(double tau,int tauidx,const double (&Minverse)[stencil::Q*stencil::Q]) {
+inline void MRT<stencil>::generateMRTTau(double tau,int tauidx,const double (&Minverse)[MRT<stencil>::Qsquared]) {
 
     double weightmatrix[stencil::Q*stencil::Q] = {};
     double weightedmoments[stencil::Q*stencil::Q] = {};
@@ -168,9 +193,9 @@ inline void MRT<stencil>::generateMRTTau(double tau,int tauidx,const double (&Mi
 
 template<class stencil>
 template<class lattice,class tauprefactor,class forcetuple>
-inline void MRT<stencil>::generateMRTTauForcing(const tauprefactor& ForcePrefactor, const forcetuple& forces, double tau,int tauidx,const double (&Minverse)[stencil::Q*stencil::Q]) {
+inline void MRT<stencil>::generateMRTTauForcing(const tauprefactor& ForcePrefactor, const forcetuple& forces, double tau,int tauidx,const double (&Minverse)[MRT<stencil>::Qsquared]) {
     //std::cout<<"init "<<typeid(tauprefactor).name()<<std::endl;
-    if constexpr (std::remove_reference<decltype(getInstance().getForcingMap(forces))>::type::template keyexists<tauprefactor>::exists){
+    if constexpr (std::remove_const<typename std::remove_reference<decltype(getInstance().getForcingMap(forces))>::type>::type::template keyexists<tauprefactor>::exists){
         double weightmatrixforcing[stencil::Q*stencil::Q] = {};
         double weightedmomentsforcing[stencil::Q*stencil::Q] = {};
 
@@ -190,9 +215,9 @@ inline void MRT<stencil>::generateMRTTauForcing(const tauprefactor& ForcePrefact
         
         for(int i = 0; i < stencil::Q; i++){
             for(int j = 0; j < stencil::Q; j++){
-                std::remove_reference<decltype(getInstance().getForcingMap(forces))>::type::template get<tauprefactor>::val[tauidx*stencil::Q*stencil::Q+j*stencil::Q+i] = 0;
+                std::remove_const<typename std::remove_reference<decltype(getInstance().getForcingMap(forces))>::type>::type::template get<tauprefactor>::val[tauidx*stencil::Q*stencil::Q+j*stencil::Q+i] = 0;
                 for(int ii = 0; ii < stencil::Q; ii++) { 
-                    std::remove_reference<decltype(getInstance().getForcingMap(forces))>::type::template get<tauprefactor>::val[tauidx*stencil::Q*stencil::Q+j*stencil::Q+i] += Minverse[j*stencil::Q+ii]*weightedmomentsforcing[ii*stencil::Q+i];
+                    std::remove_const<typename std::remove_reference<decltype(getInstance().getForcingMap(forces))>::type>::type::template get<tauprefactor>::val[tauidx*stencil::Q*stencil::Q+j*stencil::Q+i] += Minverse[j*stencil::Q+ii]*weightedmomentsforcing[ii*stencil::Q+i];
                     
                 }
             }

@@ -137,7 +137,7 @@ class ModelBase { //Inherit from base class to avoid repetition of common
         template<class maptype, class prefactortuple, class forcetype>
         inline void setForceSums(prefactortuple& prefactors,forcetype& f, int idx, int k) {
             
-            std::get<typename maptype::template get<decltype(forcetype::Prefactor)>>(prefactors).val[idx] += f.template compute<traits>(idx, k);
+            std::get<typename maptype::template get<typename std::remove_reference<typename std::remove_const<decltype(forcetype::Prefactor)>::type>::type>>(prefactors).val[idx] += f.template compute<traits>(idx, k);
             //std::cout<<forcesums[typeid(GuoPrefactor)][idx]<<std::endl;
         }
 
@@ -151,7 +151,7 @@ class ModelBase { //Inherit from base class to avoid repetition of common
                 //std::remove_reference<decltype(forces)>::type::Method::Prefactor
                 auto tempMap = std::apply([this](auto&... forces){//See Algorithm.hh for explanation of std::apply
 
-                    ct_map_types<kv<decltype(std::remove_reference<decltype(forces)>::type::Method::Prefactor),std::array<double,traits::Stencil::Q>>...> tempmap;
+                    ct_map_types<kv<typename std::remove_const<decltype(std::remove_reference<decltype(forces)>::type::Method::Prefactor)>::type,std::array<double,traits::Stencil::Q>>...> tempmap;
 
                     return tempmap;
 
@@ -162,7 +162,7 @@ class ModelBase { //Inherit from base class to avoid repetition of common
                 auto tempTuple = std::apply([this](auto&... forces){//See Algorithm.hh for explanation of std::apply
 
                     
-                    constexpr std::tuple<typename ForcingMap::template get<decltype(std::remove_reference<decltype(forces)>::type::Method::Prefactor)>...> temptup;
+                    constexpr std::tuple<typename ForcingMap::template get<typename std::remove_const<decltype(std::remove_reference<decltype(forces)>::type::Method::Prefactor)>::type>...> temptup;
                     constexpr auto temptup2 = make_tuple_unique(temptup);
                     return temptup2;
 
@@ -189,7 +189,7 @@ class ModelBase { //Inherit from base class to avoid repetition of common
                 
                     double collision=traits::template CollisionModel<typename traits::Stencil>::template collide<typename traits::Lattice>(olddistributions,equilibriums,inversetau,idx) 
                                      + std::apply([&inversetau,&tempTuple,idx,this](auto&... prefactors) mutable {
-                                                        return (traits::template CollisionModel<typename traits::Stencil>::template forcing<typename traits::Lattice,decltype(prefactors)>(this->mt_Forces,&(std::get<typename ForcingMap::template get<typename std::remove_reference<decltype(prefactors)>::type>>(tempTuple).val[0]),inversetau,idx) + ...);
+                                                        return (traits::template CollisionModel<typename traits::Stencil>::template forcing<typename traits::Lattice,decltype(prefactors)>(this->mt_Forces,&(std::get<typename ForcingMap::template get<typename std::remove_const<typename std::remove_reference<decltype(prefactors)>::type>::type>>(tempTuple).val[0]),inversetau,idx) + ...);
                                                                                                                 }, *tempforceprefactors);
                     
                     m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k, idx))[idx] = collision;

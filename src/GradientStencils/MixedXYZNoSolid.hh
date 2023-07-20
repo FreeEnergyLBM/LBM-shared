@@ -60,6 +60,6 @@ inline double MixedXYZNoSolid::compute(const int direction, const int k, int num
 
     }
 
-    return 1.0 / (Stencil::Cs2 * Lattice::m_DT) * gradientsum;
+    return 1.0 / (Stencil::Cs2 * Lattice::DT) * gradientsum;
         
 }
