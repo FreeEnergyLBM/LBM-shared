@@ -52,7 +52,7 @@ int main(int argc, char **argv){
     // Define the models to be used
     FlowFieldBinary<Lattice,TraitFlowField> flowFieldModel; //Flowfield (navier stokes solver) that can be used with the binary model
     Binary<Lattice> componentSeparationModel; //Binary model with hybrid equilibrium and forcing term
-
+    
     //Pass the relaxation times to each model
     flowFieldModel.setTau1(tau1);
     flowFieldModel.setTau2(tau2);

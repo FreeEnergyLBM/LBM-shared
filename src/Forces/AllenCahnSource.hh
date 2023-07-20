@@ -17,10 +17,10 @@ class AllenCahnSource : public ForceBase<method> {
     public:
 
         template<class traits>
-        inline double computeXYZ(const int xyz, const int k) const; //Return force at traits::Lattice point k in direction xyz
+        inline double computeXYZ(int xyz, int k) const; //Return force at traits::Lattice point k in direction xyz
 
         template<class traits>
-        inline double computeQ(const int xyz, const int k) const;
+        inline double computeQ(int xyz, int k) const;
         
         double m_D;
 
@@ -35,18 +35,18 @@ class AllenCahnSource : public ForceBase<method> {
 
 template<class method,int componentID>
 template<class traits>
-inline double AllenCahnSource<method,componentID>::computeXYZ(const int xyz, const int k) const {
+inline double AllenCahnSource<method,componentID>::computeXYZ(int xyz, int k) const {
 
-    double gradx=GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::m_NDIM>(k,componentID,0);
-    double grady=GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::m_NDIM>(k,componentID,1);
+    double gradx=GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::NDIM>(k,componentID,0);
+    double grady=GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::NDIM>(k,componentID,1);
 
     double magnitudegrad2=gradx*gradx+grady*grady;
-    if constexpr (traits::Lattice::m_NDIM==3) magnitudegrad2+=GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::m_NDIM>(k,componentID,2)*GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::m_NDIM>(k,componentID,2);
-    double normal=GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::m_NDIM>(k,componentID,xyz)/sqrt(magnitudegrad2);
+    if constexpr (traits::Lattice::NDIM==3) magnitudegrad2+=GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::NDIM>(k,componentID,2)*GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::NDIM>(k,componentID,2);
+    double normal=GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::NDIM>(k,componentID,xyz)/sqrt(magnitudegrad2);
     
     if (sqrt(magnitudegrad2)>1e-9) {
         
-        return mobility*(4*OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID)*(1.-OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID))*normal/m_D-computeBeta(normal,xyz, k));
+        return mobility*(4*OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID)*(1.-OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID))*normal/m_D-computeBeta<traits>(normal,xyz, k));
     
     }
     else return 0;
@@ -54,7 +54,7 @@ inline double AllenCahnSource<method,componentID>::computeXYZ(const int xyz, con
 
 template<class method,int componentID>
 template<class traits>
-inline double AllenCahnSource<method,componentID>::computeQ(const int idx, const int k) const {
+inline double AllenCahnSource<method,componentID>::computeQ(int idx, int k) const {
 
     return 0;
 
