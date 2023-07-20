@@ -87,7 +87,7 @@ int main(int argc, char **argv){
             saver.SaveParameter<OrderParameter<>>(timestep);
             saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }
-        
+        //std::cout<<Velocity<>::get<Lattice,Lattice::NDIM>(850)<<std::endl;
         // Evolve by one timestep
         lbm.evolve();
         

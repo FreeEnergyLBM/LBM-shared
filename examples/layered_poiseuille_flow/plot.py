@@ -62,9 +62,9 @@ def plot(vel):
         ax[0].contourf(vel2d.T, cmap='Reds')
         points, = ax[1].plot(vel2d[0], 'k.')
         plt.pause(0.5)
-        #points.remove()
-    #plt.show()
-    plt.savefig("test.png", dpi=500, format='png')
+        points.remove()
+    plt.show()
+    #plt.savefig("test.png", dpi=500, format='png')
 
 
 vel, solid = read_data('data')

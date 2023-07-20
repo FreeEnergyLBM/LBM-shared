@@ -72,7 +72,6 @@ decltype(force::Prefactor) getForcePrefactor(force& f){
     return std::declval<decltype(force::Prefactor)>();
 }
 
-
 void print() {
     if (mpi.rank != 0) return;
     std::cout << std::endl;
@@ -578,6 +577,151 @@ struct has_type<T, std::tuple<T, Ts...>> : std::true_type {};
 struct Cartesian{};
 struct AllDirections{};
 struct One{};
+
+template <typename key, typename valuetype>
+struct kv
+{
+    using Key = key;
+
+    static valuetype Value;
+};
+
+template <typename key, typename valuetype>
+valuetype kv<key,valuetype>::Value;
+
+template <typename...>
+struct ct_map;
+
+template<>
+struct ct_map<>
+{
+
+    template<typename>
+    struct keyexists
+    {
+        static constexpr bool exists = false;
+    };
+
+    template<typename T>
+    struct get
+    {
+        static inline constexpr int noKey(){
+          if constexpr (!sizeof(T)){
+            static_assert(!!sizeof(T), "Key does not exist in map.");
+          }
+          return 0;
+        }
+        
+        static constexpr auto val=noKey();
+    };
+};
+
+template<typename key, typename value, typename... rest>
+struct ct_map<kv<key, value>, rest...>
+{
+    template<typename kkey>
+    struct keyexists
+    {
+        static constexpr bool exists = 
+            (std::is_same<typename std::remove_reference<kkey>::type, typename std::remove_reference<key>::type>::value) ?
+            true :
+            ct_map<rest...>::template keyexists<kkey>::exists;
+    };
+
+    template<typename kkey>
+    struct get
+    {
+
+        static inline constexpr auto& findVal(){
+          static_assert(sizeof...(rest)!=0||std::is_same<typename std::remove_reference<kkey>::type, typename std::remove_reference<key>::type>::value, "Key does not exist in map.");
+          if constexpr (sizeof...(rest)!=0){
+            return (std::is_same<kkey, key>::value) ?
+              kv<key, value>::Value : ct_map<rest...>::template get<kkey>::val;
+          }
+          else {
+            return kv<key, value>::Value;
+          }
+          
+        }
+
+        static auto& val = findVal();
+    };
+};
+
+
+
+template <typename key, typename valuetype>
+struct kv_types
+{
+  using Key = key;
+
+  using Type = valuetype;
+};
+
+template <typename...>
+struct ct_map_types;
+
+template<>
+struct ct_map_types<>
+{
+
+    template<typename>
+    struct keyexists
+    {
+        static constexpr bool exists = false;
+    };
+
+    template<typename T>
+    struct get
+    {
+        static inline constexpr int noKey(){
+          if constexpr (!sizeof(T)){
+            static_assert(!!sizeof(T), "Key does not exist in map.");
+          }
+          return 0;
+        }
+        
+        using valuetype = decltype(noKey());
+
+        valuetype val = noKey();
+    };
+};
+
+template<typename key, typename value, typename... rest>
+struct ct_map_types<kv<key, value>, rest...>
+{
+    template<typename kkey>
+    struct keyexists
+    {
+        static constexpr bool exists = 
+            (std::is_same<typename std::remove_reference<kkey>::type, typename std::remove_reference<key>::type>::value) ?
+            true :
+            ct_map_types<rest...>::template keyexists<kkey>::exists;
+    };
+
+    template<typename kkey>
+    struct get
+    {
+
+        static inline constexpr auto findVal(){
+          static_assert(sizeof...(rest)!=0||std::is_same<typename std::remove_reference<kkey>::type, typename std::remove_reference<key>::type>::value, "Key does not exist in map.");
+          if constexpr (sizeof...(rest)!=0){
+            typename std::conditional_t<(std::is_same<kkey, key>::value),typename kv_types<key, value>::Type,typename ct_map_types<rest...>::template get<kkey>::Type> val = {};
+            return val;
+          }
+          else {
+            typename kv_types<key, value>::Type val = {};
+            return val;
+          }
+          
+        }
+
+        using Type = decltype(findVal());
+
+        Type val = findVal();
+    };
+};
+
 
 /*
 template<typename ... input_t>

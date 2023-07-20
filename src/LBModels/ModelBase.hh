@@ -134,55 +134,78 @@ class ModelBase { //Inherit from base class to avoid repetition of common
 
         }
 
-        template<class forcetype>
-        inline void setForceSums(std::unordered_map<std::type_index, std::array<double,traits::Stencil::Q>>& forcesums, forcetype& f, int idx, int k) {
-            forcesums[typeid(decltype(forcetype::Prefactor))][idx] += f.template compute<traits>(idx, k);
+        template<class maptype, class prefactortuple, class forcetype>
+        inline void setForceSums(prefactortuple& prefactors,forcetype& f, int idx, int k) {
+            
+            std::get<typename maptype::template get<decltype(forcetype::Prefactor)>>(prefactors).val[idx] += f.template compute<traits>(idx, k);
             //std::cout<<forcesums[typeid(GuoPrefactor)][idx]<<std::endl;
         }
 
         inline void collisionQ(const double* equilibriums, const double* olddistributions, const double& inversetau, int k) {
 
-            auto forcemethods = getForceCalculator(mt_Forces,k);
+            if constexpr(std::tuple_size<typename traits::Forces>::value != 0){
 
-            std::unordered_map<std::type_index, std::array<double,traits::Stencil::Q>> forcesums;
+                auto forcemethods = getForceCalculator(mt_Forces,k);
 
-            for (int idx = 0; idx < traits::Stencil::Q; idx++) {
-                std::apply([this,&forcesums, idx, k](auto&... forces) mutable{
-                    (this->setForceSums(forcesums, forces, idx, k) , ...);
+                //std::unordered_map<std::type_index, std::array<double,traits::Stencil::Q>> forcesums;
+                //std::remove_reference<decltype(forces)>::type::Method::Prefactor
+                auto tempMap = std::apply([this](auto&... forces){//See Algorithm.hh for explanation of std::apply
+
+                    ct_map_types<kv<decltype(std::remove_reference<decltype(forces)>::type::Method::Prefactor),std::array<double,traits::Stencil::Q>>...> tempmap;
+
+                    return tempmap;
+
+                }, mt_Forces);
+
+                using ForcingMap = decltype(tempMap);
+
+                auto tempTuple = std::apply([this](auto&... forces){//See Algorithm.hh for explanation of std::apply
+
                     
-                                                                }, *forcemethods);
-                //std::cout<<forcesums[typeid(GuoPrefactor)][idx]<<std::endl;
-            }
+                    std::tuple<typename ForcingMap::template get<decltype(std::remove_reference<decltype(forces)>::type::Method::Prefactor)>...> temptup;
+                    auto temptup2 = make_tuple_unique(temptup);
+                    return temptup2;
+
+                }, mt_Forces);
+
+                for (int idx = 0; idx < traits::Stencil::Q; idx++) {
+                    std::apply([this,idx, k, &tempTuple](auto&... forces) mutable{
+                        (this->setForceSums<ForcingMap>(tempTuple,forces, idx, k) , ...);
+                        
+                                                                    }, *forcemethods);
+                    //std::cout<<forcesums[typeid(GuoPrefactor)][idx]<<std::endl;
+                }
             
-            //double i = forcesums[typeid(decltype(Guo::Prefactor))][0];
-            auto tempforceprefactors=std::apply([](auto&... methods){//See Algorithm.hh for explanation of std::apply
+                //double i = forcesums[typeid(decltype(Guo::Prefactor))][0];
+                auto tempforceprefactors=std::apply([](auto&... methods){//See Algorithm.hh for explanation of std::apply
 
-                return std::make_unique<decltype(make_tuple_unique(std::make_tuple(getForcePrefactor(methods))...))>();
+                    return std::make_unique<decltype(make_tuple_unique(std::make_tuple(getForcePrefactor(methods))...))>();
 
-            }, *forcemethods);
+                }, *forcemethods);
 
-            for (int idx = 0; idx <traits::Stencil::Q; idx++) { //loop over discrete velocity directions
+                for (int idx = 0; idx <traits::Stencil::Q; idx++) { //loop over discrete velocity directions
                 //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
                 //"computeCollisionQ"
                 
-                double collision=traits::template CollisionModel<typename traits::Stencil>::template collide<typename traits::Lattice>(olddistributions,equilibriums,inversetau,idx);
+                    double collision=traits::template CollisionModel<typename traits::Stencil>::template collide<typename traits::Lattice>(olddistributions,equilibriums,inversetau,idx) 
+                                     + std::apply([&inversetau,&tempTuple,idx,this](auto&... prefactors) mutable {
+                                                        return (traits::template CollisionModel<typename traits::Stencil>::template forcing<typename traits::Lattice,decltype(prefactors)>(this->mt_Forces,&(std::get<typename ForcingMap::template get<typename std::remove_reference<decltype(prefactors)>::type>>(tempTuple).val[0]),inversetau,idx) + ...);
+                                                                                                                }, *tempforceprefactors);
+                    
+                    m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k, idx))[idx] = collision;
 
-                if constexpr(std::tuple_size<typename traits::Forces>::value != 0){
-
-                    
-                    collision += std::apply([forcesums, inversetau,idx](auto&... prefactors) mutable {
-                        //std::cout<<forcesums[typeid(GuoPrefactor)][1]<<std::endl;
-                        return (traits::template CollisionModel<typename traits::Stencil>::template forcing<typename traits::Lattice,decltype(prefactors)>(&(forcesums[typeid(typename std::remove_reference<decltype(prefactors)>::type)][0]),inversetau,idx) + ...);
-                                                                                }, *tempforceprefactors);
-                                    
-                    
-                    
-                    
-                    
                 }
+            }
+            else{
+                for (int idx = 0; idx <traits::Stencil::Q; idx++) { //loop over discrete velocity directions
+                //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
+                //"computeCollisionQ"
+                
+                    double collision=traits::template CollisionModel<typename traits::Stencil>::template collide<typename traits::Lattice>(olddistributions,equilibriums,inversetau,idx);
 
-                m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k, idx))[idx] = collision;
+                    m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k, idx))[idx] = collision;
 
+                }
             }
 
         }

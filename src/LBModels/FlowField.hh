@@ -123,6 +123,7 @@ inline void FlowField<T_lattice, T_traits>::computeMomenta() { //Calculate Densi
 
             double* distribution = this -> m_Distribution.getDistributionPointer(k);
             velocity[k * Stencil::D + x] = this -> computeVelocity(distribution, density[k], x, k); //Calculate velocities
+            
             if constexpr (m_NDIM >= 2) velocity[k * Stencil::D + y] = this -> computeVelocity(distribution,density[k], y, k);
             if constexpr (m_NDIM == 3) velocity[k * Stencil::D + z] = this -> computeVelocity(distribution ,density[k], z, k);
             density[k] = this -> computeDensity(distribution, k); //Calculate density
