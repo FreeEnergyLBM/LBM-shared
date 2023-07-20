@@ -52,24 +52,19 @@ struct Guo : ForcingBase<Cartesian> {
     template<class traits>
     inline double compute(int idx, int k) { //Guo forcing
         
-        double ci_dot_velocity = 0;
-        double forceterm = 0;
-        
         double prefactor = traits::Stencil::Weights[idx]; //Prefactor for Guo forcing
 
-        for (int xyz=0;xyz<traits::Stencil::D;xyz++){
+        double ci_dot_velocity = (traits::Stencil::Ci_x[idx] * Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,0));
+        if constexpr (traits::Stencil::D>1) ci_dot_velocity += (traits::Stencil::Ci_y[idx] * Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,1));
+        if constexpr (traits::Stencil::D>2) ci_dot_velocity += (traits::Stencil::Ci_z[idx] * Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,2));
 
-            ci_dot_velocity += (traits::Stencil::Ci_xyz(xyz)[idx] * Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector
-                                                                        //with velocity
-        }
-        
-        for (int xyz = 0; xyz <traits::Stencil::D; xyz++) {
+        double forceterm = prefactor * (((traits::Stencil::Ci_x[idx] - Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,0)) / traits::Stencil::Cs2
+                                            + ci_dot_velocity * traits::Stencil::Ci_x[idx] / (traits::Stencil::Cs2 * traits::Stencil::Cs2)) * ma_Force[0]); //Force Calculation
+        if constexpr (traits::Stencil::D>1) forceterm += prefactor * (((traits::Stencil::Ci_y[idx] - Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,1)) / traits::Stencil::Cs2
+                                                                        + ci_dot_velocity * traits::Stencil::Ci_y[idx] / (traits::Stencil::Cs2 * traits::Stencil::Cs2)) * ma_Force[1]);
+        if constexpr (traits::Stencil::D>2) forceterm += prefactor * (((traits::Stencil::Ci_z[idx] - Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,2)) / traits::Stencil::Cs2
+                                                                        + ci_dot_velocity * traits::Stencil::Ci_z[idx] / (traits::Stencil::Cs2 * traits::Stencil::Cs2)) * ma_Force[2]);
 
-            forceterm += prefactor * (((traits::Stencil::Ci_xyz(xyz)[idx] - Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,xyz)) / traits::Stencil::Cs2
-                                + ci_dot_velocity * traits::Stencil::Ci_xyz(xyz)[idx] / (traits::Stencil::Cs2 * traits::Stencil::Cs2)) * ma_Force[xyz]); //Force
-                                                                                                        //Calculation
-        }
-        
         return forceterm;
 
     }
