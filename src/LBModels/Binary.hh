@@ -226,32 +226,6 @@ inline void FlowFieldBinary<T_lattice, T_traits>::collide() { //Collision step
 
         if(!Geometry<T_lattice>::isSolid(k)){
 
-            //MOVE THIS TO SEPERATE FUNCTION IN BASE CLASS
-            /*
-            auto forcemethods=this -> getForceCalculator(this -> mt_Forces,k);
-
-            //int QQ = Stencil::Q;
-            double* old_distribution = this -> m_Distribution.getDistributionOldPointer(k);
-            double equilibriumsum = 0;
-            
-            double equilibriums[Stencil::Q];
-            double forces[Stencil::Q];
-
-            for (int idx = 1; idx < Stencil::Q; idx++) {
-
-                equilibriums[idx] = computeEquilibrium(this -> density[k], &(this -> velocity[k * Stencil::D]), OrderParameter<>::get<T_lattice>(k), ChemicalPotential<>::get<T_lattice>(k), idx, k);
-                equilibriumsum += equilibriums[idx];
-
-                this -> updateForces(forces[idx], *forcemethods, k, idx);
-
-            }
-
-            this -> updateForces(forces[0], *forcemethods, k, 0);
-
-            equilibriums[0]=this -> density[k]-equilibriumsum;
-
-            this -> collisionQ(forces,equilibriums,old_distribution,InverseTau<>::get<T_lattice>(k),k);
-            */
             double* old_distribution = this -> m_Distribution.getDistributionOldPointer(k);
             double equilibriumsum = 0;
             

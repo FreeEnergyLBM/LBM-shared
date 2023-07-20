@@ -47,7 +47,7 @@ int main(int argc, char **argv){
 
     // We need to modify the traits of the model to include a body force as an 'AddOn'.
     // We modify the default traits for the 'FlowFieldBinary' model, adding a bodyforce and setting the collision model to MRT, which improves accuracy at higher viscosity ratios
-    using TraitFlowField = DefaultTraitFlowFieldBinary<Lattice> :: AddForce<BodyForce<>> :: SetCollisionModel<SRT>;
+    using TraitFlowField = DefaultTraitFlowFieldBinary<Lattice> :: AddForce<BodyForce<>> :: SetCollisionModel<MRT>;
 
     // Define the models to be used
     FlowFieldBinary<Lattice,TraitFlowField> flowFieldModel; //Flowfield (navier stokes solver) that can be used with the binary model
@@ -87,7 +87,7 @@ int main(int argc, char **argv){
             saver.SaveParameter<OrderParameter<>>(timestep);
             saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }
-        //std::cout<<Velocity<>::get<Lattice,Lattice::NDIM>(850)<<std::endl;
+        
         // Evolve by one timestep
         lbm.evolve();
         

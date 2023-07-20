@@ -162,8 +162,8 @@ class ModelBase { //Inherit from base class to avoid repetition of common
                 auto tempTuple = std::apply([this](auto&... forces){//See Algorithm.hh for explanation of std::apply
 
                     
-                    std::tuple<typename ForcingMap::template get<decltype(std::remove_reference<decltype(forces)>::type::Method::Prefactor)>...> temptup;
-                    auto temptup2 = make_tuple_unique(temptup);
+                    constexpr std::tuple<typename ForcingMap::template get<decltype(std::remove_reference<decltype(forces)>::type::Method::Prefactor)>...> temptup;
+                    constexpr auto temptup2 = make_tuple_unique(temptup);
                     return temptup2;
 
                 }, mt_Forces);

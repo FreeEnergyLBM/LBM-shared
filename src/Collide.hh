@@ -58,7 +58,7 @@ class MRT{
         static constexpr int numberofelements = 5000;
         double m_Taumax;
         double m_Taumin;
-        int m_TauIdxPrefactor;
+        double m_TauIdxPrefactor;
         double m_MRTMatrix[numberofelements*stencil::Q*stencil::Q];
         template<typename forcetuple>
         inline auto& getForcingMap(const forcetuple& ft){
@@ -81,7 +81,7 @@ class MRT{
         inline void generateMRTTauForcing(const tauprefactor& ForcePrefactor, const forcetuple& forces, double tau,int tauidx,const double (&inverse)[stencil::Q*stencil::Q]); 
         MRT(){}
         inline int getTauIdx(double tau){
-            static 
+
             int tauidx = m_TauIdxPrefactor*(tau-m_Taumin);
             
             if(tauidx < 0) return 0;
@@ -209,7 +209,7 @@ inline void MRT<stencil>::initialise(double tau1,double tau2) {
 
     getInstance().m_Taumax=std::max(tau1,tau2);
     getInstance().m_Taumin=std::min(tau1,tau2);
-    getInstance().m_TauIdxPrefactor=(numberofelements-1)/(getInstance().m_Taumax-getInstance().m_Taumax);
+    getInstance().m_TauIdxPrefactor=(numberofelements-1)/(getInstance().m_Taumax-getInstance().m_Taumin);
     double MomentsInverse[stencil::Q*stencil::Q] = {};
     double mag[stencil::Q] = {};
 
@@ -246,7 +246,7 @@ inline void MRT<stencil>::initialise(const forcetuple& forces, double tau1,doubl
 
     getInstance().m_Taumax=std::max(tau1,tau2);
     getInstance().m_Taumin=std::min(tau1,tau2);
-
+    getInstance().m_TauIdxPrefactor=(numberofelements-1)/(getInstance().m_Taumax-getInstance().m_Taumin);
     double MomentsInverse[stencil::Q*stencil::Q] = {};
     double mag[stencil::Q] = {};
 
