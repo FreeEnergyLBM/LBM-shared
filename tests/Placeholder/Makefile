@@ -1,30 +1,21 @@
-
-INCS	=	
-
-DEFS    =	   -g -O3 -march=native -mtune=native -Wno-deprecated -Wall -std=c++17 -I. -fopenmp -DMPIPARALLEL
-
+ROOT_DIR =	../..
+INCS	=	-I$(ROOT_DIR)/src
+DEFS    =	-g -O3 -Wno-deprecated -Wall -std=c++17 # -fopenmp -DMPIPARALLEL
 LIBS	=	-lm
+COMP	=	mpicxx
+DEPS    =       
+OBJ     =	main.cc
 
-LIBPATH =
 
-COMP	=	 mpicxx
-
-DEPS    =       ../../src/%.hh ../../src/AddOns/%.hh ../../src/Forces/%.hh ../../src/GradientStencils%.hh ../../src/LBModels/%.hh ../../src/BoundaryModels/%.hh main.hh 
-
-OBJ     =       main.cc
-
-all: wetP 
-#all: wetS 
+all: run.exe 
 
 %.o: %.cc $(DEPS)
-	$(COMP) -c -o $@ $<$(DEFS) $(LIBS)
+	$(COMP) -c -o $@ $< $(DEFS) $(LIBS)
 
-wetP: $(OBJ)
-	$(COMP) -o wetP $(OBJ)  $(INCS) $(DEFS) $(LIBPATH) $(LIBS)
-
-#wetS: $(OBJ)
-#	$(COMP) -o wetS $(OBJ)  $(INCS) $(DEFS) $(LIBPATH) $(LIBS)
+run.exe: $(OBJ)
+	$(COMP) -o run.exe $(OBJ) $(INCS) $(DEFS) $(LIBS)
 
 clean:
-	rm -f *.o  wetP wetS wetS.exe *~ *.bak	
+	rm -f *.o run.exe
+	rm -r data
 

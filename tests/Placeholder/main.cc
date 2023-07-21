@@ -1,126 +1,124 @@
-#include<../../src/lbm.hh>
-#include <chrono>
-#include <iostream>
+#include <lbm.hh>
 #include <math.h>
 
-//TODO
-//Swapping based streaming
-//BLAS
-//non-cuboid grid - sparse matrices
-//buffer size
-//adative mesh
-//floats
-
-/**
- * \file main.cc
- * \brief This file is just used to run the LBM code and choose how to setup the simulation.
- *
- */
-
-//Set up the lattice, including the resolution and data/parallelisation method
-int LX = 100; //Size of domain in x direction
-int LY = 100; //Size of domain in y direction
-int LZ = 1; //Size of domain in z direction (Can also not specify LZ if it is 1)
-int TIMESTEPS =1000; //Number of iterations to perform
-int SAVEINTERVAL = 1000; //Interval to save global data
-double RADIUS=30.; //Droplet radius
-double A = 0.00025;
-double kappa = 0.0004;
-double tau1 = 1.;
-double tau2 = 0.6;
-
-using Lattice = LatticePropertiesRuntime<Data1, X_Parallel<1>, 3>;
+// This script simulates a Poiseuille flow in a channel with two immiscible layers of fluid driven by an external force. You can modify tau1 and tau2 to see how the velocity profile changes. tau1 and tau2 should be less than 10 or the accuracy degrades. They should never be less than 0.5, and values very close to 0.5 are prone to instability. 
 
 
-//User defined function to define some fluid initialisation (optional)
-bool fluidLocation(int k) {
+const int lx = 100; // Size of domain in x direction
+const int ly = 100; // Size of domain in y direction
 
-    int xx = computeXGlobal<Lattice>(k);
-    int yy = computeY(LY, LZ, k);
+const int timesteps = 1; // Number of iterations to perform
+const int saveInterval = 1; // Interval to save global data
 
-    double rr2 = (xx - LX/2.) * (xx - LX/2.) + (yy - LX/2.) * (yy - LX/2.);
+//Parameters to control the surface tension and width of the diffuse interface
+//Surface tension (in lattice units) = sqrt(8*kappa*A/9)
+//Interface width (in lattice units) = sqrt(kappa/A)
+//For reference, the model used is in section 9.2.2 of The Lattice Boltzmann Method: Principles and Practice, T. Kruger et al. (2016)
+double A=0.00015;
+double kappa=0.0003;
 
-    if (rr2 < RADIUS*RADIUS) return true;
-    else return false;
-    
+const double RADIUS=25.;
+using Lattice = LatticeProperties<Data1, X_Parallel<1>, lx, ly>;
+const int NUM_COMPONENTS=2; //Number of fluid components
+
+template<int compid>
+using traitNCOMPChemPotCalculator 
+    = typename DefaultTraitNComponent<Lattice, compid, NUM_COMPONENTS> 
+                :: template AddPreProcessor<ChemicalPotentialCalculatorNComponent,
+                                  GradientsMultiStencil< OrderParameter<NUM_COMPONENTS - 1>, CentralXYZ,LaplacianCentral>>;
+
+//using traitNCOMPPressure = DefaultTraitFlowFieldPressure<Lattice> 
+//                            :: template SetForce<PressureForce<He, NUM_COMPONENTS,1>>;
+
+// Function used to define the solid geometry
+// Here we set a solid at the top and bottom, in the conditions that return 1;
+int initSolid(const int k) {
+    int y = computeY(ly, 1, k);
+    if (y <= 1 || y >= ly - 2) return 1;
+    else return 0;
 }
 
-double fluidLocationSmooth(int k) {
-
-    int yy = computeY(LY, LZ, k);
-
-    return tanh((yy-LY/2.)/(sqrt(2*kappa/A)));
-}
-
-double fluidLocationSmoothDroplet(int k) {
-
+// Function used to define the fluid
+// Here we set a tanh transition in the y direction. This should match the equilibrium profile.
+double initFluid(int k) {
     int xx = computeXGlobal<Lattice>(k);
-    int yy = computeY(LY, LZ, k);
+    int yy = computeY(ly, 1, k);
 
-    double rr2 = (xx - LX/2.) * (xx - LX/2.) + (yy - 0*LX/2.) * (yy - 0*LX/2.);
+    double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - lx/2.) * (yy - lx/2.);
     return tanh((sqrt(rr2)-RADIUS)/(sqrt(2*kappa/A)));
-
 }
-
-//User defined function to define some solid initialisation
-bool solidLocation(const int k) {
-
-    int yAtCurrentk = computeY(LY, LZ, k);
-
-    if (yAtCurrentk <= 1 || yAtCurrentk >= LY - 2) return true;
-    else return false;
-
-}
-
-using flowfieldtraits = DefaultTraitFlowFieldBinary<Lattice> :: SetCollisionModel<MRT>;
 
 int main(int argc, char **argv){
     mpi.init();
-    Lattice l1(LX,LY,LZ);
-    //Chosen models
-    FlowFieldBinary<Lattice,flowfieldtraits> FlowFieldModel;
-    Binary<Lattice> ComponentSeparationModel;
 
-    FlowFieldModel.setTau1(tau1);
-    FlowFieldModel.setTau2(tau2);
-
-    ComponentSeparationModel.setTau1(tau1);
-    ComponentSeparationModel.setTau2(tau2);
-
-    ComponentSeparationModel.getPreProcessor<ChemicalPotentialCalculatorBinary>().setA(A);
-    ComponentSeparationModel.getPreProcessor<ChemicalPotentialCalculatorBinary>().setKappa(kappa);
-
-    //ComponentSeparationModel.getPreProcessor<LinearWetting>().setPrefactor(A,kappa);
-    ComponentSeparationModel.getPreProcessor<CubicWetting>().setThetaDegrees(45);
-
-    FlowFieldModel.getForce<BodyForce<>>().setMagnitudeX(0.0000001);
-
-    OrderParameter<>::set<Lattice>(fluidLocationSmooth);
+    // Set up the lattice, including the resolution and data/parallelisation method
     
-    SolidLabels<>::set<Lattice>(solidLocation,1); //Set solid to true where the function we defined previously is true (false by default so don't need to specify this)
 
-    //Algorithm that will combine the models and run them in order
-    Algorithm LBM(FlowFieldModel,ComponentSeparationModel); //Create LBM object with the two models we have initialised
+    // We need to modify the traits of the model to include a body force as an 'AddOn'.
+    // We modify the default traits for the 'FlowFieldBinary' model, adding a bodyforce and setting the collision model to MRT, which improves accuracy at higher viscosity ratios
 
-    //Saving class
-    ParameterSave<Lattice> Saver("data/");
-    Saver.SaveHeader(TIMESTEPS,SAVEINTERVAL); //Save header with lattice information (LX, LY, LZ, NDIM (2D or 3D), TIMESTEPS, SAVEINTERVAL)
+    //FlowFieldPressure<Lattice,traitNCOMPPressure> PressureNavierStokes;
+    NComponent<Lattice, 1, NUM_COMPONENTS,traitNCOMPChemPotCalculator<1>> NCompAllenCahn1;
+
+    double** tempBeta = new double*[NUM_COMPONENTS];
+    for(int i = 0; i < NUM_COMPONENTS; ++i)
+        tempBeta[i] = new double[NUM_COMPONENTS];
+
+    //For two component
+    tempBeta[0][0]=0;
+    tempBeta[1][1]=0;
+    tempBeta[0][1]=A;
+    tempBeta[1][0]=A;
+
+    //For three component, construct a 3x3 matrix of beta (extend for more components)
+
+
+    double** tempGamma = new double*[NUM_COMPONENTS];
+    for(int i = 0; i < NUM_COMPONENTS; ++i)
+        tempGamma[i] = new double[NUM_COMPONENTS];
+
+    //For two component
+    tempGamma[0][0]=0;
+    tempGamma[1][1]=0;
+    tempGamma[0][1]=2*kappa;
+    tempGamma[1][0]=2*kappa;
+
+    //For three component, construct a 3x3 matrix of beta (extend for more components)
     
-    LBM.initialise(); //Perform necessary initialisation for the models in LBM
+    //Set the beta and gamma parameters in the module used to calculate the chemical potential (probably dont touch this)
+    NCompAllenCahn1.getPreProcessor<ChemicalPotentialCalculatorNComponent>().setA(tempBeta);
+    NCompAllenCahn1.getPreProcessor<ChemicalPotentialCalculatorNComponent>().setKappa(tempGamma);
+    //Feel free to change this so you can modify the interface width and sigma parameters instead
 
-    //Loop over timesteps
-    for (int timestep=0;timestep<=TIMESTEPS;timestep++) {
+    //Set the interface width
+    NCompAllenCahn1.getForce<AllenCahnSource<AllenCahnSourceMethod,1>>().setAlpha(sqrt(4*2*kappa/A));
 
-        if (timestep%SAVEINTERVAL==0) {
+    // Define the solid and fluid using the functions above
+    SolidLabels<>::set<Lattice>(initSolid);
+    OrderParameter<NUM_COMPONENTS-1>::set<Lattice>(initFluid);
+
+    // Algorithm creates an object that can run our chosen LBM model
+    Algorithm lbm(NCompAllenCahn1);
+
+    // Set up the handler object for saving data
+    ParameterSave<Lattice> saver("data/");
+    saver.SaveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)
+
+    // Perform the main LBM loop
+    for (int timestep=0; timestep<=timesteps; timestep++) {
+
+        // Save the desired parameters, producing a binary file for each.
+        if (timestep%saveInterval==0) {
             std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
-            Saver.SaveParameter<OrderParameter<>>(timestep);
-            Saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
+            saver.SaveParameter<SolidLabels<>>(timestep);
+            saver.SaveParameter<OrderParameter<NUM_COMPONENTS-1>>(timestep);
+            saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }
-         
-        LBM.evolve(); //Evolve one timestep of the algorithm
+        
+        // Evolve by one timestep
+        lbm.evolve();
         
     }
 
     return 0;
-
 }

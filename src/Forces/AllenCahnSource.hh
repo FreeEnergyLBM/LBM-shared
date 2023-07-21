@@ -29,7 +29,7 @@ class AllenCahnSource : public ForceBase<method> {
         inline void setAlpha(double alpha){ m_D=alpha; }
 
         template<class traits>
-        inline double computeBeta(double normal,int xyz, int k) const;
+        inline double computeBeta(int xyz, int k) const;
 
 };
 
@@ -45,8 +45,8 @@ inline double AllenCahnSource<method,componentID>::computeXYZ(int xyz, int k) co
     double normal=GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::NDIM>(k,componentID,xyz)/sqrt(magnitudegrad2);
     
     if (sqrt(magnitudegrad2)>1e-9) {
-        
-        return mobility*(4*OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID)*(1.-OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID))*normal/m_D-computeBeta<traits>(normal,xyz, k));
+        std::cout<<mobility*(4*OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID)*(1.-OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID))*normal/m_D-computeBeta<traits>(xyz, k))<<std::endl;
+        return mobility*(4*OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID)*(1.-OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID))*normal/m_D-computeBeta<traits>(xyz, k));
     
     }
     else return 0;
@@ -62,12 +62,29 @@ inline double AllenCahnSource<method,componentID>::computeQ(int idx, int k) cons
 
 template<class method,int componentID>
 template<class traits>
-inline double AllenCahnSource<method,componentID>::computeBeta(double normal,int xyz, int k) const {
+inline double AllenCahnSource<method,componentID>::computeBeta(int xyz, int k) const {
     // NORMAL NEEDS TO DEPEND ON COMPONENT
     double sum=0;
-    for (int component = 0; component<traits::NumberOfComponents; component++){
+    double orderparametersum = 0;
+    double gradientsum[traits::Lattice::NDIM]={};
+    for (int component = 0; component<traits::NumberOfComponents-1; component++){
+            double gradx=GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::NDIM>(k,component,0);
+            gradientsum[0]+=gradx;
+            double grady=GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::NDIM>(k,component,1);
+            gradientsum[0]+=grady;
+            double magnitudegrad2=gradx*gradx+grady*grady;
+            if constexpr (traits::Lattice::NDIM==3) {
+                magnitudegrad2+=GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::NDIM>(k,component,2)*GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::NDIM>(k,component,2);
+                gradientsum[2]+=*GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::NDIM>(k,component,2);
+            }
+            double normal=GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::NDIM>(k,component,xyz)/sqrt(magnitudegrad2);
+            orderparametersum+=OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,component);
             sum += 4*OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,component)*(1-OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,component))*normal/m_D;
     }
+    double magnitudegrad2=gradientsum[0]*gradientsum[0]+gradientsum[1]*gradientsum[1];
+    if constexpr (traits::Lattice::NDIM==3) magnitudegrad2 += gradientsum[2]*gradientsum[2];
+    double normal = (-gradientsum[xyz])/(magnitudegrad2);
+    sum += 4*(1-orderparametersum)*(orderparametersum)*normal/m_D;
     return OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID)*sum;
 
 }

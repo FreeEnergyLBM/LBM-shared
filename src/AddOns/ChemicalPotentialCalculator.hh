@@ -143,7 +143,7 @@ class ChemicalPotentialCalculatorNComponent : public AddOnBase {
     
     public:
 
-        double *ma_Gamma;
+        double **ma_Gamma;
 
         double **ma_Beta;
 
@@ -152,30 +152,53 @@ class ChemicalPotentialCalculatorNComponent : public AddOnBase {
 
         inline void setA(double **A) {ma_Beta=A;};
 
-        inline void setKappa(double *kappa) {ma_Gamma=kappa;};
+        inline void setKappa(double **kappa) {ma_Gamma=kappa;};
     
 };
 
 template<class T_traits>
 inline void ChemicalPotentialCalculatorNComponent::compute(const int k){ // THIS IS WRONG, NEED 1 - OTHER LAPLACIANS FOR THE FINAL SUM
-
-    double chempot=0;
-    for (int i=0;i<T_traits::NumberOfComponents-1;i++){
-        const double& ci=OrderParameter<>::get<typename T_traits::Lattice,T_traits::NumberOfComponents-1>(k,i);
+        
+        double gammalaplaciansum=0;
         double sumc=0;
+
+        for (int i=0;i<T_traits::NumberOfComponents-1;i++){
+            const double& ci=OrderParameter<T_traits::NumberOfComponents-1>::template get<typename T_traits::Lattice>(k,i);
+            double chempot=0;
+            sumc=0;
+            gammalaplaciansum=0;
+            for (int j=0;j<T_traits::NumberOfComponents-1;j++){
+                const double& cj=OrderParameter<T_traits::NumberOfComponents-1>::template get<typename T_traits::Lattice>(k,j);
+                sumc+=cj;
+                const double gammalaplacian = ma_Gamma[i][j]*LaplacianOrderParameter<T_traits::NumberOfComponents-1>::template get<typename T_traits::Lattice,T_traits::NumberOfComponents-1>(k,j);
+                gammalaplaciansum += gammalaplacian;
+                if (i!=j){
+                    
+                    chempot+=2*ma_Beta[i][j]*(-12*ci*ci*cj-12*ci*cj*cj+12*ci*cj-4*cj*cj*cj+6*cj*cj-2*cj) - gammalaplacian;
+                }
+            }
+            const double cj=1-sumc;
+            
+            chempot+=ma_Beta[i][T_traits::NumberOfComponents-1]*(-12*ci*ci*cj-12*ci*cj*cj+12*ci*cj-4*cj*cj*cj+6*cj*cj-2*cj) + gammalaplaciansum;
+            ChemicalPotential<T_traits::NumberOfComponents>::template get<typename T_traits::Lattice>(k,i) = chempot;
+            
+        }
+        int i = T_traits::NumberOfComponents-1;
+        const double& ci=1-sumc;
+        double chempot=0;
+        sumc=0;
+        gammalaplaciansum=0;
         for (int j=0;j<T_traits::NumberOfComponents-1;j++){
-            const double& cj=OrderParameter<>::get<typename T_traits::Lattice,T_traits::NumberOfComponents-1>(k,i);
+            const double& cj=OrderParameter<T_traits::NumberOfComponents-1>::template get<typename T_traits::Lattice>(k,j);
             sumc+=cj;
-            if (i!=j){                
-                const double cicj=(ci+cj);
-                chempot+=ma_Beta[i][j]*(-4*cicj*cicj*cicj+6*cicj*cicj+4*ci*ci*ci-6*ci*ci-2*cj);
+            const double gammalaplacian = ma_Gamma[i][j]*LaplacianOrderParameter<T_traits::NumberOfComponents-1>::template get<typename T_traits::Lattice,T_traits::NumberOfComponents-1>(k,j);
+            gammalaplaciansum += gammalaplacian;
+            if (i!=j){
+                
+                chempot+=2*ma_Beta[i][j]*(-12*ci*ci*cj-12*ci*cj*cj+12*ci*cj-4*cj*cj*cj+6*cj*cj-2*cj) - gammalaplacian;
             }
         }
-        const double cj=1-sumc;
-        const double cicj=(ci+cj);
-        chempot+=ma_Beta[i][T_traits::NumberOfComponents-2]*(-4*cicj*cicj*cicj+6*cicj*cicj+4*ci*ci*ci-6*ci*ci-2*cj);
-        ChemicalPotential<>::get<typename T_traits::Lattice,T_traits::NumberOfComponents>(k,i) = chempot-ma_Gamma[i]*LaplacianOrderParameter<>::get<typename T_traits::Lattice,T_traits::NumberOfComponents-1>(k,i);
-    }
-    
-    
+
+        ChemicalPotential<T_traits::NumberOfComponents>::template get<typename T_traits::Lattice>(k,i) = chempot;
+        
 }
