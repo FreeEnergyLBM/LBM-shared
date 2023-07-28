@@ -171,7 +171,7 @@ class ParameterSingleton {
                                              //direction 0
             constexpr bool multipledirections = (num>1);
 
-            return &getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)];
+            return &getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3];
 
         }
 
@@ -187,7 +187,7 @@ class ParameterSingleton {
 
             constexpr bool multipledirections = (num>1);
 
-            return getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)];
+            return getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3];
             
         }
 

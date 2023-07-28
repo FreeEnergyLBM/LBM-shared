@@ -7,18 +7,18 @@
 const int lx = 100; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 
-const int timesteps = 2; // Number of iterations to perform
-const int saveInterval = 1; // Interval to save global data
+const int timesteps = 1000; // Number of iterations to perform
+const int saveInterval = 100; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Surface tension (in lattice units) = sqrt(8*kappa*A/9)
 //Interface width (in lattice units) = sqrt(kappa/A)
 //For reference, the model used is in section 9.2.2 of The Lattice Boltzmann Method: Principles and Practice, T. Kruger et al. (2016)
 double A=0.00015;
-double kappa=0.0003;
+double kappa=A*3.125;//=0.0003;
 
 const double RADIUS=25.;
-using Lattice = LatticeProperties<Data1, X_Parallel<1>, lx, ly>;
+using Lattice = LatticeProperties<Data1, NoParallel, lx, ly>;
 const int NUM_COMPONENTS=2; //Number of fluid components
 
 template<int compid>
@@ -49,7 +49,7 @@ double initFluid(int k) {
 }
 
 int main(int argc, char **argv){
-    mpi.init();
+    //mpi.init();
 
     // Set up the lattice, including the resolution and data/parallelisation method
     
@@ -58,7 +58,7 @@ int main(int argc, char **argv){
     // We modify the default traits for the 'FlowFieldBinary' model, adding a bodyforce and setting the collision model to MRT, which improves accuracy at higher viscosity ratios
 
     //FlowFieldPressure<Lattice,traitNCOMPPressure> PressureNavierStokes;
-    NComponent<Lattice, 1, NUM_COMPONENTS,traitNCOMPChemPotCalculator<1>> NCompAllenCahn1;
+    NComponent<Lattice, 0, NUM_COMPONENTS,traitNCOMPChemPotCalculator<0>> NCompAllenCahn1;
 
     double** tempBeta = new double*[NUM_COMPONENTS];
     for(int i = 0; i < NUM_COMPONENTS; ++i)
@@ -91,7 +91,7 @@ int main(int argc, char **argv){
     //Feel free to change this so you can modify the interface width and sigma parameters instead
 
     //Set the interface width
-    NCompAllenCahn1.getForce<AllenCahnSource<AllenCahnSourceMethod,1>>().setAlpha(sqrt(4*2*kappa/A));
+    NCompAllenCahn1.getForce<AllenCahnSource<AllenCahnSourceMethod,0>>().setAlpha(sqrt(4*2*kappa/A));
 
     // Define the solid and fluid using the functions above
     SolidLabels<>::set<Lattice>(initSolid);
@@ -112,6 +112,7 @@ int main(int argc, char **argv){
             std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
             saver.SaveParameter<SolidLabels<>>(timestep);
             saver.SaveParameter<OrderParameter<NUM_COMPONENTS-1>>(timestep);
+            saver.SaveParameter<ChemicalPotential<NUM_COMPONENTS>>(timestep);
             saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }
         
