@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <array>
 
 //Stencil.hh: This file specifies the stencils that can be used. This determines the discretisation of the model.
 //The "D" refers to the number of cartesian dimensions in the stencil, so "D2" would be a 2D simulation. The "Q"

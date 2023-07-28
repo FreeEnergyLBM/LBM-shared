@@ -7,7 +7,7 @@
 const int lx = 100; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 
-const int timesteps = 1; // Number of iterations to perform
+const int timesteps = 2; // Number of iterations to perform
 const int saveInterval = 1; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
@@ -45,7 +45,7 @@ double initFluid(int k) {
     int yy = computeY(ly, 1, k);
 
     double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - lx/2.) * (yy - lx/2.);
-    return tanh((sqrt(rr2)-RADIUS)/(sqrt(2*kappa/A)));
+    return 0.5+0.5*tanh((sqrt(rr2)-RADIUS)/(sqrt(2*kappa/A)));
 }
 
 int main(int argc, char **argv){

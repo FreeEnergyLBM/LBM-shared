@@ -83,7 +83,7 @@ for t in range(tstart,tend+1,tinc):
     step=1
     X,Y=np.meshgrid(np.linspace(0,LX-1,int((LX)/step)),np.linspace(0,LY-1,int((LY)/step)))
 
-    ax.quiver(X.T,Y.T,np.flip(-v[:,:,:,0].take(indices=slicepos,axis=sliceaxis)),np.flip(v[:,:,:,3-sliceaxis].take(indices=slicepos,axis=sliceaxis)),width=0.005,headwidth=6.5,headlength=2.5)
+    #ax.quiver(X.T,Y.T,np.flip(-v[:,:,:,0].take(indices=slicepos,axis=sliceaxis)),np.flip(v[:,:,:,3-sliceaxis].take(indices=slicepos,axis=sliceaxis)),width=0.005,headwidth=6.5,headlength=2.5)
     fig.colorbar(im)
     #ax.scatter(49,49)
     plt.savefig(output, dpi=200, format='png')

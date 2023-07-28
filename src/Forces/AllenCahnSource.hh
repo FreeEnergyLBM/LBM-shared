@@ -45,7 +45,7 @@ inline double AllenCahnSource<method,componentID>::computeXYZ(int xyz, int k) co
     double normal=GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::NDIM>(k,componentID,xyz)/sqrt(magnitudegrad2);
     
     if (sqrt(magnitudegrad2)>1e-9) {
-        std::cout<<mobility*(4*OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID)*(1.-OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID))*normal/m_D-computeBeta<traits>(xyz, k))<<std::endl;
+        //std::cout<<mobility*(4*OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID)*(1.-OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID))*normal/m_D-computeBeta<traits>(xyz, k))<<std::endl;
         return mobility*(4*OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID)*(1.-OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID))*normal/m_D-computeBeta<traits>(xyz, k));
     
     }
@@ -78,13 +78,15 @@ inline double AllenCahnSource<method,componentID>::computeBeta(int xyz, int k) c
                 gradientsum[2]+=*GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::NDIM>(k,component,2);
             }
             double normal=GradientOrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice,traits::Lattice::NDIM>(k,component,xyz)/sqrt(magnitudegrad2);
-            orderparametersum+=OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,component);
-            sum += 4*OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,component)*(1-OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,component))*normal/m_D;
+            if (sqrt(magnitudegrad2)>1e-9) {
+                orderparametersum+=OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,component);
+                sum += 4*OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,component)*(1-OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,component))*normal/m_D;
+            }
     }
     double magnitudegrad2=gradientsum[0]*gradientsum[0]+gradientsum[1]*gradientsum[1];
     if constexpr (traits::Lattice::NDIM==3) magnitudegrad2 += gradientsum[2]*gradientsum[2];
     double normal = (-gradientsum[xyz])/(magnitudegrad2);
-    sum += 4*(1-orderparametersum)*(orderparametersum)*normal/m_D;
+    if (sqrt(magnitudegrad2)>1e-9) sum += 4*(1-orderparametersum)*(orderparametersum)*normal/m_D;
     return OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID)*sum;
 
 }

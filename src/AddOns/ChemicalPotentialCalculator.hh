@@ -157,7 +157,7 @@ class ChemicalPotentialCalculatorNComponent : public AddOnBase {
 };
 
 template<class T_traits>
-inline void ChemicalPotentialCalculatorNComponent::compute(const int k){ // THIS IS WRONG, NEED 1 - OTHER LAPLACIANS FOR THE FINAL SUM
+inline void ChemicalPotentialCalculatorNComponent::compute(const int k){ // THIS IS WRONG, NEED - OTHER LAPLACIANS FOR THE FINAL SUM
         
         double gammalaplaciansum=0;
         double sumc=0;
