@@ -261,7 +261,7 @@ inline void FlowFieldBinary<T_lattice, T_traits>::initialise() { //Initialise mo
 
         Density<>::initialise<T_lattice>(1.0, k); //Set density to 1 initially (This will change)
         Velocity<>::initialise<T_lattice,T_lattice::NDIM>(0.0, k, x);
-        if constexpr (T_lattice::NDIM >= 2)Velocity<>::initialise<T_lattice,T_lattice::NDIM>(0.0, k, y);
+        if constexpr (T_lattice::NDIM >= 2) Velocity<>::initialise<T_lattice,T_lattice::NDIM>(0.0, k, y);
         if constexpr (T_lattice::NDIM == 3) Velocity<>::initialise<T_lattice, T_lattice::NDIM>(0.0, k, z);
 
         double equilibriumsum = 0;

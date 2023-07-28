@@ -165,9 +165,17 @@ class ParameterSingleton {
 
         }
 
+        template<class lattice, int num=1>
+        static inline T* getAddress(int idx1, int idx2) { //Returns pointer to parameter at lattice point k and
+                                             //direction 0
+            constexpr bool multipledirections = (num>1);
+
+            return &getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2)+(!multipleinstances)*multipledirections*idx2];
+
+        }
 
         template<class lattice, int num=1>
-        static inline T* getAddress(int idx1, int idx2, int idx3=0) { //Returns pointer to parameter at lattice point k and
+        static inline T* getAddress(int idx1, int idx2, int idx3) { //Returns pointer to parameter at lattice point k and
                                              //direction 0
             constexpr bool multipledirections = (num>1);
 
@@ -183,10 +191,19 @@ class ParameterSingleton {
         }
 
         template<class lattice, int num=1>
-        static inline T& get(int idx1, int idx2, int idx3=0) { //Returns const parameter at index idx
+        static inline T& get(int idx1, int idx2) { //Returns const parameter at index idx
 
             constexpr bool multipledirections = (num>1);
+ //MAKE MORE EFFICIENT!!!
+            return getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2)+(!multipleinstances)*multipledirections*idx2];
+            
+        }
 
+        template<class lattice, int num=1>
+        static inline T& get(int idx1, int idx2, int idx3) { //Returns const parameter at index idx
+
+            constexpr bool multipledirections = (num>1);
+ //MAKE MORE EFFICIENT!!!
             return getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3];
             
         }

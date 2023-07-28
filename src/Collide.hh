@@ -378,7 +378,7 @@ inline double CollisionBase<lattice,stencil>::computeGamma(const double* velocit
  */
 template<class lattice, class stencil>
 inline double CollisionBase<lattice,stencil>::computeVelocityFactor(const double* velocity, const int idx) {
-    
+
     double ci_dot_velocity = (stencil::Ci_x[idx] * velocity[0]);
     double velocity_dot_velocity = pow(velocity[0],2);
 

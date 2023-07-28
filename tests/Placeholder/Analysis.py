@@ -63,7 +63,8 @@ for t in range(tstart,tend+1,tinc):
         #rho0[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
         rho[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
         #struct.unpack('=d', File.read(8))[0]
-        #rho2[xk,yk,zk] = struct.unpack('=d', File3.read(8))[0]
+        rho2[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
+        rho4[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
         #rho4[xk,yk,zk] = struct.unpack('=d', File4.read(8))[0]
         for i in range(ndim):
             v[xk,yk,zk,i] = struct.unpack('=d', File2.read(8))[0]
@@ -76,7 +77,7 @@ for t in range(tstart,tend+1,tinc):
 
     output = "%s/component_plot_%012d.png"%(outDirName,t)
     #rho3=2*0.01*(rho2-0.2)*(rho2-1)*(2*rho2-0.2-1)-0.0128*rho4
-    im=ax.imshow(np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose(),interpolation='nearest',origin='upper')
+    im=ax.imshow(np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()+0.6666*np.flip(rho2.take(indices=slicepos,axis=sliceaxis)).transpose()+0.3333*np.flip(rho4.take(indices=slicepos,axis=sliceaxis)).transpose(),interpolation='nearest',origin='upper')
     #ax.imshow((v.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis)),interpolation='nearest',origin='upper')
     #print(np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()[70,70])
     #ax.scatter(70,70)
