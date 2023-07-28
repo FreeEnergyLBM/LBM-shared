@@ -50,8 +50,8 @@ int main(int argc, char **argv){
     Binary<Lattice> Model2; //Binary model with hybrid equilibrium and forcing term
 
     //Set parameters relating to the interface width and surface tension
-    Model1.getAddOn<ChemicalForce<Lattice>>().setA(0.00015);
-    Model1.getAddOn<ChemicalForce<Lattice>>().setKappa(0.0003);
+    Model1.getAddOn<ChemicalForceBinary<Lattice>>().setA(0.00015);
+    Model1.getAddOn<ChemicalForceBinary<Lattice>>().setKappa(0.0003);
 
     OrderParameter<Lattice> orderparam;
     orderparam.set(fluidLocation, -1.0, 1.0); //Set fluid to -1 where the function we defined previously is true and 1.0 where it is false

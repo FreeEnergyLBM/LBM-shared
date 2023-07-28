@@ -27,8 +27,8 @@ using traitNCOMPChemPotCalculator
                 :: template AddPreProcessor<ChemicalPotentialCalculatorNComponent,
                                   GradientsMultiStencil< OrderParameter<NUM_COMPONENTS - 1>, CentralXYZ,LaplacianCentral>>;
 
-//using traitNCOMPPressure = DefaultTraitFlowFieldPressure<Lattice> 
-//                            :: template SetForce<PressureForce<He, NUM_COMPONENTS,1>>;
+using traitNCOMPPressure = DefaultTraitFlowFieldPressure<Lattice,NUM_COMPONENTS> 
+                            :: template SetForce<PressureForceNComp<He>>;
 
 // Function used to define the solid geometry
 // Here we set a solid at the top and bottom, in the conditions that return 1;
@@ -66,7 +66,7 @@ double initFluid3(int k) {
 
     double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - lx/2.) * (yy - lx/2.);
     //return 0.5+0.5*tanh((sqrt(rr2)-RADIUS)/(sqrt(2*kappa/A)));
-    if(rr2>RADIUS*RADIUS&&yy>=ly/2&&xx>lx/2) return 1;
+    if(rr2>RADIUS*RADIUS&&yy>=ly/2&&xx>lx/2) return 0;
     else return 0;
 }
 
@@ -79,7 +79,7 @@ int main(int argc, char **argv){
     // We need to modify the traits of the model to include a body force as an 'AddOn'.
     // We modify the default traits for the 'FlowFieldBinary' model, adding a bodyforce and setting the collision model to MRT, which improves accuracy at higher viscosity ratios
 
-    //FlowFieldPressure<Lattice,traitNCOMPPressure> PressureNavierStokes;
+    FlowFieldPressure<Lattice,traitNCOMPPressure> PressureNavierStokes;
     NComponent<Lattice, 0, NUM_COMPONENTS,traitNCOMPChemPotCalculator<0>> NCompAllenCahn1;
     NComponent<Lattice, 1, NUM_COMPONENTS,traitNCOMPChemPotCalculator<1>> NCompAllenCahn2;
     NComponent<Lattice, 2, NUM_COMPONENTS,traitNCOMPChemPotCalculator<2>> NCompAllenCahn3;
@@ -161,7 +161,7 @@ int main(int argc, char **argv){
     OrderParameter<NUM_COMPONENTS-1>::set<Lattice,1,2>(initFluid3);
 
     // Algorithm creates an object that can run our chosen LBM model
-    Algorithm lbm(NCompAllenCahn1,NCompAllenCahn2,NCompAllenCahn3);
+    Algorithm lbm(PressureNavierStokes,NCompAllenCahn1,NCompAllenCahn2,NCompAllenCahn3);
 
     // Set up the handler object for saving data
     ParameterSave<Lattice> saver("data/");

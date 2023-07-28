@@ -144,19 +144,19 @@ inline double FlowField<T_lattice, T_traits>::computeEquilibrium(const double& d
 }
 
 template<class method>
-class PressureForce : public ChemicalForce<method> {
+class PressureForce : public ChemicalForceBinary<method> {
     public:
         template<class traits>
         inline double computeXYZ(const int xyz, const int k) {
             
-            return traits::Stencil::Cs2*GradientDensity<>::get<typename traits::Lattice, traits::Lattice::NDIM>(k,xyz)+ChemicalForce<method>::template computeXYZ<traits>(xyz,k);
+            return traits::Stencil::Cs2*GradientDensity<>::get<typename traits::Lattice, traits::Lattice::NDIM>(k,xyz)+ChemicalForceBinary<method>::template computeXYZ<traits>(xyz,k);
         
         }
         template<class traits>
         inline double computeQ(const int idx, const int k) {
             double sum=0;
             for(int xyz=0;xyz<traits::Lattice::NDIM;xyz++){
-                sum+=(traits::Stencil::Cs2*GradientDensity<>::get<typename traits::Lattice, traits::Lattice::NDIM>(k,xyz)+ChemicalForce<method>::template computeXYZ<traits>(xyz,k))*traits::Stencil::Ci_xyz(xyz)[idx];
+                sum+=(traits::Stencil::Cs2*GradientDensity<>::get<typename traits::Lattice, traits::Lattice::NDIM>(k,xyz)+ChemicalForceBinary<method>::template computeXYZ<traits>(xyz,k))*traits::Stencil::Ci_xyz(xyz)[idx];
             }
             return sum;
         
@@ -172,8 +172,8 @@ class PressureForce : public ChemicalForce<method> {
 
 };
 
-template<class lattice>
-using DefaultTraitFlowFieldPressure = typename DefaultTrait<lattice,2> :: template SetBoundary<BounceBack> ::template AddPreProcessor<Gradients<Density<>,CentralXYZ>> ::template AddForce<PressureForce<He>>;
+template<class lattice,int numberofcomponents=2>
+using DefaultTraitFlowFieldPressure = typename DefaultTrait<lattice,numberofcomponents> :: template SetBoundary<BounceBack> ::template AddPreProcessor<Gradients<Density<>,CentralXYZ>> ::template AddForce<PressureForce<He>>;
 
 template<class lattice, class traits = DefaultTraitFlowFieldPressure<lattice>>
 class FlowFieldPressure : public CollisionBase<lattice,typename traits::Stencil>, public ModelBase<lattice, traits> { //Inherit from base class to avoid repetition of common

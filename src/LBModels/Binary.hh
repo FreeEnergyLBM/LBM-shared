@@ -178,7 +178,7 @@ inline double Binary<T_lattice, T_traits>::computeEquilibrium(const double& orde
 
 template<class T_lattice>
 using DefaultTraitFlowFieldBinary = typename DefaultTrait<T_lattice,2> :: template SetBoundary<BounceBack>
-                                                                     :: template SetForce<ChemicalForce<Guo,Gradient>>;
+                                                                     :: template SetForce<ChemicalForceBinary<Guo,Gradient>>;
 
 template<class T_lattice, class T_traits = DefaultTraitFlowFieldBinary<T_lattice>>
 class FlowFieldBinary : public FlowField<T_lattice, T_traits>{ //Inherit from base class to avoid repetition of common
