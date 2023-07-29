@@ -182,6 +182,34 @@ struct He : ForcingBase<Cartesian> {
     }
 };
 
+struct NCompForce : ForcingBase<Cartesian> {
+
+    He m_He;
+
+    const static GuoPrefactor Prefactor;
+    
+    template<class traits, class force>
+    inline void precompute(force& f, int k) {
+        m_He.precompute<traits>(f,k);
+    }
+    
+    template<class traits>
+    inline double compute(int idx, int k) { //Guo forcing
+        
+        double forceterm = 0;
+        
+        double prefactor = traits::Stencil::Weights[idx]; //Prefactor for Guo forcing
+
+        for (int xyz = 0; xyz <traits::Stencil::D; xyz++) {
+
+            forceterm += (traits::Stencil::Ci_xyz(xyz)[idx]-Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,xyz))*GradientDensity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,xyz)*traits::Stencil::Cs2*(CollisionBase<typename traits::Lattice,typename traits::Stencil>::computeGamma(&Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,0),idx)-prefactor); //Force
+                                                                                                        //Calculation
+        }
+        //if(forceterm>0)std::cout<<m_Guo.compute(idx,k)<<" "<<forceterm<<std::endl;
+        return m_He.compute<traits>(idx,k)+forceterm;
+
+    }
+};
 
 struct Lee : ForcingBase<Cartesian,AllDirections> {
 

@@ -14,7 +14,7 @@ LZ=struct.unpack('=i', HeaderFile.read(4))[0]
 ndim=struct.unpack('=i', HeaderFile.read(4))[0]
 
 t_zero = 0
-tstart = 50000
+tstart = 0
 
 tend = struct.unpack('=i', HeaderFile.read(4))[0]
 tinc = struct.unpack('=i', HeaderFile.read(4))[0]
@@ -38,9 +38,14 @@ for t in range(tstart,tend+1,tinc):
     file_name = "data/"+"OrderParameter_t%li.mat"%t_file
 
     File = open(file_name, 'rb')
+    
     file_name = "data/"+"Velocity_t%li.mat"%t_file
 
     File2 = open(file_name, 'rb')
+
+    file_name = "data/"+"Density_t%li.mat"%t_file
+
+    File3 = open(file_name, 'rb')
     print(file_name)
 
     def coord_k(k, LY, LZ):
@@ -60,7 +65,7 @@ for t in range(tstart,tend+1,tinc):
 
     for k in range(0,NLatt,1):
         (xk,yk,zk) = coord_k(k,LY,LZ)
-        #rho0[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
+        rho0[xk,yk,zk] = struct.unpack('=d', File3.read(8))[0]
         rho[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
         #struct.unpack('=d', File.read(8))[0]
         rho2[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
@@ -82,6 +87,8 @@ for t in range(tstart,tend+1,tinc):
     rgbv[:,:,1] = np.flip(rho2.take(indices=slicepos,axis=sliceaxis)).transpose()
     rgbv[:,:,2] = np.flip(rho4.take(indices=slicepos,axis=sliceaxis)).transpose()
     
+    #im=ax.imshow(np.flip(rho0.take(indices=slicepos,axis=sliceaxis)).transpose(),interpolation='nearest',origin='upper')
+
     im=ax.imshow(rgbv,interpolation='nearest',origin='upper')
     #ax.imshow((v.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis)),interpolation='nearest',origin='upper')
     #print(np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()[70,70])

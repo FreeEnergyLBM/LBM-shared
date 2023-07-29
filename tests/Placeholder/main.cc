@@ -8,15 +8,15 @@
 const int lx = 10; // Size of domain in x direction
 const int ly = 200; // Size of domain in y direction
 
-const int timesteps = 50000; // Number of iterations to perform
-const int saveInterval = 1000; // Interval to save global data
+const int timesteps = 100; // Number of iterations to perform
+const int saveInterval = 10; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Surface tension (in lattice units) = sqrt(8*kappa*A/9)
 //Interface width (in lattice units) = sqrt(kappa/A)
 //For reference, the model used is in section 9.2.2 of The Lattice Boltzmann Method: Principles and Practice, T. Kruger et al. (2016)
-double A=0.00015;
-double kappa=A*3.125;//=0.0003;
+double A=0.000015;
+double kappa=A*3.725;//=0.0003;
 
 const double RADIUS=25.;
 using Lattice = LatticeProperties<Data1, NoParallel, lx, ly>;
@@ -49,10 +49,10 @@ double initFluid1(int k) {
     int yy = computeY(ly, 1, k);
     //return 0.5*((double)rand()/(double)RAND_MAX);;
     double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - lx/2.) * (yy - lx/2.);
-    //return 0.5+0.5*tanh((sqrt(rr2)-RADIUS)/(sqrt(2*kappa/A)));
+    return 0.5*tanh((yy-3*ly/4)/(sqrt(2*kappa/A)))-0.5*tanh((yy-ly)/(sqrt(2*kappa/A)))+0.5-0.5*tanh((yy)/(sqrt(2*kappa/A)));
     //if(rr2<=RADIUS*RADIUS) return 1;
-    if(yy>=3*ly/4) return 1;
-    else return 0;
+    //if(yy>=3*ly/4) return 1;
+    //else return 0;
 }
 
 double initFluid2(int k) {
@@ -60,10 +60,11 @@ double initFluid2(int k) {
     int yy = computeY(ly, 1, k);
     //return 0.25*((double)rand()/(double)RAND_MAX);;
     double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - lx/2.) * (yy - lx/2.);
+    return 0.5*tanh((yy-ly/2)/(sqrt(2*kappa/A)))-0.5*tanh((yy-3*ly/4)/(sqrt(2*kappa/A)));
     //return 0.5+0.5*tanh((sqrt(rr2)-RADIUS)/(sqrt(2*kappa/A)));
     //if(rr2>RADIUS*RADIUS&&yy<ly/2) return 1;
-    if(yy>=ly/2&&yy<3*ly/4) return 1;
-    else return 0;
+    //if(yy>=ly/2&&yy<3*ly/4) return 1;
+    //else return 0;
 }
 
 double initFluid3(int k) {
@@ -71,10 +72,11 @@ double initFluid3(int k) {
     int yy = computeY(ly, 1, k);
     //return 0.25*((double)rand()/(double)RAND_MAX);;
     double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - lx/2.) * (yy - lx/2.);
+    return 0.5*tanh((yy-ly/4)/(sqrt(2*kappa/A)))-0.5*tanh((yy-ly/2)/(sqrt(2*kappa/A)));
     //return 0.5+0.5*tanh((sqrt(rr2)-RADIUS)/(sqrt(2*kappa/A)));
     //if(rr2>RADIUS*RADIUS&&yy>=ly/2&&xx>lx/2) return 0;
-    if(yy>=ly/4&&yy<ly/2) return 1;
-    else return 0;
+    //if(yy>=ly/4&&yy<ly/2) return 1;
+    //else return 0;
 }
 
 int main(int argc, char **argv){
@@ -91,8 +93,9 @@ int main(int argc, char **argv){
     NComponent<Lattice, 1, NUM_COMPONENTS,traitNCOMPChemPotCalculator<1>> NCompAllenCahn2;
     NComponent<Lattice, 2, NUM_COMPONENTS,traitNCOMPChemPotCalculator<2>> NCompAllenCahn3;
 
-    PressureNavierStokes.getForce<BodyForce<>>().setMagnitudeX(0.0000005);
+    //PressureNavierStokes.getForce<BodyForce<>>().setMagnitudeX(0.0000005);
     //PressureNavierStokes.setTaus(0.505,0.75,1.2,4.0);
+    PressureNavierStokes.setDensities(0.1,0.2,0.5,1.0);
 
     double** tempBeta = new double*[NUM_COMPONENTS];
     for(int i = 0; i < NUM_COMPONENTS; ++i)
@@ -165,7 +168,7 @@ int main(int argc, char **argv){
     NCompAllenCahn3.getForce<AllenCahnSource<AllenCahnSourceMethod,2>>().setAlpha(sqrt(4*2*kappa/A));
 
     // Define the solid and fluid using the functions above
-    SolidLabels<>::set<Lattice>(initSolid);
+    //SolidLabels<>::set<Lattice>(initSolid);
     OrderParameter<NUM_COMPONENTS-1>::set<Lattice,1,0>(initFluid1);
     OrderParameter<NUM_COMPONENTS-1>::set<Lattice,1,1>(initFluid2);
     OrderParameter<NUM_COMPONENTS-1>::set<Lattice,1,2>(initFluid3);
@@ -185,6 +188,7 @@ int main(int argc, char **argv){
             std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
             saver.SaveParameter<SolidLabels<>>(timestep);
             saver.SaveParameter<OrderParameter<NUM_COMPONENTS-1>>(timestep);
+            saver.SaveParameter<Density<>>(timestep);
             saver.SaveParameter<ChemicalPotential<NUM_COMPONENTS>>(timestep);
             saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }

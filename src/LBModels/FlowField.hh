@@ -173,7 +173,7 @@ class PressureForce : public ChemicalForceBinary<method> {
 };
 
 template<class lattice,int numberofcomponents=2>
-using DefaultTraitFlowFieldPressure = typename DefaultTrait<lattice,numberofcomponents> :: template SetBoundary<BounceBack> ::template AddPreProcessor<Gradients<Density<>,CentralXYZ>> ::template AddForce<PressureForce<He>>;
+using DefaultTraitFlowFieldPressure = typename DefaultTrait<lattice,numberofcomponents> :: template SetBoundary<BounceBack> ::template AddPreProcessor<Gradients<Density<>,CentralXYZNoSolid>> ::template AddForce<PressureForce<He>>;
 
 template<class lattice, class traits = DefaultTraitFlowFieldPressure<lattice>>
 class FlowFieldPressure : public CollisionBase<lattice,typename traits::Stencil>, public ModelBase<lattice, traits> { //Inherit from base class to avoid repetition of common
