@@ -191,7 +191,7 @@ class FlowFieldPressure : public CollisionBase<lattice,typename traits::Stencil>
 
         inline void initialise() override; //Initialisation step
 
-        inline void computeMomenta() override; //Momenta (density, velocity) calculation
+        virtual inline void computeMomenta() override; //Momenta (density, velocity) calculation
 
         inline double computeEquilibrium(const double& density, const double& pressure, const double* velocity,
                                   const int idx, const int k) const; //Calculate equilibrium in direction idx with a given
@@ -202,6 +202,9 @@ class FlowFieldPressure : public CollisionBase<lattice,typename traits::Stencil>
         std::vector<double>& velocity = Velocity<>::get<lattice,lattice::NDIM>(); //Reference to vector of velocities
 
         enum{ x = 0, y = 1, z = 2 }; //Indices corresponding to x, y, z directions
+
+        template<class,int,class>
+        friend class FlowFieldPressureNComp;
 
     private:
         double m_TauMin = 1;

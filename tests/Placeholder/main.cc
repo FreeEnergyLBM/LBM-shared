@@ -28,9 +28,8 @@ using traitNCOMPChemPotCalculator
                 :: template AddPreProcessor<ChemicalPotentialCalculatorNComponent,
                                   GradientsMultiStencil< OrderParameter<NUM_COMPONENTS - 1>, CentralXYZ,LaplacianCentral>>;
 
-using traitNCOMPPressure = DefaultTraitFlowFieldPressure<Lattice,NUM_COMPONENTS> 
-                            :: template SetForce<PressureForceNComp<He>,BodyForce<>>
-                            :: template AddPostProcessor<TauCalculatorNComp<NUM_COMPONENTS>>
+using traitNCOMPPressure = DefaultTraitFlowFieldPressureNComp<Lattice,NUM_COMPONENTS> 
+                            :: template AddForce<BodyForce<>>
                             :: template SetCollisionModel<MRT>;
 
 // Function used to define the solid geometry
@@ -87,16 +86,13 @@ int main(int argc, char **argv){
     // We need to modify the traits of the model to include a body force as an 'AddOn'.
     // We modify the default traits for the 'FlowFieldBinary' model, adding a bodyforce and setting the collision model to MRT, which improves accuracy at higher viscosity ratios
 
-    FlowFieldPressure<Lattice,traitNCOMPPressure> PressureNavierStokes;
+    FlowFieldPressureNComp<Lattice,NUM_COMPONENTS,traitNCOMPPressure> PressureNavierStokes;
     NComponent<Lattice, 0, NUM_COMPONENTS,traitNCOMPChemPotCalculator<0>> NCompAllenCahn1;
     NComponent<Lattice, 1, NUM_COMPONENTS,traitNCOMPChemPotCalculator<1>> NCompAllenCahn2;
     NComponent<Lattice, 2, NUM_COMPONENTS,traitNCOMPChemPotCalculator<2>> NCompAllenCahn3;
 
     PressureNavierStokes.getForce<BodyForce<>>().setMagnitudeX(0.0000005);
-    PressureNavierStokes.getPostProcessor<TauCalculatorNComp<NUM_COMPONENTS>>().setTaus(0.505,0.75,1.2,4.0);
-
-    PressureNavierStokes.setTauMin(0.52);
-    PressureNavierStokes.setTauMax(5.0);
+    PressureNavierStokes.setTaus(0.505,0.75,1.2,4.0);
 
     double** tempBeta = new double*[NUM_COMPONENTS];
     for(int i = 0; i < NUM_COMPONENTS; ++i)
