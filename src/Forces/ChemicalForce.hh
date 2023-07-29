@@ -73,6 +73,15 @@ inline double ChemicalForceBinary<T_method, T_gradienttype>::computeChemicalForc
 
 }
 
+template<class T_method, template<class,int> class T_gradienttype>
+template<class T_traits>
+inline double ChemicalForceBinary<T_method, T_gradienttype>::computeVelocitySource(const int xyz, const int k) { //Need to correct velocity
+    
+    return +computeXYZ<T_traits>(xyz, k) * T_traits::Lattice::DT / (2.0);
+    
+}
+
+
 template<class T_method=Guo, template<class,int> class T_gradienttype=Gradient>
 class ChemicalForce : public ForceBase<T_method> {
     

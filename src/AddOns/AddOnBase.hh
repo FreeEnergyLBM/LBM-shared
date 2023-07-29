@@ -6,7 +6,7 @@ class AddOnBase{
     public:
 
         template<class T_traits>
-        inline double compute(int k) const;
+        inline void compute(int k);
 
         template<class T_traits>
         inline void communicate();
@@ -16,9 +16,7 @@ class AddOnBase{
 };
 
 template<class T_traits>
-inline double AddOnBase::compute(int k) const {
-
-    return 0;
+inline void AddOnBase::compute(int k){
 
 }
 

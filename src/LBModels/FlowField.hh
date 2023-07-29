@@ -184,8 +184,8 @@ class FlowFieldPressure : public CollisionBase<lattice,typename traits::Stencil>
 
     public:
 
-        inline void setTau1(double val){m_Tau1 = val;}
-        inline void setTau2(double val){m_Tau2 = val;}
+        inline void setTauMin(double val){m_TauMin = val;}
+        inline void setTauMax(double val){m_TauMax = val;}
 
         inline void collide() override; //Collision step
 
@@ -204,8 +204,8 @@ class FlowFieldPressure : public CollisionBase<lattice,typename traits::Stencil>
         enum{ x = 0, y = 1, z = 2 }; //Indices corresponding to x, y, z directions
 
     private:
-        double m_Tau1 = 1;
-        double m_Tau2 = 1;
+        double m_TauMin = 1;
+        double m_TauMax = 1;
         
 };
 
@@ -241,7 +241,7 @@ template<class lattice, class traits>
 inline void FlowFieldPressure<lattice, traits>::initialise() { //Initialise model
 
     ModelBase<lattice, traits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
-    traits::template CollisionModel<Stencil>::template initialise<lattice>(this -> mt_Forces,m_Tau1,m_Tau2);
+    traits::template CollisionModel<Stencil>::template initialise<lattice>(this -> mt_Forces,m_TauMin,m_TauMax);
     
     #pragma omp parallel for schedule(guided)
     for (int k = 0; k <lattice::N; k++) { //loop over k

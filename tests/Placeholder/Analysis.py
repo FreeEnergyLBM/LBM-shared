@@ -30,7 +30,7 @@ elif LX==1:
 print(tend)
 outDirName = "figures"
 os.system("mkdir -p %s"%outDirName)
-
+v = np.zeros((LX,LY,LZ,ndim))
 for t in range(tstart,tend+1,tinc):
     print("t=%s"%t)
     t_file =t+t_zero
@@ -77,17 +77,22 @@ for t in range(tstart,tend+1,tinc):
 
     output = "%s/component_plot_%012d.png"%(outDirName,t)
     #rho3=2*0.01*(rho2-0.2)*(rho2-1)*(2*rho2-0.2-1)-0.0128*rho4
-    im=ax.imshow(np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()+0.6666*np.flip(rho2.take(indices=slicepos,axis=sliceaxis)).transpose()+0.3333*np.flip(rho4.take(indices=slicepos,axis=sliceaxis)).transpose(),interpolation='nearest',origin='upper')
+    rgbv = np.zeros((LY,LX,3))
+    rgbv[:,:,0] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
+    rgbv[:,:,1] = np.flip(rho2.take(indices=slicepos,axis=sliceaxis)).transpose()
+    rgbv[:,:,2] = np.flip(rho4.take(indices=slicepos,axis=sliceaxis)).transpose()
+    
+    im=ax.imshow(rgbv,interpolation='nearest',origin='upper')
     #ax.imshow((v.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis)),interpolation='nearest',origin='upper')
     #print(np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()[70,70])
     #ax.scatter(70,70)
     step=1
     X,Y=np.meshgrid(np.linspace(0,LX-1,int((LX)/step)),np.linspace(0,LY-1,int((LY)/step)))
 
-    ax.quiver(X.T,Y.T,np.flip(-v[:,:,:,0].take(indices=slicepos,axis=sliceaxis)),np.flip(v[:,:,:,3-sliceaxis].take(indices=slicepos,axis=sliceaxis)),width=0.005,headwidth=1.5,headlength=0.5)
+    ax.quiver(X.T,Y.T,np.flip(-v[:,:,:,0].take(indices=slicepos,axis=sliceaxis)),np.flip(v[:,:,:,3-sliceaxis].take(indices=slicepos,axis=sliceaxis)),width=0.001,headwidth=2.5,headlength=1.5)
     fig.colorbar(im)
     #ax.scatter(49,49)
-    plt.savefig(output, dpi=200, format='png')
+    plt.savefig(output, dpi=400, format='png')
     plt.close(fig)
     print(np.amax(v))
     print(np.sum(rho))

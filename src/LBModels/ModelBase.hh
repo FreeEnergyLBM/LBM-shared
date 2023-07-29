@@ -37,10 +37,10 @@ class ModelBase { //Inherit from base class to avoid repetition of common
                                                       //calculations
     static_assert(std::is_base_of<StencilBase, typename traits::Stencil>(), "ERROR: invalid stencil specified in traits class.");
     static_assert(traits::Stencil::D == lattice::NDIM, "ERROR: The chosen stencil must match the number of lattice dimensions in the lattice properties.");
-    static_assert(CheckBaseTemplate<ForceBase, typename traits::Forces>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
-    static_assert(CheckBase<AddOnBase, typename traits::PreProcessors>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
-    static_assert(CheckBase<AddOnBase, typename traits::PostProcessors>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
-    static_assert(CheckBase<BoundaryBase, typename traits::Boundaries>::value, "ERROR: At least one boundary chosen is not a boundary class.");
+    static_assert(CheckBaseTemplate<ForceBase, typename traits::Forces>::value, "ERROR: At least one force chosen is not a force class.");
+    static_assert(CheckBase<AddOnBase, typename traits::PreProcessors>::value, "ERROR: At least one preprocessor chosen is not an addon class.");
+    static_assert(CheckBase<AddOnBase, typename traits::PostProcessors>::value, "ERROR: At least one postprocessor chosen is not an addon class.");
+    static_assert(CheckBase<BoundaryBase, typename traits::Boundaries>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
     public:
 
         ModelBase()

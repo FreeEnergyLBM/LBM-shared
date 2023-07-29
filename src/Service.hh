@@ -644,7 +644,7 @@ struct ct_map<kv<key, value>, rest...>
           
         }
 
-        static auto& val = findVal();
+        static constexpr auto& val = findVal();
     };
 };
 

@@ -68,30 +68,42 @@ class MRT{
         double m_TauIdxPrefactor;
         static constexpr int Qsquared = stencil::Q*stencil::Q;
         double m_MRTMatrix[numberofelements*stencil::Q*stencil::Q];
+        template<int i>
+        void test(){}
         template<typename forcetuple>
-        inline auto& getForcingMap(const forcetuple& ft){
+        inline auto& _ForcingMapStore(const forcetuple& ft){
 
             static auto ForcingMap = std::apply([this](auto&... forces){//See Algorithm.hh for explanation of std::apply
 
-                ct_map<kv<decltype(std::remove_const<typename std::remove_reference<decltype(forces)>::type>::type::Method::Prefactor),std::array<double,this->numberofelements*stencil::Q*stencil::Q>>...> tempmap;
-
+                ct_map<kv<typename std::remove_const<decltype(std::remove_const<typename std::remove_reference<decltype(forces)>::type>::type::Method::Prefactor)>::type,std::array<double,this->numberofelements*stencil::Q*stencil::Q>>...> tempmap;
+                //test<ct_map<kv<typename std::remove_const<decltype(std::remove_const<typename std::remove_reference<decltype(forces)>::type>::type::Method::Prefactor)>::type,std::array<double,this->numberofelements*stencil::Q*stencil::Q>>...>>();
                 return tempmap;
 
             }, ft);
-            return ForcingMap;
+            return ForcingMap;//ForcingMap;
+
+        }
+        template<typename forcetuple>
+        inline auto& getForcingMap(const forcetuple& ft){
+
+            //static auto& ForcingMap = _ForcingMapStore(ft);
+            return _ForcingMapStore(ft);
 
         }
         template<typename forcetuple>
         inline auto& getForcingMap(const forcetuple& ft) const{
 
-            static auto ForcingMap = std::apply([this](auto&... forces){//See Algorithm.hh for explanation of std::apply
+            //static auto ForcingMap = std::apply([this](auto&... forces){//See Algorithm.hh for explanation of std::apply
 
-                ct_map<kv<typename std::remove_const<decltype(std::remove_reference<decltype(forces)>::type::Method::Prefactor)>::type,std::array<double,this->numberofelements*Qsquared>>...> tempmap;
+            //    ct_map<kv<typename std::remove_const<decltype(std::remove_reference<decltype(forces)>::type::Method::Prefactor)>::type,std::array<double,this->numberofelements*Qsquared>>...> tempmap;
 
-                return tempmap;
+            //    return tempmap;
 
-            }, ft);
-            return ForcingMap;
+            //}, ft);
+            //return ForcingMap;
+
+            //static auto& ForcingMap = _ForcingMapStore(ft);
+            return const_cast<typename std::remove_const<decltype(_ForcingMapStore(ft))>::type>(_ForcingMapStore(ft));//ForcingMap;
 
         }
         //std::unordered_map<std::type_index, std::array<double,numberofelements*stencil::Q*stencil::Q>> mM_MRTMatrixForcing;
@@ -118,13 +130,13 @@ class MRT{
         MRT(MRT const&)             = delete;
         void operator=(MRT const&)  = delete;
         static const inline double* Omega(const double& itau) {
-            static const MRT& mrt=getInstance();
+            static MRT& mrt=getInstance();
             return &(mrt.m_MRTMatrix[mrt.getTauIdx(1./itau)*Qsquared]);
         }
         template<class tauprefactor>
         static const inline double* ForcePrefactor(tauprefactor& prefactor, const double& itau){
             //std::cout<<typeid(tauprefactor).name()<<std::endl;
-            static const MRT& mrt=getInstance();
+            static MRT& mrt=getInstance();
             
             return &(prefactor[mrt.getTauIdx(1./itau)*Qsquared]);
         }
@@ -148,7 +160,7 @@ class MRT{
         template<class lattice, class prefactortype,class forcetuple>
         static inline double forcing(const forcetuple& forces, const double* forcearray, const double& itau, int idx){
             double forcesum=0;
-            static const MRT& mrt=getInstance();
+            static MRT& mrt=getInstance();
             const auto& prefactor = std::remove_const<typename std::remove_reference<decltype(mrt.getForcingMap(forces))>::type>::type::template get<typename std::remove_const<prefactortype>::type>::val;
             auto MRTForcingArray = ForcePrefactor(prefactor,itau);
             for (int sumidx=0; sumidx<stencil::Q; sumidx++){
