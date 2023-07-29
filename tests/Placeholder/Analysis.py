@@ -14,7 +14,7 @@ LZ=struct.unpack('=i', HeaderFile.read(4))[0]
 ndim=struct.unpack('=i', HeaderFile.read(4))[0]
 
 t_zero = 0
-tstart = 0
+tstart = 50000
 
 tend = struct.unpack('=i', HeaderFile.read(4))[0]
 tinc = struct.unpack('=i', HeaderFile.read(4))[0]

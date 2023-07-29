@@ -92,7 +92,7 @@ int main(int argc, char **argv){
     NComponent<Lattice, 2, NUM_COMPONENTS,traitNCOMPChemPotCalculator<2>> NCompAllenCahn3;
 
     PressureNavierStokes.getForce<BodyForce<>>().setMagnitudeX(0.0000005);
-    PressureNavierStokes.setTaus(0.505,0.75,1.2,4.0);
+    //PressureNavierStokes.setTaus(0.505,0.75,1.2,4.0);
 
     double** tempBeta = new double*[NUM_COMPONENTS];
     for(int i = 0; i < NUM_COMPONENTS; ++i)
