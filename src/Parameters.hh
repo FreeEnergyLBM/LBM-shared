@@ -111,7 +111,7 @@ class Parameter {
 
     public:
 
-        std::map<int,bool> mm_Initialised;
+        std::map<int,bool> mm_Initialised; //Change this to std::set
 
         static constexpr int m_Num=num;
         static constexpr int m_Instances=obj::instances;
@@ -213,13 +213,13 @@ class ParameterSingleton {
             constexpr bool multipledirections = (num>1);
             #pragma omp critical
             {
-            if (!getInstance<lattice,num>().mm_Initialised.count(idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3))) {
-                getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)]=val;
-                getInstance<lattice,num>().mm_Initialised.insert({idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3),true});
+            if (!getInstance<lattice,num>().mm_Initialised.count(idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3)) {
+                getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3]=val;
+                getInstance<lattice,num>().mm_Initialised.insert({idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3,true});
             }
             else {
                 
-                getInstance<lattice,num>().mm_Initialised.erase(idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)); 
+                getInstance<lattice,num>().mm_Initialised.erase(idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3); 
                 
             }   
             }        
