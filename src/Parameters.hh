@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 #include <vector>
 #include<string>
 #include<map>
@@ -15,15 +14,15 @@
 //classes, the value will be consistent between classes. Note that, for every template configuration, a new
 //static variable is created, so I pass each class to itself as a template to ensure the parameters are unique.
 
-template<class stencil> //Distribution must know information about the stencil as this determines the size
+template<class T_stencil> //Distribution must know information about the stencil as this determines the size
                          //of the vectors and the data layout
 struct Distribution_Base { //Distribution base class
 
     Distribution_Base(std::vector<int>& neighbors) : mv_DistNeighbors(neighbors) {
 
-        for(int idx = 0; idx < stencil::Q; idx++) { //Calculate the k offset for the neighbors in each direction
+        for(int idx = 0; idx < T_stencil::Q; idx++) { //Calculate the k offset for the neighbors in each direction
 
-            ma_Opposites[idx] = stencil::Opposites[idx];
+            ma_Opposites[idx] = T_stencil::Opposites[idx];
 
         }
 
@@ -33,7 +32,7 @@ struct Distribution_Base { //Distribution base class
     * \brief Returns the opposite index at the chosen index (Rotation by 180 degrees).
     */
 
-    int ma_Opposites[stencil::Q]; //!<Array containing the opposite indices at each index (rotated by 180 degrees).
+    int ma_Opposites[T_stencil::Q]; //!<Array containing the opposite indices at each index (rotated by 180 degrees).
 
     inline int getOpposite(int idx) {
 
@@ -52,11 +51,11 @@ struct Distribution_Base { //Distribution base class
     }
     inline const double* getDistributionPointer(const int k) const { //Get a constant pointer to the the distribution at
                                                              //lattice point k and pointing in direction 0
-        return &mv_Distribution[k * stencil::Q];
+        return &mv_Distribution[k * T_stencil::Q];
     }
     inline double* getDistributionPointer(const int k) { //Get a pointer to the the distribution at
                                                  //lattice point k and pointing in direction 0
-        return &mv_Distribution[k * stencil::Q];
+        return &mv_Distribution[k * T_stencil::Q];
 
     }
     inline const double& getDistribution(const int idx) const { //Get const distribution value at a given index
@@ -76,12 +75,12 @@ struct Distribution_Base { //Distribution base class
     }
     inline const double* getDistributionOldPointer(const int k) const {
 
-        return &mv_OldDistribution[k * stencil::Q];
+        return &mv_OldDistribution[k * T_stencil::Q];
 
     }
     inline double* getDistributionOldPointer(const int k) {
 
-        return &mv_OldDistribution[k * stencil::Q];
+        return &mv_OldDistribution[k * T_stencil::Q];
 
     }
     inline const double& getDistributionOld(const int k) const {
@@ -95,12 +94,12 @@ struct Distribution_Base { //Distribution base class
 
     }
 
-    int m_Q = stencil::Q;
+    int m_Q = T_stencil::Q;
 
-    using Stencil = stencil;
+    using Stencil = T_stencil;
 };
 
-template<class obj, class lattice, typename T, int num=1> //obj template will guarantee a unique instance of the class with its own
+template<class T_obj, class T_lattice, typename T, int num=1> //obj template will guarantee a unique instance of the class with its own
                                        //static vector. I pass the class to itself to guarantee this
                                        //
                                        //T determines the type stored in the vector, num
@@ -114,8 +113,8 @@ class Parameter {
         std::map<int,bool> mm_Initialised; //Change this to std::set
 
         static constexpr int m_Num=num;
-        static constexpr int m_Instances=obj::instances;
-        static constexpr int m_Directions=m_Num/obj::instances;
+        static constexpr int m_Instances=T_obj::instances;
+        static constexpr int m_Directions=m_Num/T_obj::instances;
 
         using ParamType = T;
 
@@ -130,7 +129,7 @@ class Parameter {
 
         Parameter() {
 
-            mv_Parameter.resize(num * lattice::N); //Resize to the desired size
+            mv_Parameter.resize(num * T_lattice::N); //Resize to the desired size
 
         }
         
@@ -140,129 +139,129 @@ class Parameter {
         
 };
 
-template<class obj, typename T=double, int numprefactor=1>
+template<class T_obj, typename T=double, int numprefactor=1>
 class ParameterSingleton {
 
     public:
         static constexpr int instances=numprefactor;
         static constexpr bool multipleinstances = (instances>1);
         
-        template<class lattice, int num=1>
-        static inline Parameter<obj,lattice,T,numprefactor*num>& getInstance() { static Parameter<obj,lattice,T,numprefactor*num> instance;
+        template<class T_lattice, int num=1>
+        static inline Parameter<T_obj,T_lattice,T,numprefactor*num>& getInstance() { static Parameter<T_obj,T_lattice,T,numprefactor*num> instance;
                                                                           return instance;};
 
-        template<class lattice, int num=1>
+        template<class T_lattice, int num=1>
         static inline std::vector<T>& get() { //Returns vector containing the parameter
 
-            return getInstance<lattice,num>().mv_Parameter;
+            return getInstance<T_lattice,num>().mv_Parameter;
 
         }
 
-        template<class lattice, int num=1>
+        template<class T_lattice, int num=1>
         static inline T* getAddress(const int idx) { //Returns pointer to parameter at lattice point k and
                                              //direction 0
-            return &getInstance<lattice,num>().mv_Parameter[idx];
+            return &getInstance<T_lattice,num>().mv_Parameter[idx];
 
         }
 
-        template<class lattice, int num=1>
+        template<class T_lattice, int num=1>
         static inline T* getAddress(int idx1, int idx2) { //Returns pointer to parameter at lattice point k and
                                              //direction 0
             constexpr bool multipledirections = (num>1);
 
-            return &getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2)+(!multipleinstances)*multipledirections*idx2];
+            return &getInstance<T_lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2)+(!multipleinstances)*multipledirections*idx2];
 
         }
 
-        template<class lattice, int num=1>
+        template<class T_lattice, int num=1>
         static inline T* getAddress(int idx1, int idx2, int idx3) { //Returns pointer to parameter at lattice point k and
                                              //direction 0
             constexpr bool multipledirections = (num>1);
 
-            return &getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3];
+            return &getInstance<T_lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3];
 
         }
 
-        template<class lattice, int num=1>
+        template<class T_lattice, int num=1>
         static inline T& get(const int idx) { //Returns const parameter at index idx
 
-            return getInstance<lattice,num>().mv_Parameter[idx];
+            return getInstance<T_lattice,num>().mv_Parameter[idx];
             
         }
 
-        template<class lattice, int num=1>
+        template<class T_lattice, int num=1>
         static inline T& get(int idx1, int idx2) { //Returns const parameter at index idx
 
             constexpr bool multipledirections = (num>1);
  //MAKE MORE EFFICIENT!!!
-            return getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2)+(!multipleinstances)*multipledirections*idx2];
+            return getInstance<T_lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2)+(!multipleinstances)*multipledirections*idx2];
             
         }
 
-        template<class lattice, int num=1>
+        template<class T_lattice, int num=1>
         static inline T& get(int idx1, int idx2, int idx3) { //Returns const parameter at index idx
 
             constexpr bool multipledirections = (num>1);
  //MAKE MORE EFFICIENT!!!
-            return getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3];
+            return getInstance<T_lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3];
             
         }
 
-        template<class lattice, int num=1>
+        template<class T_lattice, int num=1>
         static inline void initialise(const T val,const int idx1, const int idx2=0, const int idx3=0){
             constexpr bool multipledirections = (num>1);
             #pragma omp critical
             {
-            if (!getInstance<lattice,num>().mm_Initialised.count(idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3)) {
-                getInstance<lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3]=val;
-                getInstance<lattice,num>().mm_Initialised.insert({idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3,true});
+            if (!getInstance<T_lattice,num>().mm_Initialised.count(idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3)) {
+                getInstance<T_lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3]=val;
+                getInstance<T_lattice,num>().mm_Initialised.insert({idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3,true});
             }
             else {
                 
-                getInstance<lattice,num>().mm_Initialised.erase(idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3); 
+                getInstance<T_lattice,num>().mm_Initialised.erase(idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3); 
                 
             }   
             }        
         }
 
-        template<class lattice, int num=1, int idx1=0, int idx2=0>
+        template<class T_lattice, int num=1, int idx1=0, int idx2=0>
         static void set(T (*condition)(const int)) {
 
-            for(int k = lattice::HaloSize; k < lattice::N-lattice::HaloSize; k++) {
+            for(int k = T_lattice::HaloSize; k < T_lattice::N-T_lattice::HaloSize; k++) {
 
-                initialise<lattice,num>(condition(k),k,idx1,idx2);
+                initialise<T_lattice,num>(condition(k),k,idx1,idx2);
 
             }
 
         }
 
-        template<class lattice, int num=1, int idx1=0, int idx2=0>
+        template<class T_lattice, int num=1, int idx1=0, int idx2=0>
         static void set(bool (*condition)(const int), T val) {
 
-            for(int k = lattice::HaloSize; k < lattice::N-lattice::HaloSize; k++) {
+            for(int k = T_lattice::HaloSize; k < T_lattice::N-T_lattice::HaloSize; k++) {
 
-                if (condition(k)) initialise<lattice,num>(val,k,idx1,idx2);
+                if (condition(k)) initialise<T_lattice,num>(val,k,idx1,idx2);
 
             }
 
         }
 
-        template<class lattice, int num=1, int idx1=0, int idx2=0>
+        template<class T_lattice, int num=1, int idx1=0, int idx2=0>
         static void set(bool (*condition)(const int), T val, T false_val) {
 
-            for(int k = lattice::HaloSize; k < lattice::N-lattice::HaloSize; k++) {
+            for(int k = T_lattice::HaloSize; k < T_lattice::N-T_lattice::HaloSize; k++) {
 
-                if (condition(k)) initialise<lattice,num>(val,k,idx1,idx2);
-                else initialise<lattice,num>(false_val,k,idx1,idx2);
+                if (condition(k)) initialise<T_lattice,num>(val,k,idx1,idx2);
+                else initialise<T_lattice,num>(false_val,k,idx1,idx2);
 
             }
 
         }
 
 
-        ParameterSingleton(ParameterSingleton<obj,T,numprefactor> const&)=delete;
+        ParameterSingleton(ParameterSingleton<T_obj,T,numprefactor> const&)=delete;
 
-        void operator=(ParameterSingleton<obj,T,numprefactor> const&)=delete;
+        void operator=(ParameterSingleton<T_obj,T,numprefactor> const&)=delete;
 
     private:
 
@@ -271,14 +270,14 @@ class ParameterSingleton {
 
 };
 
-//template<class obj, class lattice, typename T, int num>
-//std::vector<T> Parameter<obj, lattice, T, num>::mv_Parameter; //Must allocate memory for static vector outside of class
+//template<class T_obj, class T_lattice, typename T, int num>
+//std::vector<T> Parameter<T_obj, T_lattice, T, num>::mv_Parameter; //Must allocate memory for static vector outside of class
 
-//template<class obj, class lattice, typename T, int num>
-//std::map<int,bool> Parameter<obj, lattice, T, num>::mm_Initialised;
+//template<class T_obj, class T_lattice, typename T, int num>
+//std::map<int,bool> Parameter<T_obj, T_lattice, T, num>::mm_Initialised;
 
-template<class obj,class lattice,  typename T, int num>
-inline void Parameter<obj, lattice, T, num>::Save(std::string filename, int t, std::string datadir) { //Function to save parameter stored in this class
+template<class T_obj,class T_lattice,  typename T, int num>
+inline void Parameter<T_obj, T_lattice, T, num>::Save(std::string filename, int t, std::string datadir) { //Function to save parameter stored in this class
 
     char fdump[512];
     sprintf(fdump, "%s/%s_t%i.mat", datadir.c_str(), filename.c_str(), t); //Buffer containing file name and location.
@@ -289,9 +288,9 @@ inline void Parameter<obj, lattice, T, num>::Save(std::string filename, int t, s
 
     MPI_File_open(MPI_COMM_SELF, fdump, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh); //Open the file using mpi in write only mode
     
-    MPI_File_seek(fh, sizeof(double) * mpi.rank * m_Num * (lattice::LX * lattice::LY * lattice::LZ) / mpi.size, MPI_SEEK_SET); //Skip to a certain location in the file, currently
+    MPI_File_seek(fh, sizeof(double) * mpi.rank * m_Num * (T_lattice::LX * T_lattice::LY * T_lattice::LZ) / mpi.size, MPI_SEEK_SET); //Skip to a certain location in the file, currently
     
-    MPI_File_write(fh,&mv_Parameter[lattice::HaloSize * m_Num], m_Num * (lattice::N - 2 * lattice::HaloSize), MPI_DOUBLE, MPI_STATUSES_IGNORE);
+    MPI_File_write(fh,&mv_Parameter[T_lattice::HaloSize * m_Num], m_Num * (T_lattice::N - 2 * T_lattice::HaloSize), MPI_DOUBLE, MPI_STATUSES_IGNORE);
 
     MPI_File_close(&fh);
          
@@ -299,9 +298,9 @@ inline void Parameter<obj, lattice, T, num>::Save(std::string filename, int t, s
 
     std::ofstream fs(fdump, std::ios::out | std::ios::binary);
     
-    fs.seekp(sizeof(double) * mpi.rank * m_Num * (lattice::LX * lattice::LY * lattice::LZ) / mpi.size);
+    fs.seekp(sizeof(double) * mpi.rank * m_Num * (T_lattice::LX * T_lattice::LY * T_lattice::LZ) / mpi.size);
 
-    for (int k = lattice::HaloSize; k < lattice::N - lattice::HaloSize; k++) { 
+    for (int k = T_lattice::HaloSize; k < T_lattice::N - T_lattice::HaloSize; k++) { 
 
         for(int idx = 0; idx < m_Num; idx++) fs.write((char *)(&mv_Parameter[k * m_Num + idx]), sizeof(double));
         
@@ -313,7 +312,7 @@ inline void Parameter<obj, lattice, T, num>::Save(std::string filename, int t, s
 
 }
 
-template<class lattice>
+template<class T_lattice>
 class ParameterSave {
 
     public:
@@ -333,14 +332,14 @@ class ParameterSave {
 
         inline void SaveHeader(const int& timestep, const int& saveinterval);
 
-        template<class parameter, int numdir=1>
+        template<class T_parameter, int numdir=1>
         void SaveParameter(int timestep){
-            parameter::template getInstance<lattice,numdir>().Save(parameter::m_Name,timestep,m_DataDir);
+            T_parameter::template getInstance<T_lattice,numdir>().Save(T_parameter::m_Name,timestep,m_DataDir);
         }
 
-        template<class... parameter>
-        void SaveParameter(int timestep, parameter&... params){
-            (params.Save(parameter::m_Name,timestep,m_DataDir),...);
+        template<class... T_parameter>
+        void SaveParameter(int timestep, T_parameter&... params){
+            (params.Save(T_parameter::m_Name,timestep,m_DataDir),...);
         }
 
     private:
@@ -349,8 +348,8 @@ class ParameterSave {
         
 };
 
-template<class lattice>
-inline void ParameterSave<lattice>::SaveHeader(const int& timestep, const int& saveinterval) { //Function to save parameter stored in this class
+template<class T_lattice>
+inline void ParameterSave<T_lattice>::SaveHeader(const int& timestep, const int& saveinterval) { //Function to save parameter stored in this class
     
     if(mpi.rank==0){
         std::cout<<"SAVING HEADER"<<std::endl;
@@ -359,10 +358,10 @@ inline void ParameterSave<lattice>::SaveHeader(const int& timestep, const int& s
 
         std::ofstream fs(fdump, std::ios::out | std::ios::binary);
 
-        fs.write((char *)(&lattice::LX), sizeof(int));
-        fs.write((char *)(&lattice::LY), sizeof(int));
-        fs.write((char *)(&lattice::LZ), sizeof(int));
-        fs.write((char *)(&lattice::NDIM), sizeof(int));
+        fs.write((char *)(&T_lattice::LX), sizeof(int));
+        fs.write((char *)(&T_lattice::LY), sizeof(int));
+        fs.write((char *)(&T_lattice::LZ), sizeof(int));
+        fs.write((char *)(&T_lattice::NDIM), sizeof(int));
         fs.write((char *)(&timestep), sizeof(int));
         fs.write((char *)(&saveinterval), sizeof(int));
 
@@ -409,9 +408,9 @@ struct ChemicalPotential : public ParameterSingleton<ChemicalPotential<instances
 
 }; //Chemical potential for the multicomponent model
 
-template<class obj,int instances = 1>
-struct Laplacian : public ParameterSingleton<Laplacian<obj,instances>,double,instances> {
-    static constexpr char m_Name[9+sizeof(obj::m_Name)] = "Laplacian"+obj::m_Name;
+template<class T_obj,int instances = 1>
+struct Laplacian : public ParameterSingleton<Laplacian<T_obj,instances>,double,instances> {
+    static constexpr char m_Name[9+sizeof(T_obj::m_Name)] = "Laplacian"+T_obj::m_Name;
 }; //Directional first order gradients of the order parameter
 
 template<int instances = 1>
@@ -435,14 +434,14 @@ struct LaplacianOrderParameter : public Laplacian<OrderParameter<instances>,inst
 
 }; //Laplacian of the order parameter
 
-template<class obj,int instances=1>
-struct Gradient : public ParameterSingleton<Gradient<obj,instances>, double, instances> {
-    static constexpr char m_Name[8+sizeof(obj::m_Name)] = "Gradient"+obj::m_Name;
+template<class T_obj,int instances=1>
+struct Gradient : public ParameterSingleton<Gradient<T_obj,instances>, double, instances> {
+    static constexpr char m_Name[8+sizeof(T_obj::m_Name)] = "Gradient"+T_obj::m_Name;
 }; //Directional first order gradients of the order parameter
 
-template<class obj,int instances = 1>
-struct GradientMixed : public ParameterSingleton<GradientMixed<obj,instances>, double, instances> {
-    static constexpr char m_Name[13+sizeof(obj::m_Name)] = "GradientMixed"+obj::m_Name;
+template<class T_obj,int instances = 1>
+struct GradientMixed : public ParameterSingleton<GradientMixed<T_obj,instances>, double, instances> {
+    static constexpr char m_Name[13+sizeof(T_obj::m_Name)] = "GradientMixed"+T_obj::m_Name;
 }; //Directional first order gradients of the order parameter
 
 template<int instances = 1>
