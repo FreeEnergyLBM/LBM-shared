@@ -143,22 +143,86 @@ class ChemicalPotentialCalculatorNComponent : public AddOnBase {
     
     public:
 
+        ChemicalPotentialCalculatorNComponent() : mv_Beta({{0}}), mv_Gamma({{0}}) {}
+
         double **ma_Gamma;
 
         double **ma_Beta;
 
+        std::vector<std::vector<double>> mv_Beta;
+        std::vector<std::vector<double>> mv_Gamma;
+
         template<class traits>
         inline void compute(const int k); //Perform any neccessary computations before force is computed
 
-        inline void setA(double **A) {ma_Beta=A;};
+        inline void setA(double **A) {ma_Beta=A;}
+        inline void setKappa(double **kappa) {ma_Gamma=kappa;}
+        
+        inline void setBeta(int i, int j, double beta) {
+            if ((int)mv_Beta.size()-1<i||(int)mv_Beta.size()-1<j){
+                mv_Beta.resize(mv_Beta.size()+std::max<int>(i-(int)mv_Beta.size()+1,j-(int)mv_Beta.size()+1));
+                for (int l=0;l<(int)mv_Beta.size();l++) {
+                    mv_Beta[l].resize(mv_Beta[l].size()+std::max<int>(i-(int)mv_Beta[l].size()+1,j-(int)mv_Beta[l].size()+1));
+                    mv_Beta[l][l]=0;
+                }
+            } 
+            if (i!=j) {
+                mv_Beta[i][j] = beta;
+                mv_Beta[j][i] = beta;
+            }            
+        }
+        inline void setGamma(int i, int j, double gamma) {
+            if ((int)mv_Gamma.size()-1<i||(int)mv_Gamma.size()-1<j){
+                mv_Gamma.resize(mv_Gamma.size()+std::max<int>(i-(int)mv_Gamma.size()+1,j-(int)mv_Gamma.size()+1));
+                for (int l=0;l<(int)mv_Gamma.size();l++) {
+                    mv_Gamma[l].resize(mv_Gamma[l].size()+std::max<int>(i-(int)mv_Gamma[l].size()+1,j-(int)mv_Gamma[l].size()+1));
+                    mv_Gamma[l][l]=0;
+                }
+            } 
+            if (i!=j) {
+                mv_Gamma[i][j] = gamma;
+                mv_Gamma[j][i] = gamma;
+            }
+        }
 
-        inline void setKappa(double **kappa) {ma_Gamma=kappa;};
+        inline void setBetaAndGamma(int i, int j, double beta, double gamma) {
+            setBeta(i,j,beta);
+            setGamma(i,j,gamma);     
+        }
+
+        inline void setBeta(std::vector<std::vector<double>>& beta) {
+            mv_Beta=beta;
+        }
+        inline void setGamma(std::vector<std::vector<double>>& gamma) {
+            mv_Gamma=gamma;
+        }
+        inline void setBetaAndGamma(std::vector<std::vector<double>>& beta,std::vector<std::vector<double>>& gamma) {
+            mv_Beta=beta;
+            mv_Gamma=gamma;
+        }
     
+    public:
+        template<int numberofcomponents>
+        inline bool checkValid(){
+            
+            if ((int)mv_Beta.size() != numberofcomponents || (int)mv_Beta[0].size() != numberofcomponents
+                || (int)mv_Gamma.size() != numberofcomponents || (int)mv_Gamma[0].size() != numberofcomponents){
+                throw std::runtime_error("Number of beta/gamma parameters does not match the number of components.");
+                return false;
+            }
+            return true;
+        }
+
+        bool m_IsValid;
+
 };
 
 template<class T_traits>
 inline void ChemicalPotentialCalculatorNComponent::compute(const int k){ // THIS IS WRONG, NEED - OTHER LAPLACIANS FOR THE FINAL SUM
         
+        [[maybe_unused]] static bool isvalid = checkValid<T_traits::NumberOfComponents>();
+        m_IsValid=isvalid;
+
         double gammalaplaciansum=0;
         double sumc=0;
 
@@ -168,19 +232,24 @@ inline void ChemicalPotentialCalculatorNComponent::compute(const int k){ // THIS
             sumc=0;
             gammalaplaciansum=0;
             for (int j=0;j<T_traits::NumberOfComponents-1;j++){
+                
                 const double& cj=OrderParameter<T_traits::NumberOfComponents-1>::template get<typename T_traits::Lattice>(k,j);
                 sumc+=cj;
-                const double gammalaplacian = ma_Gamma[i][j]*LaplacianOrderParameter<T_traits::NumberOfComponents-1>::template get<typename T_traits::Lattice,T_traits::NumberOfComponents-1>(k,j);
+                
+                const double gammalaplacian = mv_Gamma[i][j]*LaplacianOrderParameter<T_traits::NumberOfComponents-1>::template get<typename T_traits::Lattice,T_traits::NumberOfComponents-1>(k,j);
+                
                 gammalaplaciansum += gammalaplacian;
                 if (i!=j){
                     
-                    chempot+=2*ma_Beta[i][j]*(-12*ci*ci*cj-12*ci*cj*cj+12*ci*cj-4*cj*cj*cj+6*cj*cj-2*cj) - gammalaplacian;
+                    chempot+=2*mv_Beta[i][j]*(-12*ci*ci*cj-12*ci*cj*cj+12*ci*cj-4*cj*cj*cj+6*cj*cj-2*cj) - gammalaplacian;
                 }
+                
             }
             const double cj=1-sumc;
             
-            chempot+=ma_Beta[i][T_traits::NumberOfComponents-1]*(-12*ci*ci*cj-12*ci*cj*cj+12*ci*cj-4*cj*cj*cj+6*cj*cj-2*cj) + gammalaplaciansum;
+            chempot+=mv_Beta[i][T_traits::NumberOfComponents-1]*(-12*ci*ci*cj-12*ci*cj*cj+12*ci*cj-4*cj*cj*cj+6*cj*cj-2*cj) + gammalaplaciansum;
             ChemicalPotential<T_traits::NumberOfComponents>::template get<typename T_traits::Lattice>(k,i) = chempot;
+            
             
         }
         int i = T_traits::NumberOfComponents-1;
@@ -188,14 +257,17 @@ inline void ChemicalPotentialCalculatorNComponent::compute(const int k){ // THIS
         double chempot=0;
         sumc=0;
         gammalaplaciansum=0;
+        
         for (int j=0;j<T_traits::NumberOfComponents-1;j++){
             const double& cj=OrderParameter<T_traits::NumberOfComponents-1>::template get<typename T_traits::Lattice>(k,j);
             sumc+=cj;
-            const double gammalaplacian = ma_Gamma[i][j]*LaplacianOrderParameter<T_traits::NumberOfComponents-1>::template get<typename T_traits::Lattice,T_traits::NumberOfComponents-1>(k,j);
+            
+            const double gammalaplacian = mv_Gamma[i][j]*LaplacianOrderParameter<T_traits::NumberOfComponents-1>::template get<typename T_traits::Lattice,T_traits::NumberOfComponents-1>(k,j);
             gammalaplaciansum += gammalaplacian;
+            
             if (i!=j){
                 
-                chempot+=2*ma_Beta[i][j]*(-12*ci*ci*cj-12*ci*cj*cj+12*ci*cj-4*cj*cj*cj+6*cj*cj-2*cj) - gammalaplacian;
+                chempot+=2*mv_Beta[i][j]*(-12*ci*ci*cj-12*ci*cj*cj+12*ci*cj-4*cj*cj*cj+6*cj*cj-2*cj) - gammalaplacian;
             }
         }
 

@@ -269,8 +269,8 @@ inline void FlowFieldPressure<lattice, traits>::initialise() { //Initialise mode
         
     }
 
-    ModelBase<lattice, traits>::m_Data.communicate(Pressure<>::get<lattice>());
-    ModelBase<lattice, traits>::m_Data.communicate(Velocity<>::get<lattice,lattice::NDIM>());
+    ModelBase<lattice, traits>::m_Data.communicate(Pressure<>::getInstance<lattice>());
+    ModelBase<lattice, traits>::m_Data.communicate(Velocity<>::getInstance<lattice,lattice::NDIM>());
     
 }
 
@@ -295,8 +295,8 @@ inline void FlowFieldPressure<lattice, traits>::computeMomenta() { //Calculate D
 
     }
 
-    ModelBase<lattice, traits>::m_Data.communicate(Pressure<>::get<lattice>());
-    ModelBase<lattice, traits>::m_Data.communicate(Velocity<>::get<lattice,lattice::NDIM>());
+    ModelBase<lattice, traits>::m_Data.communicate(Pressure<>::getInstance<lattice>());
+    ModelBase<lattice, traits>::m_Data.communicate(Velocity<>::getInstance<lattice,lattice::NDIM>());
 
 }
 

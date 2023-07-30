@@ -65,7 +65,7 @@ for t in range(tstart,tend+1,tinc):
 
     for k in range(0,NLatt,1):
         (xk,yk,zk) = coord_k(k,LY,LZ)
-        rho0[xk,yk,zk] = struct.unpack('=d', File3.read(8))[0]
+        #rho0[xk,yk,zk] = struct.unpack('=d', File3.read(8))[0]
         rho[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
         #struct.unpack('=d', File.read(8))[0]
         rho2[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]

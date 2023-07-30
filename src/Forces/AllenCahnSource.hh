@@ -24,11 +24,13 @@ class AllenCahnSource : public ForceBase<method> {
         
         double m_D;
 
-        double mobility = 0.00333;
+        double m_Mobility = 0.00333;
 
         const double magnitudecutoff = 1e-5;
 
         inline void setAlpha(double alpha){ m_D=alpha; }
+        inline void setMobility(double mobility){ m_Mobility=mobility; }
+        inline void setAlphaAndMobility(double alpha,double mobility){ setAlpha(alpha); setMobility(mobility); }
 
         template<class traits>
         inline double computeBeta(int xyz, int k) const;
@@ -48,7 +50,7 @@ inline double AllenCahnSource<method,componentID>::computeXYZ(int xyz, int k) co
     
     if (sqrt(magnitudegrad2)>magnitudecutoff) {
         //std::cout<<mobility*(4*OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID)*(1.-OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID))*normal/m_D);//-computeBeta<traits>(xyz, k))<<std::endl;
-        return mobility*(4*OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID)*(1.-OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID))*normal/m_D-computeBeta<traits>(xyz, k));
+        return m_Mobility*(4*OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID)*(1.-OrderParameter<traits::NumberOfComponents-1>::template get<typename traits::Lattice>(k,componentID))*normal/m_D-computeBeta<traits>(xyz, k));
 
     }
     else return 0;
