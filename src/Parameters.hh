@@ -144,7 +144,6 @@ class ParameterSingleton {
 
     public:
         static constexpr int instances=numprefactor;
-        static constexpr bool multipleinstances = (instances>1);
         
         template<class T_lattice, int num=1>
         static inline Parameter<T_obj,T_lattice,T,numprefactor*num>& getInstance() { static Parameter<T_obj,T_lattice,T,numprefactor*num> instance;
@@ -167,18 +166,14 @@ class ParameterSingleton {
         template<class T_lattice, int num=1>
         static inline T* getAddress(int idx1, int idx2) { //Returns pointer to parameter at lattice point k and
                                              //direction 0
-            constexpr bool multipledirections = (num>1);
-
-            return &getInstance<T_lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2)+(!multipleinstances)*multipledirections*idx2];
+            return &getInstance<T_lattice,num>().mv_Parameter[idx1*instances*num + (instances>1) ? idx2 : (num>1)*idx2];
 
         }
 
         template<class T_lattice, int num=1>
         static inline T* getAddress(int idx1, int idx2, int idx3) { //Returns pointer to parameter at lattice point k and
                                              //direction 0
-            constexpr bool multipledirections = (num>1);
-
-            return &getInstance<T_lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3];
+            return &getInstance<T_lattice,num>().mv_Parameter[idx1*instances*num + (instances>1)*idx2*num + (num>1)*idx3];
 
         }
 
@@ -191,34 +186,29 @@ class ParameterSingleton {
 
         template<class T_lattice, int num=1>
         static inline T& get(int idx1, int idx2) { //Returns const parameter at index idx
-
-            constexpr bool multipledirections = (num>1);
  //MAKE MORE EFFICIENT!!!
-            return getInstance<T_lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2)+(!multipleinstances)*multipledirections*idx2];
+            return getInstance<T_lattice,num>().mv_Parameter[idx1*instances*num + (instances>1) ? idx2 : (num>1)*idx2];
             
         }
 
         template<class T_lattice, int num=1>
         static inline T& get(int idx1, int idx2, int idx3) { //Returns const parameter at index idx
-
-            constexpr bool multipledirections = (num>1);
  //MAKE MORE EFFICIENT!!!
-            return getInstance<T_lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3];
+            return getInstance<T_lattice,num>().mv_Parameter[idx1*instances*num + (instances>1)*idx2*num + (num>1)*idx3];
             
         }
 
         template<class T_lattice, int num=1>
         static inline void initialise(const T val,const int idx1, const int idx2=0, const int idx3=0){
-            constexpr bool multipledirections = (num>1);
             #pragma omp critical
             {
-            if (!getInstance<T_lattice,num>().mm_Initialised.count(idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3)) {
-                getInstance<T_lattice,num>().mv_Parameter[idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3]=val;
-                getInstance<T_lattice,num>().mm_Initialised.insert({idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3,true});
+            if (!getInstance<T_lattice,num>().mm_Initialised.count(idx1*instances*num + (instances>1)*idx2*num + (num>1)*idx3)) {
+                getInstance<T_lattice,num>().mv_Parameter[idx1*instances*num + (instances>1)*idx2*num + (num>1)*idx3]=val;
+                getInstance<T_lattice,num>().mm_Initialised.insert({idx1*instances*num + (instances>1)*idx2*num + (num>1)*idx3, true});
             }
             else {
                 
-                getInstance<T_lattice,num>().mm_Initialised.erase(idx1*instances*num+multipleinstances*(idx2*num+multipledirections*idx3)+(!multipleinstances)*multipledirections*idx3); 
+                getInstance<T_lattice,num>().mm_Initialised.erase(idx1*instances*num + (instances>1)*idx2*num + (num>1)*idx3); 
                 
             }   
             }        
