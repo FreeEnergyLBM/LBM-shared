@@ -93,9 +93,9 @@ int main(int argc, char **argv){
     NComponent<Lattice, 1, NUM_COMPONENTS,traitNCOMPChemPotCalculator<1>> NCompAllenCahn2;
     NComponent<Lattice, 2, NUM_COMPONENTS,traitNCOMPChemPotCalculator<2>> NCompAllenCahn3;
 
-    //PressureNavierStokes.getForce<BodyForce<>>().setMagnitudeX(0.0000005);
+    PressureNavierStokes.getForce<BodyForce<>>().setMagnitudeX(0.0000005);
     //PressureNavierStokes.setTaus(0.505,0.75,1.2,4.0);
-    PressureNavierStokes.setDensities(0.1,0.2,0.5,1.0);
+    PressureNavierStokes.setDensities(0.001,0.01,0.1,1.0);
 
     double** tempBeta = new double*[NUM_COMPONENTS];
     for(int i = 0; i < NUM_COMPONENTS; ++i)
@@ -168,7 +168,7 @@ int main(int argc, char **argv){
     NCompAllenCahn3.getForce<AllenCahnSource<AllenCahnSourceMethod,2>>().setAlpha(sqrt(4*2*kappa/A));
 
     // Define the solid and fluid using the functions above
-    //SolidLabels<>::set<Lattice>(initSolid);
+    SolidLabels<>::set<Lattice>(initSolid);
     OrderParameter<NUM_COMPONENTS-1>::set<Lattice,1,0>(initFluid1);
     OrderParameter<NUM_COMPONENTS-1>::set<Lattice,1,1>(initFluid2);
     OrderParameter<NUM_COMPONENTS-1>::set<Lattice,1,2>(initFluid3);
