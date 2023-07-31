@@ -116,7 +116,7 @@ struct AllenCahnSourceMethod : ForcingBase<Cartesian> {
 
     std::vector<double> ma_Force;
     
-    const static NoTauDependence Prefactor;
+    const static GuoPrefactor Prefactor;
 
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k){
@@ -138,7 +138,7 @@ struct AllenCahnSourceMethod : ForcingBase<Cartesian> {
                                                                                                         //Calculation
         }
 
-        return forceterm;
+        return forceterm/(TTraits::Stencil::Cs2*TTraits::Lattice::DT*TTraits::Lattice::DT);
 
     }
 };

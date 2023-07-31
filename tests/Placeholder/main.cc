@@ -9,15 +9,18 @@
 const int lx = 10; // Size of domain in x direction
 const int ly = 200; // Size of domain in y direction
 
-const int timesteps = 1000000; // Number of iterations to perform
+const int timesteps = 40000; // Number of iterations to perform
 const int saveInterval = 1000; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
-double BETA=0.000015;
-double GAMMA=BETA*6.25;
+//double BETA=0.001;
+//double GAMMA=-BETA*6.25;
 
-double MOBILITY = 0.00333;
+double D = 5;
+double SURFACETENSION = 0.001;
+
+double MOBILITY = 0.01;
 
 using Lattice = LatticeProperties<DataOldNew, NoParallel, lx, ly>;
 const int NUM_COMPONENTS=4; //Number of fluid components
@@ -50,17 +53,17 @@ double initFluid1(int k) {
     //return 0.25*((double)rand()/(double)RAND_MAX);
     //return 0.5+0.5*tanh((sqrt(rr2)-RADIUS)/(sqrt(2*kappa/A)));
     int yy = computeY(ly, 1, k);
-    return 0.5*tanh((yy-3*ly/4)/(sqrt(4*GAMMA/BETA)))-0.5*tanh((yy-ly)/(sqrt(4*GAMMA/BETA)))+0.5-0.5*tanh((yy)/(sqrt(4*GAMMA/BETA)));
+    return 0.5*tanh(2*(yy-3*ly/4)/(D))-0*0.5*tanh(2*(yy-ly)/(D))+0.5-0*0.5*tanh(2*(yy)/(D));
 }
 
 double initFluid2(int k) {
     int yy = computeY(ly, 1, k);
-    return 0.5*tanh((yy-ly/2)/(sqrt(4*GAMMA/BETA)))-0.5*tanh((yy-3*ly/4)/(sqrt(4*GAMMA/BETA)));
+    return 0.5*tanh(2*(yy-ly/2)/(D))-0.5*tanh(2*(yy-3*ly/4)/(D));
 }
 
 double initFluid3(int k) {
     int yy = computeY(ly, 1, k);
-    return 0.5*tanh((yy-ly/4)/(sqrt(4*GAMMA/BETA)))-0.5*tanh((yy-ly/2)/(sqrt(4*GAMMA/BETA)));
+    return 0.5*tanh(2*(yy-ly/4)/(D))-0.5*tanh(2*(yy-ly/2)/(D));
 }
 
 int main(int argc, char **argv){
@@ -89,20 +92,22 @@ int main(int argc, char **argv){
     
     //Set the beta and gamma parameters in the module used to calculate the chemical potential
     auto& ChemPotCalculator = NCompAllenCahn1.getPreProcessor<ChemicalPotentialCalculatorNComponent>();
+
+    ChemPotCalculator.setD(D); // Component 0 and 1
     
-    ChemPotCalculator.setBetaAndGamma(0,1,BETA,GAMMA); // Component 0 and 1
-    ChemPotCalculator.setBetaAndGamma(0,2,BETA,GAMMA); // Component 0 and 2
-    ChemPotCalculator.setBetaAndGamma(0,3,BETA,GAMMA); // etc
-    ChemPotCalculator.setBetaAndGamma(1,2,BETA,GAMMA);
-    ChemPotCalculator.setBetaAndGamma(1,3,BETA,GAMMA);
-    ChemPotCalculator.setBetaAndGamma(2,3,BETA,GAMMA);
+    ChemPotCalculator.setSurfaceTension(0,1,SURFACETENSION); // Component 0 and 1
+    ChemPotCalculator.setSurfaceTension(0,2,SURFACETENSION); // Component 0 and 2
+    ChemPotCalculator.setSurfaceTension(0,3,SURFACETENSION); // etc
+    ChemPotCalculator.setSurfaceTension(1,2,SURFACETENSION);
+    ChemPotCalculator.setSurfaceTension(1,3,SURFACETENSION);
+    ChemPotCalculator.setSurfaceTension(2,3,SURFACETENSION);
 
     //Feel free to change this so you can modify the interface width and sigma parameters instead
 
     //Set the interface width
-    NCompAllenCahn1.getForce<AllenCahnSource<AllenCahnSourceMethod,0>>().setDAndMobility(sqrt(4*GAMMA/BETA), MOBILITY);
-    NCompAllenCahn2.getForce<AllenCahnSource<AllenCahnSourceMethod,1>>().setDAndMobility(sqrt(4*GAMMA/BETA), MOBILITY);
-    NCompAllenCahn3.getForce<AllenCahnSource<AllenCahnSourceMethod,2>>().setDAndMobility(sqrt(4*GAMMA/BETA), MOBILITY);
+    NCompAllenCahn1.getForce<AllenCahnSource<AllenCahnSourceMethod,0>>().setDTauAndMobility(D, 1.0, MOBILITY);
+    NCompAllenCahn2.getForce<AllenCahnSource<AllenCahnSourceMethod,1>>().setDTauAndMobility(D, 1.0, MOBILITY);
+    NCompAllenCahn3.getForce<AllenCahnSource<AllenCahnSourceMethod,2>>().setDTauAndMobility(D, 1.0, MOBILITY);
 
     // Define the solid and fluid using the functions above
     SolidLabels<>::set<Lattice>(initSolid);
@@ -111,8 +116,8 @@ int main(int argc, char **argv){
     OrderParameter<NUM_COMPONENTS-1>::set<Lattice,1,2>(initFluid3);
 
     // Algorithm creates an object that can run our chosen LBM model
-    Algorithm lbm(PressureNavierStokes,NCompAllenCahn1,NCompAllenCahn2,NCompAllenCahn3);
-
+    //Algorithm lbm(PressureNavierStokes,NCompAllenCahn1,NCompAllenCahn2,NCompAllenCahn3);
+    Algorithm lbm(NCompAllenCahn1,NCompAllenCahn2,NCompAllenCahn3);
     // Set up the handler object for saving data
     ParameterSave<Lattice> saver("data/");
     saver.SaveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)

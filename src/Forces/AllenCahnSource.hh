@@ -24,13 +24,16 @@ class AllenCahnSource : public ForceBase<TMethod> {
         
         double mD;
 
+        double mTau=0.5;
+
         double mMobility = 0.00333;
 
         const double magnitudecutoff = 1e-14;
 
         inline void setD(double d){ mD=d; }
+        inline void setTau(double tau){ mTau=(2/tau-1)/2.0; }
         inline void setMobility(double mobility){ mMobility=mobility; }
-        inline void setDAndMobility(double d,double mobility){ setD(d); setMobility(mobility); }
+        inline void setDTauAndMobility(double d,double tau,double mobility){ setD(d); setTau(tau); setMobility(mobility); }
 
         template<class TTraits>
         inline double computeBeta(int xyz, int k) const;
@@ -50,7 +53,7 @@ inline double AllenCahnSource<TMethod,TComponentID>::computeXYZ(int xyz, int k) 
     
     if (sqrt(magnitudegrad2)>magnitudecutoff) {
         //std::cout<<mobility*(4*OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,TComponentID)*(1.-OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,TComponentID))*normal/mD);//-computeBeta<TTraits>(xyz, k))<<std::endl;
-        return mMobility*(4*OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,TComponentID)*(1.-OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,TComponentID))*normal/mD-computeBeta<TTraits>(xyz, k));
+        return (mMobility/mTau)*(4*OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,TComponentID)*(1.-OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,TComponentID))*normal/mD-computeBeta<TTraits>(xyz, k));
 
     }
     else return 0;

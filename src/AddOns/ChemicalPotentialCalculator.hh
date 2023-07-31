@@ -152,6 +152,8 @@ class ChemicalPotentialCalculatorNComponent : public AddOnBase {
         std::vector<std::vector<double>> mv_Beta;
         std::vector<std::vector<double>> mv_Gamma;
 
+        double mD=5;
+
         template<class traits>
         inline void compute(const int k); //Perform any neccessary computations before force is computed
 
@@ -199,6 +201,25 @@ class ChemicalPotentialCalculatorNComponent : public AddOnBase {
         inline void setBetaAndGamma(std::vector<std::vector<double>>& beta,std::vector<std::vector<double>>& gamma) {
             mv_Beta=beta;
             mv_Gamma=gamma;
+        }
+
+        inline void setD(double d){
+            for (int l=0;l<(int)mv_Gamma.size();l++) {
+                for (int m=0;m<(int)mv_Gamma.size();m++) {
+                    mv_Gamma[l][m]*=d/mD;
+                }
+            }
+            for (int l=0;l<(int)mv_Beta.size();l++) {
+                for (int m=0;m<(int)mv_Beta.size();m++) {
+                    mv_Beta[l][m]*=mD/d;
+                }
+            } 
+            mD=d;
+        }
+
+        inline void setSurfaceTension(int i, int j, double surfacetension) {
+            setBeta(i,j,3.0*surfacetension/mD);
+            setGamma(i,j,-3.0*mD*surfacetension/4.0);     
         }
     
     public:
