@@ -1,0 +1,1 @@
+[1] T. Krueger, H. Kusumaatmaja, A. Kuzmin, O. Shardt, G. Silva, and E. Viggen, The Lattice Boltzmann Method: Principles and Practice. Graduate Texts in Physics, Springer, 2016.

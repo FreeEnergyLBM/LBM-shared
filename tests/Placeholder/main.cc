@@ -9,13 +9,13 @@
 const int lx = 10; // Size of domain in x direction
 const int ly = 200; // Size of domain in y direction
 
-const int timesteps = 50000; // Number of iterations to perform
+const int timesteps = 20000; // Number of iterations to perform
 const int saveInterval = 1000; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
 double BETA=0.000015;
-double GAMMA=2*BETA*3.125;
+double GAMMA=2*BETA*2.125;
 
 double MOBILITY = 0.00333;
 
@@ -76,15 +76,16 @@ int main(int argc, char **argv){
     NComponent<Lattice, 1, NUM_COMPONENTS> NCompAllenCahn2;
     NComponent<Lattice, 2, NUM_COMPONENTS> NCompAllenCahn3;
 
-    PressureNavierStokes.getForce<BodyForce<>>().setMagnitudeX(0.0000005);
-    PressureNavierStokes.setDensities(1.0,1.0,1.0,1.0);
+    PressureNavierStokes.getForce<BodyForce<>>().setMagnitudeX(0.00000001);
+    PressureNavierStokes.setDensities(0.001,1.0,1.0,1.0);
 
-    std::vector<double> taus = {1.0,1.0,0.51,1.0};
+    std::vector<double> taus = {1.0,1.0,1.0,1.0};
 
     PressureNavierStokes.setTaus(taus);
-    NCompAllenCahn1.setTauAndMobility(taus,MOBILITY);
-    NCompAllenCahn2.setTauAndMobility(taus,MOBILITY);
-    NCompAllenCahn3.setTauAndMobility(taus,MOBILITY);
+
+    NCompAllenCahn1.setTauAndMobility(1.0,MOBILITY);
+    NCompAllenCahn2.setTauAndMobility(1.0,MOBILITY);
+    NCompAllenCahn3.setTauAndMobility(1.0,MOBILITY);
     
     //Set the beta and gamma parameters in the module used to calculate the chemical potential
     auto& ChemPotCalculator = NCompAllenCahn1.getPreProcessor<ChemicalPotentialCalculatorNComponent>();
@@ -99,9 +100,9 @@ int main(int argc, char **argv){
     //Feel free to change this so you can modify the interface width and sigma parameters instead
 
     //Set the interface width
-    NCompAllenCahn1.getForce<AllenCahnSource<AllenCahnSourceMethod,0>>().setAlphaAndMobility(sqrt(4*GAMMA/BETA), MOBILITY);
-    NCompAllenCahn2.getForce<AllenCahnSource<AllenCahnSourceMethod,1>>().setAlphaAndMobility(sqrt(4*GAMMA/BETA), MOBILITY);
-    NCompAllenCahn3.getForce<AllenCahnSource<AllenCahnSourceMethod,2>>().setAlphaAndMobility(sqrt(4*GAMMA/BETA), MOBILITY);
+    NCompAllenCahn1.getForce<AllenCahnSource<AllenCahnSourceMethod,0>>().setDAndMobility(sqrt(4*GAMMA/BETA), MOBILITY);
+    NCompAllenCahn2.getForce<AllenCahnSource<AllenCahnSourceMethod,1>>().setDAndMobility(sqrt(4*GAMMA/BETA), MOBILITY);
+    NCompAllenCahn3.getForce<AllenCahnSource<AllenCahnSourceMethod,2>>().setDAndMobility(sqrt(4*GAMMA/BETA), MOBILITY);
 
     // Define the solid and fluid using the functions above
     SolidLabels<>::set<Lattice>(initSolid);
@@ -110,7 +111,7 @@ int main(int argc, char **argv){
     OrderParameter<NUM_COMPONENTS-1>::set<Lattice,1,2>(initFluid3);
 
     // Algorithm creates an object that can run our chosen LBM model
-    Algorithm lbm(NCompAllenCahn1,NCompAllenCahn2,NCompAllenCahn3);
+    Algorithm lbm(PressureNavierStokes,NCompAllenCahn1,NCompAllenCahn2,NCompAllenCahn3);
 
     // Set up the handler object for saving data
     ParameterSave<Lattice> saver("data/");

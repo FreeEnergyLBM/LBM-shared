@@ -28,9 +28,9 @@ class AllenCahnSource : public ForceBase<TMethod> {
 
         const double magnitudecutoff = 1e-5;
 
-        inline void setAlpha(double alpha){ mD=alpha; }
+        inline void setD(double d){ mD=d; }
         inline void setMobility(double mobility){ mMobility=mobility; }
-        inline void setAlphaAndMobility(double alpha,double mobility){ setAlpha(alpha); setMobility(mobility); }
+        inline void setDAndMobility(double d,double mobility){ setD(d); setMobility(mobility); }
 
         template<class TTraits>
         inline double computeBeta(int xyz, int k) const;
