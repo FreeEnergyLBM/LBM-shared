@@ -18,9 +18,9 @@ class ChemicalPotentialCalculatorBinary : public AddOnBase {
 
         inline void setKappa(double kappa);
 
-        double m_A;
+        double mA;
 
-        double m_Kappa;
+        double mKappa;
     
 };
 
@@ -29,21 +29,21 @@ inline void ChemicalPotentialCalculatorBinary::compute(int k){
 
     using Lattice = typename TTraits::Lattice;
 
-    ChemicalPotential<>::get<Lattice>(k) = -m_A * OrderParameter<>::get<Lattice>(k)
-                                                            + m_A * pow(OrderParameter<>::get<Lattice>(k), 3)
-                                                            - m_Kappa * LaplacianOrderParameter<>::get<Lattice>(k);
+    ChemicalPotential<>::get<Lattice>(k) = -mA * OrderParameter<>::get<Lattice>(k)
+                                                            + mA * pow(OrderParameter<>::get<Lattice>(k), 3)
+                                                            - mKappa * LaplacianOrderParameter<>::get<Lattice>(k);
 
 }
 
 inline void ChemicalPotentialCalculatorBinary::setA(double A){
 
-    m_A = A;
+    mA = A;
 
 }
 
 inline void ChemicalPotentialCalculatorBinary::setKappa(double kappa){
 
-    m_Kappa = kappa;
+    mKappa = kappa;
 
 }
 
@@ -58,19 +58,19 @@ class ChemicalPotentialCalculatorRho : public AddOnBase {
 
         inline void setKappa(const double kappa);
 
-        inline void setRhoLiquid(const double rho) {m_RhoLiquid=rho;};
+        inline void setRhoLiquid(const double rho) {mRhoLiquid=rho;};
 
-        inline void setRhoGas(const double rho) {m_RhoVapor=rho;};
+        inline void setRhoGas(const double rho) {mRhoVapor=rho;};
 
-        inline void setRho(const double rhol,const double rhov) {m_RhoVapor=rhov;m_RhoLiquid=rhol;};
+        inline void setRho(const double rhol,const double rhov) {mRhoVapor=rhov;mRhoLiquid=rhol;};
 
-        double m_A;
+        double mA;
 
-        double m_Kappa;
+        double mKappa;
 
-        double m_RhoLiquid;
+        double mRhoLiquid;
 
-        double m_RhoVapor;
+        double mRhoVapor;
     
 };
 
@@ -79,22 +79,22 @@ inline void ChemicalPotentialCalculatorRho::compute(int k){
 
     using Lattice = typename TTraits::Lattice;
 
-    ChemicalPotential<>::get<Lattice>(k) = 2 * m_A * (Density<>::get<Lattice>(k) - m_RhoLiquid)
-                                                   * (Density<>::get<Lattice>(k) - m_RhoVapor) 
-                                                   * (2*Density<>::get<Lattice>(k) - m_RhoLiquid - m_RhoVapor)
-                                           - m_Kappa * LaplacianDensity<>::get<Lattice>(k);
+    ChemicalPotential<>::get<Lattice>(k) = 2 * mA * (Density<>::get<Lattice>(k) - mRhoLiquid)
+                                                   * (Density<>::get<Lattice>(k) - mRhoVapor) 
+                                                   * (2*Density<>::get<Lattice>(k) - mRhoLiquid - mRhoVapor)
+                                           - mKappa * LaplacianDensity<>::get<Lattice>(k);
 
 }
 
 inline void ChemicalPotentialCalculatorRho::setA(double A){
 
-    m_A = A;
+    mA = A;
 
 }
 
 inline void ChemicalPotentialCalculatorRho::setKappa(double kappa){
 
-    m_Kappa = kappa;
+    mKappa = kappa;
 
 }
 
@@ -109,9 +109,9 @@ class ChemicalPotentialCalculatorBinaryLee : public AddOnBase {
 
         inline void setKappa(double kappa);
 
-        double m_A;
+        double mA;
 
-        double m_Kappa;
+        double mKappa;
     
 };
 
@@ -120,22 +120,22 @@ inline void ChemicalPotentialCalculatorBinaryLee::compute(int k){
 
     using Lattice = typename TTraits::Lattice;
 
-    ChemicalPotential<>::get<Lattice>(k) = 2 * m_A * OrderParameter<>::get<Lattice>(k)
-                                           - 6 * m_A * pow(OrderParameter<>::get<Lattice>(k), 2)
-                                           + 4 * m_A * pow(OrderParameter<>::get<Lattice>(k), 3)
-                                           - m_Kappa * LaplacianOrderParameter<>::get<Lattice>(k);
+    ChemicalPotential<>::get<Lattice>(k) = 2 * mA * OrderParameter<>::get<Lattice>(k)
+                                           - 6 * mA * pow(OrderParameter<>::get<Lattice>(k), 2)
+                                           + 4 * mA * pow(OrderParameter<>::get<Lattice>(k), 3)
+                                           - mKappa * LaplacianOrderParameter<>::get<Lattice>(k);
 
 }
 
 inline void ChemicalPotentialCalculatorBinaryLee::setA(double A){
 
-    m_A = A;
+    mA = A;
 
 }
 
 inline void ChemicalPotentialCalculatorBinaryLee::setKappa(double kappa){
 
-    m_Kappa = kappa;
+    mKappa = kappa;
 
 }
 
@@ -213,7 +213,7 @@ class ChemicalPotentialCalculatorNComponent : public AddOnBase {
             return true;
         }
 
-        bool m_IsValid;
+        bool mIsValid;
 
 };
 
@@ -221,7 +221,7 @@ template<class TTraits>
 inline void ChemicalPotentialCalculatorNComponent::compute(const int k){ // THIS IS WRONG, NEED - OTHER LAPLACIANS FOR THE FINAL SUM
         
         [[maybe_unused]] static bool isvalid = checkValid<TTraits::NumberOfComponents>();
-        m_IsValid=isvalid;
+        mIsValid=isvalid;
 
         double gammalaplaciansum=0;
         double sumc=0;

@@ -801,23 +801,23 @@ struct TemplateLoop<0,T,args...>{
 
 template<typename T1,template<typename T2> class TStencil>
 struct GenerateMRT{
-    static const int m_Q=TStencil<T1>::m_Q;
-    int m_MRTMatrix[m_Q][m_Q];
+    static const int mQ=TStencil<T1>::mQ;
+    int mMRTMatrix[mQ][mQ];
     
-    constexpr GenerateMRT():m_MRTMatrix(){
-        for (int i=0;i<m_Q;i++){
+    constexpr GenerateMRT():mMRTMatrix(){
+        for (int i=0;i<mQ;i++){
             setMRTMatrixColumn<0>(i);
         }
     }
 
     template<int columnidx>
     inline constexpr void setMRTMatrixColumn(int rowidx){
-        m_MRTMatrix[rowidx][columnidx]=TStencil<T1>::template m_Moments<columnidx>[rowidx];
+        mMRTMatrix[rowidx][columnidx]=TStencil<T1>::template mMoments<columnidx>[rowidx];
         setMRTMatrixColumn<columnidx+1>(rowidx);
     }
 
     template<>
-    inline constexpr void setMRTMatrixColumn<m_Q>(int i){
+    inline constexpr void setMRTMatrixColumn<mQ>(int i){
         
     }
 };

@@ -94,7 +94,7 @@ struct Distribution_Base { //Distribution base class
 
     }
 
-    int m_Q =TStencil::Q;
+    int mQ =TStencil::Q;
 
     using Stencil =TStencil;
 };
@@ -110,11 +110,11 @@ class Parameter {
 
     public:
 
-        std::map<int,bool> mm_Initialised; //Change this to std::set
+        std::map<int,bool> mmInitialised; //Change this to std::set
 
-        static constexpr int m_Num=TNum;
-        static constexpr int m_Instances=TObj::instances;
-        static constexpr int m_Directions=m_Num/TObj::instances;
+        static constexpr int mNum=TNum;
+        static constexpr int mInstances=TObj::instances;
+        static constexpr int mDirections=mNum/TObj::instances;
 
         using ParamType = T;
 
@@ -202,13 +202,13 @@ class ParameterSingleton {
         static inline void initialise(const T val,const int idx1, const int idx2=0, const int idx3=0){
             #pragma omp critical
             {
-            if (!getInstance<TLattice,TNum>().mm_Initialised.count(idx1*instances*TNum + (instances>1)*idx2*TNum + (TNum>1)*idx3)) {
+            if (!getInstance<TLattice,TNum>().mmInitialised.count(idx1*instances*TNum + (instances>1)*idx2*TNum + (TNum>1)*idx3)) {
                 getInstance<TLattice,TNum>().mv_Parameter[idx1*instances*TNum + (instances>1)*idx2*TNum + (TNum>1)*idx3]=val;
-                getInstance<TLattice,TNum>().mm_Initialised.insert({idx1*instances*TNum + (instances>1)*idx2*TNum + (TNum>1)*idx3, true});
+                getInstance<TLattice,TNum>().mmInitialised.insert({idx1*instances*TNum + (instances>1)*idx2*TNum + (TNum>1)*idx3, true});
             }
             else {
                 
-                getInstance<TLattice,TNum>().mm_Initialised.erase(idx1*instances*TNum + (instances>1)*idx2*TNum + (TNum>1)*idx3); 
+                getInstance<TLattice,TNum>().mmInitialised.erase(idx1*instances*TNum + (instances>1)*idx2*TNum + (TNum>1)*idx3); 
                 
             }   
             }        
@@ -264,7 +264,7 @@ class ParameterSingleton {
 //std::vector<T> Parameter<TObj, TLattice, T, TNum>::mv_Parameter; //Must allocate memory for static vector outside of class
 
 //template<class TObj, class TLattice, typename T, int TNum>
-//std::map<int,bool> Parameter<TObj, TLattice, T, TNum>::mm_Initialised;
+//std::map<int,bool> Parameter<TObj, TLattice, T, TNum>::mmInitialised;
 
 template<class TObj,class TLattice,  typename T, int TNum>
 inline void Parameter<TObj, TLattice, T, TNum>::Save(std::string filename, int t, std::string datadir) { //Function to save parameter stored in this class
@@ -278,9 +278,9 @@ inline void Parameter<TObj, TLattice, T, TNum>::Save(std::string filename, int t
 
     MPI_File_open(MPI_COMM_SELF, fdump, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh); //Open the file using mpi in write only mode
     
-    MPI_File_seek(fh, sizeof(double) * mpi.rank * m_Num * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size, MPI_SEEK_SET); //Skip to a certain location in the file, currently
+    MPI_File_seek(fh, sizeof(double) * mpi.rank * mNum * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size, MPI_SEEK_SET); //Skip to a certain location in the file, currently
     
-    MPI_File_write(fh,&mv_Parameter[TLattice::HaloSize * m_Num], m_Num * (TLattice::N - 2 * TLattice::HaloSize), MPI_DOUBLE, MPI_STATUSES_IGNORE);
+    MPI_File_write(fh,&mv_Parameter[TLattice::HaloSize * mNum], mNum * (TLattice::N - 2 * TLattice::HaloSize), MPI_DOUBLE, MPI_STATUSES_IGNORE);
 
     MPI_File_close(&fh);
          
@@ -288,11 +288,11 @@ inline void Parameter<TObj, TLattice, T, TNum>::Save(std::string filename, int t
 
     std::ofstream fs(fdump, std::ios::out | std::ios::binary);
     
-    fs.seekp(sizeof(double) * mpi.rank * m_Num * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size);
+    fs.seekp(sizeof(double) * mpi.rank * mNum * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size);
 
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { 
 
-        for(int idx = 0; idx < m_Num; idx++) fs.write((char *)(&mv_Parameter[k * m_Num + idx]), sizeof(double));
+        for(int idx = 0; idx < mNum; idx++) fs.write((char *)(&mv_Parameter[k * mNum + idx]), sizeof(double));
         
     };
 
@@ -307,15 +307,15 @@ class ParameterSave {
 
     public:
 
-        ParameterSave(std::string datadir) : m_DataDir(datadir){
+        ParameterSave(std::string datadir) : mDataDir(datadir){
 
-            int status = system(((std::string)"mkdir -p " + m_DataDir).c_str());
+            int status = system(((std::string)"mkdir -p " + mDataDir).c_str());
             if (status) std::cout << "Error creating output directory" << std::endl;
 
         }
-        ParameterSave(ParameterSave& other) : m_DataDir(other.datadir){
+        ParameterSave(ParameterSave& other) : mDataDir(other.datadir){
 
-            int status = system(((std::string)"mkdir -p " + m_DataDir).c_str());
+            int status = system(((std::string)"mkdir -p " + mDataDir).c_str());
             if (status) std::cout << "Error creating output directory" << std::endl;
 
         }
@@ -324,17 +324,17 @@ class ParameterSave {
 
         template<class TParameter, int TNumDir=1>
         void SaveParameter(int timestep){
-            TParameter::template getInstance<TLattice,TNumDir>().Save(TParameter::m_Name,timestep,m_DataDir);
+            TParameter::template getInstance<TLattice,TNumDir>().Save(TParameter::mName,timestep,mDataDir);
         }
 
         template<class... TParameter>
         void SaveParameter(int timestep, TParameter&... params){
-            (params.Save(TParameter::m_Name,timestep,m_DataDir),...);
+            (params.Save(TParameter::mName,timestep,mDataDir),...);
         }
 
     private:
 
-        std::string m_DataDir;
+        std::string mDataDir;
         
 };
 
@@ -344,7 +344,7 @@ inline void ParameterSave<TLattice>::SaveHeader(const int& timestep, const int& 
     if(mpi.rank==0){
         std::cout<<"SAVING HEADER"<<std::endl;
         char fdump[256];
-        sprintf(fdump, "%s/Header.mat", m_DataDir.c_str()); //Buffer containing file name and location.
+        sprintf(fdump, "%s/Header.mat", mDataDir.c_str()); //Buffer containing file name and location.
 
         std::ofstream fs(fdump, std::ios::out | std::ios::binary);
 
@@ -366,144 +366,144 @@ inline void ParameterSave<TLattice>::SaveHeader(const int& timestep, const int& 
 template<int TInstances=1>
 struct Velocity : public ParameterSingleton<Velocity<TInstances>, double, TInstances> {
     
-    static constexpr char m_Name[] = "Velocity";
+    static constexpr char mName[] = "Velocity";
 
 }; //Velocity, with directions D corresponding to the number of cartesian directions in the stencilUw
 
 template<int TInstances=1>
 struct Density : public ParameterSingleton<Density<TInstances>, double, TInstances> {
 
-    static constexpr char m_Name[] = "Density";
+    static constexpr char mName[] = "Density";
 
 }; //Density
 
 template<int TInstances=1>
 struct Pressure : public ParameterSingleton<Pressure<TInstances>, double, TInstances>{
 
-    static constexpr char m_Name[] = "Pressure";
+    static constexpr char mName[] = "Pressure";
 
 }; //Presure
 
 template<int TInstances=1>
 struct OrderParameter : public ParameterSingleton<OrderParameter<TInstances>, double, TInstances> {
 
-    static constexpr char m_Name[] = "OrderParameter";
+    static constexpr char mName[] = "OrderParameter";
 
 }; //Order parameter representing relative concentration of the phases
 
 template<int TInstances=1>
 struct ChemicalPotential : public ParameterSingleton<ChemicalPotential<TInstances>> {
 
-    static constexpr char m_Name[] = "ChemicalPotential";
+    static constexpr char mName[] = "ChemicalPotential";
 
 }; //Chemical potential for the multicomponent model
 
 template<class TObj, int TInstances = 1>
 struct Laplacian : public ParameterSingleton<Laplacian<TObj,TInstances>,double,TInstances> {
-    static constexpr char m_Name[9+sizeof(TObj::m_Name)] = "Laplacian"+TObj::m_Name;
+    static constexpr char mName[9+sizeof(TObj::mName)] = "Laplacian"+TObj::mName;
 }; //Directional first order gradients of the order parameter
 
 template<int TInstances = 1>
 struct LaplacianChemicalPotential : public Laplacian<ChemicalPotential<TInstances>,TInstances> {
 
-    static constexpr char m_Name[] = "LaplacianChemicalPotential";
+    static constexpr char mName[] = "LaplacianChemicalPotential";
 
 }; //Laplacian of the order parameter
 
 template<int TInstances = 1>
 struct LaplacianDensity : public Laplacian<Density<TInstances>,TInstances> {
 
-    static constexpr char m_Name[] = "LaplacianDensity";
+    static constexpr char mName[] = "LaplacianDensity";
 
 }; //Laplacian of the order parameter
 
 template<int TInstances = 1>
 struct LaplacianOrderParameter : public Laplacian<OrderParameter<TInstances>,TInstances> {
 
-    static constexpr char m_Name[] = "LaplacianOrderParameter";
+    static constexpr char mName[] = "LaplacianOrderParameter";
 
 }; //Laplacian of the order parameter
 
 template<class TObj, int TInstances=1>
 struct Gradient : public ParameterSingleton<Gradient<TObj,TInstances>, double, TInstances> {
-    static constexpr char m_Name[8+sizeof(TObj::m_Name)] = "Gradient"+TObj::m_Name;
+    static constexpr char mName[8+sizeof(TObj::mName)] = "Gradient"+TObj::mName;
 }; //Directional first order gradients of the order parameter
 
 template<class TObj, int TInstances = 1>
 struct GradientMixed : public ParameterSingleton<GradientMixed<TObj,TInstances>, double, TInstances> {
-    static constexpr char m_Name[13+sizeof(TObj::m_Name)] = "GradientMixed"+TObj::m_Name;
+    static constexpr char mName[13+sizeof(TObj::mName)] = "GradientMixed"+TObj::mName;
 }; //Directional first order gradients of the order parameter
 
 template<int TInstances = 1>
 struct GradientOrderParameter : public Gradient<OrderParameter<TInstances>,TInstances> {
 
-    static constexpr char m_Name[]="GradientOrderParameter";
+    static constexpr char mName[]="GradientOrderParameter";
 
 }; //Directional first order gradients of the order parameter
 
 template<int TInstances = 1>
 struct GradientDensity : public Gradient<Density<TInstances>,TInstances> {
 
-    static constexpr char m_Name[]="GradientDensity";
+    static constexpr char mName[]="GradientDensity";
 
 }; //Directional first order gradients of the order parameter
 
 template<int TInstances = 1>
 struct GradientChemicalPotential : public Gradient<ChemicalPotential<TInstances>,TInstances> {
 
-    static constexpr char m_Name[]="GradientChemicalPotential";
+    static constexpr char mName[]="GradientChemicalPotential";
 
 }; //Directional first order gradients of the order parameter
 
 template<int TInstances = 1>
 struct GradientPressure : public Gradient<Pressure<TInstances>,TInstances> {
 
-    static constexpr char m_Name[]="GradientPressure";
+    static constexpr char mName[]="GradientPressure";
 
 }; //Directional first order gradients of the order parameter
 
 template<int TInstances = 1>
 struct MixedGradientOrderParameter : public GradientMixed<OrderParameter<TInstances>,TInstances> {
 
-    static constexpr char m_Name[]="MixedGradientOrderParameter";
+    static constexpr char mName[]="MixedGradientOrderParameter";
 
 }; //Directional first order gradients of the order parameter
 
 template<int TInstances = 1>
 struct MixedGradientDensity : public GradientMixed<Density<TInstances>,TInstances> {
 
-    static constexpr char m_Name[]="MixedGradientDensity";
+    static constexpr char mName[]="MixedGradientDensity";
 
 }; //Directional first order gradients of the order parameter
 
 template<int TInstances = 1>
 struct MixedGradientPressure : public GradientMixed<Pressure<TInstances>,TInstances> {
 
-    static constexpr char m_Name[]="MixedGradientPressure";
+    static constexpr char mName[]="MixedGradientPressure";
 
 }; //Directional first order gradients of the order parameter
 
 template<int TInstances = 1>
 struct SolidLabels : public ParameterSingleton<SolidLabels<TInstances>,int,TInstances> {
-    static constexpr char m_Name[] = "SolidLabels";
+    static constexpr char mName[] = "SolidLabels";
 }; //Labelling of geometry
 
 template<int TInstances = 1>
 struct Tau : public ParameterSingleton<Tau<TInstances>,double,TInstances> {
-    static constexpr char m_Name[] = "Tau";
+    static constexpr char mName[] = "Tau";
 }; //Labelling of geometry
 
 template<int TInstances = 1>
 struct InverseTau : public ParameterSingleton<InverseTau<TInstances>,double,TInstances> {
-    static constexpr char m_Name[] = "InverseTau";
+    static constexpr char mName[] = "InverseTau";
 }; //Labelling of geometry
 
 template<int TInstances = 1>
 struct LogFugacity : public ParameterSingleton<LogFugacity<TInstances>,double,TInstances> {
-    static constexpr char m_Name[] = "Fugacity";
+    static constexpr char mName[] = "Fugacity";
 }; //Labelling of geometry
 
 template<int TInstances = 1>
 struct GradientLogFugacity : public ParameterSingleton<GradientLogFugacity<TInstances>,double,TInstances> {
-    static constexpr char m_Name[] = "Fugacity";
+    static constexpr char mName[] = "Fugacity";
 }; //Labelling of geometry

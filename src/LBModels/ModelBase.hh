@@ -44,15 +44,15 @@ class ModelBase { //Inherit from base class to avoid repetition of common
     public:
 
         ModelBase()
-            : m_Data(),
-              m_Distribution(m_Data.getDistributionObject())
+            : mData(),
+              mDistribution(mData.getDistributionObject())
         {
             TLattice latticeInit; // Initialise the TLattice and parallelisation
         }
 
         ModelBase(ModelBase<TLattice,TTraits>& other)
-            : m_Data(other.m_Data),
-              m_Distribution(other.m_Distribution)
+            : mData(other.mData),
+              mDistribution(other.mDistribution)
         {}
 
         inline virtual void precompute(); //Perform any necessary computations before collision
@@ -184,7 +184,7 @@ class ModelBase { //Inherit from base class to avoid repetition of common
                 }, *forcemethods);
 
                 for (int idx = 0; idx <TTraits::Stencil::Q; idx++) { //loop over discrete velocity directions
-                //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
+                //Set distribution at location "mDistribution.streamIndex" equal to the value returned by
                 //"computeCollisionQ"
                 
                     double collision=TTraits::template CollisionModel<typename TTraits::Stencil>::template collide<typename TTraits::Lattice>(olddistributions,equilibriums,inversetau,idx) 
@@ -192,18 +192,18 @@ class ModelBase { //Inherit from base class to avoid repetition of common
                                                         return (TTraits::template CollisionModel<typename TTraits::Stencil>::template forcing<typename TTraits::Lattice,decltype(prefactors)>(this->mt_Forces,&(std::get<typename ForcingMap::template get<typename std::remove_const<typename std::remove_reference<decltype(prefactors)>::type>::type>>(tempTuple).val[0]),inversetau,idx) + ...);
                                                                                                                 }, *tempforceprefactors);
                     
-                    m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k, idx))[idx] = collision;
+                    mDistribution.getDistributionPointer(mDistribution.streamIndex(k, idx))[idx] = collision;
 
                 }
             }
             else{
                 for (int idx = 0; idx <TTraits::Stencil::Q; idx++) { //loop over discrete velocity directions
-                //Set distribution at location "m_Distribution.streamIndex" equal to the value returned by
+                //Set distribution at location "mDistribution.streamIndex" equal to the value returned by
                 //"computeCollisionQ"
                 
                     double collision=TTraits::template CollisionModel<typename TTraits::Stencil>::template collide<typename TTraits::Lattice>(olddistributions,equilibriums,inversetau,idx);
 
-                    m_Distribution.getDistributionPointer(m_Distribution.streamIndex(k, idx))[idx] = collision;
+                    mDistribution.getDistributionPointer(mDistribution.streamIndex(k, idx))[idx] = collision;
 
                 }
             }
@@ -226,8 +226,8 @@ class ModelBase { //Inherit from base class to avoid repetition of common
         inline double computeVelocity(const double* distribution, const double& density,
                                 const int xyz, const int k); //Calculate velocity
 
-        typename std::remove_reference<TLattice>::type::template DataType<typename TTraits::Stencil> m_Data; //MOVE THIS TO BASE
-        typename std::remove_reference<TLattice>::type::template DataType<typename TTraits::Stencil>::DistributionData& m_Distribution = m_Data.getDistributionObject();
+        typename std::remove_reference<TLattice>::type::template DataType<typename TTraits::Stencil> mData; //MOVE THIS TO BASE
+        typename std::remove_reference<TLattice>::type::template DataType<typename TTraits::Stencil>::DistributionData& mDistribution = mData.getDistributionObject();
             //Distributions
 
         enum{ x = 0, y = 1, z = 2 }; //Indices corresponding to x, y, z directions
@@ -236,10 +236,10 @@ class ModelBase { //Inherit from base class to avoid repetition of common
         typename TTraits:: PostProcessors mt_PostProcessors; //MOVE THIS TO BASE
         typename TTraits:: Forces mt_Forces; //MOVE THIS TO BASE
         typename TTraits:: Boundaries mt_Boundaries; //MOVE THIS TO BASE
-        Geometry<TLattice> m_Geometry; //MOVE THIS TO BASE
+        Geometry<TLattice> mGeometry; //MOVE THIS TO BASE
 
         
-        std::vector<double>& distribution = m_Distribution.getDistribution(); //Reference to vector of distributions
+        std::vector<double>& distribution = mDistribution.getDistribution(); //Reference to vector of distributions
         
 };
 
@@ -340,7 +340,7 @@ inline void ModelBase<TLattice,TTraits>::precompute() {
 
     #pragma omp master
     {
-    m_Distribution.getDistribution().swap(m_Distribution.getDistributionOld()); //swap old and new distributions
+    mDistribution.getDistribution().swap(mDistribution.getDistributionOld()); //swap old and new distributions
                                                                                 //before collision
     }
     
@@ -477,10 +477,10 @@ inline void ModelBase<TLattice,TTraits>::boundaries() {
                                                                               //models
             for (int idx = 0; idx <TTraits::Stencil::Q; idx++) {
 
-                if(m_Geometry.isSolid(k) && !m_Geometry.isSolid(m_Distribution.streamIndex(k, idx))) {
+                if(mGeometry.isSolid(k) && !mGeometry.isSolid(mDistribution.streamIndex(k, idx))) {
                     std::apply([this, k, idx](auto&... boundaries) {
                         // Make this a sub function for readability
-                                (boundaries.template compute<TTraits>(this -> m_Distribution, k, idx) , ...);
+                                (boundaries.template compute<TTraits>(this -> mDistribution, k, idx) , ...);
 
                     }, mt_Boundaries);
                 }

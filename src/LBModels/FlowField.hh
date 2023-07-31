@@ -21,7 +21,7 @@ class FlowField : public CollisionBase<TLattice,typename TTraits::Stencil>, publ
                                                          //calculations
                                                          
     using Stencil = typename TTraits::Stencil;  
-    static constexpr int m_NDIM = TLattice::NDIM; 
+    static constexpr int mNDIM = TLattice::NDIM; 
 
     public:
 
@@ -40,11 +40,11 @@ class FlowField : public CollisionBase<TLattice,typename TTraits::Stencil>, publ
                                   int idx, int k); //Calculate equilibrium in direction idx with a given
                                                         //density and velocity
 
-        static constexpr double m_Tau = 1.0; //TEMPORARY relaxation time
-        static constexpr double m_InverseTau = 1.0 / m_Tau; //TEMPORARY inverse relaxation time
+        static constexpr double mTau = 1.0; //TEMPORARY relaxation time
+        static constexpr double mInverseTau = 1.0 / mTau; //TEMPORARY inverse relaxation time
     
         std::vector<double>& density = Density<>::get<TLattice>(); //Reference to vector of TDensities
-        std::vector<double>& velocity = Velocity<>::get<TLattice,m_NDIM>(); //Reference to vector of velocities
+        std::vector<double>& velocity = Velocity<>::get<TLattice,mNDIM>(); //Reference to vector of velocities
 
         enum{ x = 0, y = 1, z = 2 }; //Indices corresponding to x, y, z directions
         
@@ -58,42 +58,42 @@ inline void FlowField<TLattice, TTraits>::collide() { //Collision step
 
         if(!Geometry<TLattice>::isSolid(k)){
 
-            double* old_distribution = this -> m_Distribution.getDistributionOldPointer(k);
+            double* old_distribution = this -> mDistribution.getDistributionOldPointer(k);
 
             double equilibriums[Stencil::Q];
 
             for (int idx = 0; idx < Stencil::Q; idx++) {
 
-                equilibriums[idx] = computeEquilibrium(density[k], &velocity[k * m_NDIM], idx, k);
+                equilibriums[idx] = computeEquilibrium(density[k], &velocity[k * mNDIM], idx, k);
 
             }
             
-            this -> collisionQ(equilibriums, old_distribution, m_InverseTau,k); // CHANGE NEEDED If no forces, don't require them to be passed
+            this -> collisionQ(equilibriums, old_distribution, mInverseTau,k); // CHANGE NEEDED If no forces, don't require them to be passed
 
         }
         
     }
 
-    this -> m_Data.communicateDistribution();
+    this -> mData.communicateDistribution();
 
 }
 
 template<class TLattice, class TTraits>
 inline void FlowField<TLattice, TTraits>::initialise() { //Initialise model
 
-    this -> m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
-    TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this -> mt_Forces,m_Tau,m_Tau);
+    this -> mData.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
+    TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this -> mt_Forces,mTau,mTau);
 
     #pragma omp parallel for schedule(guided)
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { //loop over k
 
-        double* distribution = this -> m_Distribution.getDistributionPointer(k);
-        double* old_distribution = this -> m_Distribution.getDistributionOldPointer(k);
+        double* distribution = this -> mDistribution.getDistributionPointer(k);
+        double* old_distribution = this -> mDistribution.getDistributionOldPointer(k);
 
         Density<>::initialise<TLattice>(1.0 ,k); //Set density to 1 initially (This will change)
-        Velocity<>::initialise<TLattice, m_NDIM>(0.0, k, x);
-        if constexpr (m_NDIM >= 2) Velocity<>::initialise<TLattice, m_NDIM>(0.0, k, y);
-        if constexpr (m_NDIM == 3) Velocity<>::initialise<TLattice, m_NDIM>(0.0, k, z);
+        Velocity<>::initialise<TLattice, mNDIM>(0.0, k, x);
+        if constexpr (mNDIM >= 2) Velocity<>::initialise<TLattice, mNDIM>(0.0, k, y);
+        if constexpr (mNDIM == 3) Velocity<>::initialise<TLattice, mNDIM>(0.0, k, z);
 
         for (int idx = 0; idx <Stencil::Q; idx++) {
 
@@ -117,11 +117,11 @@ inline void FlowField<TLattice, TTraits>::computeMomenta() { //Calculate Density
 
         if(!Geometry<TLattice>::isSolid(k)){
 
-            double* distribution = this -> m_Distribution.getDistributionPointer(k);
+            double* distribution = this -> mDistribution.getDistributionPointer(k);
             velocity[k * Stencil::D + x] = this -> computeVelocity(distribution, density[k], x, k); //Calculate velocities
             
-            if constexpr (m_NDIM >= 2) velocity[k * Stencil::D + y] = this -> computeVelocity(distribution,density[k], y, k);
-            if constexpr (m_NDIM == 3) velocity[k * Stencil::D + z] = this -> computeVelocity(distribution ,density[k], z, k);
+            if constexpr (mNDIM >= 2) velocity[k * Stencil::D + y] = this -> computeVelocity(distribution,density[k], y, k);
+            if constexpr (mNDIM == 3) velocity[k * Stencil::D + z] = this -> computeVelocity(distribution ,density[k], z, k);
             density[k] = this -> computeDensity(distribution, k); //Calculate density
             
             
@@ -129,7 +129,7 @@ inline void FlowField<TLattice, TTraits>::computeMomenta() { //Calculate Density
 
     }
 
-    //this -> m_Data.communicate(Density<>::getInstance<TLattice>());
+    //this -> mData.communicate(Density<>::getInstance<TLattice>());
 
 }
 
@@ -180,12 +180,12 @@ class FlowFieldPressure : public CollisionBase<TLattice,typename TTraits::Stenci
                                                          //calculations
 
     using Stencil = typename TTraits::Stencil;  
-    static constexpr int m_NDIM = TLattice::NDIM; 
+    static constexpr int mNDIM = TLattice::NDIM; 
 
     public:
 
-        inline void setTauMin(double val){m_TauMin = val;}
-        inline void setTauMax(double val){m_TauMax = val;}
+        inline void setTauMin(double val){mTauMin = val;}
+        inline void setTauMax(double val){mTauMax = val;}
 
         inline void collide() override; //Collision step
 
@@ -207,8 +207,8 @@ class FlowFieldPressure : public CollisionBase<TLattice,typename TTraits::Stenci
         friend class FlowFieldPressureNComp;
 
     private:
-        double m_TauMin = 1;
-        double m_TauMax = 1;
+        double mTauMin = 1;
+        double mTauMax = 1;
         
 };
 
@@ -218,15 +218,15 @@ inline void FlowFieldPressure<TLattice, TTraits>::collide() { //Collision step
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { //loop over k
 
-        if(!ModelBase<TLattice, TTraits>::m_Geometry.isSolid(k)){
+        if(!ModelBase<TLattice, TTraits>::mGeometry.isSolid(k)){
 
-            double* old_distribution = this -> m_Distribution.getDistributionOldPointer(k);
+            double* old_distribution = this -> mDistribution.getDistributionOldPointer(k);
 
             double equilibriums[Stencil::Q];
 
             for (int idx = 0; idx < Stencil::Q; idx++) {
 
-                equilibriums[idx] = computeEquilibrium(density[k], pressure[k], &velocity[k * m_NDIM], idx, k);
+                equilibriums[idx] = computeEquilibrium(density[k], pressure[k], &velocity[k * mNDIM], idx, k);
 
             }
             
@@ -236,21 +236,21 @@ inline void FlowFieldPressure<TLattice, TTraits>::collide() { //Collision step
         
     }
 
-    ModelBase<TLattice, TTraits>::m_Data.communicateDistribution();
+    ModelBase<TLattice, TTraits>::mData.communicateDistribution();
 
 }
 
 template<class TLattice, class TTraits>
 inline void FlowFieldPressure<TLattice, TTraits>::initialise() { //Initialise model
 
-    ModelBase<TLattice, TTraits>::m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
-    TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this -> mt_Forces,m_TauMin,m_TauMax);
+    ModelBase<TLattice, TTraits>::mData.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
+    TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this -> mt_Forces,mTauMin,mTauMax);
     
     #pragma omp parallel for schedule(guided)
     for (int k = 0; k <TLattice::N; k++) { //loop over k
 
-        double* distribution = ModelBase<TLattice, TTraits>::m_Distribution.getDistributionPointer(k);
-        double* old_distribution = ModelBase<TLattice, TTraits>::m_Distribution.getDistributionOldPointer(k);
+        double* distribution = ModelBase<TLattice, TTraits>::mDistribution.getDistributionPointer(k);
+        double* old_distribution = ModelBase<TLattice, TTraits>::mDistribution.getDistributionOldPointer(k);
         InverseTau<>::initialise<TLattice>(1.0,k);
         Pressure<>::initialise<TLattice>(1.0,k); //Set density to 1 initially (This will change)
         Density<>::initialise<TLattice>(1.0,k);
@@ -269,8 +269,8 @@ inline void FlowFieldPressure<TLattice, TTraits>::initialise() { //Initialise mo
         
     }
 
-    ModelBase<TLattice, TTraits>::m_Data.communicate(Pressure<>::getInstance<TLattice>());
-    ModelBase<TLattice, TTraits>::m_Data.communicate(Velocity<>::getInstance<TLattice,TLattice::NDIM>());
+    ModelBase<TLattice, TTraits>::mData.communicate(Pressure<>::getInstance<TLattice>());
+    ModelBase<TLattice, TTraits>::mData.communicate(Velocity<>::getInstance<TLattice,TLattice::NDIM>());
     
 }
 
@@ -281,9 +281,9 @@ inline void FlowFieldPressure<TLattice, TTraits>::computeMomenta() { //Calculate
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //Loop over k
 
-        if(!ModelBase<TLattice, TTraits>::m_Geometry.isSolid(k)){
+        if(!ModelBase<TLattice, TTraits>::mGeometry.isSolid(k)){
 
-            double* distribution = ModelBase<TLattice, TTraits>::m_Distribution.getDistributionPointer(k);
+            double* distribution = ModelBase<TLattice, TTraits>::mDistribution.getDistributionPointer(k);
 
             pressure[k] = this -> computeDensity(distribution, k); //Calculate density
             
@@ -295,8 +295,8 @@ inline void FlowFieldPressure<TLattice, TTraits>::computeMomenta() { //Calculate
 
     }
 
-    ModelBase<TLattice, TTraits>::m_Data.communicate(Pressure<>::getInstance<TLattice>());
-    ModelBase<TLattice, TTraits>::m_Data.communicate(Velocity<>::getInstance<TLattice,TLattice::NDIM>());
+    ModelBase<TLattice, TTraits>::mData.communicate(Pressure<>::getInstance<TLattice>());
+    ModelBase<TLattice, TTraits>::mData.communicate(Velocity<>::getInstance<TLattice,TLattice::NDIM>());
 
 }
 

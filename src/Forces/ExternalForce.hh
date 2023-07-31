@@ -29,23 +29,23 @@ class BodyForce : public ForceBase<TMethod> {
 
     private:
 
-        double m_MagnitudeX = 0;
-        double m_MagnitudeY = 0;
-        double m_MagnitudeZ = 0;
+        double mMagnitudeX = 0;
+        double mMagnitudeY = 0;
+        double mMagnitudeZ = 0;
 
 };
 
 template<class TMethod>
 inline void BodyForce<TMethod>::setMagnitudeX(double magnitude) {
 
-    m_MagnitudeX = magnitude;
+    mMagnitudeX = magnitude;
 
 }
 
 template<class TMethod>
 inline void BodyForce<TMethod>::setMagnitudeY(double magnitude) {
 
-    m_MagnitudeY = magnitude;
+    mMagnitudeY = magnitude;
 
 }
 
@@ -53,7 +53,7 @@ inline void BodyForce<TMethod>::setMagnitudeY(double magnitude) {
 template<class TMethod>
 inline void BodyForce<TMethod>::setMagnitudeZ(double magnitude) {
 
-    m_MagnitudeZ = magnitude;
+    mMagnitudeZ = magnitude;
 
 }
 
@@ -66,16 +66,16 @@ inline double BodyForce<TMethod>::computeXYZ(int xyz, int k) {
     double& density = Density<>::get<Lattice>(k);
     
     if constexpr (Lattice::NDIM == 2){
-        if (xyz == 0) return m_MagnitudeX * density;
-        return m_MagnitudeY * density;
+        if (xyz == 0) return mMagnitudeX * density;
+        return mMagnitudeY * density;
     }
 
     else if constexpr (Lattice::NDIM == 3){
-        if(xyz == 1) return m_MagnitudeY * density;
-        return m_MagnitudeZ * density;
+        if(xyz == 1) return mMagnitudeY * density;
+        return mMagnitudeZ * density;
     }
 
-    return m_MagnitudeX * density;
+    return mMagnitudeX * density;
 
 }
 
@@ -89,17 +89,17 @@ inline double BodyForce<TMethod>::computeQ(int idx, int k) {
     double& density = Density<>::get<Lattice>(k);
 
     if constexpr (Lattice::NDIM == 2){
-        return density * ( m_MagnitudeX * Stencil::Ci_xyz(0)[idx]
-           + m_MagnitudeY * density * Stencil::Ci_xyz(1)[idx] );
+        return density * ( mMagnitudeX * Stencil::Ci_xyz(0)[idx]
+           + mMagnitudeY * density * Stencil::Ci_xyz(1)[idx] );
     }
 
     else if constexpr (Lattice::NDIM == 3){
-        return density * ( m_MagnitudeX * Stencil::Ci_xyz(0)[idx]
-           + m_MagnitudeY * density * Stencil::Ci_xyz(1)[idx]
-           + m_MagnitudeZ * density * Stencil::Ci_xyz(2)[idx] );
+        return density * ( mMagnitudeX * Stencil::Ci_xyz(0)[idx]
+           + mMagnitudeY * density * Stencil::Ci_xyz(1)[idx]
+           + mMagnitudeZ * density * Stencil::Ci_xyz(2)[idx] );
     }
 
-    return density * ( m_MagnitudeX * Stencil::Ci_xyz(0)[idx] );
+    return density * ( mMagnitudeX * Stencil::Ci_xyz(0)[idx] );
 
 }
 

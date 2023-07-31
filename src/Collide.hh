@@ -14,19 +14,45 @@
 /**
  * \file Collide.hh
  * \brief Contains base class with commonly used functions for the collision and momentum calculation steps in LBM.
- * The class in this file will be inherited by LBM models to provide basic operations in LBM such as SRT collision
- * or Guo forcing. If you want to implement a new collision or forcing operator, do it here so it can be used by
- * all models.
+ * There are classes to specify the tau dependence of the collision operator and classes for SRT and MRT collision.
+ * The CollisionBase class in this file will be inherited by LBM models to provide basic operations in LBM such as 
+ * momenta calculation. If you want to implement a new collision operator, do it here so it can be used by all models.
  */
 
+
+/**
+ * \brief The NoTauDependence class specifies a function to calculate the tau prefactor of the forcing term, which will
+ *        just return 1 (as there is no dependence on tau). This can be used as a prefactor in the forcing terms found 
+ *        in Forcing.hh.
+ */
 struct NoTauDependence {
+
+    /**
+     * \brief The calculateTauPrefactor function just returns 1.0 in this case, as we want no dependence on tau.
+     * \tparam TLattice LatticeProperties class for the system.
+     * \param itau 1.0/tau (where tau is the relaxation time).
+     * \return 1.0
+     */
     template<class TLattice>
     static inline double calculateTauPrefactor(const double& itau) { 
         return 1.;
     } 
+
 };
 
+/**
+ * \brief The GuoPrefactor class specifies a function to calculate the tau prefactor of the forcing term, which will 
+ *        return the guo forcing prefactor that depends on tau (See [1]). This can be used as a prefactor in the
+ *        forcing terms found in Forcing.hh.
+ */
 struct GuoPrefactor {
+
+    /**
+     * \brief The calculateTauPrefactor function will return 1.0-0.5*dt/tau in this case [1].
+     * \tparam TLattice LatticeProperties class for the system.
+     * \param itau 1.0/tau (where tau is the relaxation time).
+     * \return Standard forcing relaxation dependence.
+     */
     template<class TLattice>
     static inline double calculateTauPrefactor(const double& itau) { 
         return 1.-0.5*TLattice::DT*itau;
@@ -63,11 +89,11 @@ template<class TStencil>
 class MRT{
     private:
         static constexpr int numberofelements = 5000;
-        double m_Taumax;
-        double m_Taumin;
-        double m_TauIdxPrefactor;
+        double mTaumax;
+        double mTaumin;
+        double mTauIdxPrefactor;
         static constexpr int Qsquared = TStencil::Q*TStencil::Q;
-        double m_MRTMatrix[numberofelements*TStencil::Q*TStencil::Q];
+        double mMRTMatrix[numberofelements*TStencil::Q*TStencil::Q];
         template<int i>
         void test(){}
         template<typename TForceTuple>
@@ -115,7 +141,7 @@ class MRT{
         MRT(){}
         const inline int getTauIdx(double tau) const{
 
-            int tauidx = m_TauIdxPrefactor*(tau-m_Taumin);
+            int tauidx = mTauIdxPrefactor*(tau-mTaumin);
             
             if(tauidx < 0) return 0;
             if(tauidx > numberofelements-1) return numberofelements-1;
@@ -131,7 +157,7 @@ class MRT{
         void operator=(MRT const&)  = delete;
         static const inline double* Omega(const double& itau) {
             static MRT& mrt=getInstance();
-            return &(mrt.m_MRTMatrix[mrt.getTauIdx(1./itau)*Qsquared]);
+            return &(mrt.mMRTMatrix[mrt.getTauIdx(1./itau)*Qsquared]);
         }
         template<class TTauPrefactor>
         static const inline double* ForcePrefactor(TTauPrefactor& prefactor, const double& itau){
@@ -196,7 +222,7 @@ inline void MRT<TStencil>::generateMRTTau(double tau,int tauidx,const double (&M
     for(int i = 0; i < TStencil::Q; i++){
         for(int j = 0; j < TStencil::Q; j++){
             for(int ii = 0; ii < TStencil::Q; ii++) { 
-                m_MRTMatrix[tauidx*TStencil::Q*TStencil::Q+j*TStencil::Q+i] += Minverse[j*TStencil::Q+ii]*weightedmoments[ii*TStencil::Q+i];
+                mMRTMatrix[tauidx*TStencil::Q*TStencil::Q+j*TStencil::Q+i] += Minverse[j*TStencil::Q+ii]*weightedmoments[ii*TStencil::Q+i];
             }
         }
     }
@@ -244,9 +270,9 @@ inline void MRT<TStencil>::initialise(double tau1,double tau2) {
     #pragma omp master
     {
 
-    getInstance().m_Taumax=std::max(tau1,tau2);
-    getInstance().m_Taumin=std::min(tau1,tau2);
-    getInstance().m_TauIdxPrefactor=(numberofelements-1)/(getInstance().m_Taumax-getInstance().m_Taumin);
+    getInstance().mTaumax=std::max(tau1,tau2);
+    getInstance().mTaumin=std::min(tau1,tau2);
+    getInstance().mTauIdxPrefactor=(numberofelements-1)/(getInstance().mTaumax-getInstance().mTaumin);
     double MomentsInverse[TStencil::Q*TStencil::Q] = {};
     double mag[TStencil::Q] = {};
 
@@ -264,7 +290,7 @@ inline void MRT<TStencil>::initialise(double tau1,double tau2) {
 
     for(int tauidx = 0; tauidx < numberofelements; tauidx++){
 
-        double tau = getInstance().m_Taumin + (double)tauidx*(getInstance().m_Taumax-getInstance().m_Taumin)/((double)numberofelements-1.0);
+        double tau = getInstance().mTaumin + (double)tauidx*(getInstance().mTaumax-getInstance().mTaumin)/((double)numberofelements-1.0);
 
         getInstance().template generateMRTTau<TLattice>(tau,tauidx,MomentsInverse);
         
@@ -281,9 +307,9 @@ inline void MRT<TStencil>::initialise(const TForceTuple& forces, double tau1,dou
     #pragma omp master
     {
 
-    getInstance().m_Taumax=std::max(tau1,tau2);
-    getInstance().m_Taumin=std::min(tau1,tau2);
-    getInstance().m_TauIdxPrefactor=(numberofelements-1)/(getInstance().m_Taumax-getInstance().m_Taumin);
+    getInstance().mTaumax=std::max(tau1,tau2);
+    getInstance().mTaumin=std::min(tau1,tau2);
+    getInstance().mTauIdxPrefactor=(numberofelements-1)/(getInstance().mTaumax-getInstance().mTaumin);
     double MomentsInverse[TStencil::Q*TStencil::Q] = {};
     double mag[TStencil::Q] = {};
 
@@ -301,7 +327,7 @@ inline void MRT<TStencil>::initialise(const TForceTuple& forces, double tau1,dou
 
     for(int tauidx = 0; tauidx < numberofelements; tauidx++){
 
-        double tau = getInstance().m_Taumin + (double)tauidx*(getInstance().m_Taumax-getInstance().m_Taumin)/((double)numberofelements-1.0);
+        double tau = getInstance().mTaumin + (double)tauidx*(getInstance().mTaumax-getInstance().mTaumin)/((double)numberofelements-1.0);
 
         getInstance().template generateMRTTau<TLattice>(tau,tauidx,MomentsInverse);
         std::apply([tau,tauidx,MomentsInverse,forces](auto&... force) {

@@ -27,12 +27,12 @@ class Binary: public CollisionBase<TLattice, typename TTraits::Stencil>, public 
                                                       //calculations
 
     using Stencil = typename TTraits::Stencil;  
-    static constexpr int m_NDIM = TLattice::NDIM; 
+    static constexpr int mNDIM = TLattice::NDIM; 
                                                       
     public:
 
-        inline void setTau1(double val){m_Tau1=val;}
-        inline void setTau2(double val){m_Tau2=val;}
+        inline void setTau1(double val){mTau1=val;}
+        inline void setTau2(double val){mTau2=val;}
 
         inline void collide() override; //Collision step
 
@@ -46,15 +46,15 @@ class Binary: public CollisionBase<TLattice, typename TTraits::Stencil>, public 
 
         inline double computeModelForce(int xyz, int k); //Calculate forces specific to the model in direction xyz
 
-        static constexpr double m_Tau = 1.0; //TEMPORARY relaxation time
-        static constexpr double m_InverseTau = 1.0 / m_Tau; //TEMPORARY inverse relaxation time
+        static constexpr double mTau = 1.0; //TEMPORARY relaxation time
+        static constexpr double mInverseTau = 1.0 / mTau; //TEMPORARY inverse relaxation time
 
         enum{ x = 0, y = 1, z = 2 }; //Indices corresponding to x, y, z directions
         
-        double m_Gamma = 1;
+        double mGamma = 1;
 
-        double m_Tau1=1;
-        double m_Tau2=1;
+        double mTau1=1;
+        double mTau2=1;
 
         std::vector<double>& orderparameter = OrderParameter<>::get<TLattice>(); //Reference to vector of order parameters
         std::vector<double>& velocity = Velocity<>::get<TLattice,TLattice::NDIM>(); //Reference to vector of velocities
@@ -74,7 +74,7 @@ inline void Binary<TLattice, TTraits>::collide() {
             
             //auto forcemethods = this -> getForceCalculator(this -> mt_Forces, k);
 
-            double* old_distribution = this -> m_Distribution.getDistributionOldPointer(k);
+            double* old_distribution = this -> mDistribution.getDistributionOldPointer(k);
 
             double equilibriumsum = 0;
 
@@ -94,33 +94,33 @@ inline void Binary<TLattice, TTraits>::collide() {
 
             //this -> updateForces(forces[0], *forcemethods, k, 0);
 
-            this -> collisionQ(equilibriums, old_distribution, m_InverseTau, k);
+            this -> collisionQ(equilibriums, old_distribution, mInverseTau, k);
 
         }
         
     }
 
-    this -> m_Data.communicateDistribution();
+    this -> mData.communicateDistribution();
 
 }
 
 template<class TLattice, class TTraits>
 inline void Binary<TLattice, TTraits>::initialise() { //Initialise model
 
-    this -> m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
-    TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this -> mt_Forces,m_Tau1,m_Tau2);
+    this -> mData.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
+    TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this -> mt_Forces,mTau1,mTau2);
     
     #pragma omp parallel for schedule(guided) 
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { //loop over k
 
-        double* distribution = this -> m_Distribution.getDistributionPointer(k);
-        double* old_distribution = this -> m_Distribution.getDistributionOldPointer(k);
+        double* distribution = this -> mDistribution.getDistributionPointer(k);
+        double* old_distribution = this -> mDistribution.getDistributionOldPointer(k);
 
         ChemicalPotential<>::initialise<TLattice>(0,k);
 
         OrderParameter<>::initialise<TLattice>(1.0,k);
         
-        InverseTau<>::initialise<TLattice>(1.0 / (0.5 * (1.0 + OrderParameter<>::get<TLattice>(k)) * (m_Tau1 - m_Tau2) + m_Tau2), k);
+        InverseTau<>::initialise<TLattice>(1.0 / (0.5 * (1.0 + OrderParameter<>::get<TLattice>(k)) * (mTau1 - mTau2) + mTau2), k);
 
         double equilibriumsum = 0;
 
@@ -140,7 +140,7 @@ inline void Binary<TLattice, TTraits>::initialise() { //Initialise model
         
     }
 
-    this -> m_Data.communicate(SolidLabels<>::getInstance<TLattice>());
+    this -> mData.communicate(SolidLabels<>::getInstance<TLattice>());
 
 }
 
@@ -153,23 +153,23 @@ inline void Binary<TLattice, TTraits>::computeMomenta() { //Calculate order para
 
         if(!Geometry<TLattice>::isSolid(k)){
 
-            double* distribution = this -> m_Distribution.getDistributionPointer(k);
+            double* distribution = this -> mDistribution.getDistributionPointer(k);
 
             orderparameter[k] = this -> computeDensity(distribution, k);
 
-            itau[k] = 1.0 / (0.5 * (1.0 + orderparameter[k]) * (m_Tau1) - 0.5 * (-1.0 + orderparameter[k]) * m_Tau2);
+            itau[k] = 1.0 / (0.5 * (1.0 + orderparameter[k]) * (mTau1) - 0.5 * (-1.0 + orderparameter[k]) * mTau2);
         
         }
 
     }
 
-    this -> m_Data.communicate(OrderParameter<>::getInstance<TLattice>());
+    this -> mData.communicate(OrderParameter<>::getInstance<TLattice>());
 }
 
 template<class TLattice, class TTraits>
 inline double Binary<TLattice, TTraits>::computeEquilibrium(const double& orderparam, const double* velocity, int idx, int k) {
 
-    return Stencil::Weights[idx] * (ChemicalPotential<>::get<TLattice>(k) * m_Gamma / Stencil::Cs2 + orderparam * CollisionBase<TLattice, Stencil>::computeVelocityFactor(velocity, idx));
+    return Stencil::Weights[idx] * (ChemicalPotential<>::get<TLattice>(k) * mGamma / Stencil::Cs2 + orderparam * CollisionBase<TLattice, Stencil>::computeVelocityFactor(velocity, idx));
 
 }
 
@@ -185,12 +185,12 @@ class FlowFieldBinary : public FlowField<TLattice, TTraits>{ //Inherit from base
                                                          //calculations
 
     using Stencil = typename TTraits::Stencil;  
-    static constexpr int m_NDIM = TLattice::NDIM; 
+    static constexpr int mNDIM = TLattice::NDIM; 
     
     public:
 
-        inline void setTau1(double val){m_Tau1 = val;}
-        inline void setTau2(double val){m_Tau2 = val;}
+        inline void setTau1(double val){mTau1 = val;}
+        inline void setTau2(double val){mTau2 = val;}
 
         inline virtual void collide() override; //Collision step
 
@@ -201,8 +201,8 @@ class FlowFieldBinary : public FlowField<TLattice, TTraits>{ //Inherit from base
         inline double computeEquilibrium(const double& density, const double* velocity, const double& order_parameter, const double& chemical_potential, int idx, int k); //Calculate equilibrium in direction idx with a given//density and velocity
                                                                      //at index idx
 
-        double m_Tau1 = 1;
-        double m_Tau2 = 1;
+        double mTau1 = 1;
+        double mTau2 = 1;
 
         enum{x = 0, y = 1, z = 2};
 
@@ -223,7 +223,7 @@ inline void FlowFieldBinary<TLattice, TTraits>::collide() { //Collision step
 
         if(!Geometry<TLattice>::isSolid(k)){
 
-            double* old_distribution = this -> m_Distribution.getDistributionOldPointer(k);
+            double* old_distribution = this -> mDistribution.getDistributionOldPointer(k);
             double equilibriumsum = 0;
             
             double equilibriums[Stencil::Q];
@@ -243,21 +243,21 @@ inline void FlowFieldBinary<TLattice, TTraits>::collide() { //Collision step
         
     }
 
-    FlowField<TLattice, TTraits>::m_Data.communicateDistribution();
+    FlowField<TLattice, TTraits>::mData.communicateDistribution();
 
 }
 
 template<class TLattice, class TTraits>
 inline void FlowFieldBinary<TLattice, TTraits>::initialise() { //Initialise model
 
-    this -> m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
-    TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this -> mt_Forces,m_Tau1,m_Tau2);
+    this -> mData.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
+    TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this -> mt_Forces,mTau1,mTau2);
 
     #pragma omp parallel for schedule(guided)
     for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //loop over k
 
-        double* distribution = this -> m_Distribution.getDistributionPointer(k);
-        double* old_distribution = this -> m_Distribution.getDistributionOldPointer(k);
+        double* distribution = this -> mDistribution.getDistributionPointer(k);
+        double* old_distribution = this -> mDistribution.getDistributionOldPointer(k);
 
         Density<>::initialise<TLattice>(1.0, k); //Set density to 1 initially (This will change)
         Velocity<>::initialise<TLattice,TLattice::NDIM>(0.0, k, x);

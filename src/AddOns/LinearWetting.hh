@@ -10,7 +10,7 @@ class LinearWetting : public AddOnBase {
 
         LinearWetting() = default;
 
-        LinearWetting(const LinearWetting& other) : m_Theta(other.m_Theta), m_Omega(other.m_Omega), m_Prefactor(other.m_Prefactor) {}
+        LinearWetting(const LinearWetting& other) : mTheta(other.mTheta), mOmega(other.mOmega), mPrefactor(other.mPrefactor) {}
 
         template<class TTraits>
         inline void compute(int k);
@@ -22,9 +22,9 @@ class LinearWetting : public AddOnBase {
 
         inline double calcOmega(double theta);
 
-        double m_Theta = M_PI / 2.0;
-        double m_Omega=0;
-        double m_Prefactor = 0.0;
+        double mTheta = M_PI / 2.0;
+        double mOmega=0;
+        double mPrefactor = 0.0;
 
     public:
         inline void setTheta(double theta);
@@ -54,7 +54,7 @@ inline void LinearWetting::compute(int k) {
                 
             if (!Geometry<Lattice>::isSolid(data::getInstance().getNeighbors()[k * Stencil::Q + idx])) {
 
-                wettingsum += m_Prefactor * m_Omega + OrderParameter<>::get<Lattice>(data::getInstance().getNeighbors()[k * Stencil::Q + idx]);
+                wettingsum += mPrefactor * mOmega + OrderParameter<>::get<Lattice>(data::getInstance().getNeighbors()[k * Stencil::Q + idx]);
                 count++;
 
             }
@@ -69,15 +69,15 @@ inline void LinearWetting::compute(int k) {
 
 inline void LinearWetting::setTheta(double theta){
 
-    m_Theta = theta;
-    m_Omega = calcOmega(m_Theta);
+    mTheta = theta;
+    mOmega = calcOmega(mTheta);
 
 }
 
 inline void LinearWetting::setThetaDegrees(double theta){
 
-    m_Theta = M_PI * theta / 180.0;
-    m_Omega = calcOmega(m_Theta);
+    mTheta = M_PI * theta / 180.0;
+    mOmega = calcOmega(mTheta);
 
 }
 
@@ -90,13 +90,13 @@ inline double LinearWetting::calcOmega(double theta){
 
 inline void LinearWetting::setPrefactor(double prefactor){
 
-    m_Prefactor = prefactor;
+    mPrefactor = prefactor;
 
 }
 
 inline void LinearWetting::setPrefactor(double A, double kappa){
 
-    m_Prefactor = sqrt(A / (2.0 * kappa));
+    mPrefactor = sqrt(A / (2.0 * kappa));
 
 }
 

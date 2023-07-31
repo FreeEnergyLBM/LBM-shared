@@ -52,7 +52,7 @@ class Data_Base{
 
         std::array<int,TStencil::Q> OppositeOffset; //!<Opposite TLattice point offset in each direction.
         
-        Geometry<TLattice> m_Geometry; //!<Class containing geometry information (for periodic boundaries).
+        Geometry<TLattice> mGeometry; //!<Class containing geometry information (for periodic boundaries).
 
         std::vector<int> mv_Neighbors; //!<Vector containing neighbor information.
 
@@ -246,7 +246,7 @@ inline void Data_Base<TLattice,TStencil>::generateNeighbors() { //Loop over all 
         
         for(int q = 0; q < TStencil::Q; q++) {
 
-            if(!m_Geometry.isPeriodic(k)) { //If not periodic
+            if(!mGeometry.isPeriodic(k)) { //If not periodic
 
                 mv_Neighbors[k*TStencil::Q + q] = getOneNeighbor(k, q);
                 
@@ -336,7 +336,7 @@ class DataOldNew : public Data_Base<TLattice, TStencil> {
 
         };
 
-        Distribution_Derived m_Distribution; //!<Object of distribution.
+        Distribution_Derived mDistribution; //!<Object of distribution.
         
     public:
     
@@ -353,11 +353,11 @@ class DataOldNew : public Data_Base<TLattice, TStencil> {
         /**
          * \brief This constructor calls the constructor of the base disribution using the neighbor information.
          */
-        DataOldNew() : m_Distribution(Data_Base<TLattice,TStencil>::getInstance().mv_Neighbors) { //Construct distribution
+        DataOldNew() : mDistribution(Data_Base<TLattice,TStencil>::getInstance().mv_Neighbors) { //Construct distribution
 
         }
 
-        DataOldNew(DataOldNew<TLattice,TStencil>& other) : m_Distribution(other.m_Distribution) { //Construct distribution
+        DataOldNew(DataOldNew<TLattice,TStencil>& other) : mDistribution(other.mDistribution) { //Construct distribution
 
         }
 
@@ -369,7 +369,7 @@ class DataOldNew : public Data_Base<TLattice, TStencil> {
          */
         inline Distribution_Derived& getDistributionObject() {
 
-            return m_Distribution;
+            return mDistribution;
 
         }
         
@@ -391,7 +391,7 @@ inline void DataOldNew<TLattice, TStencil>::stream() { //Not used in this data t
 template<class TLattice, class TStencil>
 inline void DataOldNew<TLattice, TStencil>::communicateDistribution() {
     
-    TLattice::communicateDistribution(m_Distribution);
+    TLattice::communicateDistribution(mDistribution);
     
 }
 
@@ -472,7 +472,7 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
 
         };
 
-        Distribution_Derived m_Distribution; //!<Object of distribution.
+        Distribution_Derived mDistribution; //!<Object of distribution.
         
     public:
     
@@ -489,11 +489,11 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
         /**
          * \brief This constructor calls the constructor of the base disribution using the neighbor information.
          */
-        DataOldNewEquilibrium() : m_Distribution(Data_Base<TLattice,TStencil>::getInstance().mv_Neighbors) { //Construct distribution
+        DataOldNewEquilibrium() : mDistribution(Data_Base<TLattice,TStencil>::getInstance().mv_Neighbors) { //Construct distribution
 
         }
 
-        DataOldNewEquilibrium(DataOldNewEquilibrium<TLattice,TStencil>& other) : m_Distribution(other.m_Distribution) { //Construct distribution
+        DataOldNewEquilibrium(DataOldNewEquilibrium<TLattice,TStencil>& other) : mDistribution(other.mDistribution) { //Construct distribution
 
         }
 
@@ -505,7 +505,7 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
          */
         inline Distribution_Derived& getDistributionObject() {
 
-            return m_Distribution;
+            return mDistribution;
 
         }
         
@@ -527,6 +527,6 @@ inline void DataOldNewEquilibrium<TLattice, TStencil>::stream() { //Not used in 
 template<class TLattice, class TStencil>
 inline void DataOldNewEquilibrium<TLattice, TStencil>::communicateDistribution() {
     
-    TLattice::communicateDistribution(m_Distribution);
+    TLattice::communicateDistribution(mDistribution);
     
 }

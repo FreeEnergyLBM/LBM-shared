@@ -22,14 +22,14 @@ class AllenCahnSource : public ForceBase<TMethod> {
         template<class TTraits>
         inline double computeQ(int xyz, int k) const;
         
-        double m_D;
+        double mD;
 
-        double m_Mobility = 0.00333;
+        double mMobility = 0.00333;
 
         const double magnitudecutoff = 1e-5;
 
-        inline void setAlpha(double alpha){ m_D=alpha; }
-        inline void setMobility(double mobility){ m_Mobility=mobility; }
+        inline void setAlpha(double alpha){ mD=alpha; }
+        inline void setMobility(double mobility){ mMobility=mobility; }
         inline void setAlphaAndMobility(double alpha,double mobility){ setAlpha(alpha); setMobility(mobility); }
 
         template<class TTraits>
@@ -49,8 +49,8 @@ inline double AllenCahnSource<TMethod,TComponentID>::computeXYZ(int xyz, int k) 
     double normal=GradientOrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,TComponentID,xyz)/sqrt(magnitudegrad2);
     
     if (sqrt(magnitudegrad2)>magnitudecutoff) {
-        //std::cout<<mobility*(4*OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,TComponentID)*(1.-OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,TComponentID))*normal/m_D);//-computeBeta<TTraits>(xyz, k))<<std::endl;
-        return m_Mobility*(4*OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,TComponentID)*(1.-OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,TComponentID))*normal/m_D-computeBeta<TTraits>(xyz, k));
+        //std::cout<<mobility*(4*OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,TComponentID)*(1.-OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,TComponentID))*normal/mD);//-computeBeta<TTraits>(xyz, k))<<std::endl;
+        return mMobility*(4*OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,TComponentID)*(1.-OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,TComponentID))*normal/mD-computeBeta<TTraits>(xyz, k));
 
     }
     else return 0;
@@ -84,13 +84,13 @@ inline double AllenCahnSource<TMethod,TComponentID>::computeBeta(int xyz, int k)
             double normal=GradientOrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,component,xyz)/sqrt(magnitudegrad2);
             if (sqrt(magnitudegrad2)>magnitudecutoff) {
                 orderparametersum+=OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,component);
-                sum += 4*OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,component)*(1-OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,component))*normal/m_D;
+                sum += 4*OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,component)*(1-OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,component))*normal/mD;
             }
     }
     double magnitudegrad2=gradientsum[0]*gradientsum[0]+gradientsum[1]*gradientsum[1];
     if constexpr (TTraits::Lattice::NDIM==3) magnitudegrad2 += gradientsum[2]*gradientsum[2];
     double normal = (-gradientsum[xyz])/(sqrt(magnitudegrad2));
-    if (sqrt(magnitudegrad2)>magnitudecutoff) sum += 4*(1-orderparametersum)*(orderparametersum)*normal/m_D;
+    if (sqrt(magnitudegrad2)>magnitudecutoff) sum += 4*(1-orderparametersum)*(orderparametersum)*normal/mD;
     return OrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice>(k,TComponentID)*sum;
 
 }

@@ -43,18 +43,18 @@ class Parallel {
         inline void communicateDistribution(TDistribution& obj);
 
     protected:
-        int m_MaxNeighbors = 0;
-        std::vector<int> m_Neighbors; //!<IDs of the neighboring processes.
-        std::vector<int> m_I0Send; //!<Lattice index to begin sending to each processor.
-        std::vector<int> m_I0Recv; //!<Lattice index to begin receiving from each processor.
-        std::vector<int> m_I0SendDistr; //!<Lattice index to begin sending to each processor for the distributions.
-        std::vector<int> m_I0RecvDistr; //!<Lattice index to begin receiving from each processor for the distributions.
+        int mMaxNeighbors = 0;
+        std::vector<int> mNeighbors; //!<IDs of the neighboring processes.
+        std::vector<int> mI0Send; //!<Lattice index to begin sending to each processor.
+        std::vector<int> mI0Recv; //!<Lattice index to begin receiving from each processor.
+        std::vector<int> mI0SendDistr; //!<Lattice index to begin sending to each processor for the distributions.
+        std::vector<int> mI0RecvDistr; //!<Lattice index to begin receiving from each processor for the distributions.
 };
 
 
 template<class TDerived, int TNumNeighbors>
 Parallel<TDerived,TNumNeighbors>::Parallel() {
-    if(m_MaxNeighbors < TNumNeighbors) m_MaxNeighbors = TNumNeighbors;
+    if(mMaxNeighbors < TNumNeighbors) mMaxNeighbors = TNumNeighbors;
 }
 
 
@@ -71,24 +71,24 @@ inline void Parallel<TDerived,TNumNeighbors>::communicate(TParameter& obj) {
 
     #pragma omp master
     {
-    int nNeighbors = m_Neighbors.size();
-    MPI_Request comm_request[2*nNeighbors];
+    int nNeighbors = mNeighbors.size();
+    MPI_Request commrequest[2*nNeighbors];
 
     for (int iNeighbor=0; iNeighbor<nNeighbors; iNeighbor++) {
         int tag = iNeighbor;
-        MPI_Isend(&obj.mv_Parameter[m_I0Send[iNeighbor]*obj.m_Num],
-                  TNumNeighbors * TLattice::LY * TLattice::LZ * obj.m_Num,
+        MPI_Isend(&obj.mv_Parameter[mI0Send[iNeighbor]*obj.mNum],
+                  TNumNeighbors * TLattice::LY * TLattice::LZ * obj.mNum,
                   mpi_get_type<typename TParameter::ParamType>(),
-                  m_Neighbors[iNeighbor], tag, MPI_COMM_WORLD, &comm_request[2*iNeighbor]);
+                  mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor]);
 
         tag = (iNeighbor%2==0) ? iNeighbor+1 : iNeighbor-1;
-        MPI_Irecv(&obj.mv_Parameter[m_I0Recv[iNeighbor]*obj.m_Num],
-                  TNumNeighbors * TLattice::LY * TLattice::LZ * obj.m_Num,
+        MPI_Irecv(&obj.mv_Parameter[mI0Recv[iNeighbor]*obj.mNum],
+                  TNumNeighbors * TLattice::LY * TLattice::LZ * obj.mNum,
                   mpi_get_type<typename TParameter::ParamType>(),
-                  m_Neighbors[iNeighbor], tag, MPI_COMM_WORLD, &comm_request[2*iNeighbor+1]);
+                  mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor+1]);
     }
 
-    MPI_Waitall(2*nNeighbors, comm_request, MPI_STATUSES_IGNORE);
+    MPI_Waitall(2*nNeighbors, commrequest, MPI_STATUSES_IGNORE);
     }
     #endif
 }
@@ -106,7 +106,7 @@ inline void Parallel<TDerived,TNumNeighbors>::communicateDistribution(TDistribut
 
     #pragma omp master
     {
-    MPI_Request comm_dist_request[20];
+    MPI_Request commdist_request[20];
 
     int leftorright;
     int id = 0;
@@ -117,28 +117,28 @@ inline void Parallel<TDerived,TNumNeighbors>::communicateDistribution(TDistribut
 
         if(leftorright == -1) {
         
-            MPI_Isend(&obj.getDistribution()[m_I0SendDistr[0]*TStencil::Q + idx],
-                      1, distributionType, m_Neighbors[0],
-                      idx, MPI_COMM_WORLD, &comm_dist_request[id++]);
-            MPI_Irecv(&obj.getDistribution()[m_I0RecvDistr[1]*TStencil::Q + idx],
-                      1, distributionType, m_Neighbors[1],
-                      idx, MPI_COMM_WORLD, &comm_dist_request[id++]);
+            MPI_Isend(&obj.getDistribution()[mI0SendDistr[0]*TStencil::Q + idx],
+                      1, distributionType, mNeighbors[0],
+                      idx, MPI_COMM_WORLD, &commdist_request[id++]);
+            MPI_Irecv(&obj.getDistribution()[mI0RecvDistr[1]*TStencil::Q + idx],
+                      1, distributionType, mNeighbors[1],
+                      idx, MPI_COMM_WORLD, &commdist_request[id++]);
 
         }
         else if(leftorright == 1) {
         
-            MPI_Isend(&obj.getDistribution()[m_I0SendDistr[1]*TStencil::Q + idx],
-                      1, distributionType, m_Neighbors[1],
-                      idx, MPI_COMM_WORLD, &comm_dist_request[id++]);
-            MPI_Irecv(&obj.getDistribution()[m_I0RecvDistr[0]*TStencil::Q + idx],
-                      1, distributionType, m_Neighbors[0],
-                      idx, MPI_COMM_WORLD, &comm_dist_request[id++]);
+            MPI_Isend(&obj.getDistribution()[mI0SendDistr[1]*TStencil::Q + idx],
+                      1, distributionType, mNeighbors[1],
+                      idx, MPI_COMM_WORLD, &commdist_request[id++]);
+            MPI_Irecv(&obj.getDistribution()[mI0RecvDistr[0]*TStencil::Q + idx],
+                      1, distributionType, mNeighbors[0],
+                      idx, MPI_COMM_WORLD, &commdist_request[id++]);
 
         }
 
     }
 
-    MPI_Waitall(id, comm_dist_request, MPI_STATUSES_IGNORE);
+    MPI_Waitall(id, commdist_request, MPI_STATUSES_IGNORE);
     }
     #endif
 }
@@ -200,7 +200,7 @@ void X_Parallel<TNumNeighbors>::init() {
     if (mpi.size <= 1) return;
 
     // Split lattice
-    TLattice::HaloSize = TLattice::LY * TLattice::LZ * this->m_MaxNeighbors;
+    TLattice::HaloSize = TLattice::LY * TLattice::LZ * this->mMaxNeighbors;
     if (TLattice::LX % mpi.size == 0) {
         TLattice::LXdiv = (TLattice::LX / mpi.size + 2 * TNumNeighbors);
         TLattice::LXMPIOffset = (TLattice::LXdiv-2*TNumNeighbors)*mpi.rank;
@@ -223,22 +223,22 @@ void X_Parallel<TNumNeighbors>::init() {
     if (leftNeighbor == -1) leftNeighbor = mpi.size - 1;
     int rightNeighbor = mpi.rank + 1;
     if (rightNeighbor == mpi.size) rightNeighbor = 0;
-    this->m_Neighbors = {leftNeighbor, rightNeighbor};
+    this->mNeighbors = {leftNeighbor, rightNeighbor};
 
     // Create communication objects
-    this->m_I0Send = std::vector<int>(2);
-    this->m_I0Send[0] = TNumNeighbors * TLattice::LY * TLattice::LZ;
-    this->m_I0Send[1] = TLattice::N - (2*TNumNeighbors)*TLattice::LY*TLattice::LZ;
-    this->m_I0Recv = std::vector<int>(2);
-    this->m_I0Recv[0] = 0;
-    this->m_I0Recv[1] = TLattice::N - TNumNeighbors*TLattice::LY*TLattice::LZ;
+    this->mI0Send = std::vector<int>(2);
+    this->mI0Send[0] = TNumNeighbors * TLattice::LY * TLattice::LZ;
+    this->mI0Send[1] = TLattice::N - (2*TNumNeighbors)*TLattice::LY*TLattice::LZ;
+    this->mI0Recv = std::vector<int>(2);
+    this->mI0Recv[0] = 0;
+    this->mI0Recv[1] = TLattice::N - TNumNeighbors*TLattice::LY*TLattice::LZ;
 
-    this->m_I0SendDistr = std::vector<int>(2);
-    this->m_I0SendDistr[0] = (TNumNeighbors-1) * TLattice::LY * TLattice::LZ;
-    this->m_I0SendDistr[1] = TLattice::N - TNumNeighbors*TLattice::LY*TLattice::LZ;
-    this->m_I0RecvDistr = std::vector<int>(2);
-    this->m_I0RecvDistr[0] = (TNumNeighbors) * TLattice::LY * TLattice::LZ;
-    this->m_I0RecvDistr[1] = TLattice::N - (TNumNeighbors+1)*TLattice::LY*TLattice::LZ;
+    this->mI0SendDistr = std::vector<int>(2);
+    this->mI0SendDistr[0] = (TNumNeighbors-1) * TLattice::LY * TLattice::LZ;
+    this->mI0SendDistr[1] = TLattice::N - TNumNeighbors*TLattice::LY*TLattice::LZ;
+    this->mI0RecvDistr = std::vector<int>(2);
+    this->mI0RecvDistr[0] = (TNumNeighbors) * TLattice::LY * TLattice::LZ;
+    this->mI0RecvDistr[1] = TLattice::N - (TNumNeighbors+1)*TLattice::LY*TLattice::LZ;
 
     // Create MPI buffer
     #ifdef MPIPARALLEL

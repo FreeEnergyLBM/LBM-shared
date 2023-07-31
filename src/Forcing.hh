@@ -72,16 +72,16 @@ struct Guo : ForcingBase<Cartesian> {
 
 struct WellBalancedForce : ForcingBase<Cartesian> {
 
-    Guo m_Guo;
+    Guo mGuo;
 
     const static GuoPrefactor Prefactor;
 
-    double m_ForceDotVelocity=0;
+    double mForceDotVelocity=0;
     
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k) {
-        m_Guo.precompute<TTraits>(f,k);
-        for (int xyz=0;xyz<TTraits::Lattice::NDIM;xyz++) m_ForceDotVelocity+=GradientDensity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)*Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz);
+        mGuo.precompute<TTraits>(f,k);
+        for (int xyz=0;xyz<TTraits::Lattice::NDIM;xyz++) mForceDotVelocity+=GradientDensity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)*Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz);
     }
     
     template<class TTraits>
@@ -106,8 +106,8 @@ struct WellBalancedForce : ForcingBase<Cartesian> {
             forceterm += GradientDensity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)*ci_dot_velocity*TTraits::Stencil::Ci_xyz(xyz)[idx]/TTraits::Stencil::Cs2; //Force
                                                                                                         //Calculation
         }
-        //if(forceterm>0)std::cout<<m_Guo.compute(idx,k)<<" "<<forceterm<<std::endl;
-        return m_Guo.compute<TTraits>(idx,k)+prefactor*forceterm+prefactor * (-m_ForceDotVelocity+0.5*((ci_dot_ci)/TTraits::Stencil::Cs2-TTraits::Lattice::NDIM)*m_ForceDotVelocity);
+        //if(forceterm>0)std::cout<<mGuo.compute(idx,k)<<" "<<forceterm<<std::endl;
+        return mGuo.compute<TTraits>(idx,k)+prefactor*forceterm+prefactor * (-mForceDotVelocity+0.5*((ci_dot_ci)/TTraits::Stencil::Cs2-TTraits::Lattice::NDIM)*mForceDotVelocity);
 
     }
 };
@@ -184,13 +184,13 @@ struct He : ForcingBase<Cartesian> {
 
 struct NCompForce : ForcingBase<Cartesian> {
 
-    He m_He;
+    He mHe;
 
     const static GuoPrefactor Prefactor;
     
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k) {
-        m_He.precompute<TTraits>(f,k);
+        mHe.precompute<TTraits>(f,k);
     }
     
     template<class TTraits>
@@ -205,8 +205,8 @@ struct NCompForce : ForcingBase<Cartesian> {
             forceterm += (TTraits::Stencil::Ci_xyz(xyz)[idx]-Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz))*GradientDensity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)*TTraits::Stencil::Cs2*(CollisionBase<typename TTraits::Lattice,typename TTraits::Stencil>::computeGamma(&Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,0),idx)-prefactor); //Force
                                                                                                         //Calculation
         }
-        //if(forceterm>0)std::cout<<m_Guo.compute(idx,k)<<" "<<forceterm<<std::endl;
-        return m_He.compute<TTraits>(idx,k)+forceterm;
+        //if(forceterm>0)std::cout<<mGuo.compute(idx,k)<<" "<<forceterm<<std::endl;
+        return mHe.compute<TTraits>(idx,k)+forceterm;
 
     }
 };

@@ -8,7 +8,7 @@ class BounceBack : public BoundaryBase {
     public:
 
         template<class TTraits, class TDistributionType>
-        inline void compute(TDistributionType& m_Distribution, int k, int idx);
+        inline void compute(TDistributionType& mDistribution, int k, int idx);
 
     private:
 

@@ -9,7 +9,7 @@ class CubicWetting : public AddOnBase {
 
         CubicWetting() = default;
 
-        CubicWetting(const CubicWetting& other) : m_Prefactor(other.m_Prefactor) {}
+        CubicWetting(const CubicWetting& other) : mPrefactor(other.mPrefactor) {}
 
         template<class TTraits>
         inline void compute(int k);
@@ -22,7 +22,7 @@ class CubicWetting : public AddOnBase {
 
     private:
 
-        double m_Prefactor = 0;
+        double mPrefactor = 0;
         
 
 };
@@ -54,14 +54,14 @@ inline void CubicWetting::compute(const int k) {
         }
 
         phiAvg /= count;
-        OrderParameter<>::get<Lattice>(k) = phiAvg - m_Prefactor * (pow(phiAvg,2) - 1.0);
+        OrderParameter<>::get<Lattice>(k) = phiAvg - mPrefactor * (pow(phiAvg,2) - 1.0);
 
     }
 }
 
 
 inline void CubicWetting::setTheta(const double theta){
-    m_Prefactor = cos(theta) / sqrt(2.0);
+    mPrefactor = cos(theta) / sqrt(2.0);
 }
 
 

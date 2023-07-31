@@ -9,8 +9,8 @@
 const int lx = 10; // Size of domain in x direction
 const int ly = 200; // Size of domain in y direction
 
-const int timesteps = 1; // Number of iterations to perform
-const int saveInterval = 1; // Interval to save global data
+const int timesteps = 50000; // Number of iterations to perform
+const int saveInterval = 1000; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
