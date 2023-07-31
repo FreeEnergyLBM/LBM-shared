@@ -35,7 +35,9 @@ struct NoTauDependence {
      */
     template<class TLattice>
     static inline double calculateTauPrefactor(const double& itau) { 
+
         return 1.;
+
     } 
 
 };
@@ -54,175 +56,290 @@ struct GuoPrefactor {
      * \return Standard forcing relaxation dependence.
      */
     template<class TLattice>
-    static inline double calculateTauPrefactor(const double& itau) { 
+    static inline double calculateTauPrefactor(const double& itau) {
+
         return 1.-0.5*TLattice::DT*itau;
+
     } 
+
 };
 
+/**
+ * \brief The SplitGuoPrefactor class specifies a function to calculate the tau prefactor of the forcing term, which will 
+ *        return the half of the guo forcing prefactor that depends on tau (See [1]). This can be used as a prefactor in the
+ *        forcing terms found in Forcing.hh. This has very niche uses, e.g. for the taehun lee model when you also need non-
+ *        equilibrium boundaries.
+ */
 struct SplitGuoPrefactor {
+
+    /**
+     * \brief The calculateTauPrefactor function will return -0.5*dt/tau in this case [1].
+     * \tparam TLattice LatticeProperties class for the system.
+     * \param itau 1.0/tau (where tau is the relaxation time).
+     * \return Split forcing relaxation dependence.
+     */
     template<class TLattice>
     static inline double calculateTauPrefactor(const double& itau) { 
+
         return -0.5*TLattice::DT*itau;
+
     } 
+
 };
 
+/**
+ * \brief The SRT class provides internal functions to calculate the collision operator, Omega, based on the relaxation
+ *        time (tau). For SRT (a.k.a. BGK), this is just 1.0/tau. This class also handles the application of forces in the
+ *        collision step. Give this to a trait class using SetCollisionOperator<SRT>.
+ * \tparam TStencil Velocity stencil (e.g. D2Q9).
+ */
 template<class TStencil>
 class SRT{
+
     public:
+
+        /**
+         * \brief The Omega function will return the SRT/BGK collision operator when given 1.0/tau [1].
+         * \param itau 1.0/tau (where tau is the relaxation time).
+         * \return 1.0/tau.
+         */
         static const inline double& Omega(const double& itau) {return itau;}
+
+        /**
+         * \brief The initialise function will perform initialisation for SRT to save time later (currently does nothing) [1].
+         * \tparam TLattice LatticeProperties class for the system.
+         * \param tau1 Min/Max bound of tau (where tau is the relaxation time).
+         * \param tau2 Min/Max bound of tau (alternate to tau1).
+         */
         template<class TLattice>
         static inline void initialise(double tau1,double tau2){}; 
+
+        /**
+         * \brief The initialise function will perform initialisation for SRT to save time later (currently does nothing) [1].
+         * \tparam TLattice LatticeProperties class for the system.
+         * \tparam TForceTuple Type of the tuple containing the forces (and source terms) applied to the model.
+         * \param forces Tuple containing objects of all the forces (and source terms) applied to the model.
+         * \param tau1 Min/Max bound of tau (where tau is the relaxation time).
+         * \param tau2 Min/Max bound of tau (alternate to tau1).
+         */
         template<class TLattice, typename TForceTuple>
         static inline void initialise(const TForceTuple& forces, double tau1,double tau2){}; 
+
+        /**
+         * \brief The collide function return the post collision distribution [1].
+         * \tparam TLattice LatticeProperties class for the system.
+         * \param old Pointer to first element of array containing old distributions.
+         * \param equilibrium Pointer to first element of array containing updated equilibrium distributions.
+         * \param itau Reference to 1.0/tau parameter.
+         * \param idx Discrete velocity direction index.
+         * \return Updated distribution information.
+         */
         template<class TLattice>
         static inline double collide(const double* old, const double* equilibrium, const double& itau, int idx){
+
             return old[idx] - TLattice::DT * Omega(itau) * (old[idx] - equilibrium[idx]); 
+
         }
+
+        /**
+         * \brief The forcing function will return the forcing contribution to the collision step.
+         * \tparam TLattice LatticeProperties class for the system.
+         * \tparam TPrefactorType Type of the tau dependant prefactor for the forcing.
+         * \tparam TForceTuple Type of the tuple containing the forces (and source terms) applied to the model.
+         * \param forces Tuple containing objects of all the forces (and source terms) applied to the model.
+         * \param forcearray Pointer to first element of array containing the forces without the tau dependance applied yet.
+         * \param itau Reference to 1.0/tau parameter.
+         * \param idx Discrete velocity direction index.
+         * \return Updated distribution information.
+         */
         template<class TLattice, class TPrefactorType, typename TForceTuple>
         static inline double forcing(const TForceTuple& forces, const double* forcearray, const double& itau, int idx){
-            //std::cout<<forces[idx]<<std::endl;
-            return std::remove_const<typename std::remove_reference<TPrefactorType>::type>::type::template calculateTauPrefactor<TLattice>(itau)*forcearray[idx]; 
+
+            return std::remove_const<typename std::remove_reference<TPrefactorType>::type>
+                                    ::type::template calculateTauPrefactor<TLattice>(itau) * forcearray[idx]; 
+
         }
+
 };
 
+/**
+ * \brief The MRT class provides internal functions to calculate the collision operator, Omega, based on the relaxation
+ *        time (tau). For MRT, each moment has a different relaxation frequency, so this is contained within a matrix.
+ *        Information can be found in [1]. This class also handles the application of forces in the collision step using
+ *        MRT. Give this to a trait class using SetCollisionOperator<MRT>.
+ * \tparam TStencil Velocity stencil (e.g. D2Q9).
+ */
 template<class TStencil>
 class MRT{
     private:
+
+        MRT(){}
+
         static constexpr int numberofelements = 5000;
+        static constexpr int Qsquared = TStencil::Q * TStencil::Q;
+
         double mTaumax;
         double mTaumin;
+
         double mTauIdxPrefactor;
-        static constexpr int Qsquared = TStencil::Q*TStencil::Q;
-        double mMRTMatrix[numberofelements*TStencil::Q*TStencil::Q];
-        template<int i>
-        void test(){}
+
+        double mMRTMatrix[numberofelements * TStencil::Q * TStencil::Q];
+
         template<typename TForceTuple>
         inline auto& _ForcingMapStore(const TForceTuple& ft){
 
-            static auto ForcingMap = std::apply([this](auto&... forces){//See Algorithm.hh for explanation of std::apply
+            static auto ForcingMap = std::apply([this](auto&... forces){
 
-                ct_map<kv<typename std::remove_const<decltype(std::remove_const<typename std::remove_reference<decltype(forces)>::type>::type::Method::Prefactor)>::type,std::array<double,this->numberofelements*TStencil::Q*TStencil::Q>>...> tempmap;
-                //test<ct_map<kv<typename std::remove_const<decltype(std::remove_const<typename std::remove_reference<decltype(forces)>::type>::type::Method::Prefactor)>::type,std::array<double,this->numberofelements*TStencil::Q*TStencil::Q>>...>>();
+                ct_map<kv<typename std::remove_const<
+                                decltype(std::remove_const<
+                                        typename std::remove_reference<
+                                                decltype(forces)>::type>::type::Method::Prefactor)>::type,
+                       std::array<double,this->numberofelements*TStencil::Q*TStencil::Q>>...> tempmap;
+
                 return tempmap;
 
             }, ft);
-            return ForcingMap;//ForcingMap;
+
+            return ForcingMap;
 
         }
+
         template<typename TForceTuple>
         inline auto& getForcingMap(const TForceTuple& ft){
 
-            //static auto& ForcingMap = _ForcingMapStore(ft);
             return _ForcingMapStore(ft);
 
         }
+
         template<typename TForceTuple>
         inline auto& getForcingMap(const TForceTuple& ft) const{
 
-            //static auto ForcingMap = std::apply([this](auto&... forces){//See Algorithm.hh for explanation of std::apply
-
-            //    ct_map<kv<typename std::remove_const<decltype(std::remove_reference<decltype(forces)>::type::Method::Prefactor)>::type,std::array<double,this->numberofelements*Qsquared>>...> tempmap;
-
-            //    return tempmap;
-
-            //}, ft);
-            //return ForcingMap;
-
-            //static auto& ForcingMap = _ForcingMapStore(ft);
-            return const_cast<typename std::remove_const<decltype(_ForcingMapStore(ft))>::type>(_ForcingMapStore(ft));//ForcingMap;
+            return const_cast<typename std::remove_const<decltype(_ForcingMapStore(ft))>::type>(_ForcingMapStore(ft));
 
         }
-        //std::unordered_map<std::type_index, std::array<double,numberofelements*TStencil::Q*TStencil::Q>> mM_MRTMatrixForcing;
         
         template<class TLattice>
-        inline void generateMRTTau(double tau,int tauidx,const double (&inverse)[Qsquared]); 
-        template<class TLattice,class TTauPrefactor,typename TForceTuple>
-        inline void generateMRTTauForcing(const TTauPrefactor& ForcePrefactor, const TForceTuple& forces, double tau,int tauidx,const double (&inverse)[Qsquared]); 
-        MRT(){}
+        inline void generateMRTTau(double tau, int tauidx, const double (&inverse)[Qsquared]); 
+
+        template<class TLattice, class TTauPrefactor, typename TForceTuple>
+        inline void generateMRTTauForcing(const TTauPrefactor& ForcePrefactor, const TForceTuple& forces,
+                                          double tau, int tauidx, const double (&inverse)[Qsquared]);
+
         const inline int getTauIdx(double tau) const{
 
-            int tauidx = mTauIdxPrefactor*(tau-mTaumin);
+            int tauidx = mTauIdxPrefactor * (tau - mTaumin);
             
             if(tauidx < 0) return 0;
-            if(tauidx > numberofelements-1) return numberofelements-1;
-            //if(tau>0.6&&tau<0.9)std::cout<<tau<<" "<<tauidx<<std::endl;
+            if(tauidx > numberofelements - 1) return numberofelements - 1;
+
             return tauidx;
+
         }
+
     public:
+    
+        MRT(MRT const&)             = delete;
+        void operator=(MRT const&)  = delete;
+
         static inline MRT& getInstance(){
             static MRT instance;
             return instance;
         } 
-        MRT(MRT const&)             = delete;
-        void operator=(MRT const&)  = delete;
+
         static const inline double* Omega(const double& itau) {
-            static MRT& mrt=getInstance();
-            return &(mrt.mMRTMatrix[mrt.getTauIdx(1./itau)*Qsquared]);
+
+            static MRT& mrt = getInstance();
+            return &(mrt.mMRTMatrix[mrt.getTauIdx(1. / itau) * Qsquared]);
+
         }
+
         template<class TTauPrefactor>
         static const inline double* ForcePrefactor(TTauPrefactor& prefactor, const double& itau){
-            //std::cout<<typeid(TTauPrefactor).name()<<std::endl;
-            static MRT& mrt=getInstance();
-            
-            return &(prefactor[mrt.getTauIdx(1./itau)*Qsquared]);
+
+            static MRT& mrt = getInstance();
+            return &(prefactor[mrt.getTauIdx(1. / itau) * Qsquared]);
+
         }
+
         template<class TLattice>
-        static inline void initialise(double tau1,double tau2);  
-        template<class TLattice,typename TForceTuple>
+        static inline void initialise(double tau1, double tau2); 
+
+        template<class TLattice, typename TForceTuple>
         static inline void initialise(const TForceTuple& forces, double tau1,double tau2); 
 
         template<class TLattice>
         static inline double collide(const double* old, const double* equilibrium, const double& itau, int idx){
-            double collisionsum=0;
+
+            double collisionsum = 0;
+
             auto MRTArray = Omega(itau);
-            for (int sumidx=0; sumidx<TStencil::Q; sumidx++){
-                collisionsum+=TLattice::DT * MRTArray[idx*TStencil::Q+sumidx] * (old[sumidx] - equilibrium[sumidx]);
+
+            for (int sumidx = 0; sumidx<  TStencil::Q; sumidx++){
+                collisionsum += TLattice::DT * MRTArray[idx * TStencil::Q + sumidx] 
+                                             * (old[sumidx] - equilibrium[sumidx]);
                 
             }
             
             return old[idx]-collisionsum;
+
         }
 
-        template<class TLattice, class prefactortype,typename TForceTuple>
+        template<class TLattice, class prefactortype, typename TForceTuple>
         static inline double forcing(const TForceTuple& forces, const double* forcearray, const double& itau, int idx){
-            double forcesum=0;
-            static MRT& mrt=getInstance();
-            const auto& prefactor = std::remove_const<typename std::remove_reference<decltype(mrt.getForcingMap(forces))>::type>::type::template get<typename std::remove_const<prefactortype>::type>::val;
-            auto MRTForcingArray = ForcePrefactor(prefactor,itau);
-            for (int sumidx=0; sumidx<TStencil::Q; sumidx++){
-                forcesum+=MRTForcingArray[idx*TStencil::Q+sumidx] * (forcearray[sumidx]);
-                //std::cout<<forces[sumidx]<<std::endl;
+
+            double forcesum = 0;
+
+            static MRT& mrt = getInstance();
+            const auto& prefactor = std::remove_const<
+                                        typename std::remove_reference<
+                                            decltype(mrt.getForcingMap(forces))>::type>::type::template get<
+                                                                typename std::remove_const<prefactortype>::type>::val;
+            auto MRTForcingArray = ForcePrefactor(prefactor, itau);
+
+            for (int sumidx = 0; sumidx < TStencil::Q; sumidx++){
+
+                forcesum += MRTForcingArray[idx * TStencil::Q + sumidx] * (forcearray[sumidx]);
+
             }
+
             return forcesum;
+
         }
          
 };
 
 template<class TStencil>
 template<class TLattice>
-inline void MRT<TStencil>::generateMRTTau(double tau,int tauidx,const double (&Minverse)[MRT<TStencil>::Qsquared]) {
+inline void MRT<TStencil>::generateMRTTau(double tau, int tauidx, const double (&Minverse)[MRT<TStencil>::Qsquared]) {
 
-    double weightmatrix[TStencil::Q*TStencil::Q] = {};
-    double weightedmoments[TStencil::Q*TStencil::Q] = {};
+    double weightmatrix[TStencil::Q * TStencil::Q] = {};
+    double weightedmoments[TStencil::Q * TStencil::Q] = {};
 
     for(int i = 0; i < TStencil::Q; i++){
-        weightmatrix[i*TStencil::Q+i] = TStencil::MRTWeights(1./tau)[i];
+
+        weightmatrix[i * TStencil::Q + i] = TStencil::MRTWeights(1. / tau)[i];
+
     }
     
     for(int i = 0; i < TStencil::Q; i++){
         for(int j = 0; j < TStencil::Q; j++){
-            
             for(int ii = 0; ii < TStencil::Q; ii++) {
-                weightedmoments[j*TStencil::Q+i] += weightmatrix[j*TStencil::Q+ii]*TStencil::MRTMatrix[ii*TStencil::Q+i];
+
+                weightedmoments[j * TStencil::Q + i] += weightmatrix[j * TStencil::Q + ii] 
+                                                        * TStencil::MRTMatrix[ii * TStencil::Q + i];
+
             }
-            
         }
     }
     
     for(int i = 0; i < TStencil::Q; i++){
         for(int j = 0; j < TStencil::Q; j++){
             for(int ii = 0; ii < TStencil::Q; ii++) { 
-                mMRTMatrix[tauidx*TStencil::Q*TStencil::Q+j*TStencil::Q+i] += Minverse[j*TStencil::Q+ii]*weightedmoments[ii*TStencil::Q+i];
+
+                mMRTMatrix[tauidx * TStencil::Q * TStencil::Q 
+                                        + j * TStencil::Q + i] += Minverse[j * TStencil::Q + ii]
+                                                                  * weightedmoments[ii * TStencil::Q + i];
+
             }
         }
     }
@@ -231,31 +348,50 @@ inline void MRT<TStencil>::generateMRTTau(double tau,int tauidx,const double (&M
 
 template<class TStencil>
 template<class TLattice, class TTauPrefactor, typename TForceTuple>
-inline void MRT<TStencil>::generateMRTTauForcing(const TTauPrefactor& ForcePrefactor, const TForceTuple& forces, double tau,int tauidx,const double (&Minverse)[MRT<TStencil>::Qsquared]) {
-    //std::cout<<"init "<<typeid(TTauPrefactor).name()<<std::endl;
-    if constexpr (std::remove_const<typename std::remove_reference<decltype(getInstance().getForcingMap(forces))>::type>::type::template keyexists<TTauPrefactor>::exists){
-        double weightmatrixforcing[TStencil::Q*TStencil::Q] = {};
-        double weightedmomentsforcing[TStencil::Q*TStencil::Q] = {};
+inline void MRT<TStencil>::generateMRTTauForcing(const TTauPrefactor& ForcePrefactor, const TForceTuple& forces,
+                                                 double tau, int tauidx,
+                                                 const double (&Minverse)[MRT<TStencil>::Qsquared]) {
+
+    if constexpr (std::remove_const<
+                        typename std::remove_reference<
+                            decltype(getInstance().getForcingMap(forces))>::type>::type
+                                ::template keyexists<TTauPrefactor>::exists){
+
+        double weightmatrixforcing[TStencil::Q * TStencil::Q] = {};
+        double weightedmomentsforcing[TStencil::Q * TStencil::Q] = {};
 
         for(int i = 0; i < TStencil::Q; i++){
-            weightmatrixforcing[i*TStencil::Q+i] = ForcePrefactor.template calculateTauPrefactor<TLattice>(TStencil::MRTWeights(1./tau)[i]); 
+        
+            weightmatrixforcing[i * TStencil::Q + i] =
+                ForcePrefactor.template calculateTauPrefactor<TLattice>(TStencil::MRTWeights(1. / tau)[i]); 
+
         }
         
         for(int i = 0; i < TStencil::Q; i++){
             for(int j = 0; j < TStencil::Q; j++){
-                
-                for(int ii = 0; ii < TStencil::Q; ii++) {                
-                    weightedmomentsforcing[j*TStencil::Q+i] += weightmatrixforcing[j*TStencil::Q+ii]*TStencil::MRTMatrix[ii*TStencil::Q+i];
+                for(int ii = 0; ii < TStencil::Q; ii++) {  
+
+                    weightedmomentsforcing[j * TStencil::Q + i] +=
+                        weightmatrixforcing[j * TStencil::Q + ii]*TStencil::MRTMatrix[ii * TStencil::Q + i];
+
                 }
-                
             }
         }
-        
+        using forcingmaptype = typename std::remove_const<
+                                    typename std::remove_reference<
+                                        decltype(getInstance().getForcingMap(forces))>::type>::type;
         for(int i = 0; i < TStencil::Q; i++){
             for(int j = 0; j < TStencil::Q; j++){
-                std::remove_const<typename std::remove_reference<decltype(getInstance().getForcingMap(forces))>::type>::type::template get<TTauPrefactor>::val[tauidx*TStencil::Q*TStencil::Q+j*TStencil::Q+i] = 0;
+
+                forcingmaptype::template get<TTauPrefactor>::val[tauidx * TStencil::Q * TStencil::Q 
+                                                                              + j * TStencil::Q + i] = 0;
                 for(int ii = 0; ii < TStencil::Q; ii++) { 
-                    std::remove_const<typename std::remove_reference<decltype(getInstance().getForcingMap(forces))>::type>::type::template get<TTauPrefactor>::val[tauidx*TStencil::Q*TStencil::Q+j*TStencil::Q+i] += Minverse[j*TStencil::Q+ii]*weightedmomentsforcing[ii*TStencil::Q+i];
+
+                    forcingmaptype::template get<TTauPrefactor>
+                            ::val[tauidx * TStencil::Q * TStencil::Q
+                                               + j * TStencil::Q + i] += Minverse[j * TStencil::Q + ii]
+                                                                         * weightedmomentsforcing[ii * TStencil::Q 
+                                                                                                               + i];
                     
                 }
             }
@@ -266,35 +402,43 @@ inline void MRT<TStencil>::generateMRTTauForcing(const TTauPrefactor& ForcePrefa
 
 template<class TStencil>
 template<class TLattice>
-inline void MRT<TStencil>::initialise(double tau1,double tau2) {
+inline void MRT<TStencil>::initialise(double tau1, double tau2) {
+
     #pragma omp master
     {
 
-    getInstance().mTaumax=std::max(tau1,tau2);
-    getInstance().mTaumin=std::min(tau1,tau2);
-    getInstance().mTauIdxPrefactor=(numberofelements-1)/(getInstance().mTaumax-getInstance().mTaumin);
-    double MomentsInverse[TStencil::Q*TStencil::Q] = {};
+    getInstance().mTaumax = std::max(tau1, tau2);
+    getInstance().mTaumin = std::min(tau1, tau2);
+    getInstance().mTauIdxPrefactor = (numberofelements - 1) / (getInstance().mTaumax - getInstance().mTaumin);
+
+    double MomentsInverse[TStencil::Q * TStencil::Q] = {};
     double mag[TStencil::Q] = {};
 
     for(int j = 0; j < TStencil::Q; j++){ 
+
         mag[j] = 0; 
+
         for(int i = 0; i < TStencil::Q; i++){
-            mag[j] += TStencil::MRTMatrix[j*TStencil::Q+i]*TStencil::MRTMatrix[j*TStencil::Q+i];
+
+            mag[j] += TStencil::MRTMatrix[j * TStencil::Q + i]*TStencil::MRTMatrix[j * TStencil::Q + i];
+
         }
         for(int i = 0; i < TStencil::Q; i++){
-            MomentsInverse[i*TStencil::Q+j] = TStencil::MRTMatrix[j*TStencil::Q+i]/mag[j];
-            //std::cout<<TStencil::MRTMatrix[j*TStencil::Q+i]<<std::endl;
+
+            MomentsInverse[i * TStencil::Q + j] = TStencil::MRTMatrix[j * TStencil::Q + i] / mag[j];
             
         }
+
     }
 
     for(int tauidx = 0; tauidx < numberofelements; tauidx++){
 
-        double tau = getInstance().mTaumin + (double)tauidx*(getInstance().mTaumax-getInstance().mTaumin)/((double)numberofelements-1.0);
+        double tau = getInstance().mTaumin 
+                     + (double)tauidx * (getInstance().mTaumax - getInstance().mTaumin)
+                       / ((double)numberofelements - 1.0);
 
-        getInstance().template generateMRTTau<TLattice>(tau,tauidx,MomentsInverse);
+        getInstance().template generateMRTTau<TLattice>(tau, tauidx, MomentsInverse);
         
-
     }
     
     }
@@ -303,40 +447,50 @@ inline void MRT<TStencil>::initialise(double tau1,double tau2) {
 
 template<class TStencil>
 template<class TLattice,typename TForceTuple>
-inline void MRT<TStencil>::initialise(const TForceTuple& forces, double tau1,double tau2) {
+inline void MRT<TStencil>::initialise(const TForceTuple& forces, double tau1, double tau2) {
+
     #pragma omp master
     {
 
-    getInstance().mTaumax=std::max(tau1,tau2);
-    getInstance().mTaumin=std::min(tau1,tau2);
-    getInstance().mTauIdxPrefactor=(numberofelements-1)/(getInstance().mTaumax-getInstance().mTaumin);
-    double MomentsInverse[TStencil::Q*TStencil::Q] = {};
+    getInstance().mTaumax = std::max(tau1, tau2);
+    getInstance().mTaumin = std::min(tau1, tau2);
+    getInstance().mTauIdxPrefactor = (numberofelements - 1) / (getInstance().mTaumax - getInstance().mTaumin);
+
+    double MomentsInverse[TStencil::Q * TStencil::Q] = {};
     double mag[TStencil::Q] = {};
 
     for(int j = 0; j < TStencil::Q; j++){ 
+
         mag[j] = 0; 
+
         for(int i = 0; i < TStencil::Q; i++){
-            mag[j] += TStencil::MRTMatrix[j*TStencil::Q+i]*TStencil::MRTMatrix[j*TStencil::Q+i];
+
+            mag[j] += TStencil::MRTMatrix[j * TStencil::Q + i]*TStencil::MRTMatrix[j * TStencil::Q + i];
+
         }
         for(int i = 0; i < TStencil::Q; i++){
-            MomentsInverse[i*TStencil::Q+j] = TStencil::MRTMatrix[j*TStencil::Q+i]/mag[j];
-            //std::cout<<TStencil::MRTMatrix[j*TStencil::Q+i]<<std::endl;
+
+            MomentsInverse[i * TStencil::Q + j] = TStencil::MRTMatrix[j * TStencil::Q + i] / mag[j];
             
         }
+
     }
 
     for(int tauidx = 0; tauidx < numberofelements; tauidx++){
 
-        double tau = getInstance().mTaumin + (double)tauidx*(getInstance().mTaumax-getInstance().mTaumin)/((double)numberofelements-1.0);
+        double tau = getInstance().mTaumin 
+                     + (double)tauidx * (getInstance().mTaumax - getInstance().mTaumin)
+                       / ((double)numberofelements - 1.0);
 
-        getInstance().template generateMRTTau<TLattice>(tau,tauidx,MomentsInverse);
-        std::apply([tau,tauidx,MomentsInverse,forces](auto&... force) {
+        getInstance().template generateMRTTau<TLattice>(tau, tauidx, MomentsInverse);
 
-                (getInstance().template generateMRTTauForcing<TLattice>(decltype(getMethod(force))::Prefactor,forces,tau,tauidx,MomentsInverse),...);
+        std::apply([tau, tauidx, MomentsInverse, forces](auto&... force) {
 
-            }, forces);
+            (getInstance().template generateMRTTauForcing<TLattice>(decltype(getMethod(force))::Prefactor,
+                                                                    forces, tau, tauidx, MomentsInverse), ...);
+
+        }, forces);
             
-
     }
     
     }
@@ -361,7 +515,7 @@ class CollisionBase {
          * \param idx The discrete velocity index (e.g. 0-8 for D2Q9).
          * \return 1 + velocity dependence of equilibrium.
          */
-        static inline double computeGamma(const double* velocity, const int idx);
+        static inline double computeGamma(const double* velocity, int idx);
 
         /**
          * \brief This will sum the distributions in each direction to calculate the zeroth moment.
@@ -377,7 +531,7 @@ class CollisionBase {
          * \param xyz Cartesian direction of to calculate zeroth moment.
          * \return First moment of distributions.
          */
-        static inline double computeFirstMoment(const double *distribution, const int xyz); 
+        static inline double computeFirstMoment(const double *distribution, int xyz); 
 
         /**
          * \brief computeGamma computes first and second order velocity dependence of the equilibrium distributions.
@@ -385,13 +539,11 @@ class CollisionBase {
          * \param idx The discrete velocity index (e.g. 0-8 for D2Q9).
          * \return Velocity dependence of equilibrium.
          */
-        static inline double computeVelocityFactor(const double* velocity, const int idx);
+        static inline double computeVelocityFactor(const double* velocity, int idx);
         
     private:
 
         enum{ x = 0, y = 1, z = 2 };
-        
-        //static constexpr auto& ma_Weights = TStencil::Weights;
 
 };
 
@@ -401,7 +553,7 @@ class CollisionBase {
  *          dependence of the equilibrium.
  */
 template<class TLattice, class TStencil>
-inline double CollisionBase<TLattice,TStencil>::computeGamma(const double* velocity, const int idx) {
+inline double CollisionBase<TLattice,TStencil>::computeGamma(const double* velocity, int idx) {
     
     return TStencil::Weights[idx] * (1.0 + computeVelocityFactor(velocity, idx)); 
 
@@ -415,20 +567,20 @@ inline double CollisionBase<TLattice,TStencil>::computeGamma(const double* veloc
  *          factor is returned.
  */
 template<class TLattice, class TStencil>
-inline double CollisionBase<TLattice,TStencil>::computeVelocityFactor(const double* velocity, const int idx) {
+inline double CollisionBase<TLattice,TStencil>::computeVelocityFactor(const double* velocity, int idx) {
 
     double ci_dot_velocity = (TStencil::Ci_x[idx] * velocity[0]);
-    double velocity_dot_velocity = pow(velocity[0],2);
+    double velocity_dot_velocity = pow(velocity[0], 2);
 
-    if constexpr (TStencil::D>1) {
+    if constexpr (TStencil::D > 1) {
         ci_dot_velocity += (TStencil::Ci_y[idx] * velocity[1]); //Dot product of Ci (discrete velocity)
                                                                     //vector and velocity
-        velocity_dot_velocity += pow(velocity[1],2);
+        velocity_dot_velocity += pow(velocity[1], 2);
     }
-    if constexpr (TStencil::D>2) {
+    if constexpr (TStencil::D > 2) {
         ci_dot_velocity += (TStencil::Ci_z[idx] * velocity[2]); //Dot product of Ci (discrete velocity)
                                                                     //vector and velocity
-        velocity_dot_velocity += pow(velocity[2],2);
+        velocity_dot_velocity += pow(velocity[2], 2);
     }
 
     return (ci_dot_velocity) / TStencil::Cs2
@@ -461,13 +613,13 @@ inline double CollisionBase<TLattice,TStencil>::computeZerothMoment(const double
  *          multiplied by the TStencil velocity vector c_i for each i in the choesn cartesian direction.
  */
 template<class TLattice, class TStencil>
-inline double CollisionBase<TLattice,TStencil>::computeFirstMoment(const double *distribution,const int xyz) {
+inline double CollisionBase<TLattice,TStencil>::computeFirstMoment(const double *distribution, int xyz) {
 
     double firstmoment = 0;
 
     for (int idx = 0; idx <TStencil::Q; idx++){
         
-        firstmoment+=(distribution[idx]*TStencil::Ci_xyz(xyz)[idx]); //Sum distribution times Ci over Q
+        firstmoment += (distribution[idx]*TStencil::Ci_xyz(xyz)[idx]); //Sum distribution times Ci over Q
         
     }
     
