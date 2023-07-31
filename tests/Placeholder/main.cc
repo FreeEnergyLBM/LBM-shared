@@ -9,13 +9,13 @@
 const int lx = 10; // Size of domain in x direction
 const int ly = 200; // Size of domain in y direction
 
-const int timesteps = 20000; // Number of iterations to perform
+const int timesteps = 1000000; // Number of iterations to perform
 const int saveInterval = 1000; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
 double BETA=0.000015;
-double GAMMA=2*BETA*2.125;
+double GAMMA=BETA*6.25;
 
 double MOBILITY = 0.00333;
 
@@ -50,17 +50,17 @@ double initFluid1(int k) {
     //return 0.25*((double)rand()/(double)RAND_MAX);
     //return 0.5+0.5*tanh((sqrt(rr2)-RADIUS)/(sqrt(2*kappa/A)));
     int yy = computeY(ly, 1, k);
-    return 0.5*tanh((yy-3*ly/4)/(sqrt(GAMMA/BETA)))-0.5*tanh((yy-ly)/(sqrt(GAMMA/BETA)))+0.5-0.5*tanh((yy)/(sqrt(GAMMA/BETA)));
+    return 0.5*tanh((yy-3*ly/4)/(sqrt(4*GAMMA/BETA)))-0.5*tanh((yy-ly)/(sqrt(4*GAMMA/BETA)))+0.5-0.5*tanh((yy)/(sqrt(4*GAMMA/BETA)));
 }
 
 double initFluid2(int k) {
     int yy = computeY(ly, 1, k);
-    return 0.5*tanh((yy-ly/2)/(sqrt(GAMMA/BETA)))-0.5*tanh((yy-3*ly/4)/(sqrt(GAMMA/BETA)));
+    return 0.5*tanh((yy-ly/2)/(sqrt(4*GAMMA/BETA)))-0.5*tanh((yy-3*ly/4)/(sqrt(4*GAMMA/BETA)));
 }
 
 double initFluid3(int k) {
     int yy = computeY(ly, 1, k);
-    return 0.5*tanh((yy-ly/4)/(sqrt(GAMMA/BETA)))-0.5*tanh((yy-ly/2)/(sqrt(GAMMA/BETA)));
+    return 0.5*tanh((yy-ly/4)/(sqrt(4*GAMMA/BETA)))-0.5*tanh((yy-ly/2)/(sqrt(4*GAMMA/BETA)));
 }
 
 int main(int argc, char **argv){
@@ -77,7 +77,7 @@ int main(int argc, char **argv){
     NComponent<Lattice, 2, NUM_COMPONENTS> NCompAllenCahn3;
 
     PressureNavierStokes.getForce<BodyForce<>>().setMagnitudeX(0.00000001);
-    PressureNavierStokes.setDensities(0.001,1.0,1.0,1.0);
+    PressureNavierStokes.setDensities(1.0,1.0,1.0,1.0);
 
     std::vector<double> taus = {1.0,1.0,1.0,1.0};
 

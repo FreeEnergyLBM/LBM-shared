@@ -26,7 +26,7 @@ class AllenCahnSource : public ForceBase<TMethod> {
 
         double mMobility = 0.00333;
 
-        const double magnitudecutoff = 1e-5;
+        const double magnitudecutoff = 1e-14;
 
         inline void setD(double d){ mD=d; }
         inline void setMobility(double mobility){ mMobility=mobility; }

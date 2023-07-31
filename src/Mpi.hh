@@ -38,8 +38,8 @@ class MpiClass {
 
         #ifdef MPIPARALLEL
         void getSizeRank(MPI_Comm comm) {
-            MPI_Commsize(comm, &size);
-            MPI_Commrank(comm, &rank);
+            MPI_Comm_size(comm, &size);
+            MPI_Comm_rank(comm, &rank);
         }
         #endif
 
