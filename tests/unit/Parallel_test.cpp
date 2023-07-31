@@ -2,7 +2,7 @@
 #include "Lattice.hh"
 #include "Parallel.hh"
 
-using Lattice = LatticeProperties<Data1, X_Parallel<1>, 6, 1>;
+using Lattice = LatticeProperties<DataOldNew, X_Parallel<1>, 6, 1>;
 
 
 TEST(ParallelTest, TestCommunicate) {
@@ -23,7 +23,7 @@ TEST(ParallelTest, TestCommunicate) {
 
 TEST(ParallelTest, TestCommunicateDistribution) {
   Lattice lattice;
-  Data1<Lattice,D2Q5> data;
+  DataOldNew<Lattice,D2Q5> data;
 
   auto distr = data.getDistributionObject();
   ASSERT_EQ(distr.mv_Distribution.size(), 5*5);

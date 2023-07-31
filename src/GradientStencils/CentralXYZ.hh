@@ -4,19 +4,19 @@
 
 struct CentralXYZ : GradientBase<Cartesian> {
 
-    template<class T_traits, class T_parameter>
+    template<class TTraits, class TParameter>
     static inline double compute(int direction, int k, int num = 0);
 
-    template<class T_obj>
-    using GradientType = Gradient<T_obj,T_obj::instances>;
+    template<class TObj>
+    using GradientType = Gradient<TObj,TObj::instances>;
     
 };
 
-template<class T_traits, class T_parameter>
+template<class TTraits, class TParameter>
 inline double CentralXYZ::compute(int direction, int k, int num){
     
-    using Lattice = typename T_traits::Lattice;
-    using Stencil = typename T_traits::Stencil;
+    using Lattice = typename TTraits::Lattice;
+    using Stencil = typename TTraits::Stencil;
 
     using DataType = Data_Base<Lattice, Stencil>;
 
@@ -26,8 +26,8 @@ inline double CentralXYZ::compute(int direction, int k, int num){
 
     for (int idx = 1; idx <Stencil::Q; idx++) {
 
-            const double& param1 = T_parameter::template get<Lattice>(data.getNeighbor(k, idx), num);
-            const double& param2 = T_parameter::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[idx]), num);
+            const double& param1 = TParameter::template get<Lattice>(data.getNeighbor(k, idx), num);
+            const double& param2 = TParameter::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[idx]), num);
 
             gradientsum += 0.5 * Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (param1 - param2);
         

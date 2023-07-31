@@ -11,22 +11,22 @@
 #include "Service.hh"
 #include "Collide.hh"
 
-template<class ...Stencils>
+template<class ...TStencils>
 struct ForcingBase{
 
-    using mt_Stencils = std::tuple<Stencils...>;
+    using mt_Stencils = std::tuple<TStencils...>;
 
-    template<class traits,class Stencil>
+    template<class TTraits,class TStencil>
     inline static constexpr int StencilToInt(){
-        if constexpr (std::is_same_v<Stencil,Cartesian>) return traits::Lattice::NDIM; 
-        else if constexpr (std::is_same_v<Stencil,AllDirections>) return traits::Stencil::Q;
-        else return traits::Lattice::NDIM; 
+        if constexpr (std::is_same_v<TStencil,Cartesian>) return TTraits::Lattice::NDIM; 
+        else if constexpr (std::is_same_v<TStencil,AllDirections>) return TTraits::Stencil::Q;
+        else return TTraits::Lattice::NDIM; 
     } 
 
-    template<class traits>
-    inline static constexpr auto ForceStencils() -> const std::array<size_t,sizeof...(Stencils)> { 
+    template<class TTraits>
+    inline static constexpr auto ForceStencils() -> const std::array<size_t,sizeof...(TStencils)> { 
 
-        constexpr std::array<size_t,sizeof...(Stencils)> Stencilarray = {StencilToInt<traits,Stencils>()...};
+        constexpr std::array<size_t,sizeof...(TStencils)> Stencilarray = {StencilToInt<TTraits,TStencils>()...};
         return Stencilarray;
         
     }
@@ -41,29 +41,29 @@ struct Guo : ForcingBase<Cartesian> {
 
     const static GuoPrefactor Prefactor;
     
-    template<class traits, class force>
-    inline void precompute(force& f, int k){
-        if (ma_Force.size()<traits::Lattice::NDIM) ma_Force.resize(traits::Lattice::NDIM);
-        ma_Force[0]=f.template computeXYZ<traits>(0,k);
-        if constexpr (traits::Lattice::NDIM>=2) ma_Force[1]=f.template computeXYZ<traits>(1,k);
-        if constexpr (traits::Lattice::NDIM==3) ma_Force[2]=f.template computeXYZ<traits>(2,k);
+    template<class TTraits, class TForce>
+    inline void precompute(TForce& f, int k){
+        if (ma_Force.size()<TTraits::Lattice::NDIM) ma_Force.resize(TTraits::Lattice::NDIM);
+        ma_Force[0]=f.template computeXYZ<TTraits>(0,k);
+        if constexpr (TTraits::Lattice::NDIM>=2) ma_Force[1]=f.template computeXYZ<TTraits>(1,k);
+        if constexpr (TTraits::Lattice::NDIM==3) ma_Force[2]=f.template computeXYZ<TTraits>(2,k);
     }
     
-    template<class traits>
+    template<class TTraits>
     inline double compute(int idx, int k) { //Guo forcing
         
-        double prefactor = traits::Stencil::Weights[idx]; //Prefactor for Guo forcing
+        double prefactor = TTraits::Stencil::Weights[idx]; //Prefactor for Guo forcing
 
-        double ci_dot_velocity = (traits::Stencil::Ci_x[idx] * Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,0));
-        if constexpr (traits::Stencil::D>1) ci_dot_velocity += (traits::Stencil::Ci_y[idx] * Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,1));
-        if constexpr (traits::Stencil::D>2) ci_dot_velocity += (traits::Stencil::Ci_z[idx] * Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,2));
+        double ci_dot_velocity = (TTraits::Stencil::Ci_x[idx] * Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,0));
+        if constexpr (TTraits::Stencil::D>1) ci_dot_velocity += (TTraits::Stencil::Ci_y[idx] * Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,1));
+        if constexpr (TTraits::Stencil::D>2) ci_dot_velocity += (TTraits::Stencil::Ci_z[idx] * Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,2));
 
-        double forceterm = prefactor * (((traits::Stencil::Ci_x[idx] - Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,0)) / traits::Stencil::Cs2
-                                            + ci_dot_velocity * traits::Stencil::Ci_x[idx] / (traits::Stencil::Cs2 * traits::Stencil::Cs2)) * ma_Force[0]); //Force Calculation
-        if constexpr (traits::Stencil::D>1) forceterm += prefactor * (((traits::Stencil::Ci_y[idx] - Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,1)) / traits::Stencil::Cs2
-                                                                        + ci_dot_velocity * traits::Stencil::Ci_y[idx] / (traits::Stencil::Cs2 * traits::Stencil::Cs2)) * ma_Force[1]);
-        if constexpr (traits::Stencil::D>2) forceterm += prefactor * (((traits::Stencil::Ci_z[idx] - Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,2)) / traits::Stencil::Cs2
-                                                                        + ci_dot_velocity * traits::Stencil::Ci_z[idx] / (traits::Stencil::Cs2 * traits::Stencil::Cs2)) * ma_Force[2]);
+        double forceterm = prefactor * (((TTraits::Stencil::Ci_x[idx] - Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,0)) / TTraits::Stencil::Cs2
+                                            + ci_dot_velocity * TTraits::Stencil::Ci_x[idx] / (TTraits::Stencil::Cs2 * TTraits::Stencil::Cs2)) * ma_Force[0]); //Force Calculation
+        if constexpr (TTraits::Stencil::D>1) forceterm += prefactor * (((TTraits::Stencil::Ci_y[idx] - Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,1)) / TTraits::Stencil::Cs2
+                                                                        + ci_dot_velocity * TTraits::Stencil::Ci_y[idx] / (TTraits::Stencil::Cs2 * TTraits::Stencil::Cs2)) * ma_Force[1]);
+        if constexpr (TTraits::Stencil::D>2) forceterm += prefactor * (((TTraits::Stencil::Ci_z[idx] - Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,2)) / TTraits::Stencil::Cs2
+                                                                        + ci_dot_velocity * TTraits::Stencil::Ci_z[idx] / (TTraits::Stencil::Cs2 * TTraits::Stencil::Cs2)) * ma_Force[2]);
 
         return forceterm;
 
@@ -78,36 +78,36 @@ struct WellBalancedForce : ForcingBase<Cartesian> {
 
     double m_ForceDotVelocity=0;
     
-    template<class traits, class force>
-    inline void precompute(force& f, int k) {
-        m_Guo.precompute<traits>(f,k);
-        for (int xyz=0;xyz<traits::Lattice::NDIM;xyz++) m_ForceDotVelocity+=GradientDensity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,xyz)*Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,xyz);
+    template<class TTraits, class TForce>
+    inline void precompute(TForce& f, int k) {
+        m_Guo.precompute<TTraits>(f,k);
+        for (int xyz=0;xyz<TTraits::Lattice::NDIM;xyz++) m_ForceDotVelocity+=GradientDensity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)*Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz);
     }
     
-    template<class traits>
+    template<class TTraits>
     inline double compute(int idx, int k) { //Guo forcing
         
         double ci_dot_velocity = 0;
         double ci_dot_ci = 0;
         double forceterm = 0;
         
-        double prefactor = traits::Stencil::Weights[idx]; //Prefactor for Guo forcing
+        double prefactor = TTraits::Stencil::Weights[idx]; //Prefactor for Guo forcing
 
-        for (int xyz=0;xyz<traits::Stencil::D;xyz++){
+        for (int xyz=0;xyz<TTraits::Stencil::D;xyz++){
 
-            ci_dot_velocity += (traits::Stencil::Ci_xyz(xyz)[idx] *Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector
+            ci_dot_velocity += (TTraits::Stencil::Ci_xyz(xyz)[idx] *Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector
                                                                         //with velocity
-            ci_dot_ci += traits::Stencil::Ci_xyz(xyz)[idx]*traits::Stencil::Ci_xyz(xyz)[idx];
+            ci_dot_ci += TTraits::Stencil::Ci_xyz(xyz)[idx]*TTraits::Stencil::Ci_xyz(xyz)[idx];
        
         }
 
-        for (int xyz = 0; xyz <traits::Stencil::D; xyz++) {
+        for (int xyz = 0; xyz <TTraits::Stencil::D; xyz++) {
 
-            forceterm += GradientDensity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,xyz)*ci_dot_velocity*traits::Stencil::Ci_xyz(xyz)[idx]/traits::Stencil::Cs2; //Force
+            forceterm += GradientDensity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)*ci_dot_velocity*TTraits::Stencil::Ci_xyz(xyz)[idx]/TTraits::Stencil::Cs2; //Force
                                                                                                         //Calculation
         }
         //if(forceterm>0)std::cout<<m_Guo.compute(idx,k)<<" "<<forceterm<<std::endl;
-        return m_Guo.compute<traits>(idx,k)+prefactor*forceterm+prefactor * (-m_ForceDotVelocity+0.5*((ci_dot_ci)/traits::Stencil::Cs2-traits::Lattice::NDIM)*m_ForceDotVelocity);
+        return m_Guo.compute<TTraits>(idx,k)+prefactor*forceterm+prefactor * (-m_ForceDotVelocity+0.5*((ci_dot_ci)/TTraits::Stencil::Cs2-TTraits::Lattice::NDIM)*m_ForceDotVelocity);
 
     }
 };
@@ -118,23 +118,23 @@ struct AllenCahnSourceMethod : ForcingBase<Cartesian> {
     
     const static NoTauDependence Prefactor;
 
-    template<class traits, class force>
-    inline void precompute(force& f, int k){
-        ma_Force.push_back(f.template computeXYZ<traits>(0,k));
-        ma_Force.push_back(f.template computeXYZ<traits>(1,k));
-        if constexpr (traits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<traits>(2,k));
+    template<class TTraits, class TForce>
+    inline void precompute(TForce& f, int k){
+        ma_Force.push_back(f.template computeXYZ<TTraits>(0,k));
+        ma_Force.push_back(f.template computeXYZ<TTraits>(1,k));
+        if constexpr (TTraits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<TTraits>(2,k));
     }
     
-    template<class traits>
+    template<class TTraits>
     inline double compute(int idx, int k) { //Guo forcing
         
         double forceterm = 0;
         
-        double prefactor = traits::Stencil::Weights[idx]; //Prefactor for Guo forcing
+        double prefactor = TTraits::Stencil::Weights[idx]; //Prefactor for Guo forcing
         
-        for (int xyz = 0; xyz < traits::Stencil::D; xyz++) {
+        for (int xyz = 0; xyz < TTraits::Stencil::D; xyz++) {
 
-            forceterm += prefactor * (traits::Stencil::Ci_xyz(xyz)[idx]) * ma_Force[xyz]; //Force
+            forceterm += prefactor * (TTraits::Stencil::Ci_xyz(xyz)[idx]) * ma_Force[xyz]; //Force
                                                                                                         //Calculation
         }
 
@@ -151,29 +151,29 @@ struct He : ForcingBase<Cartesian> {
     
     double velocity_dot_force = 0;
 
-    template<class traits, class force>
-    inline void precompute(force& f, int k){
-        ma_Force.push_back(f.template computeXYZ<traits>(0,k));
-        ma_Force.push_back(f.template computeXYZ<traits>(1,k));
-        if constexpr (traits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<traits>(2,k));
+    template<class TTraits, class TForce>
+    inline void precompute(TForce& f, int k){
+        ma_Force.push_back(f.template computeXYZ<TTraits>(0,k));
+        ma_Force.push_back(f.template computeXYZ<TTraits>(1,k));
+        if constexpr (TTraits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<TTraits>(2,k));
 
-        for (int xyz=0;xyz<traits::Stencil::D;xyz++){
+        for (int xyz=0;xyz<TTraits::Stencil::D;xyz++){
 
-            velocity_dot_force += (ma_Force[xyz] * Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector
+            velocity_dot_force += (ma_Force[xyz] * Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector
                                                                         //with velocity
         }
     }
     
-    template<class traits>
+    template<class TTraits>
     inline double compute(int idx, int k) { //Guo forcing
         
-        double prefactor = CollisionBase<typename traits::Lattice,typename traits::Stencil>::computeGamma(&Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,0),idx); //Prefactor for Guo forcing
+        double prefactor = CollisionBase<typename TTraits::Lattice,typename TTraits::Stencil>::computeGamma(&Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,0),idx); //Prefactor for Guo forcing
 
         double ci_dot_force=0;
 
-        for (int xyz=0;xyz<traits::Stencil::D;xyz++){
+        for (int xyz=0;xyz<TTraits::Stencil::D;xyz++){
 
-            ci_dot_force += (traits::Stencil::Ci_xyz(xyz)[idx] * ma_Force[xyz]); //Dot product of discrete velocity vector
+            ci_dot_force += (TTraits::Stencil::Ci_xyz(xyz)[idx] * ma_Force[xyz]); //Dot product of discrete velocity vector
                                                                         //with velocity
         }
 
@@ -188,25 +188,25 @@ struct NCompForce : ForcingBase<Cartesian> {
 
     const static GuoPrefactor Prefactor;
     
-    template<class traits, class force>
-    inline void precompute(force& f, int k) {
-        m_He.precompute<traits>(f,k);
+    template<class TTraits, class TForce>
+    inline void precompute(TForce& f, int k) {
+        m_He.precompute<TTraits>(f,k);
     }
     
-    template<class traits>
+    template<class TTraits>
     inline double compute(int idx, int k) { //Guo forcing
         
         double forceterm = 0;
         
-        double prefactor = traits::Stencil::Weights[idx]; //Prefactor for Guo forcing
+        double prefactor = TTraits::Stencil::Weights[idx]; //Prefactor for Guo forcing
 
-        for (int xyz = 0; xyz <traits::Stencil::D; xyz++) {
+        for (int xyz = 0; xyz <TTraits::Stencil::D; xyz++) {
 
-            forceterm += (traits::Stencil::Ci_xyz(xyz)[idx]-Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,xyz))*GradientDensity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,xyz)*traits::Stencil::Cs2*(CollisionBase<typename traits::Lattice,typename traits::Stencil>::computeGamma(&Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,0),idx)-prefactor); //Force
+            forceterm += (TTraits::Stencil::Ci_xyz(xyz)[idx]-Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz))*GradientDensity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)*TTraits::Stencil::Cs2*(CollisionBase<typename TTraits::Lattice,typename TTraits::Stencil>::computeGamma(&Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,0),idx)-prefactor); //Force
                                                                                                         //Calculation
         }
         //if(forceterm>0)std::cout<<m_Guo.compute(idx,k)<<" "<<forceterm<<std::endl;
-        return m_He.compute<traits>(idx,k)+forceterm;
+        return m_He.compute<TTraits>(idx,k)+forceterm;
 
     }
 };
@@ -220,25 +220,25 @@ struct Lee : ForcingBase<Cartesian,AllDirections> {
     
     double velocity_dot_force = 0;
 
-    template<class traits, class force>
-    inline void precompute(force& f, int k){
-        ma_Force.push_back(f.template computeXYZ<traits>(0,k));
-        ma_Force.push_back(f.template computeXYZ<traits>(1,k));
-        if constexpr (traits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<traits>(2,k));
-        for (int q = 0; q < traits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<traits>(q,k));
+    template<class TTraits, class TForce>
+    inline void precompute(TForce& f, int k){
+        ma_Force.push_back(f.template computeXYZ<TTraits>(0,k));
+        ma_Force.push_back(f.template computeXYZ<TTraits>(1,k));
+        if constexpr (TTraits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<TTraits>(2,k));
+        for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
         
-        for (int xyz=0;xyz<traits::Stencil::D;xyz++){
+        for (int xyz=0;xyz<TTraits::Stencil::D;xyz++){
 
-            velocity_dot_force += (ma_Force[xyz] * Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector
+            velocity_dot_force += (ma_Force[xyz] * Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector
                                                                         //with velocity
         }
         
     }
     
-    template<class traits>
+    template<class TTraits>
     inline double compute(int idx, int k) { //Guo forcing
         
-        double prefactor = traits::Lattice::DT * CollisionBase<typename traits::Lattice,typename traits::Stencil>::computeGamma(&Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,0),idx); //Prefactor for Guo forcing
+        double prefactor = TTraits::Lattice::DT * CollisionBase<typename TTraits::Lattice,typename TTraits::Stencil>::computeGamma(&Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,0),idx); //Prefactor for Guo forcing
 
         return prefactor*(ma_ForceQ[idx]-velocity_dot_force);
 
@@ -255,24 +255,24 @@ struct LeeGamma0 : ForcingBase<Cartesian,AllDirections> {
     
     double velocity_dot_force = 0;
 
-    template<class traits, class force>
-    inline void precompute(force& f, int k){
-        ma_Force.push_back(f.template computeXYZ<traits>(0,k));
-        ma_Force.push_back(f.template computeXYZ<traits>(1,k));
-        if constexpr (traits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<traits>(2,k));
-        for (int q = 0; q < traits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<traits>(q,k));
+    template<class TTraits, class TForce>
+    inline void precompute(TForce& f, int k){
+        ma_Force.push_back(f.template computeXYZ<TTraits>(0,k));
+        ma_Force.push_back(f.template computeXYZ<TTraits>(1,k));
+        if constexpr (TTraits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<TTraits>(2,k));
+        for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
 
-        for (int xyz=0;xyz<traits::Stencil::D;xyz++){
+        for (int xyz=0;xyz<TTraits::Stencil::D;xyz++){
 
-            velocity_dot_force += (ma_Force[xyz] * Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector
+            velocity_dot_force += (ma_Force[xyz] * Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector
                                                                         //with velocity
         }
     }
     
-    template<class traits>
+    template<class TTraits>
     inline double compute(int idx, int k) { //Guo forcing
         
-        double prefactor = traits::Lattice::DT * traits::Stencil::Weights[idx]; //Prefactor for Guo forcing
+        double prefactor = TTraits::Lattice::DT * TTraits::Stencil::Weights[idx]; //Prefactor for Guo forcing
 
         return prefactor*(ma_ForceQ[idx]-velocity_dot_force);
 
@@ -286,24 +286,24 @@ struct LeeMuLocal : ForcingBase<AllDirections> {
 
     const static NoTauDependence Prefactor;
 
-    template<class traits, class force>
-    const inline void precompute(force& f, int k){
+    template<class TTraits, class TForce>
+    const inline void precompute(TForce& f, int k){
 
-        for (int q = 0; q < traits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<traits>(q,k));
+        for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
 
     }
 
-    template<class traits, class force>
-    inline void precompute(force& f, int q, int k){
+    template<class TTraits, class TForce>
+    inline void precompute(TForce& f, int q, int k){
 
-        ma_ForceQ.push_back(f.template computeQ<traits>(q,k));
+        ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
 
     }
     
-    template<class traits>
+    template<class TTraits>
     inline double compute(int idx, int k) { //Guo forcing
 
-        double prefactor = 0.5 * traits::Lattice::DT * CollisionBase<typename traits::Lattice,typename traits::Stencil>::computeGamma(&Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(k,0),idx); //Prefactor for Guo forcing
+        double prefactor = 0.5 * TTraits::Lattice::DT * CollisionBase<typename TTraits::Lattice,typename TTraits::Stencil>::computeGamma(&Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,0),idx); //Prefactor for Guo forcing
 
         return prefactor*(ma_ForceQ[idx]);
 
@@ -317,26 +317,26 @@ struct LeeMuNonLocal : ForcingBase<AllDirections> {
 
     const static NoTauDependence Prefactor;
 
-    template<class traits, class force>
-    const inline void precompute(force& f, int k){
+    template<class TTraits, class TForce>
+    const inline void precompute(TForce& f, int k){
 
-        for (int q = 0; q < traits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<traits>(q,k));
+        for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
 
     }
 
-    template<class traits, class force>
-    const inline void precompute(force& f, int q, int k){
+    template<class TTraits, class TForce>
+    const inline void precompute(TForce& f, int q, int k){
 
-        ma_ForceQ.push_back(f.template computeQ<traits>(q,k));
+        ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
 
     }
     
-    template<class traits>
+    template<class TTraits>
     const inline double compute(int idx, int k) { //Guo forcing
 
-        using data = Data_Base<typename traits::Lattice, typename traits::Stencil>;
+        using data = Data_Base<typename TTraits::Lattice, typename TTraits::Stencil>;
         
-        const double prefactor = 0.5 * traits::Lattice::DT * CollisionBase<typename traits::Lattice,typename traits::Stencil>::computeGamma(&Velocity<>::get<typename traits::Lattice,traits::Lattice::NDIM>(data::getInstance().getNeighbors()[k * traits::Stencil::Q+idx],0),idx); //Prefactor for Guo forcing
+        const double prefactor = 0.5 * TTraits::Lattice::DT * CollisionBase<typename TTraits::Lattice,typename TTraits::Stencil>::computeGamma(&Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(data::getInstance().getNeighbors()[k * TTraits::Stencil::Q+idx],0),idx); //Prefactor for Guo forcing
 
         return prefactor*(ma_ForceQ[idx]);
 

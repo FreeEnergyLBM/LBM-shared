@@ -6,12 +6,12 @@
 #include "Parallel.hh"
 #include "LBModels/ModelBase.hh"
 
-using Lattice = LatticeProperties<Data1, NoParallel, 2, 1>;
+using Lattice = LatticeProperties<DataOldNew, NoParallel, 2, 1>;
 
 TEST(BounceBackTest, TestNodePair) {
   using Trait = DefaultTrait<Lattice>;
 
-  Data1<Lattice,D2Q9> data;
+  DataOldNew<Lattice,D2Q9> data;
   auto distr = data.getDistributionObject();
   distr.mv_Distribution = {0,1,2,3,4,5,6,7,8, 0,0,0,0,0,0,0,0};
 

@@ -4,19 +4,19 @@
 
 struct CentralQNoSolid : GradientBase<AllDirections> {
 
-    template<class T_traits, class T_parameter>
+    template<class TTraits, class TParameter>
     static inline double compute(const int direction, const int k, int num = 0);
 
-    template<class T_obj>
-    using GradientType = Gradient<T_obj,T_obj::instances>;
+    template<class TObj>
+    using GradientType = Gradient<TObj,TObj::instances>;
     
 };
 
-template<class T_traits, class T_parameter>
+template<class TTraits, class TParameter>
 inline double CentralQNoSolid::compute(const int direction, const int k, int num){
         
-    using Lattice = typename T_traits::Lattice;
-    using Stencil = typename T_traits::Stencil;
+    using Lattice = typename TTraits::Lattice;
+    using Stencil = typename TTraits::Stencil;
 
     using DataType = Data_Base<Lattice, Stencil>;
 
@@ -24,12 +24,12 @@ inline double CentralQNoSolid::compute(const int direction, const int k, int num
 
     if ((Geometry<Lattice>::isSolid(data.getNeighbors()[k * Stencil::Q + direction]))) {
 
-        return 0.5 * (T_parameter::template get<Lattice>(k, num) - T_parameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
+        return 0.5 * (TParameter::template get<Lattice>(k, num) - TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
 
     }
     else if ((Geometry<Lattice>::isSolid(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]))) {
 
-        return 0.5 * (T_parameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q+direction], num)-T_parameter::template get<Lattice>(k, num));
+        return 0.5 * (TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q+direction], num)-TParameter::template get<Lattice>(k, num));
 
     }
     else if ((Geometry<Lattice>::isSolid(data.getNeighbors()[k * Stencil::Q + direction])) && (Geometry<Lattice>::isSolid(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]))) {
@@ -39,7 +39,7 @@ inline double CentralQNoSolid::compute(const int direction, const int k, int num
     }
     else {
 
-        return 0.5 * (T_parameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction], num)-T_parameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
+        return 0.5 * (TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction], num)-TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
 
     }
         

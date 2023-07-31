@@ -7,36 +7,36 @@
 #include "AddOnBase.hh"
 #include<iostream>
 
-template<class T_param, class T_gradientstencil = CentralXYZ>
+template<class TParam, class TGradientStencil = CentralXYZ>
 class Gradients : public AddOnBase {
 
     public:
 
         Gradients() = default;
 
-        Gradients(const Gradients<T_gradientstencil,T_param>& other) {};
+        Gradients(const Gradients<TGradientStencil,TParam>& other) {};
 
-        Gradients(Gradients<T_gradientstencil,T_param>& other) {};
+        Gradients(Gradients<TGradientStencil,TParam>& other) {};
 
-        template<class T_traits>
+        template<class TTraits>
         inline void compute(int k);
 
 };
 
-template<class T_param, class T_gradientstencil>
-template<class T_traits>
-inline void Gradients<T_param, T_gradientstencil>::compute(int k) { //Not necessary
+template<class TParam, class TGradientStencil>
+template<class TTraits>
+inline void Gradients<TParam, TGradientStencil>::compute(int k) { //Not necessary
 
-    using Lattice = typename T_traits::Lattice;
-    using Stencil = typename T_traits::Stencil;
-    using GradientType = typename T_gradientstencil::template GradientType<T_param>;
-    constexpr int numdir = T_gradientstencil::template getNumberOfDirections<Stencil>();
+    using Lattice = typename TTraits::Lattice;
+    using Stencil = typename TTraits::Stencil;
+    using GradientType = typename TGradientStencil::template GradientType<TParam>;
+    constexpr int numdir = TGradientStencil::template getNumberOfDirections<Stencil>();
 
-    for (int component = 0 ; component < T_param::instances; component++){
+    for (int component = 0 ; component < TParam::instances; component++){
 
         for(int idx = 0; idx < numdir; idx++) {
 
-            GradientType::template get<Lattice,numdir>(k, component, idx) = T_gradientstencil::template compute<T_traits,T_param>(idx, k, component);
+            GradientType::template get<Lattice,numdir>(k, component, idx) = TGradientStencil::template compute<TTraits,TParam>(idx, k, component);
             
         }
 
@@ -44,66 +44,66 @@ inline void Gradients<T_param, T_gradientstencil>::compute(int k) { //Not necess
 
 }
 
-template<class T_gradientstencil, class ...T_param>
+template<class TGradientStencil, class ...TParam>
 class GradientsMultiParam : public AddOnBase {
 
     public:
 
         GradientsMultiParam() = default;
 
-        GradientsMultiParam(const GradientsMultiParam<T_gradientstencil,T_param...>& other) {};
+        GradientsMultiParam(const GradientsMultiParam<TGradientStencil,TParam...>& other) {};
 
-        GradientsMultiParam(GradientsMultiParam<T_gradientstencil,T_param...>& other) {};
+        GradientsMultiParam(GradientsMultiParam<TGradientStencil,TParam...>& other) {};
 
-        template<class T_traits>
+        template<class TTraits>
         inline void compute(int k);
 
     private:
 
-        std::tuple<Gradients<T_param, T_gradientstencil>...> mt_Param;
+        std::tuple<Gradients<TParam, TGradientStencil>...> mt_Param;
 
 };
 
 
-template<class T_gradientstencil, class ...T_param>
-template<class T_traits>
-inline void GradientsMultiParam<T_gradientstencil,T_param...>::compute(int k) { //Not necessary
+template<class TGradientStencil, class ...TParam>
+template<class TTraits>
+inline void GradientsMultiParam<TGradientStencil,TParam...>::compute(int k) { //Not necessary
     
     std::apply([k](auto&... gradient){
 
-        (gradient.template compute<T_traits>(k), ...);
+        (gradient.template compute<TTraits>(k), ...);
 
                                      }, mt_Param);
 
 }
 
-template<class T_param, class ...T_gradientstencil>
+template<class TParam, class ...TGradientStencil>
 class GradientsMultiStencil : public AddOnBase {
 
     public:
 
         GradientsMultiStencil() = default;
 
-        GradientsMultiStencil(const GradientsMultiStencil<T_param, T_gradientstencil...>& other) {};
+        GradientsMultiStencil(const GradientsMultiStencil<TParam, TGradientStencil...>& other) {};
 
-        GradientsMultiStencil(GradientsMultiStencil<T_param, T_gradientstencil...>& other) {};
+        GradientsMultiStencil(GradientsMultiStencil<TParam, TGradientStencil...>& other) {};
 
-        template<class T_traits>
+        template<class TTraits>
         inline void compute(int k); //Perform any neccessary computations before force is computed
 
     private:
 
-        std::tuple<Gradients<T_param, T_gradientstencil>...> mt_GradientStencil;
+        std::tuple<Gradients<TParam, TGradientStencil>...> mt_GradientStencil;
 
 };
 
 
-template<class T_param, class ...T_gradientstencil>
-template<class T_traits>
-inline void GradientsMultiStencil<T_param, T_gradientstencil...>::compute(int k) { //Not necessary
+template<class TParam, class ...TGradientStencil>
+template<class TTraits>
+inline void GradientsMultiStencil<TParam, TGradientStencil...>::compute(int k) { //Not necessary
 
     std::apply([k](auto&... gradient){
-        (gradient.template compute<T_traits>(k), ...);
+        (gradient.template compute<TTraits>(k), ...);
                                      }, mt_GradientStencil);
 
 }

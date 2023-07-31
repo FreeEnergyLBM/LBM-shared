@@ -5,22 +5,22 @@ class AddOnBase{
     
     public:
 
-        template<class T_traits>
+        template<class TTraits>
         inline void compute(int k);
 
-        template<class T_traits>
+        template<class TTraits>
         inline void communicate();
 
     private:
 
 };
 
-template<class T_traits>
+template<class TTraits>
 inline void AddOnBase::compute(int k){
 
 }
 
-template<class T_traits>
+template<class TTraits>
 inline void AddOnBase::communicate() {
     
 }

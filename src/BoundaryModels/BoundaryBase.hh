@@ -3,16 +3,16 @@
 class BoundaryBase{
     public:
 
-        template<class T_traits>
+        template<class TTraits>
         inline void precompute(int k){};
 
-        template<class T_traits>
+        template<class TTraits>
         inline void communicatePrecompute(){};
 
-        template<class T_traits>
+        template<class TTraits>
         inline void communicatePostProcess(){};
 
-        template<class T_traits>
+        template<class TTraits>
         inline void postprocess(int k){};
 
     private:

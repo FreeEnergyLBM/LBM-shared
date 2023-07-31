@@ -4,20 +4,20 @@
 
 struct LaplacianCentralFourthOrder : GradientBase<One> {
 
-    template<class T_traits, class T_parameter>
+    template<class TTraits, class TParameter>
     static inline double compute(int direction, int k, int num = 0);
 
-    template<class T_obj>
-    using GradientType = Laplacian<T_obj,T_obj::instances>;
+    template<class TObj>
+    using GradientType = Laplacian<TObj,TObj::instances>;
     
 };
 
 
-template<class T_traits, class T_parameter>
+template<class TTraits, class TParameter>
 inline double LaplacianCentralFourthOrder::compute(int direction, int k, int num){
 
-    using Lattice = typename T_traits::Lattice;
-    using Stencil = typename T_traits::Stencil;
+    using Lattice = typename TTraits::Lattice;
+    using Stencil = typename TTraits::Stencil;
 
     using DataType = Data_Base<Lattice, Stencil>;
 
@@ -27,7 +27,7 @@ inline double LaplacianCentralFourthOrder::compute(int direction, int k, int num
 
     for (int idx = 1; idx < Stencil::Q; idx++) {
 
-            laplaciansum +=  Stencil::Weights[idx] * 2 * (- T_parameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, idx), idx), num) + 16 * T_parameter::template get<Lattice>(data.getNeighbor(k, idx), num) - 15 * T_parameter::template get<Lattice>(k, num));
+            laplaciansum +=  Stencil::Weights[idx] * 2 * (- TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, idx), idx), num) + 16 * TParameter::template get<Lattice>(data.getNeighbor(k, idx), num) - 15 * TParameter::template get<Lattice>(k, num));
 
     }
     return 1.0 / (12.0 * Stencil::Cs2 * Lattice::DT * Lattice::DT) * laplaciansum;

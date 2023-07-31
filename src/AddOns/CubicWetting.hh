@@ -11,10 +11,10 @@ class CubicWetting : public AddOnBase {
 
         CubicWetting(const CubicWetting& other) : m_Prefactor(other.m_Prefactor) {}
 
-        template<typename T_traits>
+        template<class TTraits>
         inline void compute(int k);
 
-        template<typename T_traits>
+        template<class TTraits>
         inline void communicate();
 
         inline void setTheta(double theta);
@@ -27,11 +27,11 @@ class CubicWetting : public AddOnBase {
 
 };
 
-template<typename T_traits>
+template<class TTraits>
 inline void CubicWetting::compute(const int k) {
 
-    using Lattice = typename T_traits::Lattice;
-    using Stencil = typename T_traits::Stencil;
+    using Lattice = typename TTraits::Lattice;
+    using Stencil = typename TTraits::Stencil;
 
     using data = Data_Base<Lattice, Stencil>;
 
@@ -70,10 +70,10 @@ inline void CubicWetting::setThetaDegrees(const double theta){
 }
 
 
-template<typename T_traits>
+template<class TTraits>
 inline void CubicWetting::communicate(){
 
-    using Lattice = typename T_traits::Lattice;
+    using Lattice = typename TTraits::Lattice;
     Lattice::communicate(OrderParameter<>::getInstance<Lattice>());
     
 }

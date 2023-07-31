@@ -25,14 +25,14 @@
 //Service.hh: This will contain some commonly used functions with various uses.
 
 
-template<class lattice>
+template<class TLattice>
 inline int computeXGlobal(const int k) //Compute X direction from a given k, the convention in this code is that
                           //k will iterate over the z direction first, then increment y by 1 once it reaches LZ,
                           //then repeat the iteration over z. Once it reaches LY x will be incremented and this
                           //process continues
 {  
 
-  return lattice::LXMPIOffset+int((k-lattice::HaloSize)/(float) (lattice::LZ*lattice::LY));
+  return TLattice::LXMPIOffset+int((k-TLattice::HaloSize)/(float) (TLattice::LZ*TLattice::LY));
 
 
 }
@@ -62,14 +62,14 @@ inline int computeZ(const int& LY,const int& LZ,const int k) //Compute Y directi
 
 }
 
-template<class force>
-typename force::Method getMethod(force& f){
-    return std::declval<typename force::Method>();
+template<class TForce>
+typename TForce::Method getMethod(TForce& f){
+    return std::declval<typename TForce::Method>();
 }
 
-template<class force>
-decltype(force::Prefactor) getForcePrefactor(force& f){
-    return std::declval<decltype(force::Prefactor)>();
+template<class TForce>
+decltype(TForce::Prefactor) getForcePrefactor(TForce& f){
+    return std::declval<decltype(TForce::Prefactor)>();
 }
 
 void print() {
@@ -77,8 +77,8 @@ void print() {
     std::cout << std::endl;
 }
 
-template <typename T, typename ... Args>
-void print(std::vector<T> first, Args ... args) {
+template <typename T, typename ... TArgs>
+void print(std::vector<T> first, TArgs ... args) {
     if (mpi.rank != 0) return;
     for (auto elem : first) {
       std::cout << elem << " ";
@@ -86,8 +86,8 @@ void print(std::vector<T> first, Args ... args) {
     print(args...);
 }
 
-template <typename T, typename ... Args>
-void print(T first, Args ... args) {
+template <typename T, typename ... TArgs>
+void print(T first, TArgs ... args) {
     if (mpi.rank != 0) return;
     std::cout << first << " ";
     print(args...);
@@ -97,16 +97,16 @@ void printAll() {
     std::cout << std::endl;
 }
 
-template <typename T, typename ... Args>
-void printAll(std::vector<T> first, Args ... args) {
+template <typename T, typename ... TArgs>
+void printAll(std::vector<T> first, TArgs ... args) {
     for (auto elem : first) {
       std::cout << elem << " ";
     }
     printAll(args...);
 }
 
-template <typename T, typename ... Args>
-void printAll(T first, Args ... args) {
+template <typename T, typename ... TArgs>
+void printAll(T first, TArgs ... args) {
     std::cout << first << " ";
     printAll(args...);
 }
@@ -220,28 +220,28 @@ template <typename T>
 // Answer one simple question: here's a type, and a tuple. Tell me
 // if the type is one of the tuples types. If so, I want it.
 
-template<typename wanted_type, typename T> struct is_wanted_type;
+template<typename TWantedType, typename T> struct is_wanted_type;
 
-template<typename wanted_type, typename ...Types>
-struct is_wanted_type<wanted_type, std::tuple<Types...>> {
+template<typename TWantedType, typename ...TTypes>
+struct is_wanted_type<TWantedType, std::tuple<TTypes...>> {
 
-    static constexpr bool wanted = (std::is_same_v<wanted_type, Types> || ...);
+    static constexpr bool wanted = (std::is_same_v<TWantedType, TTypes> || ...);
 
 };
 
 // Ok, the ith index in the tuple, here's its std::tuple_element type.
-// And wanted_element_t is a tuple of all types we want to extract.
+// And TWantedElement is a tuple of all types we want to extract.
 //
 // Based on which way the wind blows we'll produce either a std::tuple<>
 // or a std::tuple<tuple_element_t>.
 
 template<size_t i, typename tuple_element_t,
-         typename wanted_element_t,
-         bool wanted = is_wanted_type<tuple_element_t, wanted_element_t>::wanted>
+         typename TWantedElement,
+         bool wanted = is_wanted_type<tuple_element_t, TWantedElement>::wanted>
 struct extract_type {
 
-    template<typename tuple_type>
-    inline static auto do_extract_type(tuple_type &t) {
+    template<typename TTupleType>
+    inline static auto do_extract_type(TTupleType &t) {
 
         return std::tuple<>{};
 
@@ -250,11 +250,11 @@ struct extract_type {
 };
 
 
-template<size_t i, typename tuple_element_t, typename wanted_element_t>
-struct extract_type<i, tuple_element_t, wanted_element_t, true> {
+template<size_t i, typename tuple_element_t, typename TWantedElement>
+struct extract_type<i, tuple_element_t, TWantedElement, true> {
 
-    template<typename tuple_type>
-    inline static auto do_extract_type(tuple_type &t) {
+    template<typename TTupleType>
+    inline static auto do_extract_type(TTupleType &t) {
 
         return std::tie(std::get<i>(t));
 
@@ -265,288 +265,288 @@ struct extract_type<i, tuple_element_t, wanted_element_t, true> {
 // And now, a simple fold expression to pull out all wanted types
 // and tuple-cat them together.
 
-template<typename wanted_element_t, typename tuple_type, size_t ...i>
-inline auto get_type_t(tuple_type &t, std::index_sequence<i...>) {
+template<typename TWantedElement, typename TTupleType, size_t ...i>
+inline auto get_type_t(TTupleType &t, std::index_sequence<i...>) {
 
     return std::tuple_cat(extract_type<i,
-                          typename std::tuple_element<i, tuple_type>::type,
-                          wanted_element_t>::do_extract_type(t)...);
+                          typename std::tuple_element<i, TTupleType>::type,
+                          TWantedElement>::do_extract_type(t)...);
 
 }
 
 
-template<typename ...wanted_element_t, typename ...types>
+template<typename ...TWantedElement, typename ...types>
 inline auto get_type(std::tuple<types...> &t) {
 
-    return get_type_t<std::tuple<wanted_element_t...>>(t, std::make_index_sequence<sizeof...(types)>());
+    return get_type_t<std::tuple<TWantedElement...>>(t, std::make_index_sequence<sizeof...(types)>());
         
 }
 
-template<class Base, typename Tuple>
+template<class TBase, typename TTuple>
 struct CheckBase;
 
-template<class Base, typename... Types>
-struct CheckBase<Base, std::tuple<Types...>> : std::conjunction<std::is_base_of<Base,Types>...> {};
+template<class TBase, typename... TTypes>
+struct CheckBase<TBase, std::tuple<TTypes...>> : std::conjunction<std::is_base_of<TBase,TTypes>...> {};
 
 
-template <template <typename...> class C, typename...Ts>
-std::true_type is_base_of_template_impl(const C<Ts...>*);
+template <template <typename...> class TC, typename...Ts>
+std::true_type is_base_of_template_impl(const TC<Ts...>*);
 
-template <template <typename...> class C>
+template <template <typename...> class TC>
 std::false_type is_base_of_template_impl(...);
 
-template <template <typename...> class C,typename T>
-using is_base_of_template = decltype(is_base_of_template_impl<C>(std::declval<T*>()));
+template <template <typename...> class TC,typename T>
+using is_base_of_template = decltype(is_base_of_template_impl<TC>(std::declval<T*>()));
 
-template<template<class> class Base, typename Tuple>
+template<template<class> class TBase, typename TTuple>
 struct CheckBaseTemplate;
 
-template<template<class> class Base, typename... Types>
-struct CheckBaseTemplate<Base, std::tuple<Types...>> : std::conjunction<is_base_of_template<Base,Types>...> {};
+template<template<class> class TBase, typename... TTypes>
+struct CheckBaseTemplate<TBase, std::tuple<TTypes...>> : std::conjunction<is_base_of_template<TBase,TTypes>...> {};
 
-template<typename ... input_t>
+template<typename ... TInput>
 using tuple_cat_t=
 decltype(std::tuple_cat(
-    std::declval<input_t>()...
+    std::declval<TInput>()...
 ));
 
-template<class trait>
+template<class TTrait>
 struct BaseTrait{
 
-  template<class... preprocessor>
-  struct AddPreProcessor : BaseTrait<AddPreProcessor<preprocessor...>>  {
+  template<class... TPreProcessor>
+  struct AddPreProcessor : BaseTrait<AddPreProcessor<TPreProcessor...>>  {
 
-    using Stencil = typename trait::Stencil;
+    using Stencil = typename TTrait::Stencil;
 
-    using Boundaries = typename trait::Boundaries;
+    using Boundaries = typename TTrait::Boundaries;
 
-    using PreProcessors = tuple_cat_t<typename trait::PreProcessors, std::tuple<preprocessor...>>;
+    using PreProcessors = tuple_cat_t<typename TTrait::PreProcessors, std::tuple<TPreProcessor...>>;
 
-    using PostProcessors = typename trait::PostProcessors;
+    using PostProcessors = typename TTrait::PostProcessors;
 
-    using Forces = typename trait::Forces;
+    using Forces = typename TTrait::Forces;
 
-    template<class stencil>
-    using CollisionModel = typename trait::template CollisionModel<stencil>;
+    template<class TStencil>
+    using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
 
-    using Lattice = typename trait::Lattice;
+    using Lattice = typename TTrait::Lattice;
 
-    static constexpr int NumberOfComponents = trait::NumberOfComponents;
-
-  };
-
-  template<class... preprocessor>
-  struct SetPreProcessor : BaseTrait<SetPreProcessor<preprocessor...>> {
-
-    using Stencil = typename trait::Stencil;
-
-    using Boundaries = typename trait::Boundaries;
-
-    using PreProcessors = std::tuple<preprocessor...>;
-
-    using PostProcessors = typename trait::PostProcessors;
-
-    using Forces = typename trait::Forces;
-
-    template<class stencil>
-    using CollisionModel = typename trait::template CollisionModel<stencil>;
-
-    using Lattice = typename trait::Lattice;
-
-    static constexpr int NumberOfComponents = trait::NumberOfComponents;
+    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
   };
 
-  template<class... postprocessor>
-  struct AddPostProcessor : BaseTrait<AddPostProcessor<postprocessor...>>  {
+  template<class... TPreProcessor>
+  struct SetPreProcessor : BaseTrait<SetPreProcessor<TPreProcessor...>> {
 
-    using Stencil = typename trait::Stencil;
+    using Stencil = typename TTrait::Stencil;
 
-    using Boundaries = typename trait::Boundaries;
+    using Boundaries = typename TTrait::Boundaries;
 
-    using PreProcessors = typename trait::PreProcessors;
+    using PreProcessors = std::tuple<TPreProcessor...>;
 
-    using PostProcessors = tuple_cat_t<typename trait::PostProcessors, std::tuple<postprocessor...>>;
+    using PostProcessors = typename TTrait::PostProcessors;
 
-    using Forces = typename trait::Forces;
+    using Forces = typename TTrait::Forces;
 
-    template<class stencil>
-    using CollisionModel = typename trait::template CollisionModel<stencil>;
+    template<class TStencil>
+    using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
 
-    using Lattice = typename trait::Lattice;
+    using Lattice = typename TTrait::Lattice;
 
-    static constexpr int NumberOfComponents = trait::NumberOfComponents;
+    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
   };
 
-  template<class... postprocessor>
-  struct SetPostProcessor : BaseTrait<SetPostProcessor<postprocessor...>> {
+  template<class... TPostProcessor>
+  struct AddPostProcessor : BaseTrait<AddPostProcessor<TPostProcessor...>>  {
 
-    using Stencil = typename trait::Stencil;
+    using Stencil = typename TTrait::Stencil;
 
-    using Boundaries = typename trait::Boundaries;
+    using Boundaries = typename TTrait::Boundaries;
 
-    using PreProcessors = typename trait::PreProcessors;
+    using PreProcessors = typename TTrait::PreProcessors;
 
-    using PostProcessors = std::tuple<postprocessor...>;
+    using PostProcessors = tuple_cat_t<typename TTrait::PostProcessors, std::tuple<TPostProcessor...>>;
 
-    using Forces = typename trait::Forces;
+    using Forces = typename TTrait::Forces;
 
-    template<class stencil>
-    using CollisionModel = typename trait::template CollisionModel<stencil>;
+    template<class TStencil>
+    using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
 
-    using Lattice = typename trait::Lattice;
+    using Lattice = typename TTrait::Lattice;
 
-    static constexpr int NumberOfComponents = trait::NumberOfComponents;
+    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
+
+  };
+
+  template<class... TPostProcessor>
+  struct SetPostProcessor : BaseTrait<SetPostProcessor<TPostProcessor...>> {
+
+    using Stencil = typename TTrait::Stencil;
+
+    using Boundaries = typename TTrait::Boundaries;
+
+    using PreProcessors = typename TTrait::PreProcessors;
+
+    using PostProcessors = std::tuple<TPostProcessor...>;
+
+    using Forces = typename TTrait::Forces;
+
+    template<class TStencil>
+    using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
+
+    using Lattice = typename TTrait::Lattice;
+
+    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
   };
   
-  template<class... force>
-  struct AddForce : BaseTrait<AddForce<force...>>  {
+  template<class... TForce>
+  struct AddForce : BaseTrait<AddForce<TForce...>>  {
 
-    using Stencil = typename trait::Stencil;
+    using Stencil = typename TTrait::Stencil;
 
-    using Boundaries = typename trait::Boundaries;
+    using Boundaries = typename TTrait::Boundaries;
 
-    using PreProcessors = typename trait::PreProcessors;
+    using PreProcessors = typename TTrait::PreProcessors;
 
-    using PostProcessors = typename trait::PostProcessors;
+    using PostProcessors = typename TTrait::PostProcessors;
 
-    using Forces = tuple_cat_t<typename trait::Forces, std::tuple<force...>>;
+    using Forces = tuple_cat_t<typename TTrait::Forces, std::tuple<TForce...>>;
 
-    template<class stencil>
-    using CollisionModel = typename trait::template CollisionModel<stencil>;
+    template<class TStencil>
+    using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
 
-    using Lattice = typename trait::Lattice;
+    using Lattice = typename TTrait::Lattice;
 
-    static constexpr int NumberOfComponents = trait::NumberOfComponents;
-
-  };
-
-  template<class... force>
-  struct SetForce : BaseTrait<SetForce<force...>> {
-
-    using Stencil = typename trait::Stencil;
-
-    using Boundaries = typename trait::Boundaries;
-
-    using PreProcessors = typename trait::PreProcessors;
-
-    using PostProcessors = typename trait::PostProcessors;
-
-    using Forces = std::tuple<force...>;
-
-    template<class stencil>
-    using CollisionModel = typename trait::template CollisionModel<stencil>;
-
-    using Lattice = typename trait::Lattice;
-
-    static constexpr int NumberOfComponents = trait::NumberOfComponents;
+    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
   };
 
-  template<class... boundary>
-  struct AddBoundary : BaseTrait<AddBoundary<boundary...>> {
+  template<class... TForce>
+  struct SetForce : BaseTrait<SetForce<TForce...>> {
 
-    using Stencil = typename trait::Stencil;
+    using Stencil = typename TTrait::Stencil;
 
-    using Boundaries = tuple_cat_t<typename trait::Boundaries, std::tuple<boundary...>>;
+    using Boundaries = typename TTrait::Boundaries;
 
-    using PreProcessors = typename trait::PreProcessors;
+    using PreProcessors = typename TTrait::PreProcessors;
 
-    using PostProcessors = typename trait::PostProcessors;
+    using PostProcessors = typename TTrait::PostProcessors;
 
-    using Forces = typename trait::Forces;
+    using Forces = std::tuple<TForce...>;
+
+    template<class TStencil>
+    using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
+
+    using Lattice = typename TTrait::Lattice;
+
+    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
+
+  };
+
+  template<class... TBoundary>
+  struct AddBoundary : BaseTrait<AddBoundary<TBoundary...>> {
+
+    using Stencil = typename TTrait::Stencil;
+
+    using Boundaries = tuple_cat_t<typename TTrait::Boundaries, std::tuple<TBoundary...>>;
+
+    using PreProcessors = typename TTrait::PreProcessors;
+
+    using PostProcessors = typename TTrait::PostProcessors;
+
+    using Forces = typename TTrait::Forces;
     
-    template<class stencil>
-    using CollisionModel = typename trait::template CollisionModel<stencil>;
+    template<class TStencil>
+    using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
 
-    using Lattice = typename trait::Lattice;
+    using Lattice = typename TTrait::Lattice;
 
-    static constexpr int NumberOfComponents = trait::NumberOfComponents;
-
-  };
-
-  template<class... boundary>
-  struct SetBoundary : BaseTrait<SetBoundary<boundary...>> {
-
-    using Stencil = typename trait::Stencil;
-
-    using Boundaries = std::tuple<boundary...>;
-
-    using PreProcessors = typename trait::PreProcessors;
-
-    using PostProcessors = typename trait::PostProcessors;
-
-    using Forces = typename trait::Forces;
-
-    template<class stencil>
-    using CollisionModel = typename trait::template CollisionModel<stencil>;
-
-    using Lattice = typename trait::Lattice;
-
-    static constexpr int NumberOfComponents = trait::NumberOfComponents;
+    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
   };
 
-  template<class stencil>
-  struct SetStencil : BaseTrait<SetStencil<stencil>> {
+  template<class... TBoundary>
+  struct SetBoundary : BaseTrait<SetBoundary<TBoundary...>> {
 
-    using Stencil = stencil;
+    using Stencil = typename TTrait::Stencil;
 
-    using Boundaries = typename trait::Boundaries;
+    using Boundaries = std::tuple<TBoundary...>;
 
-    using PreProcessors = typename trait::PreProcessors;
+    using PreProcessors = typename TTrait::PreProcessors;
 
-    using PostProcessors = typename trait::PostProcessors;
+    using PostProcessors = typename TTrait::PostProcessors;
 
-    using Forces = typename trait::Forces;
+    using Forces = typename TTrait::Forces;
+
+    template<class TStencil>
+    using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
+
+    using Lattice = typename TTrait::Lattice;
+
+    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
+
+  };
+
+  template<class TStencil>
+  struct SetStencil : BaseTrait<SetStencil<TStencil>> {
+
+    using Stencil = TStencil;
+
+    using Boundaries = typename TTrait::Boundaries;
+
+    using PreProcessors = typename TTrait::PreProcessors;
+
+    using PostProcessors = typename TTrait::PostProcessors;
+
+    using Forces = typename TTrait::Forces;
 
     template<class stencil1>
-    using CollisionModel = typename trait::template CollisionModel<stencil1>;
+    using CollisionModel = typename TTrait::template CollisionModel<stencil1>;
 
-    using Lattice = typename trait::Lattice;
+    using Lattice = typename TTrait::Lattice;
 
-    static constexpr int NumberOfComponents = trait::NumberOfComponents;
+    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
   };
 
-  template<template<class> class model>
-  struct SetCollisionModel : BaseTrait<SetCollisionModel<model>> {
+  template<template<class> class TModel>
+  struct SetCollisionOperator : BaseTrait<SetCollisionOperator<TModel>> {
 
-    using Stencil = typename trait::Stencil;
+    using Stencil = typename TTrait::Stencil;
 
-    using Boundaries = typename trait::Boundaries;
+    using Boundaries = typename TTrait::Boundaries;
 
-    using PreProcessors = typename trait::PreProcessors;
+    using PreProcessors = typename TTrait::PreProcessors;
 
-    using PostProcessors = typename trait::PostProcessors;
+    using PostProcessors = typename TTrait::PostProcessors;
 
-    using Forces = typename trait::Forces;
+    using Forces = typename TTrait::Forces;
 
-    template<class stencil>
-    using CollisionModel = model<stencil>;
+    template<class TStencil>
+    using CollisionModel = TModel<TStencil>;
 
-    using Lattice = typename trait::Lattice;
+    using Lattice = typename TTrait::Lattice;
 
-    static constexpr int NumberOfComponents = trait::NumberOfComponents;
+    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
   };
 
 };
 
-template<std::size_t i, class Tuple, std::size_t... is>
-constexpr auto element_as_tuple(const Tuple tuple, std::index_sequence<is...>)
+template<std::size_t i, class TTuple, std::size_t... is>
+constexpr auto element_as_tuple(const TTuple tuple, std::index_sequence<is...>)
 {
-    if constexpr (!(std::is_same_v<std::tuple_element_t<i, Tuple>, 
-                  std::tuple_element_t<is, Tuple>> || ...))
+    if constexpr (!(std::is_same_v<std::tuple_element_t<i, TTuple>, 
+                  std::tuple_element_t<is, TTuple>> || ...))
         return std::make_tuple(std::get<i>(tuple));
     else
         return std::make_tuple();
 }
 
-template<class Tuple, std::size_t... is>
-constexpr auto make_tuple_unique(const Tuple tuple, std::index_sequence<is...>)
+template<class TTuple, std::size_t... is>
+constexpr auto make_tuple_unique(const TTuple tuple, std::index_sequence<is...>)
 {
     return std::tuple_cat(element_as_tuple<is>(tuple, 
                           std::make_index_sequence<is>{})...);
@@ -562,7 +562,7 @@ constexpr auto make_tuple_unique(const Tuples... tuples)
 
 
 
-template <typename T, typename Tuple>
+template <typename T, typename TTuple>
 struct has_type;
 
 template <typename T>
@@ -578,16 +578,16 @@ struct Cartesian{};
 struct AllDirections{};
 struct One{};
 
-template <typename key, typename valuetype>
+template <typename TKey, typename TValue>
 struct kv
 {
-    using Key = key;
+    using Key = TKey;
 
-    static valuetype Value;
+    static TValue Value;
 };
 
-template <typename key, typename valuetype>
-valuetype kv<key,valuetype>::Value;
+template <typename TKey, typename TValue>
+TValue kv<TKey,TValue>::Value;
 
 template <typename...>
 struct ct_map;
@@ -616,30 +616,30 @@ struct ct_map<>
     };
 };
 
-template<typename key, typename value, typename... rest>
-struct ct_map<kv<key, value>, rest...>
+template<typename TKey, typename TValue, typename... TRest>
+struct ct_map<kv<TKey, TValue>, TRest...>
 {
-    template<typename kkey>
+    template<typename TKKey>
     struct keyexists
     {
         static constexpr bool exists = 
-            (std::is_same<typename std::remove_reference<kkey>::type, typename std::remove_reference<key>::type>::value) ?
+            (std::is_same<typename std::remove_reference<TKKey>::type, typename std::remove_reference<TKey>::type>::value) ?
             true :
-            ct_map<rest...>::template keyexists<kkey>::exists;
+            ct_map<TRest...>::template keyexists<TKKey>::exists;
     };
 
-    template<typename kkey>
+    template<typename TKKey>
     struct get
     {
 
         static inline constexpr auto& findVal(){
-          static_assert(sizeof...(rest)!=0||std::is_same<typename std::remove_reference<kkey>::type, typename std::remove_reference<key>::type>::value, "Key does not exist in map.");
-          if constexpr (sizeof...(rest)!=0){
-            return (std::is_same<kkey, key>::value) ?
-              kv<key, value>::Value : ct_map<rest...>::template get<kkey>::val;
+          static_assert(sizeof...(TRest)!=0||std::is_same<typename std::remove_reference<TKKey>::type, typename std::remove_reference<TKey>::type>::value, "Key does not exist in map.");
+          if constexpr (sizeof...(TRest)!=0){
+            return (std::is_same<TKKey, TKey>::value) ?
+              kv<TKey, TValue>::Value : ct_map<TRest...>::template get<TKKey>::val;
           }
           else {
-            return kv<key, value>::Value;
+            return kv<TKey, TValue>::Value;
           }
           
         }
@@ -650,12 +650,12 @@ struct ct_map<kv<key, value>, rest...>
 
 
 
-template <typename key, typename valuetype>
+template <typename TKey, typename TValue>
 struct kv_types
 {
-  using Key = key;
+  using Key = TKey;
 
-  using Type = valuetype;
+  using Type = TValue;
 };
 
 template <typename...>
@@ -681,36 +681,36 @@ struct ct_map_types<>
           return 0;
         }
         
-        using valuetype = decltype(noKey());
+        using TValue = decltype(noKey());
 
-        valuetype val = noKey();
+        TValue val = noKey();
     };
 };
 
-template<typename key, typename value, typename... rest>
-struct ct_map_types<kv<key, value>, rest...>
+template<typename TKey, typename TValue, typename... TRest>
+struct ct_map_types<kv<TKey, TValue>, TRest...>
 {
-    template<typename kkey>
+    template<typename TKKey>
     struct keyexists
     {
         static constexpr bool exists = 
-            (std::is_same<typename std::remove_reference<kkey>::type, typename std::remove_reference<key>::type>::value) ?
+            (std::is_same<typename std::remove_reference<TKKey>::type, typename std::remove_reference<TKey>::type>::value) ?
             true :
-            ct_map_types<rest...>::template keyexists<kkey>::exists;
+            ct_map_types<TRest...>::template keyexists<TKKey>::exists;
     };
 
-    template<typename kkey>
+    template<typename TKKey>
     struct get
     {
 
         static inline constexpr auto findVal(){
-          static_assert(sizeof...(rest)!=0||std::is_same<typename std::remove_reference<kkey>::type, typename std::remove_reference<key>::type>::value, "Key does not exist in map.");
-          if constexpr (sizeof...(rest)!=0){
-            typename std::conditional_t<(std::is_same<kkey, key>::value),typename kv_types<key, value>::Type,typename ct_map_types<rest...>::template get<kkey>::Type> val = {};
+          static_assert(sizeof...(TRest)!=0||std::is_same<typename std::remove_reference<TKKey>::type, typename std::remove_reference<TKey>::type>::value, "Key does not exist in map.");
+          if constexpr (sizeof...(TRest)!=0){
+            typename std::conditional_t<(std::is_same<TKKey, TKey>::value),typename kv_types<TKey, TValue>::Type,typename ct_map_types<TRest...>::template get<TKKey>::Type> val = {};
             return val;
           }
           else {
-            typename kv_types<key, value>::Type val = {};
+            typename kv_types<TKey, TValue>::Type val = {};
             return val;
           }
           
@@ -730,8 +730,8 @@ decltype(std::tuple_cat(
     std::declval<input_t>()...
 ));
 
-template<class trait, class force>
-auto add_force(){return generate_trait<trait::Stencil,trait::Boundaries,tuple_cat_t::,trait::Properties>;}
+template<class TTrait, class TForce>
+auto add_force(){return generate_trait<TTrait::Stencil,TTrait::Boundaries,tuple_cat_t::,TTrait::Properties>;}
 */
 
 
@@ -799,9 +799,9 @@ struct TemplateLoop<0,T,args...>{
     }
 };
 
-template<typename T1,template<typename T2> class stencil>
+template<typename T1,template<typename T2> class TStencil>
 struct GenerateMRT{
-    static const int m_Q=stencil<T1>::m_Q;
+    static const int m_Q=TStencil<T1>::m_Q;
     int m_MRTMatrix[m_Q][m_Q];
     
     constexpr GenerateMRT():m_MRTMatrix(){
@@ -812,7 +812,7 @@ struct GenerateMRT{
 
     template<int columnidx>
     inline constexpr void setMRTMatrixColumn(int rowidx){
-        m_MRTMatrix[rowidx][columnidx]=stencil<T1>::template m_Moments<columnidx>[rowidx];
+        m_MRTMatrix[rowidx][columnidx]=TStencil<T1>::template m_Moments<columnidx>[rowidx];
         setMRTMatrixColumn<columnidx+1>(rowidx);
     }
 

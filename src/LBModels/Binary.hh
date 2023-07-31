@@ -14,20 +14,20 @@
 
 
 //Binary.hh: Contains the details of the LBM model to solve an equation for phase separation. Each
-//Model is given a "T_traits" class that contains stencil, data, force and boundary information
+//Model is given a "TTraits" class that contains stencil, data, force and boundary information
 
-template<class T_lattice>
-using DefaultTraitBinary = typename DefaultTrait<T_lattice,2> :: template SetBoundary<BounceBack> 
+template<class TLattice>
+using DefaultTraitBinary = typename DefaultTrait<TLattice,2> :: template SetBoundary<BounceBack> 
                                                           :: template SetPreProcessor<ChemicalPotentialCalculatorBinary,CubicWetting> 
                                                           :: template SetPostProcessor<GradientsMultiStencil<OrderParameter<>,CentralXYZ,LaplacianCentral>>;
 
 
-template<class T_lattice, class T_traits = DefaultTraitBinary<T_lattice>>
-class Binary: public CollisionBase<T_lattice, typename T_traits::Stencil>, public ModelBase<T_lattice, T_traits> { //Inherit from base class to avoid repetition of common
+template<class TLattice, class TTraits = DefaultTraitBinary<TLattice>>
+class Binary: public CollisionBase<TLattice, typename TTraits::Stencil>, public ModelBase<TLattice, TTraits> { //Inherit from base class to avoid repetition of common
                                                       //calculations
 
-    using Stencil = typename T_traits::Stencil;  
-    static constexpr int m_NDIM = T_lattice::NDIM; 
+    using Stencil = typename TTraits::Stencil;  
+    static constexpr int m_NDIM = TLattice::NDIM; 
                                                       
     public:
 
@@ -56,19 +56,19 @@ class Binary: public CollisionBase<T_lattice, typename T_traits::Stencil>, publi
         double m_Tau1=1;
         double m_Tau2=1;
 
-        std::vector<double>& orderparameter = OrderParameter<>::get<T_lattice>(); //Reference to vector of order parameters
-        std::vector<double>& velocity = Velocity<>::get<T_lattice,T_lattice::NDIM>(); //Reference to vector of velocities
-        std::vector<double>& itau = InverseTau<>::get<T_lattice>(); //Reference to vector of velocities
+        std::vector<double>& orderparameter = OrderParameter<>::get<TLattice>(); //Reference to vector of order parameters
+        std::vector<double>& velocity = Velocity<>::get<TLattice,TLattice::NDIM>(); //Reference to vector of velocities
+        std::vector<double>& itau = InverseTau<>::get<TLattice>(); //Reference to vector of velocities
 
 };
 
-template<class T_lattice, class T_traits>
-inline void Binary<T_lattice, T_traits>::collide() {
+template<class TLattice, class TTraits>
+inline void Binary<TLattice, TTraits>::collide() {
 
     #pragma omp for schedule(guided)
-    for (int k = T_lattice::HaloSize; k < T_lattice::N - T_lattice::HaloSize; k++){ //loop over k
+    for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++){ //loop over k
         
-        if(!Geometry<T_lattice>::isSolid(k)){
+        if(!Geometry<TLattice>::isSolid(k)){
 
             //MOVE THIS TO SEPERATE FUNCTION IN BASE CLASS
             
@@ -104,23 +104,23 @@ inline void Binary<T_lattice, T_traits>::collide() {
 
 }
 
-template<class T_lattice, class T_traits>
-inline void Binary<T_lattice, T_traits>::initialise() { //Initialise model
+template<class TLattice, class TTraits>
+inline void Binary<TLattice, TTraits>::initialise() { //Initialise model
 
     this -> m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
-    T_traits::template CollisionModel<Stencil>::template initialise<T_lattice>(this -> mt_Forces,m_Tau1,m_Tau2);
+    TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this -> mt_Forces,m_Tau1,m_Tau2);
     
     #pragma omp parallel for schedule(guided) 
-    for (int k = T_lattice::HaloSize; k < T_lattice::N - T_lattice::HaloSize; k++) { //loop over k
+    for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { //loop over k
 
         double* distribution = this -> m_Distribution.getDistributionPointer(k);
         double* old_distribution = this -> m_Distribution.getDistributionOldPointer(k);
 
-        ChemicalPotential<>::initialise<T_lattice>(0,k);
+        ChemicalPotential<>::initialise<TLattice>(0,k);
 
-        OrderParameter<>::initialise<T_lattice>(1.0,k);
+        OrderParameter<>::initialise<TLattice>(1.0,k);
         
-        InverseTau<>::initialise<T_lattice>(1.0 / (0.5 * (1.0 + OrderParameter<>::get<T_lattice>(k)) * (m_Tau1 - m_Tau2) + m_Tau2), k);
+        InverseTau<>::initialise<TLattice>(1.0 / (0.5 * (1.0 + OrderParameter<>::get<TLattice>(k)) * (m_Tau1 - m_Tau2) + m_Tau2), k);
 
         double equilibriumsum = 0;
 
@@ -140,18 +140,18 @@ inline void Binary<T_lattice, T_traits>::initialise() { //Initialise model
         
     }
 
-    this -> m_Data.communicate(SolidLabels<>::getInstance<T_lattice>());
+    this -> m_Data.communicate(SolidLabels<>::getInstance<TLattice>());
 
 }
 
 
-template<class T_lattice, class T_traits>
-inline void Binary<T_lattice, T_traits>::computeMomenta() { //Calculate order parameter
+template<class TLattice, class TTraits>
+inline void Binary<TLattice, TTraits>::computeMomenta() { //Calculate order parameter
 
     #pragma omp for schedule(guided)
-    for (int k = T_lattice::HaloSize; k < T_lattice::N - T_lattice::HaloSize; k++) { //Loop over k
+    for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { //Loop over k
 
-        if(!Geometry<T_lattice>::isSolid(k)){
+        if(!Geometry<TLattice>::isSolid(k)){
 
             double* distribution = this -> m_Distribution.getDistributionPointer(k);
 
@@ -163,29 +163,29 @@ inline void Binary<T_lattice, T_traits>::computeMomenta() { //Calculate order pa
 
     }
 
-    this -> m_Data.communicate(OrderParameter<>::getInstance<T_lattice>());
+    this -> m_Data.communicate(OrderParameter<>::getInstance<TLattice>());
 }
 
-template<class T_lattice, class T_traits>
-inline double Binary<T_lattice, T_traits>::computeEquilibrium(const double& orderparam, const double* velocity, int idx, int k) {
+template<class TLattice, class TTraits>
+inline double Binary<TLattice, TTraits>::computeEquilibrium(const double& orderparam, const double* velocity, int idx, int k) {
 
-    return Stencil::Weights[idx] * (ChemicalPotential<>::get<T_lattice>(k) * m_Gamma / Stencil::Cs2 + orderparam * CollisionBase<T_lattice, Stencil>::computeVelocityFactor(velocity, idx));
+    return Stencil::Weights[idx] * (ChemicalPotential<>::get<TLattice>(k) * m_Gamma / Stencil::Cs2 + orderparam * CollisionBase<TLattice, Stencil>::computeVelocityFactor(velocity, idx));
 
 }
 
 //FlowField.hh: Contains the details of the LBM model to solve the Navier-Stokes and continuity equation. Each
-//Model is given a "T_traits" class that contains stencil, data, force and boundary information
+//Model is given a "TTraits" class that contains stencil, data, force and boundary information
 
-template<class T_lattice>
-using DefaultTraitFlowFieldBinary = typename DefaultTrait<T_lattice,2> :: template SetBoundary<BounceBack>
+template<class TLattice>
+using DefaultTraitFlowFieldBinary = typename DefaultTrait<TLattice,2> :: template SetBoundary<BounceBack>
                                                                      :: template SetForce<ChemicalForceBinary<Guo,Gradient>>;
 
-template<class T_lattice, class T_traits = DefaultTraitFlowFieldBinary<T_lattice>>
-class FlowFieldBinary : public FlowField<T_lattice, T_traits>{ //Inherit from base class to avoid repetition of common
+template<class TLattice, class TTraits = DefaultTraitFlowFieldBinary<TLattice>>
+class FlowFieldBinary : public FlowField<TLattice, TTraits>{ //Inherit from base class to avoid repetition of common
                                                          //calculations
 
-    using Stencil = typename T_traits::Stencil;  
-    static constexpr int m_NDIM = T_lattice::NDIM; 
+    using Stencil = typename TTraits::Stencil;  
+    static constexpr int m_NDIM = TLattice::NDIM; 
     
     public:
 
@@ -208,20 +208,20 @@ class FlowFieldBinary : public FlowField<T_lattice, T_traits>{ //Inherit from ba
 
 };
 
-template<class T_lattice, class T_traits>
-inline double FlowFieldBinary<T_lattice, T_traits>::computeEquilibrium(const double& density, const double* velocity, const double& order_parameter, const double& chemical_potential, int idx, int k) {
+template<class TLattice, class TTraits>
+inline double FlowFieldBinary<TLattice, TTraits>::computeEquilibrium(const double& density, const double* velocity, const double& order_parameter, const double& chemical_potential, int idx, int k) {
 
-    return density * CollisionBase<T_lattice, Stencil>::computeGamma(velocity, idx) + Stencil::Weights[idx] * order_parameter * chemical_potential / Stencil::Cs2; //Equilibrium is density times gamma in this case
+    return density * CollisionBase<TLattice, Stencil>::computeGamma(velocity, idx) + Stencil::Weights[idx] * order_parameter * chemical_potential / Stencil::Cs2; //Equilibrium is density times gamma in this case
 
 }
 
-template<class T_lattice, class T_traits>
-inline void FlowFieldBinary<T_lattice, T_traits>::collide() { //Collision step
+template<class TLattice, class TTraits>
+inline void FlowFieldBinary<TLattice, TTraits>::collide() { //Collision step
        
     #pragma omp for schedule(guided)
-    for (int k = T_lattice::HaloSize; k <T_lattice::N - T_lattice::HaloSize; k++) { //loop over k
+    for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //loop over k
 
-        if(!Geometry<T_lattice>::isSolid(k)){
+        if(!Geometry<TLattice>::isSolid(k)){
 
             double* old_distribution = this -> m_Distribution.getDistributionOldPointer(k);
             double equilibriumsum = 0;
@@ -230,39 +230,39 @@ inline void FlowFieldBinary<T_lattice, T_traits>::collide() { //Collision step
 
             for (int idx = 1; idx < Stencil::Q; idx++) {
 
-                equilibriums[idx] = computeEquilibrium(this -> density[k], &(this -> velocity[k * Stencil::D]), OrderParameter<>::get<T_lattice>(k), ChemicalPotential<>::get<T_lattice>(k), idx, k);
+                equilibriums[idx] = computeEquilibrium(this -> density[k], &(this -> velocity[k * Stencil::D]), OrderParameter<>::get<TLattice>(k), ChemicalPotential<>::get<TLattice>(k), idx, k);
                 equilibriumsum += equilibriums[idx];
 
             }
 
             equilibriums[0]=this -> density[k]-equilibriumsum;
 
-            this -> collisionQ(equilibriums,old_distribution,InverseTau<>::get<T_lattice>(k),k);
+            this -> collisionQ(equilibriums,old_distribution,InverseTau<>::get<TLattice>(k),k);
 
         }
         
     }
 
-    FlowField<T_lattice, T_traits>::m_Data.communicateDistribution();
+    FlowField<TLattice, TTraits>::m_Data.communicateDistribution();
 
 }
 
-template<class T_lattice, class T_traits>
-inline void FlowFieldBinary<T_lattice, T_traits>::initialise() { //Initialise model
+template<class TLattice, class TTraits>
+inline void FlowFieldBinary<TLattice, TTraits>::initialise() { //Initialise model
 
     this -> m_Data.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
-    T_traits::template CollisionModel<Stencil>::template initialise<T_lattice>(this -> mt_Forces,m_Tau1,m_Tau2);
+    TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this -> mt_Forces,m_Tau1,m_Tau2);
 
     #pragma omp parallel for schedule(guided)
-    for (int k = T_lattice::HaloSize; k <T_lattice::N - T_lattice::HaloSize; k++) { //loop over k
+    for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //loop over k
 
         double* distribution = this -> m_Distribution.getDistributionPointer(k);
         double* old_distribution = this -> m_Distribution.getDistributionOldPointer(k);
 
-        Density<>::initialise<T_lattice>(1.0, k); //Set density to 1 initially (This will change)
-        Velocity<>::initialise<T_lattice,T_lattice::NDIM>(0.0, k, x);
-        if constexpr (T_lattice::NDIM >= 2) Velocity<>::initialise<T_lattice,T_lattice::NDIM>(0.0, k, y);
-        if constexpr (T_lattice::NDIM == 3) Velocity<>::initialise<T_lattice, T_lattice::NDIM>(0.0, k, z);
+        Density<>::initialise<TLattice>(1.0, k); //Set density to 1 initially (This will change)
+        Velocity<>::initialise<TLattice,TLattice::NDIM>(0.0, k, x);
+        if constexpr (TLattice::NDIM >= 2) Velocity<>::initialise<TLattice,TLattice::NDIM>(0.0, k, y);
+        if constexpr (TLattice::NDIM == 3) Velocity<>::initialise<TLattice, TLattice::NDIM>(0.0, k, z);
 
         double equilibriumsum = 0;
 
@@ -270,9 +270,9 @@ inline void FlowFieldBinary<T_lattice, T_traits>::initialise() { //Initialise mo
 
             double equilibrium;
 
-            if (idx>0) equilibrium = computeEquilibrium(this -> density[k], &(this -> velocity[k * Stencil::D]), OrderParameter<>::get<T_lattice>(k), ChemicalPotential<>::get<T_lattice>(k), idx, k);
+            if (idx>0) equilibrium = computeEquilibrium(this -> density[k], &(this -> velocity[k * Stencil::D]), OrderParameter<>::get<TLattice>(k), ChemicalPotential<>::get<TLattice>(k), idx, k);
 
-            else equilibrium = FlowField<T_lattice, T_traits>::density[k] - equilibriumsum;
+            else equilibrium = FlowField<TLattice, TTraits>::density[k] - equilibriumsum;
 
             distribution[idx] = equilibrium; //Set distributions to equillibrium
             old_distribution[idx] = equilibrium;

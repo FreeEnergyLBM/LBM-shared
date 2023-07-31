@@ -11,7 +11,7 @@ class ChemicalPotentialCalculatorBinary : public AddOnBase {
     
     public:
 
-        template<typename traits>
+        template<class TTraits>
         inline void compute(int k);
 
         inline void setA(double A);
@@ -24,10 +24,10 @@ class ChemicalPotentialCalculatorBinary : public AddOnBase {
     
 };
 
-template<typename T_traits>
+template<class TTraits>
 inline void ChemicalPotentialCalculatorBinary::compute(int k){
 
-    using Lattice = typename T_traits::Lattice;
+    using Lattice = typename TTraits::Lattice;
 
     ChemicalPotential<>::get<Lattice>(k) = -m_A * OrderParameter<>::get<Lattice>(k)
                                                             + m_A * pow(OrderParameter<>::get<Lattice>(k), 3)
@@ -51,7 +51,7 @@ class ChemicalPotentialCalculatorRho : public AddOnBase {
     
     public:
 
-        template<typename traits>
+        template<class TTraits>
         inline void compute(int k);
 
         inline void setA(const double A);
@@ -74,10 +74,10 @@ class ChemicalPotentialCalculatorRho : public AddOnBase {
     
 };
 
-template<typename T_traits>
+template<class TTraits>
 inline void ChemicalPotentialCalculatorRho::compute(int k){
 
-    using Lattice = typename T_traits::Lattice;
+    using Lattice = typename TTraits::Lattice;
 
     ChemicalPotential<>::get<Lattice>(k) = 2 * m_A * (Density<>::get<Lattice>(k) - m_RhoLiquid)
                                                    * (Density<>::get<Lattice>(k) - m_RhoVapor) 
@@ -102,7 +102,7 @@ class ChemicalPotentialCalculatorBinaryLee : public AddOnBase {
     
     public:
 
-        template<typename traits>
+        template<class TTraits>
         inline void compute(int k);
 
         inline void setA(double A);
@@ -115,10 +115,10 @@ class ChemicalPotentialCalculatorBinaryLee : public AddOnBase {
     
 };
 
-template<typename T_traits>
+template<class TTraits>
 inline void ChemicalPotentialCalculatorBinaryLee::compute(int k){
 
-    using Lattice = typename T_traits::Lattice;
+    using Lattice = typename TTraits::Lattice;
 
     ChemicalPotential<>::get<Lattice>(k) = 2 * m_A * OrderParameter<>::get<Lattice>(k)
                                            - 6 * m_A * pow(OrderParameter<>::get<Lattice>(k), 2)
@@ -217,26 +217,26 @@ class ChemicalPotentialCalculatorNComponent : public AddOnBase {
 
 };
 
-template<class T_traits>
+template<class TTraits>
 inline void ChemicalPotentialCalculatorNComponent::compute(const int k){ // THIS IS WRONG, NEED - OTHER LAPLACIANS FOR THE FINAL SUM
         
-        [[maybe_unused]] static bool isvalid = checkValid<T_traits::NumberOfComponents>();
+        [[maybe_unused]] static bool isvalid = checkValid<TTraits::NumberOfComponents>();
         m_IsValid=isvalid;
 
         double gammalaplaciansum=0;
         double sumc=0;
 
-        for (int i=0;i<T_traits::NumberOfComponents-1;i++){
-            const double& ci=OrderParameter<T_traits::NumberOfComponents-1>::template get<typename T_traits::Lattice>(k,i);
+        for (int i=0;i<TTraits::NumberOfComponents-1;i++){
+            const double& ci=OrderParameter<TTraits::NumberOfComponents-1>::template get<class TTraits::Lattice>(k,i);
             double chempot=0;
             sumc=0;
             gammalaplaciansum=0;
-            for (int j=0;j<T_traits::NumberOfComponents-1;j++){
+            for (int j=0;j<TTraits::NumberOfComponents-1;j++){
                 
-                const double& cj=OrderParameter<T_traits::NumberOfComponents-1>::template get<typename T_traits::Lattice>(k,j);
+                const double& cj=OrderParameter<TTraits::NumberOfComponents-1>::template get<class TTraits::Lattice>(k,j);
                 sumc+=cj;
                 
-                const double gammalaplacian = mv_Gamma[i][j]*LaplacianOrderParameter<T_traits::NumberOfComponents-1>::template get<typename T_traits::Lattice,T_traits::NumberOfComponents-1>(k,j);
+                const double gammalaplacian = mv_Gamma[i][j]*LaplacianOrderParameter<TTraits::NumberOfComponents-1>::template get<class TTraits::Lattice,TTraits::NumberOfComponents-1>(k,j);
                 
                 gammalaplaciansum += gammalaplacian;
                 if (i!=j){
@@ -247,22 +247,22 @@ inline void ChemicalPotentialCalculatorNComponent::compute(const int k){ // THIS
             }
             const double cj=1-sumc;
             
-            chempot+=mv_Beta[i][T_traits::NumberOfComponents-1]*(-12*ci*ci*cj-12*ci*cj*cj+12*ci*cj-4*cj*cj*cj+6*cj*cj-2*cj) + gammalaplaciansum;
-            ChemicalPotential<T_traits::NumberOfComponents>::template get<typename T_traits::Lattice>(k,i) = chempot;
+            chempot+=mv_Beta[i][TTraits::NumberOfComponents-1]*(-12*ci*ci*cj-12*ci*cj*cj+12*ci*cj-4*cj*cj*cj+6*cj*cj-2*cj) + gammalaplaciansum;
+            ChemicalPotential<TTraits::NumberOfComponents>::template get<class TTraits::Lattice>(k,i) = chempot;
             
             
         }
-        int i = T_traits::NumberOfComponents-1;
+        int i = TTraits::NumberOfComponents-1;
         const double& ci=1-sumc;
         double chempot=0;
         sumc=0;
         gammalaplaciansum=0;
         
-        for (int j=0;j<T_traits::NumberOfComponents-1;j++){
-            const double& cj=OrderParameter<T_traits::NumberOfComponents-1>::template get<typename T_traits::Lattice>(k,j);
+        for (int j=0;j<TTraits::NumberOfComponents-1;j++){
+            const double& cj=OrderParameter<TTraits::NumberOfComponents-1>::template get<class TTraits::Lattice>(k,j);
             sumc+=cj;
             
-            const double gammalaplacian = mv_Gamma[i][j]*LaplacianOrderParameter<T_traits::NumberOfComponents-1>::template get<typename T_traits::Lattice,T_traits::NumberOfComponents-1>(k,j);
+            const double gammalaplacian = mv_Gamma[i][j]*LaplacianOrderParameter<TTraits::NumberOfComponents-1>::template get<class TTraits::Lattice,TTraits::NumberOfComponents-1>(k,j);
             gammalaplaciansum += gammalaplacian;
             
             if (i!=j){
@@ -271,6 +271,6 @@ inline void ChemicalPotentialCalculatorNComponent::compute(const int k){ // THIS
             }
         }
 
-        ChemicalPotential<T_traits::NumberOfComponents>::template get<typename T_traits::Lattice>(k,i) = chempot;
+        ChemicalPotential<TTraits::NumberOfComponents>::template get<class TTraits::Lattice>(k,i) = chempot;
         
 }

@@ -43,16 +43,16 @@ int main(int argc, char **argv){
     mpi.init();
 
     // Set up the lattice, including the resolution and data/parallelisation method
-    using Lattice = LatticeProperties<Data1, X_Parallel<1>, lx, ly>;
+    using Lattice = LatticeProperties<DataOldNew, X_Parallel<1>, lx, ly>;
 
     // We need to modify the traits of the model to include a body force as an 'AddOn'.
     // We modify the default traits for the 'FlowFieldBinary' model, adding a bodyforce and setting the collision model to MRT, which improves accuracy at higher viscosity ratios
-    using TraitFlowField = DefaultTraitFlowFieldBinary<Lattice> :: AddForce<BodyForce<>> :: SetCollisionModel<MRT>;
+    using TraitFlowField = DefaultTraitFlowFieldBinary<Lattice> :: AddForce<BodyForce<>> :: SetCollisionOperator<MRT>;
 
     // Define the models to be used
     FlowFieldBinary<Lattice,TraitFlowField> flowFieldModel; //Flowfield (navier stokes solver) that can be used with the binary model
     Binary<Lattice> componentSeparationModel; //Binary model with hybrid equilibrium and forcing term
-    
+
     //Pass the relaxation times to each model
     flowFieldModel.setTau1(tau1);
     flowFieldModel.setTau2(tau2);

@@ -12,8 +12,8 @@ template<template<class, class> class TData, class TParallel, int lx, int ly, in
 struct LatticeProperties{
     using TLattice = LatticeProperties<TData,TParallel,lx,ly,lz>;
 
-    template<typename Stencil>
-    using DataType = TData<TLattice, Stencil>;//!<This will change the "DataType" implementation, which will govern the access of non-local data
+    template<class TStencil>
+    using DataType = TData<TLattice, TStencil>;//!<This will change the "DataType" implementation, which will govern the access of non-local data
     static_assert(std::is_base_of< Data_Base<TLattice,D1Q3>, DataType<D1Q3> >::value, "ERROR: Chosen data method is not a data class.");
 
     static constexpr int NDIM = 3 - (lx <= 1 || ly <= 1 || lz <=1 ) * (1 + ((lx <= 1 && ly <=1)||(lx <= 1 && lz <=1)||(ly <= 1 && lz <=1)));
@@ -52,14 +52,14 @@ struct LatticeProperties{
 
 //====== LatticePropertiesRuntime ======//
 
-template<template<class, class> class TData, class TParallel, int T_NDIM>
+template<template<class, class> class TData, class TParallel, int TNDIM>
 struct LatticePropertiesRuntime {
-    using TLattice = LatticePropertiesRuntime<TData,TParallel,T_NDIM>;
+    using TLattice = LatticePropertiesRuntime<TData,TParallel,TNDIM>;
 
     constexpr LatticePropertiesRuntime(int lx, int ly, double DT=1.0) : LatticePropertiesRuntime(lx, ly, 1, DT) {}
 
     constexpr LatticePropertiesRuntime(int lx, int ly, int lz, double DT=1.0) {
-        if(T_NDIM<=2&&lz>1) throw std::runtime_error("lz cannot be greater than 1 for a 2D simulation");
+        if(TNDIM<=2&&lz>1) throw std::runtime_error("lz cannot be greater than 1 for a 2D simulation");
         LX = lx;
         LY = ly;
         LZ = lz;
@@ -74,7 +74,7 @@ struct LatticePropertiesRuntime {
         return *this;
     }
 
-    static constexpr int NDIM = T_NDIM;
+    static constexpr int NDIM = TNDIM;
     static int LX;
     static int LY;
     static int LZ;
@@ -84,8 +84,8 @@ struct LatticePropertiesRuntime {
     static int HaloSize;
     static double DT;
 
-    template<typename Stencil>
-    using DataType = TData<TLattice, Stencil>;//!<This will change the "DataType" implementation, which will govern the access of non-local data
+    template<class TStencil>
+    using DataType = TData<TLattice, TStencil>;//!<This will change the "DataType" implementation, which will govern the access of non-local data
 
     static_assert(std::is_base_of< Data_Base<TLattice,D1Q3>, DataType<D1Q3> >::value,
                   "ERROR: Chosen data method is not a data class.");

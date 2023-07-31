@@ -22,11 +22,11 @@
  * calculations for each model. The models that are passed to the template must therefore have these public
  * functions. The class must be given objects of each model when it is constructed. Then, the models can be
  * initialised and evolved by one timestep at a time.
- * \tparam Model Any number of LBM model classes.
+ * \tparam TModel Any number of LBM model classes.
  */
-template<class ...Model>
+template<class ...TModel>
 class Algorithm {
-    static_assert(std::conjunction<is_base_of_template<ModelBase,Model>...>::value, "ERROR: At least one LBM model chosen is not a model class.");
+    static_assert(std::conjunction<is_base_of_template<ModelBase,TModel>...>::value, "ERROR: At least one LBM model chosen is not a model class.");
     public:
 
         /**
@@ -34,9 +34,9 @@ class Algorithm {
          * This constructor will accept model objects corresponding to each model in the order they are given in the
          * template arguments. This is then used to initialise the tuple "mt_Models" with references to each
          * object. Note that models will be computed in the order they are specified.
-         * \param Models Objects of each model in the order specified by the template parameter "...Model".
+         * \param Models Objects of each model in the order specified by the template parameter "...TModel".
          */
-        Algorithm(Model&... Models) 
+        Algorithm(TModel&... Models) 
             : mt_Models(Models...)
         {initialise();}
 
@@ -45,11 +45,11 @@ class Algorithm {
          * This constructor will accept model objects corresponding to each model in the order they are given in the
          * template arguments. This is then used to initialise the tuple "mt_Models" with references to each
          * object. Note that models will be computed in the order they are specified.
-         * \param Models Objects of each model in the order specified by the template parameter "...Model".
+         * \param Models Objects of each model in the order specified by the template parameter "...TModel".
          */
         
         Algorithm()
-            : mt_Models(*new Model...)
+            : mt_Models(*new TModel...)
         {initialise();}
 
         /**
@@ -90,9 +90,9 @@ class Algorithm {
         inline void postprocessStep();
 
         /*
-         * Tuple containing references to objects of each Model... passed through the constructor.
+         * Tuple containing references to objects of each TModel... passed through the constructor.
          */
-        std::tuple<Model&...> mt_Models;
+        std::tuple<TModel&...> mt_Models;
 
 };
 
@@ -102,8 +102,8 @@ class Algorithm {
  *          and finally it will compute the macroscopic variables (density, velocity etc.). It will do this
  *          for every model.
  */
-template<class ...Model>
-inline void Algorithm<Model...>::evolve() {
+template<class ...TModel>
+inline void Algorithm<TModel...>::evolve() {
     
     #pragma omp parallel
     { 
@@ -126,12 +126,12 @@ inline void Algorithm<Model...>::evolve() {
  *          run the "initialise()" function for every model in the tuple. This function might set distributions to
  *          equilibrium and set macroscopic variables to some initial value, for instance.
  */
-template<class ...Model>
-inline void Algorithm<Model...>::initialise() { //...
+template<class ...TModel>
+inline void Algorithm<TModel...>::initialise() { //...
 
-    if constexpr (sizeof...(Model) != 0) {
+    if constexpr (sizeof...(TModel) != 0) {
 
-        std::apply([](Model&... models) {
+        std::apply([](TModel&... models) {
 
             (models.initialise(), ...);
 
@@ -148,12 +148,12 @@ inline void Algorithm<Model...>::initialise() { //...
  *          run the "precompute()" function for every model in the tuple. This function might perform some gradient
  *          calculations needed in the forcing terms, for instance.
  */
-template<class ...Model>
-inline void Algorithm<Model...>::precomputeStep() {
+template<class ...TModel>
+inline void Algorithm<TModel...>::precomputeStep() {
 
-    if constexpr (sizeof...(Model) != 0) {
+    if constexpr (sizeof...(TModel) != 0) {
 
-        std::apply([](Model&... models) {
+        std::apply([](TModel&... models) {
 
             (models.precompute(), ...);
 
@@ -163,12 +163,12 @@ inline void Algorithm<Model...>::precomputeStep() {
 
 }
 
-template<class ...Model>
-inline void Algorithm<Model...>::postprocessStep() {
+template<class ...TModel>
+inline void Algorithm<TModel...>::postprocessStep() {
 
-    if constexpr (sizeof...(Model) != 0) {
+    if constexpr (sizeof...(TModel) != 0) {
 
-        std::apply([](Model&... models) {
+        std::apply([](TModel&... models) {
 
             (models.postprocess(), ...);
 
@@ -185,12 +185,12 @@ inline void Algorithm<Model...>::postprocessStep() {
  *          run the "collide()" function for every model in the tuple. This function will collide based on the 
  *          chosen collision model and will also perform streaming.
  */
-template<class ...Model>
-inline void Algorithm<Model...>::calculateCollisionStep() { //...
+template<class ...TModel>
+inline void Algorithm<TModel...>::calculateCollisionStep() { //...
     
-    if constexpr (sizeof...(Model) != 0){
+    if constexpr (sizeof...(TModel) != 0){
 
-        std::apply([](Model&... models) {
+        std::apply([](TModel&... models) {
 
             (models.collide(), ...);
 
@@ -207,12 +207,12 @@ inline void Algorithm<Model...>::calculateCollisionStep() { //...
  *          run the "boundaries()" function for every model in the tuple. This function might apply bounceback and
  *          outflow boundaries, depending on the geometry labels, for instance.
  */
-template<class ...Model>
-inline void Algorithm<Model...>::calculateBoundaryStep() { //...
+template<class ...TModel>
+inline void Algorithm<TModel...>::calculateBoundaryStep() { //...
     
-    if constexpr (sizeof...(Model) != 0){
+    if constexpr (sizeof...(TModel) != 0){
 
-        std::apply([](Model&... models) {
+        std::apply([](TModel&... models) {
 
             (models.boundaries(), ...);
 
@@ -229,12 +229,12 @@ inline void Algorithm<Model...>::calculateBoundaryStep() { //...
  *          will run the "computeMomenta()" function for every model in the tuple. This function might set
  *          calculate density and velocity based on the distributions, for instance.
  */
-template<class ...Model>
-inline void Algorithm<Model...>::calculateMomentaStep() { //...
+template<class ...TModel>
+inline void Algorithm<TModel...>::calculateMomentaStep() { //...
 
-    if constexpr (sizeof...(Model) != 0) {
+    if constexpr (sizeof...(TModel) != 0) {
 
-        std::apply([](Model&... models) {
+        std::apply([](TModel&... models) {
 
             (models.computeMomenta(), ...);
 

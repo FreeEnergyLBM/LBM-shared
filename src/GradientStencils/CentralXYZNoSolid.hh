@@ -4,19 +4,19 @@
 
 struct CentralXYZNoSolid : GradientBase<Cartesian> {
     
-    template<class T_traits, class T_parameter>
+    template<class TTraits, class TParameter>
     static inline double compute( int direction, int k, int num = 0);
 
-    template<class T_obj>
-    using GradientType = Gradient<T_obj,T_obj::instances>;
+    template<class TObj>
+    using GradientType = Gradient<TObj,TObj::instances>;
     
 };
 
-template<class T_traits, class T_parameter>
+template<class TTraits, class TParameter>
 inline double CentralXYZNoSolid::compute(int direction, int k, int num) {
     
-    using Lattice = typename T_traits::Lattice;
-    using Stencil = typename T_traits::Stencil;
+    using Lattice = typename TTraits::Lattice;
+    using Stencil = typename TTraits::Stencil;
 
     using DataType = Data_Base<Lattice, Stencil>;
 
@@ -28,12 +28,12 @@ inline double CentralXYZNoSolid::compute(int direction, int k, int num) {
         
         if ((Geometry<Lattice>::isSolid(data.getNeighbor(k,idx)))) {
 
-            gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (T_parameter::template get<Lattice>(k, num));
+            gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (TParameter::template get<Lattice>(k, num));
 
         }
         else {
 
-            gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (T_parameter::template get<Lattice>(data.getNeighbor(k, idx), num));
+            gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num));
 
         }
         

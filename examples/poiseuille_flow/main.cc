@@ -24,7 +24,7 @@ int main(int argc, char **argv){
     mpi.init();
 
     // Set up the lattice, including the resolution and data/parallelisation method
-    using Lattice = LatticeProperties<Data1, X_Parallel<1>, lx, ly>;
+    using Lattice = LatticeProperties<DataOldNew, X_Parallel<1>, lx, ly>;
 
     // We use the 'FlowField' LBM model, which is the standard Navier-Stokes solver
     // We need to modify the traits of the model to include a body force.

@@ -19,7 +19,7 @@ double GAMMA=2*BETA*3.125;
 
 double MOBILITY = 0.00333;
 
-using Lattice = LatticeProperties<Data1, NoParallel, lx, ly>;
+using Lattice = LatticeProperties<DataOldNew, NoParallel, lx, ly>;
 const int NUM_COMPONENTS=4; //Number of fluid components
 
 template<int compid>
@@ -30,7 +30,7 @@ using traitNCOMPChemPotCalculator
 
 using traitNCOMPPressure = DefaultTraitFlowFieldPressureNComp<Lattice,NUM_COMPONENTS> 
                             :: template AddForce<BodyForce<>>
-                            :: template SetCollisionModel<MRT>;
+                            :: template SetCollisionOperator<MRT>;
 
 // Function used to define the solid geometry
 // Here we set a solid at the top and bottom, in the conditions that return 1;

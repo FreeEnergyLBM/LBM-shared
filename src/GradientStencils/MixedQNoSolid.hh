@@ -4,19 +4,19 @@
 
 struct MixedQNoSolid : GradientBase<AllDirections> {
 
-    template<class T_traits, class T_parameter>
+    template<class TTraits, class TParameter>
     static inline double compute(const int direction, const int k, int num = 0);
 
-    template<class T_obj>
-    using GradientType = Gradient<T_obj,T_obj::instances>;
+    template<class TObj>
+    using GradientType = Gradient<TObj,TObj::instances>;
     
 };
 
-template<class T_traits, class T_parameter>
+template<class TTraits, class TParameter>
 inline double MixedQNoSolid::compute(const int direction, const int k, int num){
         
-    using Lattice = typename T_traits::Lattice;
-    using Stencil = typename T_traits::Stencil;
+    using Lattice = typename TTraits::Lattice;
+    using Stencil = typename TTraits::Stencil;
 
     using DataType = Data_Base<Lattice, Stencil>;
 
@@ -24,22 +24,22 @@ inline double MixedQNoSolid::compute(const int direction, const int k, int num){
 
     if ((Geometry<Lattice>::isSolid(data.getNeighbors()[k * Stencil::Q + direction]))) {
 
-        return 0.25 * (2 *  T_parameter::template get<Lattice>(k, num)
-                       - 2 * T_parameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
+        return 0.25 * (2 *  TParameter::template get<Lattice>(k, num)
+                       - 2 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
 
     }
     else if ((Geometry<Lattice>::isSolid(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]]))) {
 
-        return 0.25 * (4 * T_parameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q+  direction], num) 
-                       - 3 * T_parameter::template get<Lattice>(k, num)
-                       - T_parameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
+        return 0.25 * (4 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q+  direction], num) 
+                       - 3 * TParameter::template get<Lattice>(k, num)
+                       - TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
 
     }
     else if ((Geometry<Lattice>::isSolid(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]))) {
 
-        return 0.25 * (- T_parameter::template get<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction], num)
-                       + 5 * T_parameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction], num)
-                       - 4 * T_parameter::template get<Lattice>(k, num));
+        return 0.25 * (- TParameter::template get<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction], num)
+                       + 5 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction], num)
+                       - 4 * TParameter::template get<Lattice>(k, num));
 
     }
     else if ((Geometry<Lattice>::isSolid(data.getNeighbors()[k * Stencil::Q + direction]))
@@ -50,10 +50,10 @@ inline double MixedQNoSolid::compute(const int direction, const int k, int num){
     }
     else {
 
-        return 0.25 * (- T_parameter::template get<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q+direction], num)
-                       + 5 * T_parameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction], num)
-                       - 3 * T_parameter::template get<Lattice>(k, num)
-                       - T_parameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
+        return 0.25 * (- TParameter::template get<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q+direction], num)
+                       + 5 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction], num)
+                       - 3 * TParameter::template get<Lattice>(k, num)
+                       - TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
 
     }
         

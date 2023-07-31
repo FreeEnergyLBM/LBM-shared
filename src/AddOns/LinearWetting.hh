@@ -12,10 +12,10 @@ class LinearWetting : public AddOnBase {
 
         LinearWetting(const LinearWetting& other) : m_Theta(other.m_Theta), m_Omega(other.m_Omega), m_Prefactor(other.m_Prefactor) {}
 
-        template<typename T_traits>
+        template<class TTraits>
         inline void compute(int k);
 
-        template<typename T_traits>
+        template<class TTraits>
         inline void communicate();
 
     private:
@@ -37,11 +37,11 @@ class LinearWetting : public AddOnBase {
 
 };
 
-template<typename T_traits>
+template<class TTraits>
 inline void LinearWetting::compute(int k) {
 
-    using Lattice = typename T_traits::Lattice;
-    using Stencil = typename T_traits::Stencil;
+    using Lattice = typename TTraits::Lattice;
+    using Stencil = typename TTraits::Stencil;
 
     using data = Data_Base<Lattice, Stencil>;
 
@@ -100,10 +100,10 @@ inline void LinearWetting::setPrefactor(double A, double kappa){
 
 }
 
-template<typename T_traits>
+template<class TTraits>
 inline void LinearWetting::communicate(){
 
-    using Lattice = typename T_traits::Lattice;
+    using Lattice = typename TTraits::Lattice;
     Lattice::communicate(OrderParameter<>::getInstance<Lattice>());
     
 }

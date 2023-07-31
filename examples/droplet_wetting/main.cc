@@ -15,7 +15,7 @@ const double dropRadius = 30; // Radius to initialise the droplet
 
 
 // Set up the lattice, including the resolution and data/parallelisation method
-using Lattice = LatticeProperties<Data1, X_Parallel<1>, lx, ly, lz>;
+using Lattice = LatticeProperties<DataOldNew, X_Parallel<1>, lx, ly, lz>;
 
 
 
@@ -43,7 +43,7 @@ double initFluid(int k) {
 
 
 // Modify the traits of the binary model to use MRT
-using TraitFlowField = DefaultTraitFlowField<Lattice> ::SetCollisionModel<MRT>;
+using TraitFlowField = DefaultTraitFlowField<Lattice> ::SetCollisionOperator<MRT>;
 
 
 int main(int argc, char **argv){

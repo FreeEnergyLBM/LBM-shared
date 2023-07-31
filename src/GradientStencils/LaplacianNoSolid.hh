@@ -4,19 +4,19 @@
 
 struct LaplacianCentralNoSolid : GradientBase<One> { //FIX
 
-    template<class T_traits, class T_parameter>
+    template<class TTraits, class TParameter>
     static inline double compute(int direction, int k, int num = 0);
 
-    template<class T_obj>
-    using GradientType = Laplacian<T_obj,T_obj::instances>;
+    template<class TObj>
+    using GradientType = Laplacian<TObj,TObj::instances>;
     
 };
 
-template<class T_traits, class T_parameter>
+template<class TTraits, class TParameter>
 inline double LaplacianCentralNoSolid::compute(const int direction, const int k, int num){
    
-    using Lattice = typename T_traits::Lattice;
-    using Stencil = typename T_traits::Stencil;
+    using Lattice = typename TTraits::Lattice;
+    using Stencil = typename TTraits::Stencil;
 
     using DataType = Data_Base<Lattice, Stencil>;
 
@@ -28,7 +28,7 @@ inline double LaplacianCentralNoSolid::compute(const int direction, const int k,
 
             if(!Geometry<Lattice>::isSolid(data.getNeighbor(k, idx))) {
 
-                laplaciansum +=  Stencil::Weights[idx] * 2 * (T_parameter::template get<Lattice>(data.getNeighbor(k, idx), num) - T_parameter::template get<Lattice>(k, num));
+                laplaciansum +=  Stencil::Weights[idx] * 2 * (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num) - TParameter::template get<Lattice>(k, num));
 
             }
 

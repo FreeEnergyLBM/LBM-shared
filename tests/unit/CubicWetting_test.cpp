@@ -3,7 +3,7 @@
 
 #include "LBModels/ModelBase.hh"
 
-using Lattice = LatticeProperties<Data1, NoParallel, 2, 1>;
+using Lattice = LatticeProperties<DataOldNew, NoParallel, 2, 1>;
 using Trait = DefaultTrait<Lattice>;
 
 TEST(CubicWetting, orderParameter) {
