@@ -3,15 +3,15 @@
 // This script simulates a droplet on a flat surface with a given contact angle.
 
 
-const int lx = 100; // Size of domain in x direction
-const int ly = 100; // Size of domain in y direction
+const int lx = 60; // Size of domain in x direction
+const int ly = 60; // Size of domain in y direction
 const int lz = 1; // Size of domain in z direction
 
-const int timesteps = 100000; // Number of iterations to perform
-const int saveInterval = 10000; // Interval to save global data
+const int timesteps = 1000000; // Number of iterations to perform
+const int saveInterval = 50000; // Interval to save global data
 
-const double contactAngle = 135; // Contact angle of the liquid on the solid
-const double dropRadius = 30; // Radius to initialise the droplet
+const double contactAngle = 120; // Contact angle of the liquid on the solid
+const double dropRadius = 20; // Radius to initialise the droplet
 
 
 // Set up the lattice, including the resolution and data/parallelisation method
@@ -34,7 +34,7 @@ double initFluid(int k) {
     int y = computeY(ly, lz, k);
 
     // Check if within droplet radius
-    double y0 = 1.5 - dropRadius * cos(contactAngle*M_PI/180);
+    double y0 = 1.5;// - dropRadius * cos(contactAngle*M_PI/180);
     double r2 = pow(x-lx/2.0, 2) + pow(y-y0, 2);
     if (r2 < pow(dropRadius,2)) return 1;
     else return -1;
@@ -53,12 +53,13 @@ int main(int argc, char **argv){
     FlowFieldBinary<Lattice,TraitFlowField> flowFieldModel; //Flowfield (navier stokes solver) that can be used with the binary model
     Binary<Lattice> componentSeparationModel; //Binary model with hybrid equilibrium and forcing term
 
-    componentSeparationModel.getPreProcessor<ChemicalPotentialCalculatorBinary>().setA(0.00015);
-    componentSeparationModel.getPreProcessor<ChemicalPotentialCalculatorBinary>().setKappa(0.0003);
+    componentSeparationModel.getPreProcessor<ChemicalPotentialCalculatorBinary>().setA(0.015);
+    componentSeparationModel.getPreProcessor<ChemicalPotentialCalculatorBinary>().setKappa(0.03);
 
     // Define the contact angle on the solid
     componentSeparationModel.getPreProcessor<CubicWetting>().setThetaDegrees(contactAngle);
-
+    componentSeparationModel.getPreProcessor<CubicWetting>().setAlpha(sqrt(2));
+    componentSeparationModel.setTau2(0.51);
 
     // Define the solid using the function above
     SolidLabels<>::set<Lattice>(initSolid);
