@@ -24,10 +24,10 @@ TEST(CubicWetting, orderParameter) {
   EXPECT_FLOAT_EQ(orderParam[0], 1);
   orderParam[1] = 0;
   wetting.compute<Trait>(0);
-  EXPECT_FLOAT_EQ(orderParam[0], 1.0/(2*sqrt(2.0)));
+  EXPECT_FLOAT_EQ(orderParam[0], 1.0/(4*sqrt(2.0)));
 
   // Set a contact angle in degrees
   wetting.setThetaDegrees(120);
   wetting.compute<Trait>(0);
-  EXPECT_FLOAT_EQ(orderParam[0], -1.0/(2*sqrt(2.0)));
+  EXPECT_FLOAT_EQ(orderParam[0], -1.0/(4*sqrt(2.0)));
 }
