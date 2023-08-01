@@ -6,20 +6,23 @@
 
 /**
  * \file Algorithm.hh
- * \brief This file contains classes to run the lattice boltzmann algorithm for the chosen models.
- * The classes in this file will take the given models and provide functions
- * to initialise the models and evolve the LBM algorithm with the models, stencils, data types, forcing terms
- * and boundary conditions selected. If a different algorithm is required, add a new class here and inherit from
- * the class Algorithm.
+ * \brief This file contains classes to run the lattice boltzmann algorithm for
+ * the chosen models. The classes in this file will take the given models and 
+ * provide functions to initialise the models and evolve the LBM algorithm with
+ * the models, stencils, data types, forcing terms and boundary conditions
+ * selected. If a different algorithm is required, add a new class here and
+ * inherit from the class Algorithm.
  */
 
 /**
- * \brief This class takes runs the standard LBM algorithm for each of the models specified in the template.
- * The Algorithm class takes any number of model classes as template arguments. It will put these in a tuple
- * (mt_Models) and then use the std::apply function to perform the compute, boundary, momenta and precompute
- * calculations for each model. The models that are passed to the template must therefore have these public
- * functions. The class must be given objects of each model when it is constructed. Then, the models can be
- * initialised and evolved by one timestep at a time.
+ * \brief This class takes runs the standard LBM algorithm for each of the 
+ * models specified in the template. The Algorithm class takes any number of
+ * model classes as template arguments. It will put these in a tuple
+ * (mt_Models) and then use the std::apply function to perform the compute,
+ * boundary, momenta and precompute calculations for each model. The models
+ * that are passed to the template must therefore have these public functions.
+ * The class must be given objects of each model when it is constructed. Then,
+ * the models can be initialised and evolved by one timestep at a time.
  * \tparam TModel Any number of LBM model classes.
  */
 template<class ...TModel>
@@ -124,7 +127,8 @@ inline void Algorithm<TModel...>::evolve() {
 /**
  * \details This function first checks if the algoritm has any models in the template arguments. Then, the 
  *          std::apply() function is used to apply a lambda function, taking arguments as the models stored in the
- *          tuple "mt_Models". In this case, the lambda function applies "(models.initialise(),...);", which will 
+ *          tuple "mt_Models". This is necessary to access the elements of a tuple where there may be duplicate types.
+ *          In this case, the lambda function applies "(models.initialise(),...);", which will 
  *          run the "initialise()" function for every model in the tuple. This function might set distributions to
  *          equilibrium and set macroscopic variables to some initial value, for instance.
  */

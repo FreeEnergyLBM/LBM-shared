@@ -16,6 +16,8 @@ struct ForcingBase{
 
     using mt_Stencils = std::tuple<TStencils...>;
 
+    using Prefactor = NoTauDependence;
+
     template<class TTraits,class TStencil>
     inline static constexpr int StencilToInt(){
         if constexpr (std::is_same_v<TStencil,Cartesian>) return TTraits::Lattice::NDIM; 
@@ -39,7 +41,7 @@ struct Guo : ForcingBase<Cartesian> {
 
     std::vector<double> ma_Force;
 
-    const static GuoPrefactor Prefactor;
+    using Prefactor = GuoPrefactor;
     
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k){
@@ -74,7 +76,7 @@ struct WellBalancedForce : ForcingBase<Cartesian> {
 
     Guo mGuo;
 
-    const static GuoPrefactor Prefactor;
+    using Prefactor = GuoPrefactor;
 
     double mForceDotVelocity=0;
     
@@ -116,7 +118,7 @@ struct AllenCahnSourceMethod : ForcingBase<Cartesian> {
 
     std::vector<double> ma_Force;
     
-    const static GuoPrefactor Prefactor;
+    using Prefactor = GuoPrefactor;
 
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k){
@@ -147,7 +149,7 @@ struct He : ForcingBase<Cartesian> {
 
     std::vector<double> ma_Force;
 
-    const static GuoPrefactor Prefactor;
+    using Prefactor = GuoPrefactor;
     
     double velocity_dot_force = 0;
 
@@ -186,7 +188,7 @@ struct NCompForce : ForcingBase<Cartesian> {
 
     He mHe;
 
-    const static GuoPrefactor Prefactor;
+    using Prefactor = GuoPrefactor;
     
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k) {
@@ -215,8 +217,6 @@ struct Lee : ForcingBase<Cartesian,AllDirections> {
 
     std::vector<double> ma_Force;
     std::vector<double> ma_ForceQ;
-
-    const static NoTauDependence Prefactor;
     
     double velocity_dot_force = 0;
 
@@ -250,8 +250,6 @@ struct LeeGamma0 : ForcingBase<Cartesian,AllDirections> {
 
     std::vector<double> ma_Force;
     std::vector<double> ma_ForceQ;
-
-    const static NoTauDependence Prefactor;
     
     double velocity_dot_force = 0;
 
@@ -284,8 +282,6 @@ struct LeeMuLocal : ForcingBase<AllDirections> {
 
     std::vector<double> ma_ForceQ;
 
-    const static NoTauDependence Prefactor;
-
     template<class TTraits, class TForce>
     const inline void precompute(TForce& f, int k){
 
@@ -314,8 +310,6 @@ struct LeeMuLocal : ForcingBase<AllDirections> {
 struct LeeMuNonLocal : ForcingBase<AllDirections> {
 
     std::vector<double> ma_ForceQ;
-
-    const static NoTauDependence Prefactor;
 
     template<class TTraits, class TForce>
     const inline void precompute(TForce& f, int k){

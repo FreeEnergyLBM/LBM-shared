@@ -68,8 +68,8 @@ typename TForce::Method getMethod(TForce& f){
 }
 
 template<class TForce>
-decltype(TForce::Prefactor) getForcePrefactor(TForce& f){
-    return std::declval<decltype(TForce::Prefactor)>();
+typename TForce::Prefactor getForcePrefactor(TForce& f){
+    return std::declval<typename TForce::Prefactor>();
 }
 
 void print() {
@@ -111,6 +111,10 @@ void printAll(T first, TArgs ... args) {
     printAll(args...);
 }
 
+template<typename T>
+struct remove_const_and_reference{
+  using type = typename std::remove_const<typename std::remove_reference<T>::type>::type;
+};
 
 /**\fn      mpi_get_type
  * \brief   Small template function to return the correct MPI_DATATYPE

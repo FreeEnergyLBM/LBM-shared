@@ -70,29 +70,20 @@ inline void Binary<TLattice, TTraits>::collide() {
         
         if(!Geometry<TLattice>::isSolid(k)){
 
-            //MOVE THIS TO SEPERATE FUNCTION IN BASE CLASS
-            
-            //auto forcemethods = this -> getForceCalculator(this -> mt_Forces, k);
-
             double* old_distribution = this -> mDistribution.getDistributionOldPointer(k);
 
-            double equilibriumsum = 0;
+            double sum = 0;
 
             double equilibriums[Stencil::Q] = {};
-            //double forces[Stencil::Q] = {};
 
-            for (int idx = 1; idx <Stencil::Q; idx++) {
+            for (int idx = 1; idx < Stencil::Q; idx++) {
 
                 equilibriums[idx] = computeEquilibrium(orderparameter[k], &velocity[k * Stencil::D], idx, k);
-                equilibriumsum += equilibriums[idx];
-
-                //this -> updateForces(forces[idx], *forcemethods, k, idx);
+                sum += equilibriums[idx];
 
             }
 
-            equilibriums[0] = orderparameter[k] - equilibriumsum;
-
-            //this -> updateForces(forces[0], *forcemethods, k, 0);
+            equilibriums[0] = orderparameter[k] - sum;
 
             this -> collisionQ(equilibriums, old_distribution, mInverseTau, k);
 
