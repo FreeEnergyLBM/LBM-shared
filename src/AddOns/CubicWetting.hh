@@ -20,9 +20,12 @@ class CubicWetting : public AddOnBase {
         inline void setTheta(double theta);
         inline void setThetaDegrees(double theta);
 
+        inline void setAlpha(double alpha);
+
     private:
 
         double mPrefactor = 0;
+        double mAlpha = 2;
         
 
 };
@@ -61,9 +64,13 @@ inline void CubicWetting::compute(const int k) {
 
 
 inline void CubicWetting::setTheta(const double theta){
-    mPrefactor = cos(theta) / sqrt(2.0);
+    mPrefactor = cos(theta) / (sqrt(2.0) * mAlpha);
 }
 
+inline void CubicWetting::setAlpha(const double alpha){
+    mPrefactor *= mAlpha/alpha;
+    mAlpha = alpha;
+}
 
 inline void CubicWetting::setThetaDegrees(const double theta){
     setTheta(theta / 180.0 * M_PI);

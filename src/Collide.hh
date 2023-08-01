@@ -96,14 +96,14 @@ class SRT{
     public:
 
         /**
-         * \brief The Omega function will return the SRT/BGK collision operator when given 1.0/tau [1].
+         * \brief The Omega function will return the SRT/BGK collision operator when given 1.0/tau.
          * \param itau 1.0/tau (where tau is the relaxation time).
          * \return 1.0/tau.
          */
-        static const inline double& Omega(const double& itau) {return itau;}
+        static const inline double& Omega(const double& itau);
 
         /**
-         * \brief The initialise function will perform initialisation for SRT to save time later (currently does nothing) [1].
+         * \brief The initialise function will perform initialisation for SRT to save time later (currently does nothing).
          * \tparam TLattice LatticeProperties class for the system.
          * \param tau1 Min/Max bound of tau (where tau is the relaxation time).
          * \param tau2 Min/Max bound of tau (alternate to tau1).
@@ -112,7 +112,7 @@ class SRT{
         static inline void initialise(double tau1,double tau2){}; 
 
         /**
-         * \brief The initialise function will perform initialisation for SRT to save time later (currently does nothing) [1].
+         * \brief The initialise function will perform initialisation for SRT to save time later (currently does nothing).
          * \tparam TLattice LatticeProperties class for the system.
          * \tparam TForceTuple Type of the tuple containing the forces (and source terms) applied to the model.
          * \param forces Tuple containing objects of all the forces (and source terms) applied to the model.
@@ -123,7 +123,7 @@ class SRT{
         static inline void initialise(const TForceTuple& forces, double tau1,double tau2){}; 
 
         /**
-         * \brief The collide function returns the post collision distribution [1].
+         * \brief The collide function returns the post collision distribution.
          * \tparam TLattice LatticeProperties class for the system.
          * \param old Pointer to first element of array containing old distributions.
          * \param equilibrium Pointer to first element of array containing updated equilibrium distributions.
@@ -157,6 +157,16 @@ class SRT{
         }
 
 };
+
+/**
+ * \details See [1].
+ */
+template<class TStencil>
+const inline double& SRT<TStencil>::Omega(const double& itau){
+
+    return itau;
+
+}
 
 /**
  * \brief The MRT class provides internal functions to calculate the collision operator, Omega, based on the relaxation

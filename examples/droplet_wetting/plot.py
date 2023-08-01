@@ -66,9 +66,9 @@ def plot(phi):
         phi2d = phi[i,:,:,0]
         plt.contourf(phi2d.T, cmap='Blues', zorder=i,levels=5)
         plt.contour(phi2d.T, levels=[0], colors='k', zorder=i)
-        plt.pause(0.5)
-    plt.show()
-    #plt.savefig("test.png",format="png")
+        #plt.pause(0.5)
+    #plt.show()
+    plt.savefig("test.png",format="png")
 
 
 def measure_angle(phi, it=-1):
