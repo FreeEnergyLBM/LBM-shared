@@ -79,7 +79,7 @@ int main(int argc, char **argv){
     NComponent<Lattice, 1, NUM_COMPONENTS> NCompAllenCahn2;
     NComponent<Lattice, 2, NUM_COMPONENTS> NCompAllenCahn3;
 
-    PressureNavierStokes.getForce<BodyForce<>>().setMagnitudeX(0.00000001);
+    PressureNavierStokes.getForce<BodyForce<>>().setMagnitudeX(0.0000001);
     PressureNavierStokes.setDensities(1.0,1.0,1.0,1.0);
 
     std::vector<double> taus = {1.0,1.0,1.0,1.0};
@@ -117,7 +117,7 @@ int main(int argc, char **argv){
 
     // Algorithm creates an object that can run our chosen LBM model
     //Algorithm lbm(PressureNavierStokes,NCompAllenCahn1,NCompAllenCahn2,NCompAllenCahn3);
-    Algorithm lbm(NCompAllenCahn1,NCompAllenCahn2,NCompAllenCahn3);
+    Algorithm lbm(PressureNavierStokes,NCompAllenCahn1,NCompAllenCahn2,NCompAllenCahn3);
     // Set up the handler object for saving data
     ParameterSave<Lattice> saver("data/");
     saver.SaveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)

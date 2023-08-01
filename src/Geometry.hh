@@ -65,23 +65,7 @@ inline bool Geometry<TLattice>::isPeriodic(int k) {
          xAtCurrentk == TLattice::LXdiv-1) return true; //Edges in X direction
     
     return false;
-    
-    /*
-    if (((TLattice::LZ>1&&(k%(TLattice::LZ-1)==0||
-         (k-1)%(TLattice::LZ-1)==0)))||
-        (TLattice::LY>1&&(k/(TLattice::LZ)%(TLattice::LY-1)==0||
-         ((k)/(TLattice::LZ)-1)%(TLattice::LY-1)==0))||
-        (TLattice::LXdiv>1&&((k/(TLattice::LZ)/(TLattice::LY))%(TLattice::LXdiv-1)==0||
-          ((k)/(TLattice::LZ)/(TLattice::LY)-1)%(TLattice::LXdiv-1)==0||
-          ((k)/(TLattice::LZ)/(TLattice::LY)-1)-1<0||
-          ((k)/(TLattice::LZ)/(TLattice::LY)-1)+1>TLattice::LXdiv-1))||
-        TLattice::LZ==1||
-        TLattice::LY==1||
-        TLattice::LXdiv==1) return true; //These conditions just check whether the TLattice point is on the edge of the 
-                            //simulation domain
-    
-    else return false;
-    */
+
 }
 
 /**
@@ -93,13 +77,5 @@ template<class TLattice>
 inline bool Geometry<TLattice>::isSolid(int k) {
 
     return SolidLabels<>::get<TLattice>(k);
-    //int yAtCurrentk = computeY(TLattice::LY, TLattice::LZ, k);
-    //int zAtCurrentk = computeZ(TLattice::LY, TLattice::LZ, k);
-    //int xAtCurrentk = computeX(TLattice::LY, TLattice::LZ, k);
-    
-    //if (yAtCurrentk <= 1 || yAtCurrentk >= TLattice::LY - 2 || xAtCurrentk <= 1 || xAtCurrentk >= TLattice::LXdiv - 2 || zAtCurrentk <= 1 || zAtCurrentk >= TLattice::LZ - 2 ) return true; //Change this condition to control where the solid is
-    
-    //if (yAtCurrentk <= 1 || yAtCurrentk >= TLattice::LY - 2 ) return true; //Change this condition to control where the solid is
-    //else return false;
 
 }

@@ -7,8 +7,13 @@ const int lx = 60; // Size of domain in x direction
 const int ly = 60; // Size of domain in y direction
 const int lz = 1; // Size of domain in z direction
 
+<<<<<<< HEAD
 const int timesteps = 1000000; // Number of iterations to perform
 const int saveInterval = 50000; // Interval to save global data
+=======
+const int timesteps = 2000000; // Number of iterations to perform
+const int saveInterval = 10000; // Interval to save global data
+>>>>>>> aedae2b840957ee144c73b1dd45d50988669be58
 
 const double contactAngle = 120; // Contact angle of the liquid on the solid
 const double dropRadius = 20; // Radius to initialise the droplet

@@ -2,7 +2,7 @@
 
 /**
  * \file Global.hh
- * \brief This contains global parameters for the code. Eventually this should be mostly phased out.
+ * \brief This contains global parameters for the code. Currently it just holds parameters containing the MPI buffer and its size.
  */
 
 char* MPIBUFFER; //!<Pointer to the MPI buffer.
