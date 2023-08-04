@@ -106,5 +106,5 @@ for t in range(tstart,tend+1,tinc):
 
 
 plt.figure()
-plt.plot(rho[5,:,0,])
+plt.plot(v[5,:,0,0])
 plt.savefig("test.png", dpi=200, format='png')

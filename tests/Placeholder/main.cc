@@ -9,8 +9,8 @@
 const int lx = 10; // Size of domain in x direction
 const int ly = 200; // Size of domain in y direction
 
-const int timesteps = 40000; // Number of iterations to perform
-const int saveInterval = 1000; // Interval to save global data
+const int timesteps = 10; // Number of iterations to perform
+const int saveInterval = 1; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
@@ -22,7 +22,7 @@ double SURFACETENSION = 0.001;
 
 double MOBILITY = 0.01;
 
-using Lattice = LatticeProperties<DataOldNew, NoParallel, lx, ly>;
+using Lattice = LatticeProperties<DataOldNewEquilibrium, NoParallel, lx, ly>;
 const int NUM_COMPONENTS=4; //Number of fluid components
 
 template<int compid>
@@ -79,7 +79,7 @@ int main(int argc, char **argv){
     NComponent<Lattice, 1, NUM_COMPONENTS> NCompAllenCahn2;
     NComponent<Lattice, 2, NUM_COMPONENTS> NCompAllenCahn3;
 
-    PressureNavierStokes.getForce<BodyForce<>>().setMagnitudeX(0.0000001);
+    PressureNavierStokes.getForce<BodyForce<>>().setMagnitudeX(0.0000000);
     PressureNavierStokes.setDensities(1.0,1.0,1.0,1.0);
 
     std::vector<double> taus = {1.0,1.0,1.0,1.0};
@@ -114,6 +114,8 @@ int main(int argc, char **argv){
     OrderParameter<NUM_COMPONENTS-1>::set<Lattice,1,0>(initFluid1);
     OrderParameter<NUM_COMPONENTS-1>::set<Lattice,1,1>(initFluid2);
     OrderParameter<NUM_COMPONENTS-1>::set<Lattice,1,2>(initFluid3);
+
+    Velocity<>::set<Lattice,2,0>(0.01);
 
     // Algorithm creates an object that can run our chosen LBM model
     //Algorithm lbm(PressureNavierStokes,NCompAllenCahn1,NCompAllenCahn2,NCompAllenCahn3);

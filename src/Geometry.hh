@@ -37,9 +37,18 @@ class Geometry {
          */
         static inline bool isSolid(int k);
 
+        static inline int getBoundaryType(int k);
+
     private:
 
-        enum{Periodic = 3, Solid = 2, Wall = 1, Fluid = 0}; //!<IDs for each boundary type.
+        enum
+        {
+            Solid = 0,
+            Fluid = 1,
+            Inlet = 3,
+            Outlet = 4,
+            Refill = 5
+        };
 
 };
 
@@ -78,4 +87,10 @@ inline bool Geometry<TLattice>::isSolid(int k) {
 
     return SolidLabels<>::get<TLattice>(k);
 
+}
+
+template <class lattice>
+inline int Geometry<lattice>::getBoundaryType(int k)
+{
+    return SolidLabels<>::get<lattice>(k);
 }

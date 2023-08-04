@@ -32,6 +32,8 @@ struct Distribution_Base { //Distribution base class
     * \brief Returns the opposite index at the chosen index (Rotation by 180 degrees).
     */
 
+    inline void saveEquilibriums(const double* equilibrium, int k);
+
     int ma_Opposites[TStencil::Q]; //!<Array containing the opposite indices at each index (rotated by 180 degrees).
 
     inline int getOpposite(int idx) {
@@ -51,11 +53,11 @@ struct Distribution_Base { //Distribution base class
     }
     inline const double* getDistributionPointer(const int k) const { //Get a constant pointer to the the distribution at
                                                              //lattice point k and pointing in direction 0
-        return &mv_Distribution[k *TStencil::Q];
+        return &mv_Distribution[k * TStencil::Q];
     }
     inline double* getDistributionPointer(const int k) { //Get a pointer to the the distribution at
                                                  //lattice point k and pointing in direction 0
-        return &mv_Distribution[k *TStencil::Q];
+        return &mv_Distribution[k * TStencil::Q];
 
     }
     inline const double& getDistribution(const int idx) const { //Get const distribution value at a given index
@@ -203,7 +205,7 @@ class ParameterSingleton {
         }
 
         template<class TLattice, int TNum=1>
-        static inline void initialise(const T val,const int idx1, const int idx2=0, const int idx3=0){
+        static inline void initialise(const T val,const int idx1, const int idx2, const int idx3){
             #pragma omp critical
             {
             if (!getInstance<TLattice,TNum>().mmInitialised.count(idx1*instances*TNum + (instances>1)*idx2*TNum + (TNum>1)*idx3)) {
@@ -218,23 +220,56 @@ class ParameterSingleton {
             }        
         }
 
+        template<class TLattice, int TNum=1>
+        static inline void initialise(const T val,const int idx1, const int idx2=0){
+            #pragma omp critical
+            {
+            if (!getInstance<TLattice,TNum>().mmInitialised.count(idx1*instances*TNum + idxlambda<TNum>(idx2))) {
+                getInstance<TLattice,TNum>().mv_Parameter[idx1*instances*TNum + idxlambda<TNum>(idx2)]=val;
+                getInstance<TLattice,TNum>().mmInitialised.insert({idx1*instances*TNum + idxlambda<TNum>(idx2), true});
+            }
+            else {
+                
+                getInstance<TLattice,TNum>().mmInitialised.erase(idx1*instances*TNum + idxlambda<TNum>(idx2)); 
+                
+            }   
+            }        
+        }
+
         template<class TLattice, int TNum=1, int idx1=0, int idx2=0>
-        static void set(T (*condition)(const int)) {
+        static void set(T val) {
 
             for(int k = TLattice::HaloSize; k < TLattice::N-TLattice::HaloSize; k++) {
 
-                initialise<TLattice,TNum>(condition(k),k,idx1,idx2);
+                if constexpr(idx2==0) initialise<TLattice,TNum>(val,k,idx1);
+                else initialise<TLattice,TNum>(val,k,idx1,idx2);
 
             }
 
         }
 
         template<class TLattice, int TNum=1, int idx1=0, int idx2=0>
+        static void set(T (*condition)(const int)) {
+
+            for(int k = TLattice::HaloSize; k < TLattice::N-TLattice::HaloSize; k++) {
+
+                if constexpr(idx2==0) initialise<TLattice,TNum>(condition(k),k,idx1);
+                else initialise<TLattice,TNum>(condition(k),k,idx1,idx2);
+
+            }
+
+        }
+
+
+        template<class TLattice, int TNum=1, int idx1=0, int idx2=0>
         static void set(bool (*condition)(const int), T val) {
 
             for(int k = TLattice::HaloSize; k < TLattice::N-TLattice::HaloSize; k++) {
 
-                if (condition(k)) initialise<TLattice,TNum>(val,k,idx1,idx2);
+                if constexpr(idx2==0) {
+                    if (condition(k)) initialise<TLattice,TNum>(val,k,idx1);
+                }
+                else if (condition(k)) initialise<TLattice,TNum>(val,k,idx1,idx2);
 
             }
 
@@ -245,8 +280,14 @@ class ParameterSingleton {
 
             for(int k = TLattice::HaloSize; k < TLattice::N-TLattice::HaloSize; k++) {
 
-                if (condition(k)) initialise<TLattice,TNum>(val,k,idx1,idx2);
-                else initialise<TLattice,TNum>(false_val,k,idx1,idx2);
+                if (condition(k)) {
+                    if constexpr(idx2==0) initialise<TLattice,TNum>(val,k,idx1,idx2);
+                    else initialise<TLattice,TNum>(false_val,k,idx1,idx2);
+                }
+                else {
+                    if constexpr(idx2==0) initialise<TLattice,TNum>(false_val,k,idx1);
+                    else initialise<TLattice,TNum>(false_val,k,idx1,idx2);
+                }
 
             }
 

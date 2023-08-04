@@ -145,6 +145,10 @@ class ModelBase { //Inherit from base class to avoid repetition of common
 
             if constexpr(std::tuple_size<typename TTraits::Forces>::value != 0){
 
+                if constexpr (mDistribution.SaveEquilibrium) {
+                    mDistribution.saveEquilibriums(equilibriums,k);
+                }
+
                 auto forcemethods = getForceCalculator(mt_Forces,k);
 
                 //std::unordered_map<std::type_index, std::array<double,TTraits::Stencil::Q>> forcesums;
