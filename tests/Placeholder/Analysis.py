@@ -35,17 +35,17 @@ for t in range(tstart,tend+1,tinc):
     print("t=%s"%t)
     t_file =t+t_zero
 
-    file_name = "data/"+"OrderParameter_t%li.mat"%t_file
+    file_name = "data/"+"Humidity_t%li.mat"%t_file
 
     File = open(file_name, 'rb')
     
-    file_name = "data/"+"Velocity_t%li.mat"%t_file
+    #file_name = "data/"+"Velocity_t%li.mat"%t_file
 
-    File2 = open(file_name, 'rb')
+    #File2 = open(file_name, 'rb')
 
-    file_name = "data/"+"Density_t%li.mat"%t_file
+    #file_name = "data/"+"Density_t%li.mat"%t_file
 
-    File3 = open(file_name, 'rb')
+    #File3 = open(file_name, 'rb')
     print(file_name)
 
     def coord_k(k, LY, LZ):
@@ -68,24 +68,24 @@ for t in range(tstart,tend+1,tinc):
         #rho0[xk,yk,zk] = struct.unpack('=d', File3.read(8))[0]
         rho[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
         #struct.unpack('=d', File.read(8))[0]
-        rho2[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
-        rho4[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
+        #rho2[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
+        #rho4[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
         #rho4[xk,yk,zk] = struct.unpack('=d', File4.read(8))[0]
-        for i in range(ndim):
-            v[xk,yk,zk,i] = struct.unpack('=d', File2.read(8))[0]
+        #for i in range(ndim):
+            #v[xk,yk,zk,i] = struct.unpack('=d', File2.read(8))[0]
             #print(ndim)
 
-    
+    #print(np.amax(rho))
     File.close()
     
     fig,ax=plt.subplots(1,1,figsize=(6,6))
 
     output = "%s/component_plot_%012d.png"%(outDirName,t)
     #rho3=2*0.01*(rho2-0.2)*(rho2-1)*(2*rho2-0.2-1)-0.0128*rho4
-    rgbv = np.zeros((LY,LX,3))
-    rgbv[:,:,0] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
-    rgbv[:,:,1] = np.flip(rho2.take(indices=slicepos,axis=sliceaxis)).transpose()
-    rgbv[:,:,2] = np.flip(rho4.take(indices=slicepos,axis=sliceaxis)).transpose()
+    rgbv = np.zeros((LY,LX))
+    rgbv[:,:] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
+    #rgbv[:,:,1] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
+    #rgbv[:,:,2] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
     
     #im=ax.imshow(np.flip(rho0.take(indices=slicepos,axis=sliceaxis)).transpose(),interpolation='nearest',origin='upper')
 
@@ -106,5 +106,5 @@ for t in range(tstart,tend+1,tinc):
 
 
 plt.figure()
-plt.plot(v[5,:,0,0])
+plt.plot(rho[int(LX/2),:,0])
 plt.savefig("test.png", dpi=200, format='png')

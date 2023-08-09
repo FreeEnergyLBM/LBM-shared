@@ -22,6 +22,7 @@ struct ForcingBase{
     inline static constexpr int StencilToInt(){
         if constexpr (std::is_same_v<TStencil,Cartesian>) return TTraits::Lattice::NDIM; 
         else if constexpr (std::is_same_v<TStencil,AllDirections>) return TTraits::Stencil::Q;
+        else if constexpr (std::is_same_v<TStencil,One>) return 1;
         else return TTraits::Lattice::NDIM; 
     } 
 
@@ -141,6 +142,39 @@ struct AllenCahnSourceMethod : ForcingBase<Cartesian> {
         }
 
         return forceterm/(TTraits::Stencil::Cs2*TTraits::Lattice::DT*TTraits::Lattice::DT);
+
+    }
+};
+
+struct EvaporationSourceMethod : ForcingBase<Cartesian,One> {
+
+    std::vector<double> ma_Source;
+    double m_Source0D;
+    
+    using Prefactor = GuoPrefactor;
+
+    template<class TTraits, class TForce>
+    inline void precompute(TForce& f, int k){
+        m_Source0D = f.template compute<TTraits>(k);
+        ma_Source.push_back(f.template computeXYZ<TTraits>(0,k));
+        ma_Source.push_back(f.template computeXYZ<TTraits>(1,k));
+        if constexpr (TTraits::Lattice::NDIM==3) ma_Source.push_back(f.template computeXYZ<TTraits>(2,k));
+    }
+    
+    template<class TTraits>
+    inline double compute(int idx, int k) { //Guo forcing
+        
+        double sourceterm = 0;
+        
+        double prefactor = TTraits::Stencil::Weights[idx]; //Prefactor for Guo forcing
+        
+        for (int xyz = 0; xyz < TTraits::Stencil::D; xyz++) {
+
+            sourceterm += (TTraits::Stencil::Ci_xyz(xyz)[idx]) * ma_Source[xyz]; //Force
+                                                                                                        //Calculation
+        }
+
+        return prefactor * (m_Source0D + sourceterm/(TTraits::Stencil::Cs2));
 
     }
 };

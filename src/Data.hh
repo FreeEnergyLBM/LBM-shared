@@ -1,6 +1,6 @@
 #pragma once
-#include "Lattice.hh"
 #include "Geometry.hh"
+#include "Lattice.hh"
 #include "Parameters.hh"
 #include "Service.hh"
 
@@ -293,7 +293,7 @@ class DataOldNew : public Data_Base<TLattice, TStencil> {
              *                  construct the Distribution_Base class.
              */
 
-            static constexpr bool saveEquilibrium = false;
+            static constexpr bool SaveEquilibrium = false;
 
             Distribution_Derived(std::vector<int>& neighbors) : Distribution_Base<TStencil>(neighbors), mv_Neighbors(neighbors) { //Initialise mv_DistNeighbors
 
@@ -426,7 +426,7 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
                                                                                   //TLattice points
                 Distribution_Base<TStencil>::mv_OldDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
                                                                                      //in this case
-                mv_EquilibriumDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
+                Distribution_Base<TStencil>::mv_EquilibriumDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
                                                                                      //in this case
                 
             }
@@ -438,7 +438,7 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
                                                                                   //TLattice points
                 Distribution_Base<TStencil>::mv_OldDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
                                                                                      //in this case
-                mv_EquilibriumDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
+                Distribution_Base<TStencil>::mv_EquilibriumDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
                                                                                      //in this case
                 
             }
@@ -449,7 +449,7 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
 
             std::vector<int>& mv_Neighbors;
 
-            std::vector<int> mv_EquilibriumDistribution;
+            
 
             /**
              * \brief Returns the index that the current distribution will be streamed to.
@@ -466,7 +466,7 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
 
             inline void saveEquilibriums(const double* equilibrium, int k) {
 
-                std::copy(equilibrium,equilibrium+TStencil::Q,&mv_EquilibriumDistribution[k * TStencil::Q]); //Return neighbor of TLattice point k in direction Q
+                std::copy(equilibrium,equilibrium+TStencil::Q,&Distribution_Base<TStencil>::mv_EquilibriumDistribution[k * TStencil::Q]); //Return neighbor of TLattice point k in direction Q
 
             }
 

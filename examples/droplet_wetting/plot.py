@@ -36,7 +36,7 @@ def read_data(direc='data'):
         try:
             phi_file = open(direc+"/OrderParameter_t%li.mat"%t, 'rb')
             vel_file = open(direc+"/Velocity_t%li.mat"%t, 'rb')
-            solid_file = open(direc+"/SolidLabels_t%li.mat"%t, 'rb')
+            solid_file = open(direc+"/BoundaryLabels_t%li.mat"%t, 'rb')
 
             for k in range(lx*ly*lz):
                 (xk,yk,zk) = coord_k(k,ly,lz)

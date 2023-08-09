@@ -67,7 +67,7 @@ int main(int argc, char **argv){
     flowFieldModel.getForce<BodyForce<>>().setMagnitudeX(force);
 
     // Define the solid and fluid using the functions above
-    SolidLabels<>::set<Lattice>(initSolid);
+    BoundaryLabels<>::set<Lattice>(initSolid);
     OrderParameter<>::set<Lattice>(initFluid);
 
     // Algorithm creates an object that can run our chosen LBM model
@@ -83,7 +83,7 @@ int main(int argc, char **argv){
         // Save the desired parameters, producing a binary file for each.
         if (timestep%saveInterval==0) {
             std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
-            saver.SaveParameter<SolidLabels<>>(timestep);
+            saver.SaveParameter<BoundaryLabels<>>(timestep);
             saver.SaveParameter<OrderParameter<>>(timestep);
             saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }

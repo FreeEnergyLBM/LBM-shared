@@ -8,7 +8,7 @@ struct MixedXYZ : GradientBase<Cartesian> {
     static inline double compute(const int direction, const int k, int num = 0);
 
     template<class TObj>
-    using GradientType = Gradient<TObj,TObj::instances>;
+    using GradientType = GradientMixed<TObj,TObj::instances>;
     
 };
 

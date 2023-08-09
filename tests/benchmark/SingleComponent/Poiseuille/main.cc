@@ -51,7 +51,7 @@ int main(int argc, char **argv){
 
     Model.getForce<BodyForce<Lattice,Guo<Lattice,D2Q9>>>().setMagnitudeX(0.000001); //Get object of body force and then set the magnitude
 
-    SolidLabels<Lattice> solid;
+    BoundaryLabels<Lattice> solid;
     solid.set(solidLocation,true); //Set solid to true where the function we defined previously is true (false by default so don't need to specify this)
 
     //Algorithm that will combine the models and run them in order

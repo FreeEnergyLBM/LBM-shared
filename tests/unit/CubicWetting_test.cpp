@@ -7,7 +7,7 @@ using Lattice = LatticeProperties<DataOldNew, NoParallel, 2, 1>;
 using Trait = DefaultTrait<Lattice>;
 
 TEST(CubicWetting, orderParameter) {
-  SolidLabels<>::get<Lattice>(0) = true;
+  BoundaryLabels<>::get<Lattice>(0) = true;
   auto orderParam = OrderParameter<>::getAddress<Lattice>(0);
   orderParam[1] = 1;
 
@@ -25,9 +25,11 @@ TEST(CubicWetting, orderParameter) {
   orderParam[1] = 0;
   wetting.compute<Trait>(0);
   EXPECT_FLOAT_EQ(orderParam[0], 1.0/(4*sqrt(2.0)));
+  EXPECT_FLOAT_EQ(orderParam[0], 1.0/(4*sqrt(2.0)));
 
   // Set a contact angle in degrees
   wetting.setThetaDegrees(120);
   wetting.compute<Trait>(0);
+  EXPECT_FLOAT_EQ(orderParam[0], -1.0/(4*sqrt(2.0)));
   EXPECT_FLOAT_EQ(orderParam[0], -1.0/(4*sqrt(2.0)));
 }

@@ -518,6 +518,8 @@ class CollisionBase {
          */
         static inline double computeGamma(const double* velocity, int idx);
 
+        static inline double computeGammaFirstOrder(const double* velocity, int idx);
+
         /**
          * \brief This will sum the distributions in each direction to calculate the zeroth moment.
          * \param distribution Pointer to distribution vector at the current TLattice point.
@@ -541,6 +543,8 @@ class CollisionBase {
          * \return Velocity dependence of equilibrium.
          */
         static inline double computeVelocityFactor(const double* velocity, int idx);
+
+        static inline double computeVelocityFactorFirstOrder(const double* velocity, int idx);
         
     private:
 
@@ -557,6 +561,13 @@ template<class TLattice, class TStencil>
 inline double CollisionBase<TLattice,TStencil>::computeGamma(const double* velocity, int idx) {
     
     return TStencil::Weights[idx] * (1.0 + computeVelocityFactor(velocity, idx)); 
+
+};
+
+template<class TLattice, class TStencil>
+inline double CollisionBase<TLattice,TStencil>::computeGammaFirstOrder(const double* velocity, int idx) {
+    
+    return TStencil::Weights[idx] * (1.0 + computeVelocityFactorFirstOrder(velocity, idx)); 
 
 };
 
@@ -587,6 +598,24 @@ inline double CollisionBase<TLattice,TStencil>::computeVelocityFactor(const doub
     return (ci_dot_velocity) / TStencil::Cs2
            + (ci_dot_velocity * ci_dot_velocity) / (2.0 * TStencil::Cs2 * TStencil::Cs2) //Return velocity factor
            - (velocity_dot_velocity) / (2.0 * TStencil::Cs2);
+
+};
+
+template<class TLattice, class TStencil>
+inline double CollisionBase<TLattice,TStencil>::computeVelocityFactorFirstOrder(const double* velocity, int idx) {
+
+    double ci_dot_velocity = (TStencil::Ci_x[idx] * velocity[0]);
+
+    if constexpr (TStencil::D > 1) {
+        ci_dot_velocity += (TStencil::Ci_y[idx] * velocity[1]); //Dot product of Ci (discrete velocity)
+                                                                    //vector and velocity
+    }
+    if constexpr (TStencil::D > 2) {
+        ci_dot_velocity += (TStencil::Ci_z[idx] * velocity[2]); //Dot product of Ci (discrete velocity)
+                                                                    //vector and velocity
+    }
+
+    return (ci_dot_velocity) / TStencil::Cs2;
 
 };
 

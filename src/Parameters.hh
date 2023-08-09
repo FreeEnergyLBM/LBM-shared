@@ -28,11 +28,11 @@ struct Distribution_Base { //Distribution base class
 
     }
 
+    inline void saveEquilibriums(const double* equilibrium, int k) {}
+
     /**
     * \brief Returns the opposite index at the chosen index (Rotation by 180 degrees).
     */
-
-    inline void saveEquilibriums(const double* equilibrium, int k);
 
     int ma_Opposites[TStencil::Q]; //!<Array containing the opposite indices at each index (rotated by 180 degrees).
 
@@ -45,6 +45,7 @@ struct Distribution_Base { //Distribution base class
     std::vector<double> mv_Distribution; //Vector that will store the distribution information
     std::vector<double> mv_OldDistribution; //Possibly unused vector storing the old distributions (at t_old=t_new-1)
                                        //This is required in the collision step
+    std::vector<int> mv_EquilibriumDistribution;
     std::vector<int>& mv_DistNeighbors; //Reference to vector containing neighbor information
     inline std::vector<double>& getDistribution() { //Get a vector containing the distributions
 
@@ -93,6 +94,30 @@ struct Distribution_Base { //Distribution base class
     inline double& getDistributionOld(const int k) {
 
         return mv_OldDistribution[k];
+
+    }
+    inline std::vector<double>& getEquilibrium() { //Get a vector containing the distributions
+
+        return mv_Distribution;
+
+    }
+    inline const double* getEquilibriumPointer(const int k) const { //Get a constant pointer to the the distribution at
+                                                             //lattice point k and pointing in direction 0
+        return &mv_Distribution[k *TStencil::Q];
+    }
+    inline double* getEquilibriumPointer(const int k) { //Get a pointer to the the distribution at
+                                                 //lattice point k and pointing in direction 0
+        return &mv_Distribution[k *TStencil::Q];
+
+    }
+    inline const double& getEquilibrium(const int idx) const { //Get const distribution value at a given index
+
+        return mv_Distribution[idx];
+
+    }
+    inline double& getEquilibrium(const int idx) { //Get distribution value at a given index
+
+        return mv_Distribution[idx];
 
     }
 
@@ -146,6 +171,7 @@ class ParameterSingleton {
 
     public:
         static constexpr int instances=TNumPrefactor;
+        using ParamType = T;
 
         template<int num=1>
         constexpr static auto idxlambda = [](int idx){return (instances>1) ? idx : (num>1)*idx;};
@@ -248,17 +274,19 @@ class ParameterSingleton {
 
         }
 
+
         template<class TLattice, int TNum=1, int idx1=0, int idx2=0>
         static void set(T (*condition)(const int)) {
 
             for(int k = TLattice::HaloSize; k < TLattice::N-TLattice::HaloSize; k++) {
-
+                
                 if constexpr(idx2==0) initialise<TLattice,TNum>(condition(k),k,idx1);
                 else initialise<TLattice,TNum>(condition(k),k,idx1,idx2);
 
             }
 
         }
+
 
 
         template<class TLattice, int TNum=1, int idx1=0, int idx2=0>
@@ -323,7 +351,7 @@ inline void Parameter<TObj, TLattice, T, TNum>::Save(std::string filename, int t
 
     MPI_File_open(MPI_COMM_SELF, fdump, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh); //Open the file using mpi in write only mode
     
-    MPI_File_seek(fh, sizeof(double) * mpi.rank * mNum * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size, MPI_SEEK_SET); //Skip to a certain location in the file, currently
+    MPI_File_seek(fh, sizeof(typename TObj::ParamType) * mpi.rank * mNum * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size, MPI_SEEK_SET); //Skip to a certain location in the file, currently
     
     MPI_File_write(fh,&mv_Parameter[TLattice::HaloSize * mNum], mNum * (TLattice::N - 2 * TLattice::HaloSize), MPI_DOUBLE, MPI_STATUSES_IGNORE);
 
@@ -333,11 +361,14 @@ inline void Parameter<TObj, TLattice, T, TNum>::Save(std::string filename, int t
 
     std::ofstream fs(fdump, std::ios::out | std::ios::binary);
     
-    fs.seekp(sizeof(double) * mpi.rank * mNum * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size);
+    fs.seekp(sizeof(typename TObj::ParamType) * mpi.rank * mNum * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size);
 
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { 
 
-        for(int idx = 0; idx < mNum; idx++) fs.write((char *)(&mv_Parameter[k * mNum + idx]), sizeof(double));
+        for(int idx = 0; idx < mNum; idx++) {
+            //std::cout<<*(char *)(&mv_Parameter[k * mNum + idx])<<std::endl;
+            fs.write((char *)(&mv_Parameter[k * mNum + idx]), sizeof(typename TObj::ParamType));
+        }
         
     };
 
@@ -413,7 +444,14 @@ struct Velocity : public ParameterSingleton<Velocity<TInstances>, double, TInsta
     
     static constexpr char mName[] = "Velocity";
 
-}; //Velocity, with directions D corresponding to the number of cartesian directions in the stencilUw
+}; //Velocity, with directions D corresponding to the number of cartesian directions in the stencil
+
+template<int TInstances=1>
+struct VelocityOld : public ParameterSingleton<VelocityOld<TInstances>, double, TInstances> {
+    
+    static constexpr char mName[] = "VelocityOld";
+
+};
 
 template<int TInstances=1>
 struct Density : public ParameterSingleton<Density<TInstances>, double, TInstances> {
@@ -442,6 +480,34 @@ struct ChemicalPotential : public ParameterSingleton<ChemicalPotential<TInstance
     static constexpr char mName[] = "ChemicalPotential";
 
 }; //Chemical potential for the multicomponent model
+
+template<int TInstances=1>
+struct OrderParameterOld : public ParameterSingleton<OrderParameterOld<TInstances>, double, TInstances> {
+
+    static constexpr char mName[] = "OrderParameterOld";
+
+};
+
+template<int TInstances=1>
+struct Humidity : public ParameterSingleton<Humidity<TInstances>> {
+
+    static constexpr char mName[] = "Humidity";
+
+};
+
+template<int TInstances=1>
+struct HumidityOld : public ParameterSingleton<HumidityOld<TInstances>> {
+
+    static constexpr char mName[] = "HumidityOld";
+
+};
+
+template<int TInstances=1>
+struct MassSink : public ParameterSingleton<MassSink<TInstances>> {
+
+    static constexpr char mName[] = "MassSink";
+
+};
 
 template<class TObj, int TInstances = 1>
 struct Laplacian : public ParameterSingleton<Laplacian<TObj,TInstances>,double,TInstances> {
@@ -508,6 +574,13 @@ struct GradientPressure : public Gradient<Pressure<TInstances>,TInstances> {
 }; //Directional first order gradients of the order parameter
 
 template<int TInstances = 1>
+struct GradientHumidity : public Gradient<Humidity<TInstances>,TInstances> {
+
+    static constexpr char mName[]="GradientHumidity";
+
+};
+
+template<int TInstances = 1>
 struct MixedGradientOrderParameter : public GradientMixed<OrderParameter<TInstances>,TInstances> {
 
     static constexpr char mName[]="MixedGradientOrderParameter";
@@ -529,8 +602,8 @@ struct MixedGradientPressure : public GradientMixed<Pressure<TInstances>,TInstan
 }; //Directional first order gradients of the order parameter
 
 template<int TInstances = 1>
-struct SolidLabels : public ParameterSingleton<SolidLabels<TInstances>,int,TInstances> {
-    static constexpr char mName[] = "SolidLabels";
+struct BoundaryLabels : public ParameterSingleton<BoundaryLabels<TInstances>,int,TInstances> {
+    static constexpr char mName[] = "BoundaryLabels";
 }; //Labelling of geometry
 
 template<int TInstances = 1>

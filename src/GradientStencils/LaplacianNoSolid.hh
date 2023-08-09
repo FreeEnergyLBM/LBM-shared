@@ -26,7 +26,7 @@ inline double LaplacianCentralNoSolid::compute(const int direction, const int k,
 
     for (int idx = 1; idx <Stencil::Q; idx++) {
 
-            if(!Geometry<Lattice>::isSolid(data.getNeighbor(k, idx))) {
+            if(Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))!=1) {
 
                 laplaciansum +=  Stencil::Weights[idx] * 2 * (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num) - TParameter::template get<Lattice>(k, num));
 

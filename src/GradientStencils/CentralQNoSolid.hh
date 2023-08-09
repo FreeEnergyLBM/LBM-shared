@@ -22,17 +22,17 @@ inline double CentralQNoSolid::compute(const int direction, const int k, int num
 
     DataType& data = DataType::getInstance();
 
-    if ((Geometry<Lattice>::isSolid(data.getNeighbors()[k * Stencil::Q + direction]))) {
+    if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + direction])==1)) {
 
         return 0.5 * (TParameter::template get<Lattice>(k, num) - TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
 
     }
-    else if ((Geometry<Lattice>::isSolid(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]))) {
+    else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)) {
 
         return 0.5 * (TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q+direction], num)-TParameter::template get<Lattice>(k, num));
 
     }
-    else if ((Geometry<Lattice>::isSolid(data.getNeighbors()[k * Stencil::Q + direction])) && (Geometry<Lattice>::isSolid(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]))) {
+    else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + direction])==1) && (Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)) {
 
         return 0;
 

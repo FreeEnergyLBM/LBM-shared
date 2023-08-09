@@ -8,7 +8,7 @@ struct MixedXYZNoSolid : GradientBase<Cartesian> {
     static inline double compute(const int direction, const int k, int num = 0);
 
     template<class TObj>
-    using GradientType = Gradient<TObj,TObj::instances>;
+    using GradientType = GradientMixed<TObj,TObj::instances>;
     
 };
 
@@ -26,20 +26,20 @@ inline double MixedXYZNoSolid::compute(const int direction, const int k, int num
 
     for (int idx = 1; idx < Stencil::Q; idx++) {
 
-        if ((Geometry<Lattice>::isSolid(data.getNeighbors()[k * Stencil::Q + direction]))) {
+        if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + direction])==1)) {
 
             gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(idx)[idx] * 0.25 * (2 *  TParameter::template get<Lattice>(k, num)
                                                                                        - 2 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
 
         }
-        else if ((Geometry<Lattice>::isSolid(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]]))) {
+        else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]] * Stencil::Q + Stencil::Opposites[direction]])==1)) {
 
             gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(idx)[idx] * 0.25 * (4 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q+  direction], num) 
                                                                                        - 3 * TParameter::template get<Lattice>(k, num)
                                                                                        - TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
 
         }
-        else if ((Geometry<Lattice>::isSolid(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]))) {
+        else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)) {
 
             gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(idx)[idx] * 0.25 * (- TParameter::template get<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction]
                                                                                                                                                 * Stencil::Q + direction], num)
@@ -47,8 +47,8 @@ inline double MixedXYZNoSolid::compute(const int direction, const int k, int num
                                                                                        - 4 * TParameter::template get<Lattice>(k, num));
 
         }
-        else if ((!Geometry<Lattice>::isSolid(data.getNeighbors()[k * Stencil::Q + direction]))
-                || (!Geometry<Lattice>::isSolid(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]))) {
+        else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + direction])!=1)
+                || (Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])!=1)) {
 
             gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(idx)[idx] * 0.25 * (- TParameter::template get<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction]
                                                                                                                                                 * Stencil::Q+  direction], num)

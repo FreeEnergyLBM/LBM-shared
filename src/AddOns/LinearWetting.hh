@@ -45,14 +45,14 @@ inline void LinearWetting::compute(int k) {
 
     using data = Data_Base<Lattice, Stencil>;
 
-    if (Geometry<Lattice>::isSolid(k)) {
+    if (Geometry<Lattice>::isBoundary(k)) {
         
         double wettingsum = 0;
         int count = 0;
 
         for (int idx = 0; idx < Stencil::Q; idx++) {
                 
-            if (!Geometry<Lattice>::isSolid(data::getInstance().getNeighbors()[k * Stencil::Q + idx])) {
+            if (!Geometry<Lattice>::isBoundary(data::getInstance().getNeighbors()[k * Stencil::Q + idx])) {
 
                 wettingsum += mPrefactor * mOmega + OrderParameter<>::get<Lattice>(data::getInstance().getNeighbors()[k * Stencil::Q + idx]);
                 count++;

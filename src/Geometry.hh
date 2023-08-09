@@ -2,8 +2,6 @@
 #include<map>
 #include "Parameters.hh"
 #include "Service.hh"
-#include "Lattice.hh"
-#include "Global.hh"
 
 /**
  * \file Geometry.hh
@@ -35,9 +33,9 @@ class Geometry {
          * \param k Index of current TLattice point.
          * \return True if TLattice point lies on a solid
          */
-        static inline bool isSolid(int k);
+        static inline bool isBoundary(int k);
 
-        static inline int getBoundaryType(int k);
+        static inline int& getBoundaryType(int k);
 
     private:
 
@@ -83,14 +81,15 @@ inline bool Geometry<TLattice>::isPeriodic(int k) {
  *          modification to the source file is needed. Returns true if current TLattice point is a solid.
  */
 template<class TLattice>
-inline bool Geometry<TLattice>::isSolid(int k) {
+inline bool Geometry<TLattice>::isBoundary(int k) {
 
-    return SolidLabels<>::get<TLattice>(k);
+    return (BoundaryLabels<>::get<TLattice>(k)!=0);
 
 }
 
-template <class lattice>
-inline int Geometry<lattice>::getBoundaryType(int k)
-{
-    return SolidLabels<>::get<lattice>(k);
+template<class TLattice>
+inline int& Geometry<TLattice>::getBoundaryType(int k) {
+
+    return BoundaryLabels<>::get<TLattice>(k);
+
 }

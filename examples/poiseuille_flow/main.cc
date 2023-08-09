@@ -35,7 +35,7 @@ int main(int argc, char **argv){
     model.getForce<BodyForce<>>().setMagnitudeX(force);
 
     // Define the solid using the function above
-    SolidLabels<>::set<Lattice>(initSolid);
+    BoundaryLabels<>::set<Lattice>(initSolid);
 
     // Set up the handler object for saving data
     ParameterSave<Lattice> saver("data/");
@@ -48,7 +48,7 @@ int main(int argc, char **argv){
     for (int timestep=0; timestep<=timesteps; timestep++) {
         if (timestep%saveInterval==0) {
             // Use the save handler to save the solid and the velocity
-            saver.SaveParameter<SolidLabels<>>(timestep);
+            saver.SaveParameter<BoundaryLabels<>>(timestep);
             saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
             std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
         }

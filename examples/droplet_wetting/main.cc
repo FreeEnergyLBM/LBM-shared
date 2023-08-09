@@ -62,7 +62,7 @@ int main(int argc, char **argv){
     componentSeparationModel.setTau2(0.51);
 
     // Define the solid using the function above
-    SolidLabels<>::set<Lattice>(initSolid);
+    BoundaryLabels<>::set<Lattice>(initSolid);
 
     // Initialise the liquid and gas using the function above
     OrderParameter<>::set<Lattice>(initFluid);
@@ -78,7 +78,7 @@ int main(int argc, char **argv){
     for (int timestep=0; timestep<=timesteps; timestep++) {
         if (timestep%saveInterval==0) {
             std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
-            saver.SaveParameter<SolidLabels<>>(timestep);
+            saver.SaveParameter<BoundaryLabels<>>(timestep);
             saver.SaveParameter<OrderParameter<>>(timestep);
             saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }

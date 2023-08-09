@@ -710,8 +710,16 @@ struct ct_map_types<kv<TKey, TValue>, TRest...>
         static inline constexpr auto findVal(){
           static_assert(sizeof...(TRest)!=0||std::is_same<typename std::remove_reference<TKKey>::type, typename std::remove_reference<TKey>::type>::value, "Key does not exist in map.");
           if constexpr (sizeof...(TRest)!=0){
-            typename std::conditional_t<(std::is_same<TKKey, TKey>::value),typename kv_types<TKey, TValue>::Type,typename ct_map_types<TRest...>::template get<TKKey>::Type> val = {};
-            return val;
+            if constexpr (std::is_same<TKKey, TKey>::value){
+              typename kv_types<TKey, TValue>::Type val = {};
+              return val;
+            }
+            else{
+              typename ct_map_types<TRest...>::template get<TKKey>::Type val = {};
+              return val;
+            }
+            //typename std::conditional_t<(std::is_same<TKKey, TKey>::value),typename kv_types<TKey, TValue>::Type,typename ct_map_types<TRest...>::template get<TKKey>::Type> val = {};
+            //return val;
           }
           else {
             typename kv_types<TKey, TValue>::Type val = {};

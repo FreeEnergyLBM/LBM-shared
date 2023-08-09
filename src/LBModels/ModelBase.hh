@@ -37,10 +37,10 @@ class ModelBase { //Inherit from base class to avoid repetition of common
                                                       //calculations
     static_assert(std::is_base_of<StencilBase, typename TTraits::Stencil>(), "ERROR: invalid TStencil specified in TTraits class.");
     static_assert(TTraits::Stencil::D == TLattice::NDIM, "ERROR: The chosen TStencil must match the number of TLattice dimensions in the TLattice properties.");
-    static_assert(CheckBaseTemplate<ForceBase, typename TTraits::Forces>::value, "ERROR: At least one TForce chosen is not a TForce class.");
-    static_assert(CheckBase<AddOnBase, typename TTraits::PreProcessors>::value, "ERROR: At least one TPreProcessor chosen is not an addon class.");
-    static_assert(CheckBase<AddOnBase, typename TTraits::PostProcessors>::value, "ERROR: At least one TPostProcessor chosen is not an addon class.");
-    static_assert(CheckBase<BoundaryBase, typename TTraits::Boundaries>::value, "ERROR: At least one boundary condition chosen is not a boundary class.");
+    static_assert(CheckBaseTemplate<ForceBase, typename TTraits::Forces>::value, "ERROR: At least one TForce chosen is not a TForce class. The class must inherit from ForceBase.");
+    static_assert(CheckBase<AddOnBase, typename TTraits::PreProcessors>::value, "ERROR: At least one TPreProcessor chosen is not an addon class. The class must inherit from AddOnBase.");
+    static_assert(CheckBase<AddOnBase, typename TTraits::PostProcessors>::value, "ERROR: At least one TPostProcessor chosen is not an addon class.  The class must inherit from AddOnBase.");
+    static_assert(CheckBase<BoundaryBase, typename TTraits::Boundaries>::value, "ERROR: At least one boundary condition chosen is not a boundary class. The class must inherit from BoundaryBase.");
     public:
 
         ModelBase()
@@ -253,9 +253,13 @@ inline double ModelBase<TLattice, TTraits>::computeDensity(const double* distrib
 
     if constexpr(std::tuple_size<typename TTraits::Forces>::value != 0) {
 
-        return CollisionBase<TLattice,typename TTraits::Stencil>::computeZerothMoment(distribution) + std::apply([k](auto&... forces) {
+        return (CollisionBase<TLattice,typename TTraits::Stencil>::computeZerothMoment(distribution) + std::apply([k](auto&... forces) {
 
                 return (forces.template computeDensitySource<TTraits>(k) + ...);
+
+            }, mt_Forces)) * std::apply([k](auto&... forces) {
+
+                return (forces.template computeDensitySourceMultiplicative<TTraits>(k) * ...);
 
             }, mt_Forces);
 
@@ -479,17 +483,11 @@ inline void ModelBase<TLattice,TTraits>::boundaries() {
 
         if constexpr(std::tuple_size<typename TTraits::Boundaries>::value != 0) { //Check if there are any boundary
                                                                               //models
-            for (int idx = 0; idx <TTraits::Stencil::Q; idx++) {
-
-                if(mGeometry.isSolid(k) && !mGeometry.isSolid(mDistribution.streamIndex(k, idx))) {
-                    std::apply([this, k, idx](auto&... boundaries) {
-                        // Make this a sub function for readability
-                                (boundaries.template compute<TTraits>(this -> mDistribution, k, idx) , ...);
+            std::apply([this, k](auto&... boundaries) {
+                        
+                                (boundaries.template compute<TTraits>(this -> mDistribution, k) , ...); 
 
                     }, mt_Boundaries);
-                }
-
-            }
             
         }
 

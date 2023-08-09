@@ -60,7 +60,7 @@ int main(int argc, char **argv){
     OrderParameter<Lattice> orderparam;
     orderparam.set(fluidLocation, -1.0, 1.0); //Set fluid to -1 where the function we defined previously is true and 1.0 where it is false
 
-    SolidLabels<Lattice> solid;
+    BoundaryLabels<Lattice> solid;
     solid.set(solidLocation,true); //Set solid to true where the function we defined previously is true (false by default so don't need to specify this)
 
     //Algorithm that will combine the models and run them in order

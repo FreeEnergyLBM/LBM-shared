@@ -22,13 +22,19 @@ class ForceBase{
         inline double computeXYZ(int xyz, int k); //Return force at lattice point k in direction xyz
 
         template<class TTraits>
-        inline double computeQ(int Q, int k); //Return force at lattice point k in direction xyz
+        inline double computeQ(int Q, int k); //Return force at lattice point k in direction q
+
+        template<class TTraits>
+        inline double compute(int k);
 
         template<class TTraits>
         inline void precompute(int k); //Perform any neccessary computations before force is computed
 
         template<class TTraits>
         inline double computeDensitySource(int k); //Calculate any possible source/correction term for density
+
+        template<class TTraits>
+        inline double computeDensitySourceMultiplicative(int k); //Calculate any possible source/correction term for density
 
         template<class TTraits>
         inline double computeVelocitySource(int xyz, int k); //Calculate any possible source/correction term for
@@ -65,6 +71,14 @@ inline double ForceBase<TMethod>::computeQ(int Q, int k) {
 
 template<class TMethod>
 template<class TTraits>
+inline double ForceBase<TMethod>::compute(int k) {
+
+    return 0;
+
+}
+
+template<class TMethod>
+template<class TTraits>
 inline void ForceBase<TMethod>::precompute(int k) { //Not necessary
     
 }
@@ -80,6 +94,14 @@ template<class TTraits>
 inline double ForceBase<TMethod>::computeDensitySource(int k) { //Not necessary
 
     return 0.0;
+
+}
+
+template<class TMethod>
+template<class TTraits>
+inline double ForceBase<TMethod>::computeDensitySourceMultiplicative(int k) { //Not necessary
+
+    return 1.0;
 
 }
 
