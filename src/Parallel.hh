@@ -42,6 +42,12 @@ class Parallel {
         template<class TLattice, class TDistribution>
         inline void communicateDistribution(TDistribution& obj);
 
+        template<class TLattice, class TDistribution>
+        inline void communicateDistributionAll(TDistribution& obj);
+
+        template<class TLattice, class TDistribution>
+        inline void communicateDistributionAllOld(TDistribution& obj);
+
     protected:
         int mMaxNeighbors = 0;
         std::vector<int> mNeighbors; //!<IDs of the neighboring processes.
@@ -143,7 +149,73 @@ inline void Parallel<TDerived,TNumNeighbors>::communicateDistribution(TDistribut
     #endif
 }
 
+template<class TDerived, int TNumNeighbors>
+template<class TLattice, class TDistribution>
+inline void Parallel<TDerived,TNumNeighbors>::communicateDistributionAll(TDistribution& obj) {
 
+    #ifdef MPIPARALLEL
+    if (mpi.size == 1) return;
+
+    using Stencil = typename TDistribution::Stencil;
+
+    #pragma omp master
+    {
+    int nNeighbors = mNeighbors.size();
+    MPI_Request commrequest[2*nNeighbors];
+
+    for (int iNeighbor=0; iNeighbor<nNeighbors; iNeighbor++) {
+        int tag = iNeighbor;
+        MPI_Isend(&obj.mv_Distribution[mI0Send[iNeighbor]*Stencil::Q],
+                  TNumNeighbors * TLattice::LY * TLattice::LZ * Stencil::Q,
+                  mpi_get_type<double>(),
+                  mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor]);
+
+        tag = (iNeighbor%2==0) ? iNeighbor+1 : iNeighbor-1;
+        MPI_Irecv(&obj.mv_Distribution[mI0Recv[iNeighbor]*Stencil::Q],
+                  TNumNeighbors * TLattice::LY * TLattice::LZ * Stencil::Q,
+                  mpi_get_type<double>(),
+                  mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor+1]);
+    }
+
+    MPI_Waitall(2*nNeighbors, commrequest, MPI_STATUSES_IGNORE);
+    }
+    #endif
+
+}
+
+template<class TDerived, int TNumNeighbors>
+template<class TLattice, class TDistribution>
+inline void Parallel<TDerived,TNumNeighbors>::communicateDistributionAllOld(TDistribution& obj) {
+
+    #ifdef MPIPARALLEL
+    if (mpi.size == 1) return;
+
+    using Stencil = typename TDistribution::Stencil;
+
+    #pragma omp master
+    {
+    int nNeighbors = mNeighbors.size();
+    MPI_Request commrequest[2*nNeighbors];
+
+    for (int iNeighbor=0; iNeighbor<nNeighbors; iNeighbor++) {
+        int tag = iNeighbor;
+        MPI_Isend(&obj.mv_OldDistribution[mI0Send[iNeighbor]*Stencil::Q],
+                  TNumNeighbors * TLattice::LY * TLattice::LZ * Stencil::Q,
+                  mpi_get_type<double>(),
+                  mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor]);
+
+        tag = (iNeighbor%2==0) ? iNeighbor+1 : iNeighbor-1;
+        MPI_Irecv(&obj.mv_OldDistribution[mI0Recv[iNeighbor]*Stencil::Q],
+                  TNumNeighbors * TLattice::LY * TLattice::LZ * Stencil::Q,
+                  mpi_get_type<double>(),
+                  mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor+1]);
+    }
+
+    MPI_Waitall(2*nNeighbors, commrequest, MPI_STATUSES_IGNORE);
+    }
+    #endif
+
+}
 
 /**
  * \brief NoParallel is a dummy implementation of Parallel that does not split the lattice or perform any communication.

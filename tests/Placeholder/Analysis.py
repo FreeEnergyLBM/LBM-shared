@@ -36,6 +36,7 @@ for t in range(tstart,tend+1,tinc):
     t_file =t+t_zero
 
     file_name = "data/"+"Humidity_t%li.mat"%t_file
+    #file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
 
     File = open(file_name, 'rb')
     
@@ -67,6 +68,7 @@ for t in range(tstart,tend+1,tinc):
         (xk,yk,zk) = coord_k(k,LY,LZ)
         #rho0[xk,yk,zk] = struct.unpack('=d', File3.read(8))[0]
         rho[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
+        #rho[xk,yk,zk] = struct.unpack('=i', File.read(4))[0]
         #struct.unpack('=d', File.read(8))[0]
         #rho2[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
         #rho4[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
@@ -106,5 +108,5 @@ for t in range(tstart,tend+1,tinc):
 
 
 plt.figure()
-plt.plot(rho[int(LX/2),:,0])
+plt.plot(rho[:,int(LY/2),0])
 plt.savefig("test.png", dpi=200, format='png')

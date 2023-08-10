@@ -9,8 +9,8 @@
 const int lx = 100; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 
-const int timesteps = 300000; // Number of iterations to perform
-const int saveInterval = 10000; // Interval to save global data
+const int timesteps = 10000; // Number of iterations to perform
+const int saveInterval = 1000; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
@@ -34,6 +34,7 @@ int initBoundary(const int k) {
     
     if (yy <= 1 || yy >= ly - 2 || xx <= 1 || xx >= lx - 2) return 1;
     else if(sqrt(rr2)<RADIUS) return 5;
+    //else if (xx < lx/2.-0.6) return 5;
     else return 0;
 }
 
@@ -43,6 +44,7 @@ double initFluid(const int k) {
     double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - lx/2.) * (yy - lx/2.);
     //return 0.25*((double)rand()/(double)RAND_MAX);
     return 0.5-0.5*tanh(2*(sqrt(rr2)-RADIUS)/(sqrt(8*kappa/A)));
+    //return 0.5-0.5*tanh(2*((xx - lx/2.+0.6))/(sqrt(8*kappa/A)));
     //if(sqrt(rr2)<RADIUS) return 1;
     //else return 0;
 }
@@ -52,7 +54,8 @@ double initHumidity(int k) {
     int yy = computeY(ly, 1, k);
     double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - lx/2.) * (yy - lx/2.);
     //return 0.25*((double)rand()/(double)RAND_MAX);
-    if(sqrt(rr2)<RADIUS) return 0.5;
+    if(sqrt(rr2)<RADIUS) return 0.8;
+    //if (xx < lx/2.-0.6) return 0.8;
     else return 0;
     //int yy = computeY(ly, 1, k);
     //return 0.5*tanh(2*(yy-3*ly/4)/(D))-0*0.5*tanh(2*(yy-ly)/(D))+0.5-0*0.5*tanh(2*(yy)/(D));
@@ -95,6 +98,37 @@ double initFluid3(int k) {
     return 0.5*tanh(2*(yy-ly/4)/(D))-0.5*tanh(2*(yy-ly/2)/(D));
 }
 */
+
+using traithumid = DefaultTraitHumidity<Lattice>::SetStencil<D2Q9>;
+
+double distancefunc(int idx, int k){
+
+    using Stencil = typename traithumid::Stencil;
+
+    double normaldist = -0.5*sqrt(8*kappa/A)*atanh((OrderParameter<>::get<Lattice>(k)-0.5)/0.5);
+    double* gradorderparam = GradientOrderParameter<>::getAddress<Lattice,Lattice::NDIM>(k,0);
+    //float_or_double magnitudegradient = sqrt(pow(gradorderparam[0], 2) + pow(gradorderparam[1], 2)+pow(gradorderparam[2], 2));
+    std::vector<double> normal;
+    if constexpr (Lattice::NDIM==1) normal = {-gradorderparam[0] / sqrt(pow(gradorderparam[0], 2))};
+    else if constexpr (Lattice::NDIM==2) normal = {-gradorderparam[0] / sqrt(pow(gradorderparam[0], 2) + pow(gradorderparam[1], 2)), -gradorderparam[1] / sqrt(pow(gradorderparam[0], 2) + pow(gradorderparam[1], 2))};
+    else normal = {-gradorderparam[0] / sqrt(pow(gradorderparam[0], 2) + pow(gradorderparam[1], 2)+pow(gradorderparam[2], 2)), -gradorderparam[1] / sqrt(pow(gradorderparam[0], 2) + pow(gradorderparam[1], 2)+pow(gradorderparam[2], 2)), -gradorderparam[2] / sqrt(pow(gradorderparam[0], 2) + pow(gradorderparam[1], 2)+pow(gradorderparam[2], 2))};
+    double normdotci=0;
+    double magci=0;
+    for (int xyz = 0; xyz<Lattice::NDIM; xyz++){
+        normdotci +=  normal[xyz] * Stencil::Ci_xyz(xyz)[idx];
+        magci += Stencil::Ci_xyz(xyz)[idx]*Stencil::Ci_xyz(xyz)[idx];
+    }
+
+    magci = sqrt(magci);
+    
+    double dist = fabs(normaldist * normdotci/magci/magci);
+    //if(dist == 0.6) std::cout<<k<<std::endl;
+    if (idx == 0 || std::isnan(dist) || std::isinf(dist)) return 0.5;
+    else if (dist>=1) return 0.99;
+    return dist;
+
+}
+
 int main(int argc, char **argv){
     mpi.init();
 
@@ -103,7 +137,7 @@ int main(int argc, char **argv){
     // We need to modify the traits of the navier stokes model to include a bodyforce and change the collision model to MRT, so that high viscosity contrasts produce accurate results.
     // We need to add a chemical potential calculator to one of the models too, given to the first NComponent model.
 
-    EvaporationHumidity<Lattice> humidity;
+    EvaporationHumidity<Lattice,traithumid> humidity;
     PressureLeeHumidity<Lattice> pressure;
     BinaryLeeHumidity<Lattice> binary;
 
@@ -115,14 +149,18 @@ int main(int argc, char **argv){
     binary.getPreProcessor<MassLossCalculator>().setInterfaceHumidity(0.8);
     binary.getPreProcessor<MassLossCalculator>().setDiffusivity(0.2);
 
-    humidity.getBoundary<Dirichlet,0>().setInterfaceID(6);
-    humidity.getBoundary<Dirichlet,0>().setInterfaceVal(0.8);
+    using dbtype = InterpolatedDirichlet;
 
-    humidity.getBoundary<Dirichlet,1>().setInterfaceID(5);
-    humidity.getBoundary<Dirichlet,1>().setInterfaceVal(0.8);
+    //humidity.getBoundary<InterpolatedDirichlet,0>().setInterfaceDistanceFunction(distancefunc);
+    //humidity.getBoundary<dbtype,0>().setInterfaceID(5);
+    //humidity.getBoundary<dbtype,0>().setInterfaceVal(0.8);
 
-    humidity.getBoundary<Dirichlet,2>().setInterfaceID(1);
-    humidity.getBoundary<Dirichlet,2>().setInterfaceVal(0.0);
+    humidity.getBoundary<InterpolatedDirichlet>().setInterfaceDistanceFunction(distancefunc);
+    humidity.getBoundary<dbtype>().setInterfaceID(5);
+    humidity.getBoundary<dbtype>().setInterfaceVal(0.8);
+
+    humidity.getBoundary<Dirichlet>().setInterfaceID(1);
+    humidity.getBoundary<Dirichlet>().setInterfaceVal(0.0);
 
     humidity.setDiffusivity(0.2);
 
@@ -139,6 +177,7 @@ int main(int argc, char **argv){
     // Define the solid and fluid using the functions above
     BoundaryLabels<>::set<Lattice>(initBoundary);
     OrderParameter<>::set<Lattice>(initFluid);
+    OrderParameterOld<>::set<Lattice>(initFluid);
     Humidity<>::set<Lattice>(initHumidity);
 
     // Algorithm creates an object that can run our chosen LBM model
@@ -148,6 +187,7 @@ int main(int argc, char **argv){
     
     //Algorithm lbm(humidity,pressure,binary);
     Algorithm lbm(binary,humidity);
+    //Algorithm lbm(humidity);
 
     // Perform the main LBM loop
     for (int timestep=0; timestep<=timesteps; timestep++) {

@@ -77,6 +77,12 @@ class ModelBase { //Inherit from base class to avoid repetition of common
         template<class TTupleType>
         inline void communicatePostprocessTuple(TTupleType& tup);
 
+        template<class TTupleType>
+        inline void communicatePrecomputeBoundaries(TTupleType& tup);
+
+        template<class TTupleType>
+        inline void communicatePostprocessBoundaries(TTupleType& tup);
+
         inline virtual void collide() = 0; //Collision step
 
         inline virtual void boundaries(); //Boundary calculation
@@ -345,6 +351,7 @@ inline void ModelBase<TLattice,TTraits>::precompute() {
   
     communicateTuple(mt_PreProcessors);
     communicatePrecomputeTuple(mt_Forces);
+    communicatePrecomputeBoundaries(mt_Boundaries);
 
     #pragma omp master
     {
@@ -457,6 +464,44 @@ inline void ModelBase<TLattice,TTraits>::communicatePostprocessTuple(TTupleType&
 }
 
 template<class TLattice, class TTraits>
+template<class TTupleType>
+inline void ModelBase<TLattice,TTraits>::communicatePrecomputeBoundaries(TTupleType& tup) {
+
+    communicatePrecomputeTuple(mt_Boundaries);
+
+    if constexpr(std::tuple_size<TTupleType>::value != 0){ //Check if there is at least one element
+                                                                        //in F
+
+        std::apply([this](auto&... obj){//See Algorithm.hh for explanation of std::apply
+
+            (obj.template communicatePrecompute<TTraits>(this -> mDistribution),...);
+
+        }, tup);
+
+    }
+    
+}
+
+template<class TLattice, class TTraits>
+template<class TTupleType>
+inline void ModelBase<TLattice,TTraits>::communicatePostprocessBoundaries(TTupleType& tup) {
+
+    communicatePostprocessTuple(mt_Boundaries);
+
+    if constexpr(std::tuple_size<TTupleType>::value != 0){ //Check if there is at least one element
+                                                                        //in F
+
+        std::apply([this](auto&... obj){//See Algorithm.hh for explanation of std::apply
+
+            (obj.template communicatePostProcess<TTraits>(this -> mDistribution),...);
+
+        }, tup);
+
+    }
+    
+}
+
+template<class TLattice, class TTraits>
 inline void ModelBase<TLattice,TTraits>::postprocess() {
 
     #pragma omp for schedule(guided)
@@ -472,6 +517,7 @@ inline void ModelBase<TLattice,TTraits>::postprocess() {
   
     communicateTuple(mt_PostProcessors);
     communicatePostprocessTuple(mt_Forces);
+    communicatePrecomputeBoundaries(mt_Boundaries);
     
 }
 

@@ -12,6 +12,12 @@ class BoundaryBase{
         template<class TTraits>
         inline void communicatePostProcess(){};
 
+        template<class TTraits, class TDistributionType>
+        inline void communicatePrecompute(TDistributionType& mDistribution){};
+
+        template<class TTraits, class TDistributionType>
+        inline void communicatePostProcess(TDistributionType& mDistribution){};
+
         template<class TTraits>
         inline void postprocess(int k){};
 

@@ -46,7 +46,10 @@ inline void Refill<TParam>::compute(TDistributionType& distribution, int k) {
 
     for (int idx = 0; idx < Stencil::Q; idx++) {
    
-        distribution.getDistributionPointer(k)[idx] = Stencil::Weights[idx] * avgparam * CollisionBase<Lattice,Stencil>::computeVelocityFactorFirstOrder(Velocity<>::getAddress<Lattice>(k,0), idx) + (distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] - distribution.getEquilibriumPointer(k)[distribution.getOpposite(idx)]);
+        double updatedist = Stencil::Weights[idx] * avgparam * CollisionBase<Lattice,Stencil>::computeVelocityFactorFirstOrder(Velocity<>::getAddress<Lattice>(k,0), idx) + (distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] - distribution.getEquilibriumPointer(k)[distribution.getOpposite(idx)]);
+
+        distribution.getDistributionPointer(k)[idx] = updatedist;
+        distribution.getDistributionOldPointer(k)[idx] = updatedist;
         
     }    
 
