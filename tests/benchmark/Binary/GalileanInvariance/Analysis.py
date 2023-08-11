@@ -1,82 +1,92 @@
-import os, math, re, sys
+#!/usr/bin/env python3
+
+import sys
+import math
 import struct
 import numpy as np
-import matplotlib.pyplot as plt
 
-HeaderFile = open("data/Header.mat", 'rb')
+radius = 20
+vel0 = [1e-3, 1e-3]
+tmax = 10000
 
-LX=struct.unpack('=i', HeaderFile.read(4))[0]
+error_criteria = 1e-2
 
-LY=struct.unpack('=i', HeaderFile.read(4))[0]
 
-LZ=struct.unpack('=i', HeaderFile.read(4))[0]
+def read_header(header):
+    with open(header, 'rb') as headerFile:
+        lx = struct.unpack('=i', headerFile.read(4))[0]
+        ly = struct.unpack('=i', headerFile.read(4))[0]
+        lz = struct.unpack('=i', headerFile.read(4))[0]
+        ndim = struct.unpack('=i', headerFile.read(4))[0]
+        tend = struct.unpack('=i', headerFile.read(4))[0]
+        tinc = struct.unpack('=i', headerFile.read(4))[0]
+    return {'lx':lx, 'ly':ly, 'lz':lz, 'ndim':ndim, 'tend':tend, 'tinc':tinc}
 
-ndim=struct.unpack('=i', HeaderFile.read(4))[0]
 
-t_zero = 0
-tstart = 0
+def read_file(filename, data):
+    with open(filename, 'rb') as file:
+        for i in range(data.size):
+            data.ravel()[i] = struct.unpack('=d', file.read(8))[0]
 
-tend = struct.unpack('=i', HeaderFile.read(4))[0]
-tinc = struct.unpack('=i', HeaderFile.read(4))[0]
 
-slicepos=0
+def load_phi(direc='data'):
+    info = read_header(direc+"/Header.mat")
+    times = np.arange(0, info['tend']+1, info['tinc'])
+    phi = np.zeros((len(times), info['lx'], info['ly'], info['lz']))
+    for it, t in enumerate(times):
+        read_file(direc+"/OrderParameter_t%li.mat"%t, phi[it])
+    return phi[:,:,:,0]
 
-sliceaxis=2
-if LY==1:
-    sliceaxis=1
-elif LX==1:
-    sliceaxis=0
 
-print(tend)
-outDirName = "figures"
-os.system("mkdir -p %s"%outDirName)
+def load_vel(direc='data'):
+    info = read_header(direc+"/Header.mat")
+    times = np.arange(0, info['tend']+1, info['tinc'])
+    vel = np.zeros((len(times), info['lx'], info['ly'], info['lz'], info['ndim']))
+    for it, t in enumerate(times):
+        read_file(direc+"/Velocity_t%li.mat"%t, vel[it])
+    return vel[:,:,:,0]
 
-for t in range(tstart,tend+1,tinc):
-    print("t=%s"%t)
-    t_file =t+t_zero
 
-    file_name = "data/"+"OrderParameter_t%li.mat"%t_file
+def plot(phi, vel=None, t=-1):
+    import matplotlib.pyplot as plt
+    plt.contourf(phi[t].T, cmap='Blues')
+    plt.colorbar()
+    plt.contour(phi[t].T, levels=0, colors='k')
+    if (vel is not None): plt.quiver(vel[t,:,:,0], vel[t,:,:,1])
+    plt.gca().set_aspect('equal')
+    plt.show()
 
-    File = open(file_name, 'rb')
-    file_name = "data/"+"Velocity_t%li.mat"%t_file
 
-    File2 = open(file_name, 'rb')
-    print(file_name)
+def compare_centre(phi):
+    c = 0.5 * (phi[-1] + 1)
+    lx = c.shape[0]
+    ly = c.shape[1]
+    x, y = np.mgrid[:lx, :ly]
+    dx = np.sum(x*c)/np.sum(c) - lx//2
+    dy = np.sum(y*c)/np.sum(c) - ly//2
+    dx_theory = vel0[0]*tmax
+    dy_theory = vel0[1]*tmax
+    relative_errorx = np.abs(dx - dx_theory) / dx_theory
+    relative_errory = np.abs(dy - dy_theory) / dy_theory
+    return max(relative_errorx, relative_errory)
 
-    def coord_k(k, LY, LZ):
-        """From a k value, determines its xk, yk, and zk."""    
 
-        xk = math.floor(k/(LY*LZ))
-        yk = math.floor((k - xk*LZ*LY)/LZ)
-        zk = k - xk*LZ*LY - yk*LZ
-        return xk, yk, zk
+def compare_vel(vel):
+    relative_errorx = np.abs(vel[-1,:,:,0] - vel0[0]) / vel0[0]
+    relative_errory = np.abs(vel[-1,:,:,1] - vel0[1]) / vel0[1]
+    return np.max([relative_errorx, relative_errory])
 
-    NLatt=LX*LY*LZ
-    rho = np.zeros((LX,LY,LZ))
-    v = np.zeros((LX,LY,LZ,ndim))
 
-    for k in range(0,NLatt,1):
-        (xk,yk,zk) = coord_k(k,LY,LZ)
-        rho[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
+phi = load_phi('data')
+vel = load_vel('data')
+# plot(phi, vel)
 
-        for i in range(ndim):
-            v[xk,yk,zk,i] = struct.unpack('=d', File2.read(8))[0]
-            #print(ndim)
+pos_error = compare_centre(phi)
+if (pos_error > error_criteria):
+    print(f'Error: Incorrect change in position (relative error, {pos_error:g} > {error_criteria:g})')
+    sys.exit(1)
 
-    
-    File.close()
-    
-    fig,ax=plt.subplots(1,1,figsize=(6,6))
-
-    output = "%s/component_plot_%012d.png"%(outDirName,t)
-
-    ax.imshow(np.flip(rho.take(indices=slicepos,axis=sliceaxis),0),interpolation='nearest',origin='upper')
-    #ax.imshow((v.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis)),interpolation='nearest',origin='upper')
-
-    step=1
-    X,Y=np.meshgrid(np.linspace(0,LX-1,int((LX)/step)),np.linspace(0,LY-1,int((LY)/step)))
-
-    ax.quiver(X.T,Y.T,v[:,:,:,0].take(indices=slicepos,axis=sliceaxis),v[:,:,:,3-sliceaxis].take(indices=slicepos,axis=sliceaxis),width=0.0005,headwidth=6.5,headlength=2.5)
-
-    plt.savefig(output, dpi=500, format='png')
-    plt.close(fig)
+vel_error = compare_vel(vel)
+if (vel_error > error_criteria):
+    print(f'Error: Incorrect velocities (relative error, {vel_error:g} > {error_criteria:g})')
+    sys.exit(1)

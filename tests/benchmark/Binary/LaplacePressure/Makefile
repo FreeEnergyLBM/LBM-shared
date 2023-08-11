@@ -1,30 +1,14 @@
+ROOT_DIR = ../../../..
+INC_DIR = $(ROOT_DIR)/src
+INC = $(addprefix -I, $(INC_DIR))
 
-INCS	=	
+CXX = mpicxx
+CXXFLAGS = -O3 -std=c++17 -Wall -DMPIPARALLEL -fopenmp -DMPIPARALLEL
 
-DEFS    =	   -g -O3 -Wno-deprecated -Wall -std=c++17 -I. -fopenmp -DMPIPARALLEL
+all: run.exe
 
-LIBS	=	-lm
-
-LIBPATH =
-
-COMP	=	 mpicxx
-
-DEPS    =       ../../../src/%.hh ../../../src/Extensions/%.hh ../../../src/GradientStencils%.hh ../../../src/LBModels/%.hh ../../../src/BoundaryModels/%.hh main.hh 
-
-OBJ     =       main.cc
-
-all: wetP 
-#all: wetS 
-
-%.o: %.cc $(DEPS)
-	$(COMP) -c -o $@ $<$(DEFS) $(LIBS)
-
-wetP: $(OBJ)
-	$(COMP) -o wetP $(OBJ)  $(INCS) $(DEFS) $(LIBPATH) $(LIBS)
-
-#wetS: $(OBJ)
-#	$(COMP) -o wetS $(OBJ)  $(INCS) $(DEFS) $(LIBPATH) $(LIBS)
+run.exe: main.cc
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(INC) $^ -lpthread -o $@
 
 clean:
-	rm -f *.o  wetP wetS wetS.exe *~ *.bak	
-
+	rm -f run.exe

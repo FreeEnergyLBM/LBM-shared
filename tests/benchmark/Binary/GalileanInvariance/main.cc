@@ -1,86 +1,62 @@
-#include <../../../../src/lbm.hh>
-#include <chrono>
-#include <iostream>
+#include <lbm.hh>
 
-//TODO
-//Swapping based streaming
-//BLAS
-//non-cuboid grid - sparse matrices
-//buffer size
-//adative mesh
-//floats
-//MPI object - get rid of ifdefs
-//Adjust parallelisation based on solid
-//template function to add forces
+// This script simulates a droplet with bulk fluid movement
 
-/**
- * \file main.cc
- * \brief This file is just used to run the LBM code and choose how to setup the simulation.
- *
- */
+const int timesteps = 10000; // Number of iterations to perform
+const int saveInterval = 10000; // Interval to save global data
 
-//Set up the lattice, including the resolution and data/parallelisation method
-const int LX = 100; //Size of domain in x direction
-const int LY = 100; //Size of domain in y direction
-using Lattice = LatticeProperties<DataOldNew, X_Parallel<1>, LX, LY>;
+const int lx = 60; // Size of domain in x direction
+const int ly = 60; // Size of domain in y direction
+const int radius = 20; // Droplet radius
 
-const int TIMESTEPS = 100000; //Number of iterations to perform
-const int SAVEINTERVAL = 100000; //Interval to save global data
 
-const int RADIUS=20; //Droplet radius
+using Lattice = LatticeProperties<DataOldNew, NoParallel, lx, ly>;
 
-//User defined function to define some fluid initialisation (optional)
-bool fluidLocation(const int k) {
 
-    int xx = computeXGlobal<Lattice>(k);
-    int yy = computeY(LY, 1, k);
-
-    const int rr2 = (xx - LX / 2) * (xx - LX / 2) + (yy - LY / 2) * (yy - LY / 2);
-    
-    if (rr2 < RADIUS*RADIUS) return true;
-    else return false;
-    
+double initFluid(const int k) {
+    int x = computeXGlobal<Lattice>(k);
+    int y = computeY(ly, 1, k);
+    int r2 = pow(x-lx/2, 2) + pow(y-ly/2, 2);
+    if (r2 < radius*radius) return 1;
+    else return -1;
 }
 
 //User defined function to define some fluid initialisation (optional)
 bool velocityLocation(const int k) {
-
     return true;
-    
 }
 
-int main(int argc, char **argv){
+int main(int argc, char **argv) {
     mpi.init();
 
-    //Chosen models
-    FlowFieldBinary<Lattice> Model1; //Flowfield (navier stokes solver) that can be used with the binary model (there are nuances with this model)
-    Binary<Lattice> Model2; //Binary model with hybrid equilibrium and forcing term
+    // Set up the model
+    FlowFieldBinary<Lattice> model1;
+    Binary<Lattice> model2;
 
-    OrderParameter<Lattice> orderparam;
-    orderparam.set(fluidLocation, -1.0, 1.0); //Set fluid to -1 where the function we defined previously is true and 1.0 where it is false
+    model2.getPreProcessor<ChemicalPotentialCalculatorBinary>().setA(0.001);
+    model2.getPreProcessor<ChemicalPotentialCalculatorBinary>().setKappa(0.001);
 
-    Velocity<Lattice> velocity;
-    velocity.set<x>(velocityLocation, 0.0001); //Set velocity in the x direction
-    velocity.set<y>(velocityLocation, 0.0001); //Set velocity in the y direction
-    
-    //Algorithm that will combine the models and run them in order
-    Algorithm LBM(Model1,Model2); //Create LBM object with the two models we have initialised
-    
-    //Saving class
-    ParameterSave<Lattice,Density,OrderParameter,Velocity> Saver("data/"); //Specify the lattice, the parameters you want to save and the  data directory
-    Saver.SaveHeader(TIMESTEPS,SAVEINTERVAL); //Save header with lattice information (LX, LY, LZ, NDIM (2D or 3D), TIMESTEPS, SAVEINTERVAL)
-    
-    LBM.initialise(); //Perform necessary initialisation for the models in LBM
-    
-    //Loop over timesteps
-    for (int timestep=0;timestep<=TIMESTEPS;timestep++) {
+    OrderParameter<>::set<Lattice>(initFluid);
 
-        if (timestep%SAVEINTERVAL==0) Saver.Save(timestep);
+    Velocity<>::set<Lattice,2,0>([](const int k){ return 0.001; });
+    Velocity<>::set<Lattice,2,1>([](const int k){ return 0.001; });
 
-        LBM.evolve(); //Evolve one timestep of the algorithm
-        
+    // Create save handler
+    ParameterSave<Lattice> saver("data/");
+    saver.SaveHeader(timesteps, saveInterval);
+
+    // Initialise
+    Algorithm lbm(model1, model2);
+
+    // Main loop
+    for (int timestep=0; timestep<=timesteps; timestep++) {
+        if (timestep%saveInterval==0) {
+          saver.SaveParameter<Density<>>(timestep);
+          saver.SaveParameter<OrderParameter<>>(timestep);
+          saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
+        }
+        lbm.evolve();
     }
-    
-    return 0;
 
+    return 0;
 }

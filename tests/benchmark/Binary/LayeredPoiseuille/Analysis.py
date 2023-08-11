@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 
+# This script compares the curvature of the velocity in the two layers
+# to the curvature that is expected based upon the force and viscosities
+
 import sys
 import math
 import struct
 import numpy as np
-import matplotlib.pyplot as plt
 
 force = 1e-6
-viscosity = 1/6
-ly = 50
-width = ly-4
+tau1 = 0.55
+tau2 = 1
 
-error_criteria = 1e-2
+error_criteria = 1e-1
 
 
 def read_file(filename, data):
@@ -36,19 +37,27 @@ def load_vel(direc='data'):
     return vel[:,0,2:-2,0,0]
 
 
-def poiseuille_profile(y):
-    return force / (2 * viscosity) * y * (width - y)
+def compare_curvature(vel):
+    vel1 = vel[:len(vel)//2]
+    vel2 = vel[len(vel)//2:]
+    curv1 = - np.diff(np.diff(vel1))
+    curv2 = - np.diff(np.diff(vel2))
+    visc1 = (tau1 - 0.5) / 3
+    visc2 = (tau2 - 0.5) / 3
+    curv1_theory = force / visc1
+    curv2_theory = force / visc2
+    relative_error1 = np.abs(curv1 - curv1_theory) / curv1_theory
+    relative_error2 = np.abs(curv2 - curv2_theory) / curv2_theory
+    return np.max([relative_error1, relative_error2])
 
-
-def compare_velocity(vel):
-    y = np.arange(0.5, len(vel))
-    vel_poiseuille = poiseuille_profile(y)
-    relative_error = np.abs(vel - vel_poiseuille) / vel_poiseuille
-    return np.max(relative_error)
-
+def plot(vel):
+    import matplotlib.pyplot as plt
+    plt.plot(vel[-1])
+    plt.show()
+    
 
 vel = load_vel('data')
-max_error = compare_velocity(vel[-1])
+max_error = compare_curvature(vel[-1])
 
 if (max_error > error_criteria):
     print(f'Error: Max relative error in velocity profile too large ({max_error:g} > {error_criteria:g})')
