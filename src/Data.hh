@@ -1,5 +1,4 @@
 #pragma once
-#include "Lattice.hh"
 #include "Parameters.hh"
 #include "Service.hh"
 

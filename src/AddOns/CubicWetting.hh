@@ -1,6 +1,7 @@
 #pragma once
 #include "../Parameters.hh"
 #include "../Lattice.hh"
+#include "../Geometry.hh"
 #include "AddOnBase.hh"
 #include <math.h>
 
@@ -40,14 +41,14 @@ inline void CubicWetting::compute(const int k) {
 
     const std::vector<int>& mv_Neighbors = data::getInstance().getNeighbors();
 
-    if (Geometry<Lattice>::getBoundaryType(k)==0) {
+    if (Geometry<Lattice>::getBoundaryType(k)==1) {
 
         double phiAvg = 0;
         int count = 0;
 
         for (int idx = 0; idx < Stencil::Q; idx++) {
 
-            if (Geometry<Lattice>::getBoundaryType(mv_Neighbors[k * Stencil::Q+idx])!=0) {
+            if (Geometry<Lattice>::getBoundaryType(mv_Neighbors[k * Stencil::Q+idx])!=1) {
 
                 phiAvg += OrderParameter<>::get<Lattice>(mv_Neighbors[k * Stencil::Q+idx]);
                 count++;

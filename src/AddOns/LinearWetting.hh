@@ -1,9 +1,9 @@
 #pragma once
 #include "../Parameters.hh"
+#include "../Geometry.hh"
 #include "AddOnBase.hh"
 #include<iostream>
 #include<math.h>
-
 
 class LinearWetting : public AddOnBase {
     public:
