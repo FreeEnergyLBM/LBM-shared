@@ -1,5 +1,4 @@
 #pragma once
-#include "Geometry.hh"
 #include "Lattice.hh"
 #include "Parameters.hh"
 #include "Service.hh"
@@ -52,8 +51,6 @@ class Data_Base{
 
         std::array<int,TStencil::Q> OppositeOffset; //!<Opposite TLattice point offset in each direction.
         
-        Geometry<TLattice> mGeometry; //!<Class containing geometry information (for periodic boundaries).
-
         std::vector<int> mv_Neighbors; //!<Vector containing neighbor information.
 
         enum{ x = 0, y = 1, z = 2 }; //!<Indices corresponding to x, y, z.
@@ -246,7 +243,7 @@ inline void Data_Base<TLattice,TStencil>::generateNeighbors() { //Loop over all 
         
         for(int q = 0; q < TStencil::Q; q++) {
 
-            if(!mGeometry.isPeriodic(k)) { //If not periodic
+            if(!isPeriodic<TLattice>(k)) { //If not periodic
 
                 mv_Neighbors[k*TStencil::Q + q] = getOneNeighbor(k, q);
                 

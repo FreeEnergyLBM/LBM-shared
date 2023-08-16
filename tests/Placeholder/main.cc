@@ -19,20 +19,19 @@ const int saveInterval = 1000; // Interval to save global data
 
 double RADIUS = 15.0;
 
-
 double A = 0.00025;
 double kappa = 0.0005;
 
-using Lattice = LatticeProperties<DataOldNewEquilibrium, X_Parallel<2>, lx, ly>;
+using Lattice = LatticeProperties<DataOldNewEquilibrium, NoParallel, lx, ly>;
 
 // Function used to define the solid geometry
 // Here we set a solid at the top and bottom, in the conditions that return 1;
 int initBoundary(const int k) {
     int xx = computeXGlobal<Lattice>(k);
     int yy = computeY(ly, 1, k);
-    double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - lx/2.) * (yy - lx/2.);
+    double rr2 = (xx - lx/2. - 0.5) * (xx - lx/2. - 0.5) + (yy - lx/2. - 0.5) * (yy - lx/2. - 0.5);
     
-    if (yy <= 1 || yy >= ly - 2 || xx <= 1 || xx >= lx - 2) return 1;
+    if (yy <= 0 || yy >= ly - 1 || xx <= 0 || xx >= lx - 1) return 4;
     else if(sqrt(rr2)<RADIUS) return 5;
     //else if (xx < lx/2.-0.6) return 5;
     else return 0;
@@ -100,6 +99,7 @@ double initFluid3(int k) {
 */
 
 using traithumid = DefaultTraitHumidity<Lattice>::SetStencil<D2Q9>;
+using traitpressure = DefaultTraitPressureLeeHumidity<Lattice> :: template AddBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>;
 
 double distancefunc(int idx, int k){
 
@@ -116,10 +116,8 @@ double distancefunc(int idx, int k){
     double magci=0;
     for (int xyz = 0; xyz<Lattice::NDIM; xyz++){
         normdotci +=  normal[xyz] * Stencil::Ci_xyz(xyz)[idx];
-        magci += Stencil::Ci_xyz(xyz)[idx]*Stencil::Ci_xyz(xyz)[idx];
+        magci += Stencil::Ci_xyz(xyz)[idx] * Stencil::Ci_xyz(xyz)[idx];
     }
-
-    magci = sqrt(magci);
     
     double dist = fabs(normaldist * normdotci/magci/magci);
     //if(dist == 0.6) std::cout<<k<<std::endl;
@@ -130,7 +128,7 @@ double distancefunc(int idx, int k){
 }
 
 int main(int argc, char **argv){
-    mpi.init();
+    //mpi.init();
 
     // Set up the lattice, including the resolution and data/parallelisation method
     
@@ -138,7 +136,7 @@ int main(int argc, char **argv){
     // We need to add a chemical potential calculator to one of the models too, given to the first NComponent model.
 
     EvaporationHumidity<Lattice,traithumid> humidity;
-    PressureLeeHumidity<Lattice> pressure;
+    PressureLeeHumidity<Lattice,traitpressure> pressure;
     BinaryLeeHumidity<Lattice> binary;
 
    // BinaryLee<Lattice> binary;
@@ -155,7 +153,7 @@ int main(int argc, char **argv){
     //humidity.getBoundary<dbtype,0>().setInterfaceID(5);
     //humidity.getBoundary<dbtype,0>().setInterfaceVal(0.8);
 
-    humidity.getBoundary<InterpolatedDirichlet>().setInterfaceDistanceFunction(distancefunc);
+    //humidity.getBoundary<InterpolatedDirichlet>().setInterfaceDistanceFunction(distancefunc);
     humidity.getBoundary<dbtype>().setInterfaceID(5);
     humidity.getBoundary<dbtype>().setInterfaceVal(0.8);
 
@@ -170,12 +168,14 @@ int main(int argc, char **argv){
     humidity.getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setInterfaceHumidity(0.8);
 
     pressure.getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setInterfaceHumidity(0.8);
+    pressure.getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setPressureCalculator(pressure.computePressure);
+    pressure.getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setForceTuple(pressure.mt_Forces);
 
     ParameterSave<Lattice> saver("data/");
     saver.SaveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)
 
     // Define the solid and fluid using the functions above
-    BoundaryLabels<>::set<Lattice>(initBoundary);
+    Geometry<Lattice>::initialiseBoundaries(initBoundary);
     OrderParameter<>::set<Lattice>(initFluid);
     OrderParameterOld<>::set<Lattice>(initFluid);
     Humidity<>::set<Lattice>(initHumidity);
@@ -186,7 +186,7 @@ int main(int argc, char **argv){
     // Set up the handler object for saving data
     
     //Algorithm lbm(humidity,pressure,binary);
-    Algorithm lbm(binary,humidity);
+    Algorithm lbm(binary,pressure,humidity);
     //Algorithm lbm(humidity);
 
     // Perform the main LBM loop
@@ -199,9 +199,11 @@ int main(int argc, char **argv){
             saver.SaveParameter<Humidity<>>(timestep);
             saver.SaveParameter<ChemicalPotential<>>(timestep);
             saver.SaveParameter<Density<>>(timestep);
+            saver.SaveParameter<Pressure<>>(timestep);
             saver.SaveParameter<OrderParameter<>>(timestep);
             saver.SaveParameter<MassSink<>>(timestep);
-            saver.SaveParameter<Velocity<Lattice::NDIM>>(timestep);
+            saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
+            saver.SaveParameter<VelocityOld<>,Lattice::NDIM>(timestep);
         }
         
         // Evolve by one timestep

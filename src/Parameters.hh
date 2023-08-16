@@ -45,7 +45,7 @@ struct Distribution_Base { //Distribution base class
     std::vector<double> mv_Distribution; //Vector that will store the distribution information
     std::vector<double> mv_OldDistribution; //Possibly unused vector storing the old distributions (at t_old=t_new-1)
                                        //This is required in the collision step
-    std::vector<int> mv_EquilibriumDistribution;
+    std::vector<double> mv_EquilibriumDistribution;
     std::vector<int>& mv_DistNeighbors; //Reference to vector containing neighbor information
     inline std::vector<double>& getDistribution() { //Get a vector containing the distributions
 
@@ -98,26 +98,26 @@ struct Distribution_Base { //Distribution base class
     }
     inline std::vector<double>& getEquilibrium() { //Get a vector containing the distributions
 
-        return mv_Distribution;
+        return mv_EquilibriumDistribution;
 
     }
     inline const double* getEquilibriumPointer(const int k) const { //Get a constant pointer to the the distribution at
                                                              //lattice point k and pointing in direction 0
-        return &mv_Distribution[k *TStencil::Q];
+        return &mv_EquilibriumDistribution[k *TStencil::Q];
     }
     inline double* getEquilibriumPointer(const int k) { //Get a pointer to the the distribution at
                                                  //lattice point k and pointing in direction 0
-        return &mv_Distribution[k *TStencil::Q];
+        return &mv_EquilibriumDistribution[k *TStencil::Q];
 
     }
     inline const double& getEquilibrium(const int idx) const { //Get const distribution value at a given index
 
-        return mv_Distribution[idx];
+        return mv_EquilibriumDistribution[idx];
 
     }
     inline double& getEquilibrium(const int idx) { //Get distribution value at a given index
 
-        return mv_Distribution[idx];
+        return mv_EquilibriumDistribution[idx];
 
     }
 
@@ -600,11 +600,6 @@ struct MixedGradientPressure : public GradientMixed<Pressure<TInstances>,TInstan
     static constexpr char mName[]="MixedGradientPressure";
 
 }; //Directional first order gradients of the order parameter
-
-template<int TInstances = 1>
-struct BoundaryLabels : public ParameterSingleton<BoundaryLabels<TInstances>,int,TInstances> {
-    static constexpr char mName[] = "BoundaryLabels";
-}; //Labelling of geometry
 
 template<int TInstances = 1>
 struct Tau : public ParameterSingleton<Tau<TInstances>,double,TInstances> {

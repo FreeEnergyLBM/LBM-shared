@@ -68,7 +68,7 @@ inline void Binary<TLattice, TTraits>::collide() {
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++){ //loop over k
         
-        if(!Geometry<TLattice>::isBoundary(k)){
+        if(Geometry<TLattice>::getBoundaryType(k)!=1){
 
             double* old_distribution = this -> mDistribution.getDistributionOldPointer(k);
 
@@ -142,7 +142,7 @@ inline void Binary<TLattice, TTraits>::computeMomenta() { //Calculate order para
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { //Loop over k
 
-        if(!Geometry<TLattice>::isBoundary(k)){
+        if(Geometry<TLattice>::getBoundaryType(k)!=1){
 
             double* distribution = this -> mDistribution.getDistributionPointer(k);
 
@@ -212,7 +212,7 @@ inline void FlowFieldBinary<TLattice, TTraits>::collide() { //Collision step
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //loop over k
 
-        if(!Geometry<TLattice>::isBoundary(k)){
+        if(Geometry<TLattice>::getBoundaryType(k)!=1){
 
             double* old_distribution = this -> mDistribution.getDistributionOldPointer(k);
             double equilibriumsum = 0;

@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <map>
 
 //Stencil.hh: This file specifies the stencils that can be used. This determines the discretisation of the model.
 //The "D" refers to the number of cartesian dimensions in the stencil, so "D2" would be a 2D simulation. The "Q"
@@ -78,6 +79,8 @@ struct D1Q3 : StencilBase { //Most commonly used 2D stencil
     static constexpr int Ci_y[Q] = {0, 0, 0}; //There is no convecntion for the ordering of these
     static constexpr int Ci_z[Q] = {0, 0, 0}; //0 array because there is no z direction
 
+    static const std::map<std::vector<int8_t>,int> QMap;
+
     enum{x = 0, y = 1, z = 2};
     inline static auto Ci_xyz(const int d) -> const int(&)[Q] { //Returns velocity direction vector depending on input d, this is probably slow
 
@@ -112,6 +115,10 @@ struct D1Q3 : StencilBase { //Most commonly used 2D stencil
 
 };
 
+const std::map<std::vector<int8_t>,int> D1Q3::QMap = {{{0},0},
+                                                      {{1},1},
+                                                      {{-1},2}};
+
 struct D2Q5 : StencilBase { //Most commonly used 2D stencil
     
     static constexpr int D = 2; //Number of cartesian directions
@@ -121,6 +128,8 @@ struct D2Q5 : StencilBase { //Most commonly used 2D stencil
     static constexpr int Ci_x[Q] = {0, 1, -1, 0, 0}; //Vectors of velocity directions
     static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1}; //There is no convecntion for the ordering of these
     static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0}; //0 array because there is no z direction
+
+    static const std::map<std::vector<int8_t>,int> QMap;
 
     enum{x = 0, y = 1, z = 2};
     inline static auto Ci_xyz(const int d) -> const int(&)[Q] { //Returns velocity direction vector depending on input d, this is probably slow
@@ -158,6 +167,12 @@ struct D2Q5 : StencilBase { //Most commonly used 2D stencil
 
 };
 
+const std::map<std::vector<int8_t>,int> D2Q5::QMap = {{{0,0},0},
+                                                      {{1,0},1},
+                                                      {{-1,0},2},
+                                                      {{0,1},3},
+                                                      {{0,-1},4}};
+
 struct D2Q9:StencilBase { //Most commonly used 2D stencil
     
     static constexpr int D = 2; //Number of cartesian directions
@@ -167,6 +182,8 @@ struct D2Q9:StencilBase { //Most commonly used 2D stencil
     static constexpr int Ci_x[Q] = {0, 1, -1, 0, 0, 1, -1, 1, -1}; //Vectors of velocity directions
     static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 1, -1, -1, 1}; //There is no convecntion for the ordering of these
     static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 0, 0, 0, 0}; //0 array because there is no z direction
+
+    static const std::map<std::vector<int8_t>,int> QMap;
 
     enum{x = 0, y = 1, z = 2};
     inline static auto Ci_xyz(const int d) -> const int(&)[Q] { //Returns velocity direction vector depending on input d, this is probably slow
@@ -210,6 +227,15 @@ struct D2Q9:StencilBase { //Most commonly used 2D stencil
     
 };
 
+const std::map<std::vector<int8_t>,int> D2Q9::QMap = {{{0,0},0},
+                                                      {{1,0},1},
+                                                      {{-1,0},2},
+                                                      {{0,1},3},
+                                                      {{0,-1},4},
+                                                      {{1,1},5},
+                                                      {{-1,-1},6},
+                                                      {{1,-1},7},
+                                                      {{-1,1},8}};
 
 struct D3Q15:StencilBase{
     static constexpr int D = 3;
@@ -219,6 +245,8 @@ struct D3Q15:StencilBase{
     static constexpr int Ci_x[Q] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1};
     static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, -1, 1, 1, -1};
     static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 1, -1, 1, -1, -1, 1, 1, -1, 1, -1};
+
+    static const std::map<std::vector<int8_t>,int> QMap;
 
     inline static auto Ci_xyz(const int d) -> const int(&)[Q]{
         if (d==0) {
@@ -267,6 +295,22 @@ struct D3Q15:StencilBase{
     }
 };
 
+const std::map<std::vector<int8_t>,int> D3Q15::QMap = {{{0,0,0},0},
+                                                       {{1,0,0},1},
+                                                       {{-1,0,0},2},
+                                                       {{0,1,0},3},
+                                                       {{0,-1,0},4},
+                                                       {{0,0,1},5},
+                                                       {{0,0,-1},6},
+                                                       {{1,1,1},7},
+                                                       {{-1,-1,-1},8},
+                                                       {{1,1,-1},9},
+                                                       {{-1,-1,1},10},
+                                                       {{1,-1,1},11},
+                                                       {{-1,1,-1},12},
+                                                       {{-1,1,1},13},
+                                                       {{1,-1,-1},14}};
+
 struct D3Q19:StencilBase{ //Most commonly used 3D stencil
     static constexpr int D = 3;
 
@@ -275,6 +319,8 @@ struct D3Q19:StencilBase{ //Most commonly used 3D stencil
     static constexpr int Ci_x[Q] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1};
     static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 1, -1, 1, -1, 0, 0, 0, 0};
     static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 1, -1, -1, 1, 1, -1, -1, 1};
+
+    static const std::map<std::vector<int8_t>,int> QMap;
 
     inline static auto Ci_xyz(const int d) -> const int(&)[Q]{
         if (d==0) {
@@ -327,3 +373,84 @@ struct D3Q19:StencilBase{ //Most commonly used 3D stencil
 
     }
 };
+
+const std::map<std::vector<int8_t>,int> D3Q19::QMap = {{{0,0,0},0},
+                                                       {{1,0,0},1},
+                                                       {{-1,0,0},2},
+                                                       {{0,1,0},3},
+                                                       {{0,-1,0},4},
+                                                       {{0,0,1},5},
+                                                       {{0,0,-1},6},
+                                                       {{1,1,0},7},
+                                                       {{-1,-1,0},8},
+                                                       {{1,1,0},9},
+                                                       {{-1,-1,0},10},
+                                                       {{0,1,1},11},
+                                                       {{0,-1,-1},12},
+                                                       {{0,1,1},13},
+                                                       {{0,-1,-1},14},
+                                                       {{1,0,1},15},
+                                                       {{-1,0,-1},16},
+                                                       {{1,0,-1},17},
+                                                       {{-1,0,1},18}};
+
+struct D3Q27:StencilBase{ //Most commonly used 3D stencil
+    static constexpr int D = 3;
+
+    static constexpr int Q = 27;
+    static constexpr double Cs2 = 0.33333333333333;
+    static constexpr int Ci_x[Q] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1};
+    static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 1, -1, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, -1, 1, -1, 1};
+    static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 1, -1, -1, 1, 1, -1, -1, 1, 1, -1, -1, 1, -1, 1, 1, -1};
+
+    static const std::map<std::vector<int8_t>,int> QMap;
+
+    inline static auto Ci_xyz(const int d) -> const int(&)[Q]{
+        if (d==0) {
+            return Ci_x;
+        }
+        else if (d==1) {
+            return Ci_y;
+        }
+        return Ci_z;
+    }
+
+    static constexpr int Opposites[Q] = {0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17, 20, 19, 22, 21, 24, 23, 26, 25};
+    static constexpr double Weights[Q] = {8.0 / 27.0,  2.0 / 27.0,  2.0 / 27.0,  2.0 / 27.0, 
+				                          2.0 / 27.0,  2.0 / 27.0,  2.0 / 27.0,  1.0 / 54.0, 
+				                          1.0 / 54.0,  1.0 / 54.0,  1.0 / 54.0,  1.0 / 54.0, 
+				                          1.0 / 54.0,  1.0 / 54.0,  1.0 / 54.0,  1.0 / 54.0, 
+				                          1.0 / 54.0,  1.0 / 54.0,  1.0 / 54.0, };
+
+    template<int idx>
+    static const int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx] + Ci_z[idx] * Ci_z[idx];
+
+};
+
+const std::map<std::vector<int8_t>,int> D3Q27::QMap = {{{0,0,0},0},
+                                                        {{1,0,0},1},
+                                                        {{-1,0,0},2},
+                                                        {{0,1,0},3},
+                                                        {{0,-1,0},4},
+                                                        {{0,0,1},5},
+                                                        {{0,0,-1},6},
+                                                        {{1,1,0},7},
+                                                        {{-1,-1,0},8},
+                                                        {{1,1,0},9},
+                                                        {{-1,-1,0},10},
+                                                        {{0,1,1},11},
+                                                        {{0,-1,-1},12},
+                                                        {{0,1,1},13},
+                                                        {{0,-1,-1},14},
+                                                        {{1,0,1},15},
+                                                        {{-1,0,-1},16},
+                                                        {{1,0,-1},17},
+                                                        {{-1,0,1},18},
+                                                        {{1,1,1},19},
+                                                        {{-1,-1,-1},20},
+                                                        {{1,1,-1},21},
+                                                        {{-1,-1,1},22},
+                                                        {{1,-1,1},23},
+                                                        {{-1,1,-1},24},
+                                                        {{-1,1,1},25},
+                                                        {{1,-1,-1},26}};

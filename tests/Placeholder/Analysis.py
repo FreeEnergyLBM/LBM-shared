@@ -1,7 +1,7 @@
 import os, math, re, sys
 import struct
 import numpy as np
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
 
 HeaderFile = open("data/Header.mat", 'rb')
 
@@ -35,14 +35,14 @@ for t in range(tstart,tend+1,tinc):
     print("t=%s"%t)
     t_file =t+t_zero
 
-    file_name = "data/"+"Humidity_t%li.mat"%t_file
+    file_name = "data/"+"Pressure_t%li.mat"%t_file
     #file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
 
     File = open(file_name, 'rb')
     
-    #file_name = "data/"+"Velocity_t%li.mat"%t_file
+    file_name = "data/"+"Velocity_t%li.mat"%t_file
 
-    #File2 = open(file_name, 'rb')
+    File2 = open(file_name, 'rb')
 
     #file_name = "data/"+"Density_t%li.mat"%t_file
 
@@ -73,8 +73,8 @@ for t in range(tstart,tend+1,tinc):
         #rho2[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
         #rho4[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
         #rho4[xk,yk,zk] = struct.unpack('=d', File4.read(8))[0]
-        #for i in range(ndim):
-            #v[xk,yk,zk,i] = struct.unpack('=d', File2.read(8))[0]
+        for i in range(ndim):
+            v[xk,yk,zk,i] = struct.unpack('=d', File2.read(8))[0]
             #print(ndim)
 
     #print(np.amax(rho))
@@ -91,8 +91,8 @@ for t in range(tstart,tend+1,tinc):
     
     #im=ax.imshow(np.flip(rho0.take(indices=slicepos,axis=sliceaxis)).transpose(),interpolation='nearest',origin='upper')
 
-    im=ax.imshow(rgbv,interpolation='nearest',origin='upper')
-    #ax.imshow((v.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis)),interpolation='nearest',origin='upper')
+    #im=ax.imshow(rgbv,interpolation='nearest',origin='upper')
+    im=ax.imshow(np.sqrt((v.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis))**2+(v.take(indices=1,axis=3).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
     #print(np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()[70,70])
     #ax.scatter(70,70)
     step=1
@@ -103,10 +103,9 @@ for t in range(tstart,tend+1,tinc):
     #ax.scatter(49,49)
     plt.savefig(output, dpi=400, format='png')
     plt.close(fig)
-    print(np.amax(v))
-    print(np.sum(rho))
+
 
 
 plt.figure()
-plt.plot(rho[:,int(LY/2),0])
+plt.plot(v[:,int(LY/2),0,0])
 plt.savefig("test.png", dpi=200, format='png')

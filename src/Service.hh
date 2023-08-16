@@ -62,6 +62,32 @@ inline int computeZ(const int& LY,const int& LZ,const int k) //Compute Y directi
 
 }
 
+/**
+  * \brief Returns true if the current TLattice point lies on a periodic boundary.
+  * \param k Index of current TLattice point.
+  * \return True if TLattice point lies on a periodic boundary.
+  */
+template<class TLattice>
+inline bool isPeriodic(int k) {
+    
+    int yAtCurrentk = computeY(TLattice::LY, TLattice::LZ, k);
+    int zAtCurrentk = computeZ(TLattice::LY, TLattice::LZ, k);
+    int xAtCurrentk = computeX(TLattice::LY, TLattice::LZ, k);
+
+    if(TLattice::LZ <= 1 || TLattice::LY <= 1 || TLattice::LXdiv <= 1) return true; //If simulation is 2D
+    else if (zAtCurrentk == 0 ||
+         zAtCurrentk == TLattice::LZ-1) return true; //Edges in Z direction
+
+    else if (yAtCurrentk == 0 ||
+         yAtCurrentk == TLattice::LY-1) return true; //Edges in Y direction
+        
+    else if (xAtCurrentk == 0 ||
+         xAtCurrentk == TLattice::LXdiv-1) return true; //Edges in X direction
+    
+    return false;
+
+}
+
 template<class TForce>
 typename TForce::Method getMethod(TForce& f){
     return std::declval<typename TForce::Method>();

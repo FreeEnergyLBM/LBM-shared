@@ -40,14 +40,14 @@ inline void CubicWetting::compute(const int k) {
 
     const std::vector<int>& mv_Neighbors = data::getInstance().getNeighbors();
 
-    if (Geometry<Lattice>::isBoundary(k)) {
+    if (Geometry<Lattice>::getBoundaryType(k)==0) {
 
         double phiAvg = 0;
         int count = 0;
 
         for (int idx = 0; idx < Stencil::Q; idx++) {
 
-            if (!Geometry<Lattice>::isBoundary(mv_Neighbors[k * Stencil::Q+idx])) {
+            if (Geometry<Lattice>::getBoundaryType(mv_Neighbors[k * Stencil::Q+idx])!=0) {
 
                 phiAvg += OrderParameter<>::get<Lattice>(mv_Neighbors[k * Stencil::Q+idx]);
                 count++;

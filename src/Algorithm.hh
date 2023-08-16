@@ -111,7 +111,7 @@ template<class ...TModel>
 inline void Algorithm<TModel...>::evolve() {
     
     #pragma omp parallel
-    { 
+    {   
     precomputeStep();
     
     calculateCollisionStep();
@@ -119,8 +119,9 @@ inline void Algorithm<TModel...>::evolve() {
     calculateBoundaryStep();
     
     calculateMomentaStep();
-
+    
     postprocessStep();
+    
     }
 }
 
@@ -160,7 +161,7 @@ inline void Algorithm<TModel...>::precomputeStep() {
     if constexpr (sizeof...(TModel) != 0) {
 
         std::apply([](TModel&... models) {
-
+            
             (models.precompute(), ...);
 
         }, mt_Models);
