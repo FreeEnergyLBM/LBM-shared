@@ -9,8 +9,8 @@
 const int lx = 100; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 
-const int timesteps = 10000; // Number of iterations to perform
-const int saveInterval = 1000; // Interval to save global data
+const int timesteps = 1000; // Number of iterations to perform
+const int saveInterval = 100; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
@@ -29,7 +29,7 @@ using Lattice = LatticeProperties<DataOldNewEquilibrium, NoParallel, lx, ly>;
 int initBoundary(const int k) {
     int xx = computeXGlobal<Lattice>(k);
     int yy = computeY(ly, 1, k);
-    double rr2 = (xx - lx/2. - 0.5) * (xx - lx/2. - 0.5) + (yy - lx/2. - 0.5) * (yy - lx/2. - 0.5);
+    double rr2 = (xx - lx/2. + 0.5) * (xx - lx/2. + 0.5) + (yy - lx/2. + 0.5) * (yy - lx/2. + 0.5);
     
     if (yy <= 0 || yy >= ly - 1 || xx <= 0 || xx >= lx - 1) return 4;
     else if(sqrt(rr2)<RADIUS) return 5;
@@ -40,7 +40,7 @@ int initBoundary(const int k) {
 double initFluid(const int k) {
     int xx = computeXGlobal<Lattice>(k);
     int yy = computeY(ly, 1, k);
-    double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - lx/2.) * (yy - lx/2.);
+    double rr2 = (xx - lx/2. + 0.5) * (xx - lx/2. + 0.5) + (yy - lx/2. + 0.5) * (yy - lx/2. + 0.5);
     //return 0.25*((double)rand()/(double)RAND_MAX);
     return 0.5-0.5*tanh(2*(sqrt(rr2)-RADIUS)/(sqrt(8*kappa/A)));
     //return 0.5-0.5*tanh(2*((xx - lx/2.+0.6))/(sqrt(8*kappa/A)));
@@ -144,8 +144,8 @@ int main(int argc, char **argv){
     binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setA(A);
     binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setKappa(kappa);
 
-    binary.getPreProcessor<MassLossCalculator>().setInterfaceHumidity(0.8);
-    binary.getPreProcessor<MassLossCalculator>().setDiffusivity(0.2);
+    binary.getPreProcessor<MassLossCalculator>().setInterfaceHumidity(0.5);
+    binary.getPreProcessor<MassLossCalculator>().setDiffusivity(0.02);
 
     using dbtype = InterpolatedDirichlet;
 
@@ -155,19 +155,19 @@ int main(int argc, char **argv){
 
     //humidity.getBoundary<InterpolatedDirichlet>().setInterfaceDistanceFunction(distancefunc);
     humidity.getBoundary<dbtype>().setInterfaceID(5);
-    humidity.getBoundary<dbtype>().setInterfaceVal(0.8);
+    humidity.getBoundary<dbtype>().setInterfaceVal(0.5);
 
     humidity.getBoundary<Dirichlet>().setInterfaceID(1);
     humidity.getBoundary<Dirichlet>().setInterfaceVal(0.0);
 
-    humidity.setDiffusivity(0.2);
+    humidity.setDiffusivity(0.02);
 
     humidity.getPreProcessor<HumidityBoundaryLabels>().setInterfaceCondition(interfaceCondition);
-    humidity.getPreProcessor<SetHumidityLiquid>().setInterfaceVal(0.8);
+    humidity.getPreProcessor<SetHumidityLiquid>().setInterfaceVal(0.05);
 
-    humidity.getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setInterfaceHumidity(0.8);
+    humidity.getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setInterfaceHumidity(0.05);
 
-    pressure.getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setInterfaceHumidity(0.8);
+    pressure.getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setInterfaceHumidity(0.05);
     pressure.getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setPressureCalculator(pressure.computePressure);
     pressure.getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setForceTuple(pressure.mt_Forces);
 

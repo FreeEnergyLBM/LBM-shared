@@ -90,13 +90,13 @@ inline double BodyForce<TMethod>::computeQ(int idx, int k) {
 
     if constexpr (Lattice::NDIM == 2){
         return density * ( mMagnitudeX * Stencil::Ci_xyz(0)[idx]
-           + mMagnitudeY * density * Stencil::Ci_xyz(1)[idx] );
+           + mMagnitudeY *  Stencil::Ci_xyz(1)[idx] );
     }
 
     else if constexpr (Lattice::NDIM == 3){
         return density * ( mMagnitudeX * Stencil::Ci_xyz(0)[idx]
-           + mMagnitudeY * density * Stencil::Ci_xyz(1)[idx]
-           + mMagnitudeZ * density * Stencil::Ci_xyz(2)[idx] );
+           + mMagnitudeY * Stencil::Ci_xyz(1)[idx]
+           + mMagnitudeZ * Stencil::Ci_xyz(2)[idx] );
     }
 
     return density * ( mMagnitudeX * Stencil::Ci_xyz(0)[idx] );

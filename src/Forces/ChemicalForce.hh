@@ -134,11 +134,16 @@ inline double ChemicalForce<TMethod, TGradientType>::computeChemicalForce(int id
 
     double sum = 0;
 
+    double gradopsum = 0;
+
     for (int component = 0; component < TTraits::NumberOfComponents - 1; component++) {
         
         sum += ChemicalPotential<TTraits::NumberOfComponents>::template get<typename TTraits::Lattice>(k, component) * TGradientType<OrderParameter<TTraits::NumberOfComponents - 1>,(TTraits::NumberOfComponents - 1)>::template get<typename TTraits::Lattice, TDirections>(k, component, idx);
-        
+        gradopsum += TGradientType<OrderParameter<TTraits::NumberOfComponents - 1>,(TTraits::NumberOfComponents - 1)>::template get<typename TTraits::Lattice, TDirections>(k, component, idx);
+
     }
+
+    sum += ChemicalPotential<TTraits::NumberOfComponents>::template get<typename TTraits::Lattice>(k, TTraits::NumberOfComponents - 1) * (-gradopsum);
 
     return sum;
 
