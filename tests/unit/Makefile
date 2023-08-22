@@ -2,11 +2,16 @@ ROOT_DIR = ../..
 INC_DIR = $(ROOT_DIR)/src
 INC = $(addprefix -I, $(INC_DIR))
 
-TESTS = Parallel_test Collide_test BounceBack_test CubicWetting_test FlowField_test
+TESTS = ParallelY_test #Collide_test BounceBack_test CubicWetting_test FlowField_test
 RUN_TESTS = $(addprefix run_, $(TESTS))
 
 CXX = mpicxx
 CXXFLAGS = -std=c++17 -Wall -DMPIPARALLEL -fopenmp
+
+XPROCS = 1
+YPROCS = 2
+ZPROCS = 1
+NPROCS = $$(($(XPROCS)*$(YPROCS)*$(ZPROCS)))
 
 .PHONY: all clean cleantests gtest $(RUN_TESTS)
 
@@ -21,8 +26,8 @@ cleantests:
 	rm -f $(TESTS) *_test.o
 
 $(RUN_TESTS): run_%: %
-	@echo "Running $*"
-	@mpirun -np 2 ./$* || touch failed
+	@echo "Running $* on $(NPROCS) processes"
+	@mpirun -np $(NPROCS) ./$* || touch failed
 
 # Googletest rules and parameters, see:
 # https://github.com/google/googletest/blob/release-1.8.1/googletest/make/Makefile

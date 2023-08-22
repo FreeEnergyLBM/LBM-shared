@@ -21,10 +21,11 @@ struct LatticeProperties{
     static constexpr int LY = ly;
     static constexpr int LZ = lz;
     inline static int N = lx * ly * lz;
-    inline static int LXdiv = lx;
-    inline static int LXMPIOffset = 0;
-    inline static int HaloSize = 0;
+    inline static int LXdiv = lx, LYdiv = ly, LZdiv = lz;
+    inline static int LXMPIOffset = 0, LYMPIOffset = 0, LZMPIOffset = 0;
+    inline static int HaloSize = 0, HaloXWidth = 0, HaloYWidth = 0, HaloZWidth = 0;
     inline static double DT = 1;
+    inline static int Face[6] = {0, 0, 0, 0, 0, 0}; // FaceX=0, FaceY=0, FaceZ=0, EdgeX=0, EdgeY=0, EdgeZ=0;
     inline static TParallel Parallel;
 
     constexpr LatticeProperties(double DT=1.0) {
@@ -39,13 +40,17 @@ struct LatticeProperties{
     //! This function communicates the halo regions of a parameter.
     template<class TParameter>
     static void communicate(TParameter& obj) {
-        Parallel.template communicate<TLattice>(obj);
+        Parallel.template updateParameterBeforeCommunication<TLattice>(obj);
+        Parallel.template communicateParameter<TLattice>(obj);
+        Parallel.template updateParameterAfterCommunication<TLattice>(obj);
     }
 
     //! This function streams the distributions to the neighboring processor.
     template<class TDistribution>
-    static void communicateDistribution(TDistribution& obj) {
+    static void communicateDistribution(TDistribution& obj) { // currently along X only
+        Parallel.template updateDistributionBeforeCommunication<TLattice>(obj);
         Parallel.template communicateDistribution<TLattice>(obj);
+        Parallel.template updateDistributionAfterCommunication<TLattice>(obj);
     }
 
     template<class TDistribution>
@@ -69,9 +74,9 @@ struct LatticePropertiesRuntime {
         LY = ly;
         LZ = lz;
         N = lx * ly * lz;
-        LXdiv = lx;
-        LXMPIOffset = 0;
-        HaloSize = 0;
+        LXdiv = lx; LYdiv = ly; LZdiv = lz;
+        LXMPIOffset = 0; LYMPIOffset = 0; LZMPIOffset = 0;
+        HaloSize = 0; HaloXWidth = 0; HaloYWidth = 0; HaloZWidth = 0;
         DT = DT;
     }
 
@@ -84,9 +89,9 @@ struct LatticePropertiesRuntime {
     static int LY;
     static int LZ;
     static int N;
-    static int LXdiv;
-    static int LXMPIOffset;
-    static int HaloSize;
+    static int LXdiv, LYdiv, LZdiv;
+    static int LXMPIOffset, LYMPIOffset, LZMPIOffset;
+    static int HaloSize, HaloXWidth, HaloYWidth, HaloZWidth;
     static double DT;
 
     template<class TStencil>

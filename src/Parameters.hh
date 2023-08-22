@@ -45,6 +45,7 @@ struct Distribution_Base { //Distribution base class
     std::vector<double> mv_Distribution; //Vector that will store the distribution information
     std::vector<double> mv_OldDistribution; //Possibly unused vector storing the old distributions (at t_old=t_new-1)
                                        //This is required in the collision step
+    std::vector<double> mv_CommDistribution; //Vector that will store the distribution information for communication
     std::vector<double> mv_EquilibriumDistribution;
     std::vector<int>& mv_DistNeighbors; //Reference to vector containing neighbor information
     inline std::vector<double>& getDistribution() { //Get a vector containing the distributions
@@ -52,6 +53,11 @@ struct Distribution_Base { //Distribution base class
         return mv_Distribution;
 
     }
+
+    inline std::vector<double>& getCommDistribution() { //Get a vector containing the distributions for communication (along direction `neighbor`?)
+        return mv_CommDistribution;
+    }
+
     inline const double* getDistributionPointer(const int k) const { //Get a constant pointer to the the distribution at
                                                              //lattice point k and pointing in direction 0
         return &mv_Distribution[k * TStencil::Q];
@@ -148,22 +154,30 @@ class Parameter {
         inline void Save(std::string filename, int t, std::string datadir);
 
         std::vector<T> mv_Parameter; //Static vector (Does not change between objects of the class)
+        std::vector<T> mv_CommParameter; //Parameter vector reordered for convenience of communication
 
         template<class, class, int>
         friend class ParameterSingleton;
+
+        inline std::vector<double>& getParameter() { //Get a vector containing the parameters in the communication region
+            return mv_Parameter;
+        }
+
+        inline std::vector<double>& getCommParameter() { //Get a vector containing the parameters in the communication region
+            return mv_CommParameter;
+        }
 
     private:
 
         Parameter() {
 
             mv_Parameter.resize(TNum * TLattice::N); //Resize to the desired size
+            mv_CommParameter.resize(TNum * 4 * TLattice::HaloSize); //Resize to the size of the communication region
 
         }
         
         Parameter(const Parameter& other) {}
-
-        
-        
+   
 };
 
 template<class TObj, typename T=double, int TNumPrefactor=1>
@@ -271,7 +285,6 @@ class ParameterSingleton {
                 else initialise<TLattice,TNum>(val,k,idx1,idx2);
 
             }
-
         }
 
 
@@ -329,7 +342,6 @@ class ParameterSingleton {
     private:
 
         ParameterSingleton(){};
-
 
 };
 

@@ -4,22 +4,22 @@
 
 /**
  * \file Data.hh
- * \brief Contains data class that will control how how data is accessed and how stremaing happens.
+ * \brief Contains data class that will control how data is accessed and how streaming happens.
  * These classes will contain derived distribution classes that will determine memory allocation for the
  * distribution arrays and the streaming indices. The Data class also contains a vector of neighbors for each 
- * TLattice point in every direction but it might be faster to just recalculate every time this is needed.
- * "Neighbor" refers to the TLattice point adjacent to any given latice point in a chosen discrete direction
- * Periodic boundaries work by setting the neighbor of each TLattice point at the edges of the domain so that the
+ * lattice point in every direction but it might be faster to just recalculate every time this is needed.
+ * "Neighbor" refers to the lattice point adjacent to any given latice point in a chosen discrete direction
+ * Periodic boundaries work by setting the neighbor of each lattice point at the edges of the domain so that the
  * top of the domain connects to the bottom, the left connects to the right etc.
  */
 
 
 /**
- * \brief The Data_Base class provides information for the layout of neighboring TLattice points and communication
+ * \brief The Data_Base class provides information for the layout of neighboring lattice points and communication
           for non-distribution parameters.
- * This class takes a TStencil as a template argument, as the velocity discretisation information and weights is 
+ * This class takes a stencil as a template argument, as the velocity discretisation information and weights is 
  * needed. The class has public functions for communication, generating neighbors based on the
- * TStencil and a function to get a reference to the vector of neighbor indices.
+ * stencil and a function to get a reference to the vector of neighbor indices.
  * \tparam TStencil Velocity Stencil of class using this data type.
  */
 template<class TLattice, class TStencil>
@@ -32,23 +32,23 @@ class Data_Base{
     private:
         //ADD VIRTUAL TO THIS
         /**
-         * \brief This function returns the neighbor at the current TLattice point k in the direction Q.
-         * \param k Index of current TLattice point.
+         * \brief This function returns the neighbor at the current lattice point k in the direction Q.
+         * \param k Index of current lattice point.
          * \param Q Discrete velocity direction (e.g. 0-8 for D2Q9).
-         * \return Lattice index of neighboring TLattice point in chosen direction.
+         * \return Lattice index of neighboring lattice point in chosen direction.
          */
         inline int getOneNeighbor(const int k, const int Q);
 
         /**
-         * \brief This function returns the neighbor at the current TLattice point k in the direction Q given that
-         *        the TLattice point lies on a periodic boundary.
-         * \param k Index of current TLattice point.
+         * \brief This function returns the neighbor at the current lattice point k in the direction Q given that
+         *        the lattice point lies on a periodic boundary.
+         * \param k Index of current lattice point.
          * \param Q Discrete velocity direction (e.g. 0-8 for D2Q9).
-         * \return Lattice index of neighboring TLattice point in chosen direction given that the current point is on a periodic boundary.
+         * \return Lattice index of neighboring lattice point in chosen direction given that the current point is on a periodic boundary.
          */
         inline int getOneNeighborPeriodic(const int k, const int Q);
 
-        std::array<int,TStencil::Q> OppositeOffset; //!<Opposite TLattice point offset in each direction.
+        std::array<int,TStencil::Q> OppositeOffset; //!<Opposite lattice point offset in each direction.
         
         std::vector<int> mv_Neighbors; //!<Vector containing neighbor information.
 
@@ -126,8 +126,8 @@ inline void Data_Base<TLattice,TStencil>::communicate(TParameter& obj) { //Not u
 }
 
 /**
- * \details The function returns a reference to a vector containing the neighboring TLattice point for every point
- *          in every direction in the TStencil.
+ * \details The function returns a reference to a vector containing the neighboring lattice point for every point
+ *          in every direction in the stencil.
  */
 template<class TLattice, class TStencil>
 inline std::vector<int>& Data_Base<TLattice, TStencil>::getNeighbors() {
@@ -144,19 +144,19 @@ const inline std::vector<int>& Data_Base<TLattice, TStencil>::getNeighbors() con
 }
 
 /**
- * \details The neighbor of the current TLattice point is calculated from the current TLattice point + the offset
+ * \details The neighbor of the current lattice point is calculated from the current lattice point + the offset
  *          in each direction, which is precomputed in the constructor and stored in a vector.
  */
 template<class TLattice, class TStencil>
 inline int Data_Base<TLattice,TStencil>::getOneNeighbor(const int k, const int Q) {
     
-    return k + OppositeOffset[Q]; //The neighbor is the TLattice point plus the opposite offset in direction Q
+    return k + OppositeOffset[Q]; //The neighbor is the lattice point plus the opposite offset in direction Q
         
 }
 
 /**
- * \details If we are at the first TLattice point, some of the adjacent points will be on the complete opposite
- *          side of the TLattice so we must account for this. The function will work out if we are on the edge of
+ * \details If we are at the first lattice point, some of the adjacent points will be on the complete opposite
+ *          side of the lattice so we must account for this. The function will work out if we are on the edge of
  *          of the simulation in the x, y and z directions and apply offsets in each case.
  */
 template<class TLattice, class TStencil>
@@ -167,14 +167,14 @@ inline int Data_Base<TLattice,TStencil>::getOneNeighborPeriodic(const int k, con
     if(TLattice::LZ> 1) {
         int localz=computeZ(TLattice::LY,TLattice::LZ,k);
         if (localz==(TLattice::LZ - 1) && TStencil::Ci_xyz(z)[Q]> 0) { //(note that the z direction goes from 0 to TLattice::LZ-1)
-                                                     //if the next TLattice point in the z direction is divisible
+                                                     //if the next lattice point in the z direction is divisible
                                                      //by TLattice::LZ (so we are at z=TLattice::LZ-1) and we are pointing in the +z
                                                      //direction
 
             neighbor += -(TLattice::LZ - 1); //reduce k by TLattice::LZ-1 so we are now at z=0
 
         }
-        else if (localz==(0) && TStencil::Ci_xyz(z)[Q] <0) { //if the current TLattice point in the z direction is
+        else if (localz==(0) && TStencil::Ci_xyz(z)[Q] <0) { //if the current lattice point in the z direction is
                                                         //divisible by TLattice::LZ (so we are at z=0) and we are pointing
                                                         //in the -z direction
 
@@ -190,7 +190,7 @@ inline int Data_Base<TLattice,TStencil>::getOneNeighborPeriodic(const int k, con
     if(TLattice::LY> 1) {
         int localY=computeY(TLattice::LY,TLattice::LZ,k);
         if (localY == (TLattice::LY - 1) && TStencil::Ci_xyz(y)[Q]> 0) { //(note that the y direction goes from 0 to TLattice::LY-1)
-                                                            //if the next TLattice point in the y direction is
+                                                            //if the next lattice point in the y direction is
                                                             //divisible by TLattice::LY (so we are at z=TLattice::LY-1) and we are
                                                             //pointing in the +y direction
 
@@ -231,14 +231,14 @@ inline int Data_Base<TLattice,TStencil>::getOneNeighborPeriodic(const int k, con
 }
 
 /**
- * \details This will iterate through the TLattice and calculate the neighbors depending on whether the current
- *          TLattice point is on a periodic boundary or not.
+ * \details This will iterate through the lattice and calculate the neighbors depending on whether the current
+ *          lattice point is on a periodic boundary or not.
  */
 template<class TLattice, class TStencil>
-inline void Data_Base<TLattice,TStencil>::generateNeighbors() { //Loop over all TLattice points and calculate the neghbor at each point
+inline void Data_Base<TLattice,TStencil>::generateNeighbors() { //Loop over all lattice points and calculate the neghbor at each point
 
     #pragma omp parallel for schedule(guided)
-    for (int k = 0; k <TLattice::N; k++) { //For loop over all TLattice points
+    for (int k = 0; k <TLattice::N; k++) { //For loop over all lattice points
         
         for(int q = 0; q < TStencil::Q; q++) {
 
@@ -276,7 +276,7 @@ class DataOldNew : public Data_Base<TLattice, TStencil> {
         * Distribution class will allocate memory to
         * distribution arrays and contains the
         * streamIndex function which is returns the
-        * index of the neighboring TLattice point in
+        * index of the neighboring lattice point in
         * the direction Q.
         */
         struct Distribution_Derived : public Distribution_Base<TStencil> { //
@@ -285,7 +285,7 @@ class DataOldNew : public Data_Base<TLattice, TStencil> {
              * \brief The constructor for the class.
              * This constructor will call the constructor for the base distribution class, calculate the opposite
              * indices at each index Q and allocate memory for the new and old distributions.
-             * \param neighbors reference to a vector containing the neighboring TLattice points at each point. Used to
+             * \param neighbors reference to a vector containing the neighboring lattice points at each point. Used to
              *                  construct the Distribution_Base class.
              */
 
@@ -294,20 +294,20 @@ class DataOldNew : public Data_Base<TLattice, TStencil> {
             Distribution_Derived(std::vector<int>& neighbors) : Distribution_Base<TStencil>(neighbors), mv_Neighbors(neighbors) { //Initialise mv_DistNeighbors
 
                 Distribution_Base<TStencil>::mv_Distribution.resize(TStencil::Q * TLattice::N); //Array size is number of
-                                                                                  //directions times number of
-                                                                                  //TLattice points
+                                                                                  //directions times number of lattice points
                 Distribution_Base<TStencil>::mv_OldDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
                                                                                      //in this case
+                Distribution_Base<TStencil>::mv_CommDistribution.resize(TStencil::Q * 4 * TLattice::Face[0]); // currently along X only
                 
             }
 
             Distribution_Derived(Distribution_Derived& other) : Distribution_Base<TStencil>(other.mv_Neighbors), mv_Neighbors(other.mv_Neighbors) { //Initialise mv_DistNeighbors
 
                 Distribution_Base<TStencil>::mv_Distribution.resize(TStencil::Q * TLattice::N); //Array size is number of
-                                                                                  //directions times number of
-                                                                                  //TLattice points
+                                                                                  //directions times number of lattice points
                 Distribution_Base<TStencil>::mv_OldDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
                                                                                      //in this case
+                Distribution_Base<TStencil>::mv_CommDistribution.resize(TStencil::Q * 4 * TLattice::Face[0]); // currently along X only
                 
             }
 
@@ -319,14 +319,14 @@ class DataOldNew : public Data_Base<TLattice, TStencil> {
 
             /**
              * \brief Returns the index that the current distribution will be streamed to.
-             * \details In this case, this just returns the neighbor at the current TLattice point in the direction Q.
-             * \param k Index of current TLattice point.
+             * \details In this case, this just returns the neighbor at the current lattice point in the direction Q.
+             * \param k Index of current lattice point.
              * \param Q Discrete velocity direction (e.g. 0-8 for D2Q9).
              * \return Index of distribution vector that the distribution will be streamed to.
              */
             inline int streamIndex(const int k, const int Q) {
 
-                return Distribution_Base<TStencil>::mv_DistNeighbors[k * TStencil::Q + Q]; //Return neighbor of TLattice point k in direction Q
+                return Distribution_Base<TStencil>::mv_DistNeighbors[k * TStencil::Q + Q]; //Return neighbor of lattice point k in direction Q
 
             }
 
@@ -391,6 +391,7 @@ inline void DataOldNew<TLattice, TStencil>::communicateDistribution() {
     
 }
 
+
 template<class TLattice, class TStencil>
 class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
     private:
@@ -400,7 +401,7 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
         * Distribution class will allocate memory to
         * distribution arrays and contains the
         * streamIndex function which is returns the
-        * index of the neighboring TLattice point in
+        * index of the neighboring lattice point in
         * the direction Q.
         */
         struct Distribution_Derived : public Distribution_Base<TStencil> { //
@@ -409,7 +410,7 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
              * \brief The constructor for the class.
              * This constructor will call the constructor for the base distribution class, calculate the opposite
              * indices at each index Q and allocate memory for the new and old distributions.
-             * \param neighbors reference to a vector containing the neighboring TLattice points at each point. Used to
+             * \param neighbors reference to a vector containing the neighboring lattice points at each point. Used to
              *                  construct the Distribution_Base class.
              */
 
@@ -419,7 +420,7 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
 
                 Distribution_Base<TStencil>::mv_Distribution.resize(TStencil::Q * TLattice::N); //Array size is number of
                                                                                   //directions times number of
-                                                                                  //TLattice points
+                                                                                  //lattice points
                 Distribution_Base<TStencil>::mv_OldDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
                                                                                      //in this case
                 Distribution_Base<TStencil>::mv_EquilibriumDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
@@ -431,7 +432,7 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
 
                 Distribution_Base<TStencil>::mv_Distribution.resize(TStencil::Q * TLattice::N); //Array size is number of
                                                                                   //directions times number of
-                                                                                  //TLattice points
+                                                                                  //lattice points
                 Distribution_Base<TStencil>::mv_OldDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
                                                                                      //in this case
                 Distribution_Base<TStencil>::mv_EquilibriumDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
@@ -449,14 +450,14 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
 
             /**
              * \brief Returns the index that the current distribution will be streamed to.
-             * \details In this case, this just returns the neighbor at the current TLattice point in the direction Q.
-             * \param k Index of current TLattice point.
+             * \details In this case, this just returns the neighbor at the current lattice point in the direction Q.
+             * \param k Index of current lattice point.
              * \param Q Discrete velocity direction (e.g. 0-8 for D2Q9).
              * \return Index of distribution vector that the distribution will be streamed to.
              */
             inline int streamIndex(const int k, const int Q) {
 
-                return Distribution_Base<TStencil>::mv_DistNeighbors[k * TStencil::Q + Q]; //Return neighbor of TLattice point k in direction Q
+                return Distribution_Base<TStencil>::mv_DistNeighbors[k * TStencil::Q + Q]; //Return neighbor of lattice point k in direction Q
 
             }
 
