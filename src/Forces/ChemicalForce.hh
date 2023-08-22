@@ -30,6 +30,9 @@ class ChemicalForceBinary : public ForceBase<TMethod> {
 
 };
 
+template<int i>
+void test(){}
+
 template<class TMethod, template<class,int> class TGradientType>
 template<class TTraits>
 inline double ChemicalForceBinary<TMethod, TGradientType>::computeXYZ(int xyz, int k) {
@@ -38,7 +41,7 @@ inline double ChemicalForceBinary<TMethod, TGradientType>::computeXYZ(int xyz, i
     if constexpr (has_type<Cartesian,typename TMethod::mt_Stencils>::type::value){
         
         return computeChemicalForce<TTraits,TTraits::Lattice::NDIM>(xyz,k);
-
+        
     }
     return 0;
 
@@ -64,11 +67,11 @@ inline double ChemicalForceBinary<TMethod, TGradientType>::computeChemicalForce(
     double sum = 0;
 
     for (int component = 0; component < TTraits::NumberOfComponents - 1; component++) {
-        
+        //std::cout<<ChemicalPotential<>::template get<typename TTraits::Lattice>(k)<<std::endl;
         sum += ChemicalPotential<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice>(k, component) * TGradientType<OrderParameter<TTraits::NumberOfComponents - 1>,(TTraits::NumberOfComponents - 1)>::template get<typename TTraits::Lattice, TDirections>(k, component, idx);
-        
+        //
     }
-
+    
     return sum;
 
 }

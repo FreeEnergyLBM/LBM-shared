@@ -56,8 +56,8 @@ class Geometry {
 
         enum
         {
-            Fluid = 0,
-            Solid = 1,
+            Solid = 0,
+            Fluid = 1,
             SolidWall = 2,
             InletWall = 3,
             OutletWall = 4,

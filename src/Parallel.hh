@@ -48,6 +48,8 @@ class Parallel {
         template<class TLattice, class TDistribution>
         inline void communicateDistributionAllOld(TDistribution& obj);
 
+        static constexpr int NumNeighbors = TNumNeighbors;
+
     protected:
         int mMaxNeighbors = 0;
         std::vector<int> mNeighbors; //!<IDs of the neighboring processes.

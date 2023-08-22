@@ -28,7 +28,7 @@ inline double CentralXYZ::compute(int direction, int k, int num){
 
             const double& param1 = TParameter::template get<Lattice>(data.getNeighbor(k, idx), num);
             const double& param2 = TParameter::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[idx]), num);
-
+            
             gradientsum += 0.5 * Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (param1 - param2);
         
     }

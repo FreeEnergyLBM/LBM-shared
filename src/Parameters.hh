@@ -475,7 +475,7 @@ struct OrderParameter : public ParameterSingleton<OrderParameter<TInstances>, do
 }; //Order parameter representing relative concentration of the phases
 
 template<int TInstances=1>
-struct ChemicalPotential : public ParameterSingleton<ChemicalPotential<TInstances>> {
+struct ChemicalPotential : public ParameterSingleton<ChemicalPotential<TInstances>, double, TInstances> {
 
     static constexpr char mName[] = "ChemicalPotential";
 

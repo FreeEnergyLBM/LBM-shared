@@ -256,6 +256,7 @@ struct Lee : ForcingBase<Cartesian,AllDirections> {
 
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k){
+        
         ma_Force.push_back(f.template computeXYZ<TTraits>(0,k));
         ma_Force.push_back(f.template computeXYZ<TTraits>(1,k));
         if constexpr (TTraits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<TTraits>(2,k));

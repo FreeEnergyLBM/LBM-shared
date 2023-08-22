@@ -148,15 +148,15 @@ class ModelBase { //Inherit from base class to avoid repetition of common
         }
 
         inline void collisionQ(const double* equilibriums, const double* olddistributions, const double& inversetau, int k) {
-
+            
             if constexpr(std::tuple_size<typename TTraits::Forces>::value != 0){
 
                 if constexpr (mDistribution.SaveEquilibrium) {
                     mDistribution.saveEquilibriums(equilibriums,k);
                 }
-
+                
                 auto forcemethods = getForceCalculator(mt_Forces,k);
-
+                
                 //std::unordered_map<std::type_index, std::array<double,TTraits::Stencil::Q>> forcesums;
                 //std::remove_reference<decltype(forces)>::type::Method::Prefactor
                 auto tempMap = std::apply([this](auto&... forces){//See Algorithm.hh for explanation of std::apply
@@ -273,9 +273,6 @@ inline double ModelBase<TLattice, TTraits>::computeDensity(const double* distrib
     else return CollisionBase<TLattice,typename TTraits::Stencil>::computeZerothMoment(distribution);
 
 }
-
-template<int i>
-void test(){}
 
 template<class TLattice, class TTraits>
 inline double ModelBase<TLattice, TTraits>::computeVelocity(const double* distribution, const double& density,

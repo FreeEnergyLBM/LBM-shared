@@ -124,7 +124,7 @@ inline void ChemicalPotentialCalculatorBinaryLee::compute(int k){
                                            - 6 * mA * pow(OrderParameter<>::get<Lattice>(k), 2)
                                            + 4 * mA * pow(OrderParameter<>::get<Lattice>(k), 3)
                                            - mKappa * LaplacianOrderParameter<>::get<Lattice>(k);
-
+    //std::cout<<ChemicalPotential<>::get<Lattice>(k)<<std::endl;
 }
 
 inline void ChemicalPotentialCalculatorBinaryLee::setA(double A){

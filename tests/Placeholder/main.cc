@@ -9,8 +9,8 @@
 const int lx = 100; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 
-const int timesteps = 1000; // Number of iterations to perform
-const int saveInterval = 100; // Interval to save global data
+const int timesteps = 100; // Number of iterations to perform
+const int saveInterval = 10; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
@@ -53,7 +53,7 @@ double initHumidity(int k) {
     int yy = computeY(ly, 1, k);
     double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - lx/2.) * (yy - lx/2.);
     //return 0.25*((double)rand()/(double)RAND_MAX);
-    if(sqrt(rr2)<RADIUS) return 0.8;
+    if(sqrt(rr2)<RADIUS) return 0.5;
     //if (xx < lx/2.-0.6) return 0.8;
     else return 0;
     //int yy = computeY(ly, 1, k);
@@ -144,8 +144,10 @@ int main(int argc, char **argv){
     binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setA(A);
     binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setKappa(kappa);
 
-    binary.getPreProcessor<MassLossCalculator>().setInterfaceHumidity(0.5);
-    binary.getPreProcessor<MassLossCalculator>().setDiffusivity(0.02);
+    binary.getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceHumidity(0.5);
+    binary.getPreProcessor<MassLossCalculatorInterpolated>().setDiffusivity(0.2);
+    binary.getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceWidth(sqrt(8*kappa/A));
+    binary.getPreProcessor<MassLossCalculatorInterpolated>().setPhiGasLiquid(0,1);
 
     using dbtype = InterpolatedDirichlet;
 
@@ -160,14 +162,14 @@ int main(int argc, char **argv){
     humidity.getBoundary<Dirichlet>().setInterfaceID(1);
     humidity.getBoundary<Dirichlet>().setInterfaceVal(0.0);
 
-    humidity.setDiffusivity(0.02);
+    humidity.setDiffusivity(0.2);
 
     humidity.getPreProcessor<HumidityBoundaryLabels>().setInterfaceCondition(interfaceCondition);
-    humidity.getPreProcessor<SetHumidityLiquid>().setInterfaceVal(0.05);
+    humidity.getPreProcessor<SetHumidityLiquid>().setInterfaceVal(0.5);
 
-    humidity.getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setInterfaceHumidity(0.05);
+    humidity.getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setInterfaceHumidity(0.5);
 
-    pressure.getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setInterfaceHumidity(0.05);
+    pressure.getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setInterfaceHumidity(0.5);
     pressure.getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setPressureCalculator(pressure.computePressure);
     pressure.getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setForceTuple(pressure.mt_Forces);
 

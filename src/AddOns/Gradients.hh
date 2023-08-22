@@ -31,13 +31,14 @@ inline void Gradients<TParam, TGradientStencil>::compute(int k) { //Not necessar
     using Stencil = typename TTraits::Stencil;
     using GradientType = typename TGradientStencil::template GradientType<TParam>;
     constexpr int numdir = TGradientStencil::template getNumberOfDirections<Stencil>();
-
+    
     for (int component = 0 ; component < TParam::instances; component++){
 
         for(int idx = 0; idx < numdir; idx++) {
 
             GradientType::template get<Lattice,numdir>(k, component, idx) = TGradientStencil::template compute<TTraits,TParam>(idx, k, component);
             
+            //std::cout<<typeid(GradientType).name()<<" "<<GradientType::template get<Lattice,numdir>(k, component, idx)<<std::endl;
         }
 
     }
