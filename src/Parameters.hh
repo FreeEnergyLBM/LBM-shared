@@ -159,11 +159,11 @@ class Parameter {
         template<class, class, int>
         friend class ParameterSingleton;
 
-        inline std::vector<double>& getParameter() { //Get a vector containing the parameters in the communication region
+        inline std::vector<T>& getParameter() { //Get a vector containing the parameters in the communication region
             return mv_Parameter;
         }
 
-        inline std::vector<double>& getCommParameter() { //Get a vector containing the parameters in the communication region
+        inline std::vector<T>& getCommParameter() { //Get a vector containing the parameters in the communication region
             return mv_CommParameter;
         }
 
@@ -390,6 +390,17 @@ inline void Parameter<TObj, TLattice, T, TNum>::Save(std::string filename, int t
 
 }
 
+struct Boundary{
+    int Id;
+    bool IsCorner;
+    std::vector<int8_t> NormalDirection;
+};
+
+template<int TInstances = 1>
+struct BoundaryLabels : public ParameterSingleton<BoundaryLabels<TInstances>,Boundary,TInstances> {
+    static constexpr char mName[] = "BoundaryLabels";
+}; //Labelling of geometry
+
 template<class TLattice>
 class ParameterSave {
 
@@ -400,11 +411,25 @@ class ParameterSave {
             int status = system(((std::string)"mkdir -p " + mDataDir).c_str());
             if (status) std::cout << "Error creating output directory" << std::endl;
 
+        #ifdef MPIPARALLEL
+
+            MPI_Type_create_resized(MPI_INT, 0L, sizeof(Boundary), &mMPIBoundary)
+            MPI_Type_commit(&mMPIBoundary);
+
+        #endif
+
         }
         ParameterSave(ParameterSave& other) : mDataDir(other.datadir){
 
             int status = system(((std::string)"mkdir -p " + mDataDir).c_str());
             if (status) std::cout << "Error creating output directory" << std::endl;
+
+        #ifdef MPIPARALLEL
+
+            MPI_Type_create_resized(MPI_INT, 0L, sizeof(Boundary), &mMPIBoundary)
+            MPI_Type_commit(&mMPIBoundary);
+
+        #endif
 
         }
 
@@ -420,9 +445,51 @@ class ParameterSave {
             (params.Save(TParameter::mName,timestep,mDataDir),...);
         }
 
+        void SaveBoundaries(int timestep){
+            char fdump[512];
+            sprintf(fdump, "%s/%s_t%i.mat", mDataDir.c_str(), BoundaryLabels<>::mName, timestep); //Buffer containing file name and location.
+
+        #ifdef MPIPARALLEL //When MPI is used we need a different approach for saving as all nodes are trying to write to the file
+
+            MPI_File fh;
+
+            MPI_File_open(MPI_COMM_SELF, fdump, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh); //Open the file using mpi in write only mode
+            
+            MPI_File_seek(fh, sizeof(int) * mpi.rank * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size, MPI_SEEK_SET); //Skip to a certain location in the file, currently
+            
+            MPI_File_write(fh,&BoundaryLabels<>::get<TLattice>()[TLattice::HaloSize], (TLattice::N - 2 * TLattice::HaloSize), mMPIBoundary, MPI_STATUSES_IGNORE);
+
+            MPI_File_close(&fh);
+                
+        #else
+
+            std::ofstream fs(fdump, std::ios::out | std::ios::binary);
+            
+            fs.seekp(sizeof(int) * mpi.rank * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size);
+
+            for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { 
+
+                
+                fs.write((char *)(&BoundaryLabels<>::get<TLattice>()[k].Id), sizeof(int));
+                
+                
+            };
+
+            fs.close();
+
+        #endif
+
+        }
+
     private:
 
         std::string mDataDir;
+
+    #ifdef MPIPARALLEL
+
+        MPI_Datatype mMPIBoundary;
+
+    #endif
         
 };
 

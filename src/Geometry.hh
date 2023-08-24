@@ -11,19 +11,6 @@
  * in the simulation.
  */
 
-struct Boundary{
-    int Id;
-    bool IsCorner;
-    std::vector<int8_t> NormalDirection;
-};
-
-template<int TInstances = 1>
-struct BoundaryLabels : public ParameterSingleton<BoundaryLabels<TInstances>,Boundary,TInstances> {
-    static constexpr char mName[] = "BoundaryLabels";
-}; //Labelling of geometry
-
-
-
 /**
  * \brief Geometry contains functions to initialise and access the chosen geometry.
  * This class contains functions to initialise the chosen geometry and determine whether the current TLattice

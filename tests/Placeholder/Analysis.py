@@ -35,7 +35,7 @@ for t in range(tstart,tend+1,tinc):
     print("t=%s"%t)
     t_file =t+t_zero
 
-    file_name = "data/"+"MassSink_t%li.mat"%t_file
+    file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
     #file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
 
     File = open(file_name, 'rb')
@@ -43,6 +43,10 @@ for t in range(tstart,tend+1,tinc):
     file_name = "data/"+"Velocity_t%li.mat"%t_file
 
     File2 = open(file_name, 'rb')
+
+    file_name = "data/"+"GradientHumidity_t%li.mat"%t_file
+
+    File3 = open(file_name, 'rb')
 
     #file_name = "data/"+"Density_t%li.mat"%t_file
 
@@ -63,11 +67,12 @@ for t in range(tstart,tend+1,tinc):
     rho2 = np.zeros((LX,LY,LZ))
     rho4 = np.zeros((LX,LY,LZ))
     v = np.zeros((LX,LY,LZ,ndim))
+    gh = np.zeros((LX,LY,LZ,ndim))
 
     for k in range(0,NLatt,1):
         (xk,yk,zk) = coord_k(k,LY,LZ)
         #rho0[xk,yk,zk] = struct.unpack('=d', File3.read(8))[0]
-        rho[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
+        rho[xk,yk,zk] = struct.unpack('=i', File.read(4))[0]
         #rho[xk,yk,zk] = struct.unpack('=i', File.read(4))[0]
         #struct.unpack('=d', File.read(8))[0]
         #rho2[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
@@ -75,6 +80,7 @@ for t in range(tstart,tend+1,tinc):
         #rho4[xk,yk,zk] = struct.unpack('=d', File4.read(8))[0]
         for i in range(ndim):
             v[xk,yk,zk,i] = struct.unpack('=d', File2.read(8))[0]
+            gh[xk,yk,zk,i] = struct.unpack('=d', File3.read(8))[0]
             #print(ndim)
 
     #print(np.amax(rho))
@@ -92,13 +98,14 @@ for t in range(tstart,tend+1,tinc):
     #im=ax.imshow(np.flip(rho0.take(indices=slicepos,axis=sliceaxis)).transpose(),interpolation='nearest',origin='upper')
 
     im=ax.imshow(rgbv,interpolation='nearest',origin='upper')
+    #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis))**2+(gh.take(indices=1,axis=3).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
     #im=ax.imshow(np.sqrt((v.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis))**2+(v.take(indices=1,axis=3).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
     #print(np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()[70,70])
     #ax.scatter(70,70)
     step=1
     X,Y=np.meshgrid(np.linspace(0,LX-1,int((LX)/step)),np.linspace(0,LY-1,int((LY)/step)))
 
-    ax.quiver(X.T,Y.T,np.flip(-v[:,:,:,0].take(indices=slicepos,axis=sliceaxis)),np.flip(v[:,:,:,3-sliceaxis].take(indices=slicepos,axis=sliceaxis)),width=0.001,headwidth=2.5,headlength=1.5)
+    #ax.quiver(X.T,Y.T,np.flip(-v[:,:,:,0].take(indices=slicepos,axis=sliceaxis)),np.flip(v[:,:,:,3-sliceaxis].take(indices=slicepos,axis=sliceaxis)),width=0.001,headwidth=2.5,headlength=1.5)
     fig.colorbar(im)
     #ax.scatter(49,49)
     plt.savefig(output, dpi=400, format='png')

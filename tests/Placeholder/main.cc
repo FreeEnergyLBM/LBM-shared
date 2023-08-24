@@ -6,11 +6,11 @@
 // You can modify the densities and relaxation times via the 'setDensities' and 'setTaus' functions. 
 // You can modify the body force magnitude in the setMagnitudeX function
 
-const int lx = 100; // Size of domain in x direction
-const int ly = 100; // Size of domain in y direction
+const int lx = 99; // Size of domain in x direction
+const int ly = 99; // Size of domain in y direction
 
-const int timesteps = 100; // Number of iterations to perform
-const int saveInterval = 10; // Interval to save global data
+const int timesteps = 10; // Number of iterations to perform
+const int saveInterval = 1; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
@@ -29,7 +29,7 @@ using Lattice = LatticeProperties<DataOldNewEquilibrium, NoParallel, lx, ly>;
 int initBoundary(const int k) {
     int xx = computeXGlobal<Lattice>(k);
     int yy = computeY(ly, 1, k);
-    double rr2 = (xx - lx/2. + 0.5) * (xx - lx/2. + 0.5) + (yy - lx/2. + 0.5) * (yy - lx/2. + 0.5);
+    double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - lx/2.) * (yy - lx/2.);
     
     if (yy <= 0 || yy >= ly - 1 || xx <= 0 || xx >= lx - 1) return 4;
     else if(sqrt(rr2)<RADIUS) return 5;
@@ -40,7 +40,7 @@ int initBoundary(const int k) {
 double initFluid(const int k) {
     int xx = computeXGlobal<Lattice>(k);
     int yy = computeY(ly, 1, k);
-    double rr2 = (xx - lx/2. + 0.5) * (xx - lx/2. + 0.5) + (yy - lx/2. + 0.5) * (yy - lx/2. + 0.5);
+    double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - lx/2.) * (yy - lx/2.);
     //return 0.25*((double)rand()/(double)RAND_MAX);
     return 0.5-0.5*tanh(2*(sqrt(rr2)-RADIUS)/(sqrt(8*kappa/A)));
     //return 0.5-0.5*tanh(2*((xx - lx/2.+0.6))/(sqrt(8*kappa/A)));
@@ -197,7 +197,8 @@ int main(int argc, char **argv){
         // Save the desired parameters, producing a binary file for each.
         if (timestep%saveInterval==0) {
             if(mpi.rank==0)std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
-            saver.SaveParameter<BoundaryLabels<>>(timestep);
+            //saver.SaveParameter<BoundaryLabels<>>(timestep);
+            saver.SaveBoundaries(timestep);
             saver.SaveParameter<Humidity<>>(timestep);
             saver.SaveParameter<ChemicalPotential<>>(timestep);
             saver.SaveParameter<Density<>>(timestep);
@@ -206,6 +207,7 @@ int main(int argc, char **argv){
             saver.SaveParameter<MassSink<>>(timestep);
             saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
             saver.SaveParameter<VelocityOld<>,Lattice::NDIM>(timestep);
+            saver.SaveParameter<GradientHumidity<>,Lattice::NDIM>(timestep);
         }
         
         // Evolve by one timestep
