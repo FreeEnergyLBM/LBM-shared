@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     model2.setTau2(1.0);
 
     // Set the solid and initialise the liquid
-    BoundaryLabels<>::set<Lattice>(initSolid);
+    Geometry<Lattice>::initialiseBoundaries(initSolid);
     OrderParameter<>::set<Lattice>(initFluid);
 
     // Create save handler

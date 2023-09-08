@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
     model.getForce<BodyForce<>>().setMagnitudeX(force);
 
     // Set the solid
-    BoundaryLabels<>::set<Lattice>(initSolid);
+    Geometry<Lattice>::initialiseBoundaries(initSolid);
 
     // Create save handler
     ParameterSave<Lattice> saver("data/");

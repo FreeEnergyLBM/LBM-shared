@@ -413,7 +413,7 @@ class ParameterSave {
 
         #ifdef MPIPARALLEL
 
-            MPI_Type_create_resized(MPI_INT, 0L, sizeof(Boundary), &mMPIBoundary)
+            MPI_Type_create_resized(MPI_INT, 0L, sizeof(Boundary), &mMPIBoundary);
             MPI_Type_commit(&mMPIBoundary);
 
         #endif
@@ -426,7 +426,7 @@ class ParameterSave {
 
         #ifdef MPIPARALLEL
 
-            MPI_Type_create_resized(MPI_INT, 0L, sizeof(Boundary), &mMPIBoundary)
+            MPI_Type_create_resized(MPI_INT, 0L, sizeof(Boundary), &mMPIBoundary);
             MPI_Type_commit(&mMPIBoundary);
 
         #endif

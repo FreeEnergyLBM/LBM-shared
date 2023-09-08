@@ -119,39 +119,41 @@ inline std::vector<int8_t> Geometry<TLattice>::findNormal(int (*condition)(const
 
     }
 
-    if(abs(sum[0])>abs(sum[1])){
-        if constexpr (TLattice::NDIM>2){
-            if (abs(sum[0])>abs(sum[2])){
-                sum[2]=0;
+    if constexpr (TLattice::NDIM>1){
+        if(abs(sum[0])>abs(sum[1])){
+            if constexpr (TLattice::NDIM>2){
+                if (abs(sum[0])>abs(sum[2])){
+                    sum[2]=0;
+                }
+                else if (abs(sum[0])<abs(sum[2])){
+                    sum[0]=0;
+                }
+                if (abs(sum[1])>abs(sum[2])){
+                    sum[2]=0;
+                }
+                else if (abs(sum[1])<abs(sum[2])){
+                    sum[1]=0;
+                }
             }
-            else if (abs(sum[0])<abs(sum[2])){
-                sum[0]=0;
-            }
-            if (abs(sum[1])>abs(sum[2])){
-                sum[2]=0;
-            }
-            else if (abs(sum[1])<abs(sum[2])){
-                sum[1]=0;
-            }
+            sum[1]=0;
         }
-        sum[1]=0;
-    }
-    else if (abs(sum[0])<abs(sum[1])) {
-        if constexpr (TLattice::NDIM>2){
-            if (abs(sum[0])>abs(sum[2])){
-                sum[2]=0;
+        else if (abs(sum[0])<abs(sum[1])) {
+            if constexpr (TLattice::NDIM>2){
+                if (abs(sum[0])>abs(sum[2])){
+                    sum[2]=0;
+                }
+                else if (abs(sum[0])<abs(sum[2])){
+                    sum[0]=0;
+                }
+                if (abs(sum[1])>abs(sum[2])){
+                    sum[2]=0;
+                }
+                else if (abs(sum[1])<abs(sum[2])){
+                    sum[1]=0;
+                }
             }
-            else if (abs(sum[0])<abs(sum[2])){
-                sum[0]=0;
-            }
-            if (abs(sum[1])>abs(sum[2])){
-                sum[2]=0;
-            }
-            else if (abs(sum[1])<abs(sum[2])){
-                sum[1]=0;
-            }
+            sum[0]=0;
         }
-        sum[0]=0;
     }
 
     for (int xyz = 0; xyz < TLattice::NDIM; xyz++){

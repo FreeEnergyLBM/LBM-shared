@@ -15,7 +15,7 @@ const double dropRadius = 20; // Radius to initialise the droplet
 
 
 // Set up the lattice, including the resolution and data/parallelisation method
-using Lattice = LatticeProperties<DataOldNew, X_Parallel<1>, lx, ly, lz>;
+using Lattice = LatticeProperties<DataOldNew, ParallelX<1>, lx, ly, lz>;
 
 
 
@@ -62,7 +62,7 @@ int main(int argc, char **argv){
     componentSeparationModel.setTau2(0.51);
 
     // Define the solid using the function above
-    BoundaryLabels<>::set<Lattice>(initSolid);
+    Geometry<Lattice>::initialiseBoundaries(initSolid);
 
     // Initialise the liquid and gas using the function above
     OrderParameter<>::set<Lattice>(initFluid);

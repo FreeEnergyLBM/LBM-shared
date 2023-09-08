@@ -43,7 +43,7 @@ int main(int argc, char **argv){
     mpi.init();
 
     // Set up the lattice, including the resolution and data/parallelisation method
-    using Lattice = LatticeProperties<DataOldNew, X_Parallel<1>, lx, ly>;
+    using Lattice = LatticeProperties<DataOldNew, ParallelX<1>, lx, ly>;
 
     // We need to modify the traits of the model to include a body force as an 'AddOn'.
     // We modify the default traits for the 'FlowFieldBinary' model, adding a bodyforce and setting the collision model to MRT, which improves accuracy at higher viscosity ratios
@@ -67,7 +67,7 @@ int main(int argc, char **argv){
     flowFieldModel.getForce<BodyForce<>>().setMagnitudeX(force);
 
     // Define the solid and fluid using the functions above
-    BoundaryLabels<>::set<Lattice>(initSolid);
+    Geometry<Lattice>::initialiseBoundaries(initSolid);
     OrderParameter<>::set<Lattice>(initFluid);
 
     // Algorithm creates an object that can run our chosen LBM model
