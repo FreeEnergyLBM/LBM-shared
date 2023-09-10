@@ -1,3 +1,4 @@
+// XPROCS 2
 #include "test_main.hh"
 #include "Lattice.hh"
 #include "Parallel.hh"

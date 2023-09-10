@@ -2,16 +2,22 @@ ROOT_DIR = ../..
 INC_DIR = $(ROOT_DIR)/src
 INC = $(addprefix -I, $(INC_DIR))
 
-TESTS = ParallelY_test #Collide_test BounceBack_test CubicWetting_test FlowField_test
+TESTS = ParallelX_test ParallelY_test Collide_test BounceBack_test CubicWetting_test FlowField_test
 RUN_TESTS = $(addprefix run_, $(TESTS))
 
 CXX = mpicxx
 CXXFLAGS = -std=c++17 -Wall -DMPIPARALLEL -fopenmp
 
-XPROCS = 1
-YPROCS = 2
-ZPROCS = 1
-NPROCS = $$(($(XPROCS)*$(YPROCS)*$(ZPROCS)))
+# Read the number of processors from the top of the file. Defaults to 1
+define GETPROCS
+$(eval XPROCS=$(shell head -n 1 $(1) | sed -n 's/.*XPROCS \([0-9]\+\).*/\1/p'))
+$(eval YPROCS=$(shell head -n 1 $(1) | sed -n 's/.*YPROCS \([0-9]\+\).*/\1/p'))
+$(eval ZPROCS=$(shell head -n 1 $(1) | sed -n 's/.*ZPROCS \([0-9]\+\).*/\1/p'))
+$(if $(XPROCS), , $(eval XPROCS=1))
+$(if $(YPROCS), , $(eval YPROCS=1))
+$(if $(ZPROCS), , $(eval ZPROCS=1))
+$(eval NPROCS = $(shell echo $$(($(XPROCS)*$(YPROCS)*$(ZPROCS)))))
+endef
 
 .PHONY: all clean cleantests gtest $(RUN_TESTS)
 
@@ -26,7 +32,8 @@ cleantests:
 	rm -f $(TESTS) *_test.o
 
 $(RUN_TESTS): run_%: %
-	@echo "Running $* on $(NPROCS) processes"
+	$(call GETPROCS, $*.cpp)
+	@echo "Running $* on $(NPROCS) process(es)"
 	@mpirun -np $(NPROCS) ./$* || touch failed
 
 # Googletest rules and parameters, see:
