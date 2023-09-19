@@ -68,7 +68,9 @@ inline double ChemicalForceBinary<TMethod, TGradientType>::computeChemicalForce(
 
     for (int component = 0; component < TTraits::NumberOfComponents - 1; component++) {
         //std::cout<<ChemicalPotential<>::template get<typename TTraits::Lattice>(k)<<std::endl;
-        sum += ChemicalPotential<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice>(k, component) * TGradientType<OrderParameter<TTraits::NumberOfComponents - 1>,(TTraits::NumberOfComponents - 1)>::template get<typename TTraits::Lattice, TDirections>(k, component, idx);
+        double chemPot = ChemicalPotential<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice>(k, component);
+        double gradOP = TGradientType<OrderParameter<TTraits::NumberOfComponents - 1>,(TTraits::NumberOfComponents - 1)>::template get<typename TTraits::Lattice, TDirections>(k, component, idx);
+        sum += chemPot * gradOP;
         //
     }
     
@@ -141,8 +143,10 @@ inline double ChemicalForce<TMethod, TGradientType>::computeChemicalForce(int id
 
     for (int component = 0; component < TTraits::NumberOfComponents - 1; component++) {
         
-        sum += ChemicalPotential<TTraits::NumberOfComponents>::template get<typename TTraits::Lattice>(k, component) * TGradientType<OrderParameter<TTraits::NumberOfComponents - 1>,(TTraits::NumberOfComponents - 1)>::template get<typename TTraits::Lattice, TDirections>(k, component, idx);
-        gradopsum += TGradientType<OrderParameter<TTraits::NumberOfComponents - 1>,(TTraits::NumberOfComponents - 1)>::template get<typename TTraits::Lattice, TDirections>(k, component, idx);
+        double chemPot = ChemicalPotential<TTraits::NumberOfComponents>::template get<typename TTraits::Lattice>(k, component);
+        double gradOP = TGradientType<OrderParameter<TTraits::NumberOfComponents - 1>,(TTraits::NumberOfComponents - 1)>::template get<typename TTraits::Lattice, TDirections>(k, component, idx);
+        sum += chemPot * gradOP;
+        gradopsum += gradOP;
 
     }
 
