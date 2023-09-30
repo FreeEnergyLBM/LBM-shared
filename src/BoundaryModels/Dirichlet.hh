@@ -36,7 +36,7 @@ inline void Dirichlet::compute(TDistributionType& distribution, int k) { //CHANG
 
         if(Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 0 ) {
             
-            distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;
+            distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getDistributionOldPointer(distribution.streamIndex(k, idx))[distribution.getOpposite(idx)] + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;
             //distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;
         
         }

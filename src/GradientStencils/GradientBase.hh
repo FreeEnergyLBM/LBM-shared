@@ -13,3 +13,8 @@ struct GradientBase{
     } 
     
 };
+
+template<class TDirections=Cartesian>
+struct InterfaceGradient : GradientBase<TDirections> {
+    
+};

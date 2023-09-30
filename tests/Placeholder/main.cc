@@ -6,18 +6,18 @@
 // You can modify the densities and relaxation times via the 'setDensities' and 'setTaus' functions. 
 // You can modify the body force magnitude in the setMagnitudeX function
 
-const int lx = 99; // Size of domain in x direction
-const int ly = 99; // Size of domain in y direction
+const int lx = 100; // Size of domain in x direction
+const int ly = 3; // Size of domain in y direction
 
-const int timesteps = 10; // Number of iterations to perform
-const int saveInterval = 1; // Interval to save global data
+const int timesteps = 500; // Number of iterations to perform
+const int saveInterval = 100; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
 //double BETA=0.001;
 //double GAMMA=-BETA*6.25;
 
-double RADIUS = 15.0;
+double RADIUS = 25.0;
 
 double A = 0.00025;
 double kappa = 0.0005;
@@ -29,21 +29,23 @@ using Lattice = LatticeProperties<DataOldNewEquilibrium, NoParallel, lx, ly>;
 int initBoundary(const int k) {
     int xx = computeXGlobal<Lattice>(k);
     int yy = computeY(ly, 1, k);
-    double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - lx/2.) * (yy - lx/2.);
+    double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - ly/2.) * (yy - ly/2.);
     
-    if (yy <= 0 || yy >= ly - 1 || xx <= 0 || xx >= lx - 1) return 4;
-    else if(sqrt(rr2)<RADIUS) return 5;
-    //else if (xx < lx/2.-0.6) return 5;
+    //if (yy <= 0 || yy >= ly - 1 || xx <= 0 || xx >= lx - 1) return 4;
+    if (xx <= 0) return 1;
+    if (xx >= lx - 1) return 1;
+    //else if(sqrt(rr2)<RADIUS) return 5;
+    else if (xx < lx/2.) return 5;
     else return 0;
 }
 
 double initFluid(const int k) {
     int xx = computeXGlobal<Lattice>(k);
     int yy = computeY(ly, 1, k);
-    double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - lx/2.) * (yy - lx/2.);
+    double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - ly/2.) * (yy - ly/2.);
     //return 0.25*((double)rand()/(double)RAND_MAX);
-    return 0.5-0.5*tanh(2*(sqrt(rr2)-RADIUS)/(sqrt(8*kappa/A)));
-    //return 0.5-0.5*tanh(2*((xx - lx/2.+0.6))/(sqrt(8*kappa/A)));
+    //return 0.5-0.5*tanh(2*(sqrt(rr2)-RADIUS-0.5)/(sqrt(8*kappa/A)));
+    return 0.5-0.5*tanh(2*((xx - lx/2.))/(sqrt(8*kappa/A)));
     //if(sqrt(rr2)<RADIUS) return 1;
     //else return 0;
 }
@@ -51,11 +53,14 @@ double initFluid(const int k) {
 double initHumidity(int k) {
     int xx = computeXGlobal<Lattice>(k);
     int yy = computeY(ly, 1, k);
-    double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - lx/2.) * (yy - lx/2.);
+    double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - ly/2.) * (yy - ly/2.);
     //return 0.25*((double)rand()/(double)RAND_MAX);
-    if(sqrt(rr2)<RADIUS) return 0.5;
-    //if (xx < lx/2.-0.6) return 0.8;
-    else return 0;
+    //if(sqrt(rr2)<RADIUS) return 0.5;
+    if (xx < lx/2.) return 0.5;
+    if (xx <= 0 || xx >= lx - 1) return 0;
+    return 0.5 - 0.5*(xx - (lx/2.))/(lx-lx/2.-2);
+    
+    //else return 0;
     //int yy = computeY(ly, 1, k);
     //return 0.5*tanh(2*(yy-3*ly/4)/(D))-0*0.5*tanh(2*(yy-ly)/(D))+0.5-0*0.5*tanh(2*(yy)/(D));
 }
@@ -73,6 +78,10 @@ bool interfaceCondition(const double& val, int k){
 
 bool interfaceCondition(const double& val, int k){
     return val<0.5;
+}
+
+bool interfaceConditionK(int k){
+    return OrderParameter<>::get<Lattice>(k)<0.5;
 }
 
 // Function used to define the fluid
@@ -98,10 +107,10 @@ double initFluid3(int k) {
 }
 */
 
-using traithumid = DefaultTraitHumidity<Lattice>::SetStencil<D2Q9>;
+using traithumid = DefaultTraitHumidity<Lattice>::SetStencil<D2Q5>;
 using traitpressure = DefaultTraitPressureLeeHumidity<Lattice> :: template AddBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>;
 
-double distancefunc(int idx, int k){
+double distancefunc(int k, int idx){
 
     using Stencil = typename traithumid::Stencil;
 
@@ -118,12 +127,14 @@ double distancefunc(int idx, int k){
         normdotci +=  normal[xyz] * Stencil::Ci_xyz(xyz)[idx];
         magci += Stencil::Ci_xyz(xyz)[idx] * Stencil::Ci_xyz(xyz)[idx];
     }
-    
-    double dist = fabs(normaldist * normdotci/magci/magci);
+    //return 0.5; //!!!!!!!!!!!!!!!!
+    double dist = fabs(normaldist / normdotci/sqrt(magci));
+    //std::cout<<dist<<" "<<normaldist<<" "<<cos(normdotci/sqrt(magci))<<" "<<normdotci<<" "<<magci<<std::endl;
     //if(dist == 0.6) std::cout<<k<<std::endl;
     if (idx == 0 || std::isnan(dist) || std::isinf(dist)) return 0.5;
-    else if (dist>=1) return 0.99;
-    return dist;
+    else if (dist>=1) return 1;
+    else if (dist<=0) return 0;
+    return dist;//normdotci/magci/magci;
 
 }
 
@@ -139,15 +150,18 @@ int main(int argc, char **argv){
     PressureLeeHumidity<Lattice,traitpressure> pressure;
     BinaryLeeHumidity<Lattice> binary;
 
-   // BinaryLee<Lattice> binary;
-
+    // BinaryLee<Lattice> binary;
+    
     binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setA(A);
     binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setKappa(kappa);
 
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceHumidity(0.5);
-    binary.getPreProcessor<MassLossCalculatorInterpolated>().setDiffusivity(0.2);
+    binary.getPreProcessor<MassLossCalculatorInterpolated>().setDiffusivity(0.02);
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceWidth(sqrt(8*kappa/A));
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setPhiGasLiquid(0,1);
+    
+    //binary.getPreProcessor<MassLossCalculator>().setInterfaceHumidity(0.5);
+    //binary.getPreProcessor<MassLossCalculator>().setDiffusivity(0.2);
 
     using dbtype = InterpolatedDirichlet;
 
@@ -155,17 +169,21 @@ int main(int argc, char **argv){
     //humidity.getBoundary<dbtype,0>().setInterfaceID(5);
     //humidity.getBoundary<dbtype,0>().setInterfaceVal(0.8);
 
-    //humidity.getBoundary<InterpolatedDirichlet>().setInterfaceDistanceFunction(distancefunc);
+    humidity.getBoundary<InterpolatedDirichlet>().setInterfaceDistanceFunction(distancefunc);
     humidity.getBoundary<dbtype>().setInterfaceID(5);
     humidity.getBoundary<dbtype>().setInterfaceVal(0.5);
 
     humidity.getBoundary<Dirichlet>().setInterfaceID(1);
     humidity.getBoundary<Dirichlet>().setInterfaceVal(0.0);
 
-    humidity.setDiffusivity(0.2);
+    humidity.setDiffusivity(0.02);
 
     humidity.getPreProcessor<HumidityBoundaryLabels>().setInterfaceCondition(interfaceCondition);
     humidity.getPreProcessor<SetHumidityLiquid>().setInterfaceVal(0.5);
+
+    humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceNoSolid>>().setInterfaceDistance(distancefunc);
+    //humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceNoSolid>>().setInterfaceCondition(interfaceConditionK);
+    humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceNoSolid>>().setInterfaceVal(0.5);
 
     humidity.getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setInterfaceHumidity(0.5);
 
@@ -187,9 +205,9 @@ int main(int argc, char **argv){
     
     // Set up the handler object for saving data
     
-    //Algorithm lbm(humidity,pressure,binary);
-    Algorithm lbm(binary,pressure,humidity);
-    //Algorithm lbm(humidity);
+    //Algorithm lbm(humidity,binary);
+    //Algorithm lbm(binary,pressure,humidity);
+    Algorithm lbm(humidity);
 
     // Perform the main LBM loop
     for (int timestep=0; timestep<=timesteps; timestep++) {
