@@ -146,6 +146,8 @@ inline void Algorithm<TModel...>::initialise() { //...
 
     }
 
+    postprocessStep();
+
 }
 
 /**

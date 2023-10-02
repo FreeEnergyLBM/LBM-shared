@@ -206,8 +206,8 @@ int main(int argc, char **argv){
     // Set up the handler object for saving data
     
     //Algorithm lbm(humidity,binary);
-    //Algorithm lbm(binary,pressure,humidity);
-    Algorithm lbm(humidity);
+    Algorithm lbm(binary,pressure,humidity);
+    //Algorithm lbm(humidity);
 
     // Perform the main LBM loop
     for (int timestep=0; timestep<=timesteps; timestep++) {
