@@ -4,6 +4,7 @@
 #include <vector>
 #include <array>
 #include <map>
+#include <unordered_map>
 
 //Stencil.hh: This file specifies the stencils that can be used. This determines the discretisation of the model.
 //The "D" refers to the number of cartesian dimensions in the stencil, so "D2" would be a 2D simulation. The "Q"
@@ -16,6 +17,33 @@
 //LBM collision step "Weights[Q]", the modulus of velocity vectors depending on the direciton "CModulus", a
 //currently not implemented array of MRT moments "Moments[Q]" and a function to calculate MRT relaxation times
 //"MRTWeights()".
+
+//using boost::hash_combine
+template <class T>
+inline void hash_combine(std::size_t& seed, T const& v)
+{
+    seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+namespace std
+{
+    template<typename T>
+    struct hash<vector<T>>
+    {
+        typedef vector<T> argument_type;
+        typedef std::size_t result_type;
+        result_type operator()(argument_type const& in) const
+        {
+            size_t size = in.size();
+            size_t seed = 0;
+            for (size_t i = 0; i < size; i++)
+                //Combine the hash of the current vector with the hashes of the previous ones
+                hash_combine(seed, in[i]);
+            return seed;
+        }
+    };
+}
+
 
 
 struct Stencil3D{};
@@ -79,7 +107,7 @@ struct D1Q3 : StencilBase { //Most commonly used 2D stencil
     static constexpr int Ci_y[Q] = {0, 0, 0}; //There is no convecntion for the ordering of these
     static constexpr int Ci_z[Q] = {0, 0, 0}; //0 array because there is no z direction
 
-    static const std::map<std::vector<int8_t>,int> QMap;
+    static std::unordered_map<std::vector<int8_t>,int> QMap;
 
     enum{x = 0, y = 1, z = 2};
     inline static auto Ci_xyz(const int d) -> const int(&)[Q] { //Returns velocity direction vector depending on input d, this is probably slow
@@ -115,7 +143,7 @@ struct D1Q3 : StencilBase { //Most commonly used 2D stencil
 
 };
 
-const std::map<std::vector<int8_t>,int> D1Q3::QMap = {{{0},0},
+std::unordered_map<std::vector<int8_t>,int> D1Q3::QMap = {{{0},0},
                                                       {{1},1},
                                                       {{-1},2}};
 
@@ -129,7 +157,7 @@ struct D2Q5 : StencilBase { //Most commonly used 2D stencil
     static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1}; //There is no convecntion for the ordering of these
     static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0}; //0 array because there is no z direction
 
-    static const std::map<std::vector<int8_t>,int> QMap;
+    static std::unordered_map<std::vector<int8_t>,int> QMap;
 
     enum{x = 0, y = 1, z = 2};
     inline static auto Ci_xyz(const int d) -> const int(&)[Q] { //Returns velocity direction vector depending on input d, this is probably slow
@@ -167,7 +195,7 @@ struct D2Q5 : StencilBase { //Most commonly used 2D stencil
 
 };
 
-const std::map<std::vector<int8_t>,int> D2Q5::QMap = {{{0,0},0},
+std::unordered_map<std::vector<int8_t>,int> D2Q5::QMap = {{{0,0},0},
                                                       {{1,0},1},
                                                       {{-1,0},2},
                                                       {{0,1},3},
@@ -183,7 +211,7 @@ struct D2Q9:StencilBase { //Most commonly used 2D stencil
     static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 1, -1, -1, 1}; //There is no convecntion for the ordering of these
     static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 0, 0, 0, 0}; //0 array because there is no z direction
 
-    static const std::map<std::vector<int8_t>,int> QMap;
+    static std::unordered_map<std::vector<int8_t>,int> QMap;
 
     enum{x = 0, y = 1, z = 2};
     inline static auto Ci_xyz(const int d) -> const int(&)[Q] { //Returns velocity direction vector depending on input d, this is probably slow
@@ -227,7 +255,7 @@ struct D2Q9:StencilBase { //Most commonly used 2D stencil
     
 };
 
-const std::map<std::vector<int8_t>,int> D2Q9::QMap = {{{0,0},0},
+std::unordered_map<std::vector<int8_t>,int> D2Q9::QMap = {{{0,0},0},
                                                       {{1,0},1},
                                                       {{-1,0},2},
                                                       {{0,1},3},
@@ -246,7 +274,7 @@ struct D3Q15:StencilBase{
     static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, -1, 1, 1, -1};
     static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 1, -1, 1, -1, -1, 1, 1, -1, 1, -1};
 
-    static const std::map<std::vector<int8_t>,int> QMap;
+    static std::unordered_map<std::vector<int8_t>,int> QMap;
 
     inline static auto Ci_xyz(const int d) -> const int(&)[Q]{
         if (d==0) {
@@ -295,7 +323,7 @@ struct D3Q15:StencilBase{
     }
 };
 
-const std::map<std::vector<int8_t>,int> D3Q15::QMap = {{{0,0,0},0},
+std::unordered_map<std::vector<int8_t>,int> D3Q15::QMap = {{{0,0,0},0},
                                                        {{1,0,0},1},
                                                        {{-1,0,0},2},
                                                        {{0,1,0},3},
@@ -320,7 +348,7 @@ struct D3Q19:StencilBase{ //Most commonly used 3D stencil
     static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 1, -1, 1, -1, 0, 0, 0, 0};
     static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 1, -1, -1, 1, 1, -1, -1, 1};
 
-    static const std::map<std::vector<int8_t>,int> QMap;
+    static std::unordered_map<std::vector<int8_t>,int> QMap;
 
     inline static auto Ci_xyz(const int d) -> const int(&)[Q]{
         if (d==0) {
@@ -374,7 +402,7 @@ struct D3Q19:StencilBase{ //Most commonly used 3D stencil
     }
 };
 
-const std::map<std::vector<int8_t>,int> D3Q19::QMap = {{{0,0,0},0},
+std::unordered_map<std::vector<int8_t>,int> D3Q19::QMap = {{{0,0,0},0},
                                                        {{1,0,0},1},
                                                        {{-1,0,0},2},
                                                        {{0,1,0},3},
@@ -403,7 +431,7 @@ struct D3Q27:StencilBase{ //Most commonly used 3D stencil
     static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 1, -1, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, -1, 1, -1, 1};
     static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 1, -1, -1, 1, 1, -1, -1, 1, 1, -1, -1, 1, -1, 1, 1, -1};
 
-    static const std::map<std::vector<int8_t>,int> QMap;
+    static std::unordered_map<std::vector<int8_t>,int> QMap;
 
     inline static auto Ci_xyz(const int d) -> const int(&)[Q]{
         if (d==0) {
@@ -427,7 +455,7 @@ struct D3Q27:StencilBase{ //Most commonly used 3D stencil
 
 };
 
-const std::map<std::vector<int8_t>,int> D3Q27::QMap = {{{0,0,0},0},
+std::unordered_map<std::vector<int8_t>,int> D3Q27::QMap = {{{0,0,0},0},
                                                         {{1,0,0},1},
                                                         {{-1,0,0},2},
                                                         {{0,1,0},3},
