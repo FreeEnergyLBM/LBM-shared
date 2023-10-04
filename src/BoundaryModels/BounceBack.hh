@@ -21,7 +21,7 @@ inline void BounceBack::compute(TDistributionType& distribution, int k) {
 
     for (int idx = 0; idx < TTraits::Stencil::Q; idx++) {
 
-        if(Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) != 1 ) {
+        if(Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 0 ) {
             
             distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = distribution.getDistributionPointer(k)[distribution.getOpposite(idx)];
         

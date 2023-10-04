@@ -31,10 +31,15 @@ inline void ExtrapolationOutflow::compute(TDistributionType& distribution, int k
 
         if(Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 0 ) {
             
-            distribution.getDistributionPointer(k)[idx] = 4.0/3.0*distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] - distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx]/3.0;
+            distribution.getDistributionPointer(k)[idx] = (4.0*distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] - distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx])/3.0;
+            //std::cout<<normalq<<std::endl;
             //distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;
         
         }
+
+        //else if (Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 4 ){
+        //    distribution.getDistributionPointer(k)[idx] = TTraits::Stencil::Weights[idx]*(OrderParameter<>::get<typename TTraits::Lattice>(k));
+        //}
 
     }    
 

@@ -9,8 +9,8 @@
 const int lx = 100; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 
-const int timesteps = 500; // Number of iterations to perform
-const int saveInterval = 100; // Interval to save global data
+const int timesteps = 10000; // Number of iterations to perform
+const int saveInterval = 1000; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
@@ -23,7 +23,7 @@ double A = 0.00025;
 double kappa = 0.0005;
 
 using Lattice = LatticeProperties<DataOldNewEquilibrium, NoParallel, lx, ly>;
-
+double offset = 0.5;
 // Function used to define the solid geometry
 // Here we set a solid at the top and bottom, in the conditions that return 1;
 int initBoundary(const int k) {
@@ -32,10 +32,11 @@ int initBoundary(const int k) {
     double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - ly/2.) * (yy - ly/2.);
     
     if (yy <= 0 || yy >= ly - 1 || xx <= 0 || xx >= lx - 1) return 4;
-    //if (xx <= 0) return 1;
-    //if (xx >= lx - 1) return 1;
+    //if (xx <= 1) return 1;
+    //else if (xx == lx - 2) return 4;
+    //else if (xx >= lx - 1) return 1;
     else if(sqrt(rr2)<RADIUS) return 5;
-    //else if (xx < lx/2.) return 5;
+    //else if (xx < lx/2.+offset) return 5;
     else return 0;
 }
 
@@ -45,7 +46,7 @@ double initFluid(const int k) {
     double rr2 = (xx - lx/2.) * (xx - lx/2.) + (yy - ly/2.) * (yy - ly/2.);
     //return 0.25*((double)rand()/(double)RAND_MAX);
     return 0.5-0.5*tanh(2*(sqrt(rr2)-RADIUS-0.5)/(sqrt(8*kappa/A)));
-    //return 0.5-0.5*tanh(2*((xx - lx/2.))/(sqrt(8*kappa/A)));
+    //return 0.5-0.5*tanh(2*((xx - lx/2.-offset))/(sqrt(8*kappa/A)));
     //if(sqrt(rr2)<RADIUS) return 1;
     //else return 0;
 }
@@ -57,9 +58,9 @@ double initHumidity(int k) {
     //return 0.25*((double)rand()/(double)RAND_MAX);
     if(sqrt(rr2)<RADIUS) return 0.5;
     else return 0;
-    //if (xx < lx/2.) return 0.5;
+    //if (xx <= lx/2.) return 0.5;
     //if (xx <= 0 || xx >= lx - 1) return 0;
-    //return 0.5 - 0.5*(xx - (lx/2.))/(lx-lx/2.-2);
+    //return 0.5 - 0.5*(xx - (lx/2.+offset))/(lx-lx/2.-offset-1.5);
     
     //else return 0;
     //int yy = computeY(ly, 1, k);
@@ -132,6 +133,7 @@ double distancefunc(int k, int idx){
     double dist = fabs(normaldist / normdotci/sqrt(magci));
     //std::cout<<dist<<" "<<normaldist<<" "<<cos(normdotci/sqrt(magci))<<" "<<normdotci<<" "<<magci<<std::endl;
     //if(dist == 0.6) std::cout<<k<<std::endl;
+    //std::cout<<dist<<std::endl;
     if (idx == 0 || std::isnan(dist) || std::isinf(dist)) return 0.5;
     else if (dist>=1) return 1;
     else if (dist<=0) return 0;
@@ -157,7 +159,7 @@ int main(int argc, char **argv){
     binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setKappa(kappa);
 
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceHumidity(0.5);
-    binary.getPreProcessor<MassLossCalculatorInterpolated>().setDiffusivity(0.02);
+    binary.getPreProcessor<MassLossCalculatorInterpolated>().setDiffusivity(0.01);
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceWidth(sqrt(8*kappa/A));
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setPhiGasLiquid(0,1);
     
@@ -174,10 +176,10 @@ int main(int argc, char **argv){
     humidity.getBoundary<dbtype>().setInterfaceID(5);
     humidity.getBoundary<dbtype>().setInterfaceVal(0.5);
 
-    humidity.getBoundary<Dirichlet>().setInterfaceID(1);
+    humidity.getBoundary<Dirichlet>().setInterfaceID(4);
     humidity.getBoundary<Dirichlet>().setInterfaceVal(0.0);
 
-    humidity.setDiffusivity(0.02);
+    humidity.setDiffusivity(0.01);
 
     humidity.getPreProcessor<HumidityBoundaryLabels>().setInterfaceCondition(interfaceCondition);
     humidity.getPreProcessor<SetHumidityLiquid>().setInterfaceVal(0.5);
