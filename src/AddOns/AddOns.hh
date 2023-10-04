@@ -7,4 +7,4 @@
 
 #include "Swapper.hh"
 
-#include "ConstantPressureGradientBoundary.hh"
+#include "ConstantGradientBoundary.hh"
