@@ -24,6 +24,7 @@ struct LatticeProperties{
     inline static int LXdiv = lx, LYdiv = ly, LZdiv = lz;
     inline static int LXMPIOffset = 0, LYMPIOffset = 0, LZMPIOffset = 0;
     inline static int HaloSize = 0, HaloXWidth = 0, HaloYWidth = 0, HaloZWidth = 0;
+    inline static int subArray[3] = {lx, ly, lz};
     inline static double DT = 1;
     inline static int Face[6] = {0, 0, 0, 0, 0, 0}; // FaceX=0, FaceY=0, FaceZ=0, EdgeX=0, EdgeY=0, EdgeZ=0;
     inline static TParallel Parallel;

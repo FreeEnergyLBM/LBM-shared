@@ -466,6 +466,7 @@ void ParallelX<TNumNeighbors>::init() {
     if (TLattice::LX % mpi.size == 0) {
         TLattice::LXdiv = (TLattice::LX/mpi.size + 2*TNumNeighbors);
         TLattice::LXMPIOffset = (TLattice::LXdiv - 2*TNumNeighbors) * mpi.rank;
+        TLattice::subArray[0] = TLattice::LX / mpi.size;
     }
     else{
         std::string err_message = "Currently, the size of the domain in the X direction must be divisible by the number of mpi ranks.";
@@ -563,6 +564,7 @@ void ParallelY<TNumNeighbors>::init() {
     if (TLattice::LY % mpi.size == 0) {
         TLattice::LYdiv = (TLattice::LY/mpi.size + 2*TNumNeighbors);
         TLattice::LYMPIOffset = (TLattice::LYdiv - 2*TNumNeighbors) * mpi.rank;
+        TLattice::subArray[1] = TLattice::LY / mpi.size;
     }
     else{
         std::string err_message = "Currently, the size of the domain in the Y direction must be divisible by the number of mpi ranks.";
