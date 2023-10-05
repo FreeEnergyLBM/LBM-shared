@@ -1,6 +1,7 @@
 #include "CentralXYZ.hh"
 #include "CentralXYZNoSolid.hh"
-#include "CentralXYZInterfaceNoSolid.hh" //Still need to do
+#include "CentralXYZInterface.hh"
+#include "CentralXYZInterfaceNoSolid.hh"
 #include "Laplacian.hh"
 #include "LaplacianNoSolid.hh"
 #include "CentralQ.hh"

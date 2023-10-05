@@ -364,8 +364,13 @@ struct LeeMuNonLocal : ForcingBase<AllDirections> {
     const inline double compute(int idx, int k) { //Guo forcing
 
         using data = Data_Base<typename TTraits::Lattice, typename TTraits::Stencil>;
-        
-        const double prefactor = 0.5 * TTraits::Lattice::DT * CollisionBase<typename TTraits::Lattice,typename TTraits::Stencil>::computeGamma(&Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(data::getInstance().getNeighbors()[k * TTraits::Stencil::Q+idx],0),idx); //Prefactor for Guo forcing
+
+        double gamma;
+
+        if (Geometry<typename TTraits::Lattice>::getBoundaryType(data::getInstance().getNeighbors()[k * TTraits::Stencil::Q + idx]) == 1) gamma = CollisionBase<typename TTraits::Lattice,typename TTraits::Stencil>::computeGamma(&Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,0),TTraits::Stencil::Opposites[idx]);
+        else gamma = CollisionBase<typename TTraits::Lattice,typename TTraits::Stencil>::computeGamma(&Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(data::getInstance().getNeighbors()[k * TTraits::Stencil::Q+idx],0),idx);
+
+        const double prefactor = 0.5 * TTraits::Lattice::DT * gamma; //Prefactor for Guo forcing
 
         return prefactor*(ma_ForceQ[idx]);
 
