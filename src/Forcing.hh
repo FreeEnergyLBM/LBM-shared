@@ -10,6 +10,7 @@
 #include "Stencil.hh"
 #include "Service.hh"
 #include "Collide.hh"
+#include "Geometry.hh"
 
 template<class ...TStencils>
 struct ForcingBase{
