@@ -109,9 +109,13 @@ class ChemicalPotentialCalculatorBinaryLee : public AddOnBase {
 
         inline void setKappa(double kappa);
 
+        inline void setOmega(double omega);
+
         double mA;
 
         double mKappa;
+
+        double mOmega = 0;
     
 };
 
@@ -123,6 +127,7 @@ inline void ChemicalPotentialCalculatorBinaryLee::compute(int k){
     ChemicalPotential<>::get<Lattice>(k) = 2 * mA * OrderParameter<>::get<Lattice>(k)
                                            - 6 * mA * pow(OrderParameter<>::get<Lattice>(k), 2)
                                            + 4 * mA * pow(OrderParameter<>::get<Lattice>(k), 3)
+                                           + 2 * mOmega * (OrderParameter<>::get<Lattice>(k) < 0) * OrderParameter<>::get<Lattice>(k)
                                            - mKappa * LaplacianOrderParameter<>::get<Lattice>(k);
     //std::cout<<ChemicalPotential<>::get<Lattice>(k)<<std::endl;
 }
@@ -136,6 +141,12 @@ inline void ChemicalPotentialCalculatorBinaryLee::setA(double A){
 inline void ChemicalPotentialCalculatorBinaryLee::setKappa(double kappa){
 
     mKappa = kappa;
+
+}
+
+inline void ChemicalPotentialCalculatorBinaryLee::setOmega(double omega){
+
+    mOmega = omega;
 
 }
 

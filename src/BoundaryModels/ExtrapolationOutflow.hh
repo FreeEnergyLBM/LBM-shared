@@ -31,21 +31,21 @@ inline void ExtrapolationOutflow::compute(TDistributionType& distribution, int k
         
         
         double cidotnormal = 0;
-        for (int xyz = 0; xyz < Lattice::NDIM; xyz++) {
-            cidotnormal += Stencil::Ci_xyz(xyz)[idx1]*BoundaryLabels<>::get<typename TTraits::Lattice>(k).NormalDirection[xyz];
+        for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
+            cidotnormal += TTraits::Stencil::Ci_xyz(xyz)[idx]*BoundaryLabels<>::get<typename TTraits::Lattice>(k).NormalDirection[xyz];
         }
         //if (cidotnormal > 0) TParameter::template get<Lattice>(neighbors[k * Stencil::Q+Stencil::Opposites[idx1]]) = (4*TParameter::template get<Lattice>(k) - TParameter::template get<Lattice>(neighbors[k * Stencil::Q+idx1])) / 3.0;
         
-        if(Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 0 || (Geometry<typename TTraits::Lattice>::isCorner(k) && Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 4) ) {
+        if(Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 0 && cidotnormal!=0) {
             
             //distribution.getDistributionPointer(k)[idx] = (4.0*distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] - distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx])/3.0;
-            distribution.getDistributionPointer(k)[idx] = (4.0*distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] - distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx])/3.0;
+            distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = (4.0*distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx] - distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq), normalq))[idx])/3.0;
             //std::cout<<normalq<<std::endl;
             //distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;
         
         }
         else if (cidotnormal==0){
-            distribution.getDistributionPointer(k)[idx] = distribution.getEquilibriumPointer(k)[idx];//TTraits::Stencil::Weights[idx]*OrderParameter<>::get<typename TTraits::Lattice>(k);
+            distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = distribution.getEquilibriumPointer(distribution.streamIndex(k, normalq))[idx];//TTraits::Stencil::Weights[idx]*OrderParameter<>::get<typename TTraits::Lattice>(k);
         }
         //else if (Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 4 ){
         //    distribution.getDistributionPointer(k)[idx] = TTraits::Stencil::Weights[idx]*(OrderParameter<>::get<typename TTraits::Lattice>(k));

@@ -143,8 +143,8 @@ inline double ChemicalForce<TMethod, TGradientType>::computeChemicalForce(int id
 
     for (int component = 0; component < TTraits::NumberOfComponents - 1; component++) {
         
-        double chemPot = ChemicalPotential<TTraits::NumberOfComponents>::template get<typename TTraits::Lattice>(k, component);
-        double gradOP = TGradientType<OrderParameter<TTraits::NumberOfComponents - 1>,(TTraits::NumberOfComponents - 1)>::template get<typename TTraits::Lattice, TDirections>(k, component, idx);
+        const double& chemPot = ChemicalPotential<TTraits::NumberOfComponents>::template get<typename TTraits::Lattice>(k, component);
+        const double& gradOP = TGradientType<OrderParameter<TTraits::NumberOfComponents - 1>,(TTraits::NumberOfComponents - 1)>::template get<typename TTraits::Lattice, TDirections>(k, component, idx);
         sum += chemPot * gradOP;
         gradopsum += gradOP;
 

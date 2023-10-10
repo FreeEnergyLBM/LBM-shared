@@ -4,7 +4,7 @@
 # SBATCH -N 1
 #SBATCH -n 1
 #SBATCH -c 20
-#SBATCH -t 00:15:00
+#SBATCH -t 00:10:00
 #SBATCH --ntasks-per-socket=1
 #SBATCH --cpus-per-task=20
 #SBATCH -p test

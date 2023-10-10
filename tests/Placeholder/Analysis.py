@@ -37,8 +37,8 @@ for t in range(tstart,tend+1,tinc):
 
     #file_name = "data/"+"MassSink_t%li.mat"%t_file
     #file_name = "data/"+"Pressure_t%li.mat"%t_file
-    #file_name = "data/"+"Humidity_t%li.mat"%t_file
-    file_name = "data/"+"OrderParameter_t%li.mat"%t_file
+    file_name = "data/"+"Humidity_t%li.mat"%t_file
+    #file_name = "data/"+"OrderParameter_t%li.mat"%t_file
     #file_name = "data/"+"ChemicalPotential_t%li.mat"%t_file
     #file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
 
@@ -104,7 +104,7 @@ for t in range(tstart,tend+1,tinc):
     im=ax.imshow(rgbv,interpolation='nearest',origin='upper')
     #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis))**2+(gh.take(indices=1,axis=3).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
     #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
-    im=ax.imshow(np.sqrt((v.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis))**2+(v.take(indices=1,axis=3).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
+    #im=ax.imshow(np.sqrt((v.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis))**2+(v.take(indices=1,axis=3).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
     #print(np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()[70,70])
     #ax.scatter(70,70)
     step=1
@@ -120,8 +120,10 @@ for t in range(tstart,tend+1,tinc):
     plt.plot(rho[:,int(LY/2),0])
     plt.savefig("test_%012d.png"%(t), dpi=200, format='png')
 
+    print(np.amax(v[int(LX/2),:,0]))
+
 
 
 plt.figure()
-plt.plot(rho[:,int(LY/2),0])
+plt.plot(v[int(LX/2),:,0])
 plt.savefig("test.png", dpi=200, format='png')

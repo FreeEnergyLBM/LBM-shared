@@ -21,34 +21,38 @@ double RADIUS = 15.0;
 
 double A = 0.00025;
 double kappa = 0.0005;
+const double Hsat = 0.3;
 
 using Lattice = LatticeProperties<DataOldNewEquilibrium, NoParallel, lx, ly>;
-double offset = 0.5;
+double offsetx = 0.0;
+double offsety = -ly/2.;
 // Function used to define the solid geometry
 // Here we set a solid at the top and bottom, in the conditions that return 1;
 int initBoundary(const int k) {
     int xx = computeXGlobal<Lattice>(k);
     int yy = computeY(ly, 1, k);
-    double rr2 = (xx - (lx-1)/2.) * (xx - (lx-1)/2.) + (yy - (ly-1)/2.) * (yy - (ly-1)/2.);
+    double rr2 = (xx - (lx-1)/2. - offsetx) * (xx - (lx-1)/2. - offsetx) + (yy - (ly-1)/2. - offsety) * (yy - (ly-1)/2. - offsety);
     
-    if (yy <= 0 || yy >= ly - 1 || xx <= 0 || xx >= lx - 1) return 1;
-    if (yy == 1 || yy == ly - 2 || xx == 1 || xx == lx - 2) return 4;
+    if (yy > 1 && (yy >= ly - 1 || xx <= 0 || xx >= lx - 1)) return 4;
+    if (yy <= 1) return 1;
+    //if (yy == 1 || yy == ly - 2 || xx == 1 || xx == lx - 2) return 4;
     //if (xx <= 1) return 1;
     //else if (xx == lx - 2) return 4;
     //else if (xx >= lx - 1) return 1;
-    //else if(sqrt(rr2)<RADIUS) return 5;
     if(sqrt(rr2)<RADIUS) return 5;
+    //if(sqrt(rr2)<RADIUS) return 5;
     //else if (xx < lx/2.+offset) return 5;
-    else return 0;
+    return 0;
 }
 
 double initFluid(const int k) {
     int xx = computeXGlobal<Lattice>(k);
     int yy = computeY(ly, 1, k);
-    double rr2 = (xx - (lx-1)/2.) * (xx - (lx-1)/2.) + (yy - (ly-1)/2.) * (yy - (ly-1)/2.);
+    double rr2 = (xx - (lx-1)/2. - offsetx) * (xx - (lx-1)/2. - offsetx) + (yy - (ly-1)/2. - offsety) * (yy - (ly-1)/2. - offsety);
     //return 0.25*((double)rand()/(double)RAND_MAX);
     return 0.5-0.5*tanh(2*(sqrt(rr2)-RADIUS)/(sqrt(8*kappa/A)));
     //return 0.5-0.5*tanh(2*((xx - lx/2.-offset))/(sqrt(8*kappa/A)));
+    //return 0.5-0.5*tanh(2*((yy - ly/2.))/(sqrt(8*kappa/A)));
     //if(sqrt(rr2)<RADIUS) return 1;
     //else return 0;
 }
@@ -56,9 +60,9 @@ double initFluid(const int k) {
 double initHumidity(int k) {
     int xx = computeXGlobal<Lattice>(k);
     int yy = computeY(ly, 1, k);
-    double rr2 = (xx - (lx-1)/2.) * (xx - (lx-1)/2.) + (yy - (ly-1)/2.) * (yy - (ly-1)/2.);
+    double rr2 = (xx - (lx-1)/2. - offsetx) * (xx - (lx-1)/2. - offsetx) + (yy - (ly-1)/2. - offsety) * (yy - (ly-1)/2. - offsety);
     //return 0.25*((double)rand()/(double)RAND_MAX);
-    if(sqrt(rr2)<RADIUS) return 0.5;
+    if(sqrt(rr2)<RADIUS) return Hsat;
     else return 0;
     //if (xx <= lx/2.) return 0.5;
     //if (xx <= 0 || xx >= lx - 1) return 0;
@@ -112,7 +116,8 @@ double initFluid3(int k) {
 */
 
 using traithumid = DefaultTraitHumidity<Lattice>::SetStencil<D2Q5>;
-using traitpressure = DefaultTraitPressureLeeHumidity<Lattice> :: template AddBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>;
+using traitpressure = typename DefaultTraitPressureLeeHumidity<Lattice> :: template SetBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>,BounceBack>;
+//using traitpressure = typename DefaultTraitPressureLee<Lattice> :: AddForce<BodyForce<>>;
 
 double distancefunc(int k, int idx){
 
@@ -155,15 +160,23 @@ int main(int argc, char **argv){
     PressureLeeHumidity<Lattice,traitpressure> pressure;
     BinaryLeeHumidity<Lattice> binary;
 
+    //PressureLee<Lattice,traitpressure> pressure;
+    //BinaryLee<Lattice> binary;
+
     // BinaryLee<Lattice> binary;
     
     binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setA(A);
     binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setKappa(kappa);
 
-    binary.getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceHumidity(0.3);
-    binary.getPreProcessor<MassLossCalculatorInterpolated>().setDiffusivity(0.001);
+    binary.getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceHumidity(Hsat);
+    binary.getPreProcessor<MassLossCalculatorInterpolated>().setDiffusivity(0.01);
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceWidth(sqrt(8*kappa/A));
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setPhiGasLiquid(0,1);
+
+    double theta = M_PI/4.0;
+    double wettingprefactor = - cos(theta)*sqrt(2*A/kappa);
+
+    binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZWetting, CentralQWetting, MixedXYZWetting, MixedQWetting, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
     
     //binary.getPreProcessor<MassLossCalculator>().setInterfaceHumidity(0.5);
     //binary.getPreProcessor<MassLossCalculator>().setDiffusivity(0.2);
@@ -176,26 +189,26 @@ int main(int argc, char **argv){
 
     humidity.getBoundary<InterpolatedDirichlet>().setInterfaceDistanceFunction(distancefunc);
     humidity.getBoundary<dbtype>().setInterfaceID(5);
-    humidity.getBoundary<dbtype>().setInterfaceVal(0.3);
+    humidity.getBoundary<dbtype>().setInterfaceVal(Hsat);
 
     humidity.getBoundary<Dirichlet>().setInterfaceID(4);
     humidity.getBoundary<Dirichlet>().setInterfaceVal(0.0);
 
-    humidity.setDiffusivity(0.001);
+    humidity.setDiffusivity(0.01);
 
     humidity.getPreProcessor<HumidityBoundaryLabels>().setInterfaceCondition(interfaceCondition);
-    humidity.getPreProcessor<SetHumidityLiquid>().setInterfaceVal(0.3);
+    humidity.getPreProcessor<SetHumidityLiquid>().setInterfaceVal(Hsat);
 
     humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterface>>().setInterfaceDistance(distancefunc);
     //humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceNoSolid>>().setInterfaceCondition(interfaceConditionK);
-    humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterface>>().setInterfaceVal(0.3);
+    humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterface>>().setInterfaceVal(Hsat);
 
-    humidity.getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setInterfaceHumidity(0.3);
+    humidity.getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
 
-    pressure.getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setInterfaceHumidity(0.3);
+    pressure.getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
     pressure.getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setPressureCalculator(pressure.computePressure);
     pressure.getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setForceTuple(pressure.mt_Forces);
-
+    //pressure.getForce<BodyForce<>>().setMagnitudeX(0.0000001);
     ParameterSave<Lattice> saver("data/");
     saver.SaveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)
 

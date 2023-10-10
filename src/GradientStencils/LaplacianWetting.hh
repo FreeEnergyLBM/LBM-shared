@@ -2,21 +2,24 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct LaplacianCentralNoSolid : GradientBase<One> { //FIX
+struct LaplacianCentralWetting : WettingGradient<One> {
 
     template<class TTraits, class TParameter>
-    static inline double compute(int direction, int k, int num = 0);
+    inline double compute(int direction, int k, int num = 0);
 
     template<class TObj>
     using GradientType = Laplacian<TObj,TObj::instances>;
     
 };
 
+
 template<class TTraits, class TParameter>
-inline double LaplacianCentralNoSolid::compute(const int direction, const int k, int num){
-   
+inline double LaplacianCentralWetting::compute(int direction, int k, int num){
+
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
+
+    if (Geometry<Lattice>::getBoundaryType(k) == 4) return 0;
 
     using DataType = Data_Base<Lattice, Stencil>;
 
@@ -29,6 +32,15 @@ inline double LaplacianCentralNoSolid::compute(const int direction, const int k,
         if(Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))!=1) {
 
             laplaciansum +=  Stencil::Weights[idx] * 2 * (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num) - TParameter::template get<Lattice>(k, num));
+
+        }
+        else {
+
+            const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<>::get<typename TTraits::Lattice>(data.getNeighbor(k, idx)).NormalDirection)->second;
+
+            double csolid = TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, idx), normalq), num);
+
+            laplaciansum +=  Stencil::Weights[idx] * 2 * ((csolid - 0.5 * this->mPrefactor * (csolid - pow(csolid, 2))) - TParameter::template get<Lattice>(k, num));
 
         }
 
