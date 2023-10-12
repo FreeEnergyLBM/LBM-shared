@@ -63,7 +63,8 @@ inline double BodyForce<TMethod>::computeXYZ(int xyz, int k) {
 
     using Lattice = typename TTraits::Lattice;
 
-    double& density = Density<>::get<Lattice>(k);
+    //double& density = Density<>::get<Lattice>(k);
+    double density = 1.;
     
     if constexpr (Lattice::NDIM == 2){
         if (xyz == 0) return mMagnitudeX * density;
@@ -86,7 +87,8 @@ inline double BodyForce<TMethod>::computeQ(int idx, int k) {
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
-    double& density = Density<>::get<Lattice>(k);
+    //double& density = Density<>::get<Lattice>(k);
+    double density = 1.;
 
     if constexpr (Lattice::NDIM == 2){
         return density * ( mMagnitudeX * Stencil::Ci_xyz(0)[idx]

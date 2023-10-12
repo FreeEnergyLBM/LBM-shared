@@ -48,9 +48,9 @@ for t in range(tstart,tend+1,tinc):
 
     File2 = open(file_name, 'rb')
 
-    file_name = "data/"+"GradientHumidity_t%li.mat"%t_file
+    #file_name = "data/"+"GradientHumidity_t%li.mat"%t_file
 
-    File3 = open(file_name, 'rb')
+    #File3 = open(file_name, 'rb')
 
     #file_name = "data/"+"Density_t%li.mat"%t_file
 
@@ -66,29 +66,18 @@ for t in range(tstart,tend+1,tinc):
         return xk, yk, zk
 
     NLatt=LX*LY*LZ
-    rho0 = np.zeros((LX,LY,LZ))
+
     rho = np.zeros((LX,LY,LZ))
-    rho2 = np.zeros((LX,LY,LZ))
-    rho4 = np.zeros((LX,LY,LZ))
     v = np.zeros((LX,LY,LZ,ndim))
-    gh = np.zeros((LX,LY,LZ,ndim))
 
-    for k in range(0,NLatt,1):
-        (xk,yk,zk) = coord_k(k,LY,LZ)
-        #rho0[xk,yk,zk] = struct.unpack('=d', File3.read(8))[0]
-        rho[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
-        #rho[xk,yk,zk] = struct.unpack('=i', File.read(4))[0]
-        #struct.unpack('=d', File.read(8))[0]
-        #rho2[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
-        #rho4[xk,yk,zk] = struct.unpack('=d', File.read(8))[0]
-        #rho4[xk,yk,zk] = struct.unpack('=d', File4.read(8))[0]
-        for i in range(ndim):
-            v[xk,yk,zk,i] = struct.unpack('=d', File2.read(8))[0]
-            gh[xk,yk,zk,i] = struct.unpack('=d', File3.read(8))[0]
-            #print(ndim)
+    dat=File.read()
+    rho = np.ndarray((LX,LY,LZ),'=d',dat,0,(8*LZ*LY,8*LZ,8))
 
-    #print(np.amax(rho))
+    dat=File2.read()
+    v = np.ndarray((LX,LY,LZ,ndim),'=d',dat,0,(ndim*8*LZ*LY,ndim*8*LZ,ndim*8,8))
+
     File.close()
+    File2.close()
     
     fig,ax=plt.subplots(1,1,figsize=(6,6))
 
@@ -114,7 +103,7 @@ for t in range(tstart,tend+1,tinc):
     print(np.sum(rho),1/6/(49)*np.log(1/(1-0.5)))
     fig.colorbar(im)
     #ax.scatter(49,49)
-    plt.savefig(output, dpi=400, format='png')
+    plt.savefig(output, dpi=200, format='png')
     plt.close(fig)
     plt.figure()
     plt.plot(rho[:,int(LY/2),0])

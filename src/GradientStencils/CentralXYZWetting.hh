@@ -30,9 +30,7 @@ inline double CentralXYZWetting::compute(int direction, int k, int num){
         
         if ((Geometry<Lattice>::getBoundaryType(data.getNeighbor(k,idx))==1)) {
 
-            const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<>::get<typename TTraits::Lattice>(data.getNeighbor(k, idx)).NormalDirection)->second;
-
-            double csolid = TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, idx), normalq), num);
+            double csolid = TParameter::template get<Lattice>(k, num);
 
             gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (csolid - 0.5 * this->mPrefactor * (csolid - pow(csolid, 2)));
 

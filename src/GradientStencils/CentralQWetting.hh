@@ -26,8 +26,6 @@ inline double CentralQWetting::compute(const int direction, const int k, const i
 
     if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + direction]) == 1)) {
 
-        const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<>::get<typename TTraits::Lattice>(data.getNeighbor(k, direction)).NormalDirection)->second;
-
         double csolid = TParameter::template get<Lattice>(k, num);//TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, direction), normalq), num);
 
         if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]) == 1)) return 0;
@@ -35,8 +33,6 @@ inline double CentralQWetting::compute(const int direction, const int k, const i
 
     }
     else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]) == 1)) {
-
-        const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<>::get<typename TTraits::Lattice>(data.getNeighbor(k, Stencil::Opposites[direction])).NormalDirection)->second;
 
         double csolid = TParameter::template get<Lattice>(k, num);//TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[direction]), normalq), num);
 
