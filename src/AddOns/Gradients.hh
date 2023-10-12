@@ -126,21 +126,18 @@ class GradientsInterface : public AddOnBase {
 
         inline void setInterfaceDistance(double (*distance)(int k, int idx)){
 
-            //evalInterfaceDistance=distance;
             if constexpr (is_base_of_template<InterfaceGradient, TGradientStencil>()) mGradientStencil.setInterfaceDistance(distance);
 
         }
 
         inline void setInterfaceCondition(bool (*condition)(int k)){
 
-            //evalInterfaceDistance=distance;
             if constexpr (is_base_of_template<InterfaceGradient, TGradientStencil>()) mGradientStencil.setInterfaceCondition(condition);
 
         }
 
         inline void setInterfaceVal(double value){
 
-            //evalInterfaceDistance=distance;
             if constexpr (is_base_of_template<InterfaceGradient, TGradientStencil>()) mGradientStencil.setInterfaceVal(value);
 
         }
@@ -148,10 +145,6 @@ class GradientsInterface : public AddOnBase {
     private:
 
         TGradientStencil mGradientStencil;
-
-        //static double defaultDistance(const double& val, int k) { return 0.5; }
-
-        //double (*evalInterfaceDistance)(const double& val, int k) = &defaultDistance;
 
 };
 
@@ -169,8 +162,7 @@ inline void GradientsInterface<TParam, TGradientStencil>::compute(int k) { //Not
         for(int idx = 0; idx < numdir; idx++) {
 
             GradientType::template get<Lattice,numdir>(k, component, idx) = mGradientStencil.template compute<TTraits,TParam>(idx, k, component);
-            
-            //std::cout<<typeid(GradientType).name()<<" "<<GradientType::template get<Lattice,numdir>(k, component, idx)<<std::endl;
+
         }
 
     }
@@ -219,7 +211,6 @@ inline void GradientsWetting<TParam, TGradientStencil>::compute(int k) { //Not n
 
             GradientType::template get<Lattice,numdir>(k, component, idx) = mGradientStencil.template compute<TTraits,TParam>(idx, k, component);
             
-            //std::cout<<typeid(GradientType).name()<<" "<<GradientType::template get<Lattice,numdir>(k, component, idx)<<std::endl;
         }
 
     }

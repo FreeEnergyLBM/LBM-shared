@@ -9,19 +9,19 @@
 const int lx = 100; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 
-const int timesteps = 10000; // Number of iterations to perform
-const int saveInterval = 1000; // Interval to save global data
+const int timesteps = 250000; // Number of iterations to perform
+const int saveInterval = 10000; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
 //double BETA=0.001;
 //double GAMMA=-BETA*6.25;
 
-double RADIUS = 15.0;
+double RADIUS = 20.0;
 
-double A = 0.00025;
-double kappa = 0.0005;
-const double Hsat = 0.3;
+double A = 0.025;
+double kappa = 0.05;
+const double Hsat = 0.2;
 
 using Lattice = LatticeProperties<DataOldNewEquilibrium, NoParallel, lx, ly>;
 double offsetx = 0.0;
@@ -33,7 +33,7 @@ int initBoundary(const int k) {
     int yy = computeY(ly, 1, k);
     double rr2 = (xx - (lx-1)/2. - offsetx) * (xx - (lx-1)/2. - offsetx) + (yy - (ly-1)/2. - offsety) * (yy - (ly-1)/2. - offsety);
     
-    if (yy > 1 && (yy >= ly - 1 || xx <= 0 || xx >= lx - 1)) return 4;
+    if (yy > 1 && (yy >= ly - 1)) return 4;
     if (yy <= 1) return 1;
     //if (yy == 1 || yy == ly - 2 || xx == 1 || xx == lx - 2) return 4;
     //if (xx <= 1) return 1;
@@ -50,7 +50,9 @@ double initFluid(const int k) {
     int yy = computeY(ly, 1, k);
     double rr2 = (xx - (lx-1)/2. - offsetx) * (xx - (lx-1)/2. - offsetx) + (yy - (ly-1)/2. - offsety) * (yy - (ly-1)/2. - offsety);
     //return 0.25*((double)rand()/(double)RAND_MAX);
-    return 0.5-0.5*tanh(2*(sqrt(rr2)-RADIUS)/(sqrt(8*kappa/A)));
+    
+    if (yy <= 1) return 0;
+    else return 0.5-0.5*tanh(2*(sqrt(rr2)-RADIUS)/(sqrt(8*kappa/A)));
     //return 0.5-0.5*tanh(2*((xx - lx/2.-offset))/(sqrt(8*kappa/A)));
     //return 0.5-0.5*tanh(2*((yy - ly/2.))/(sqrt(8*kappa/A)));
     //if(sqrt(rr2)<RADIUS) return 1;
@@ -62,7 +64,7 @@ double initHumidity(int k) {
     int yy = computeY(ly, 1, k);
     double rr2 = (xx - (lx-1)/2. - offsetx) * (xx - (lx-1)/2. - offsetx) + (yy - (ly-1)/2. - offsety) * (yy - (ly-1)/2. - offsety);
     //return 0.25*((double)rand()/(double)RAND_MAX);
-    if(sqrt(rr2)<RADIUS) return Hsat;
+    if(sqrt(rr2)<RADIUS&&yy > 1) return Hsat;
     else return 0;
     //if (xx <= lx/2.) return 0.5;
     //if (xx <= 0 || xx >= lx - 1) return 0;
@@ -173,10 +175,12 @@ int main(int argc, char **argv){
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceWidth(sqrt(8*kappa/A));
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setPhiGasLiquid(0,1);
 
-    double theta = M_PI/4.0;
+    double theta = 3.0*M_PI/4.0;
     double wettingprefactor = - cos(theta)*sqrt(2*A/kappa);
 
     binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZWetting, CentralQWetting, MixedXYZWetting, MixedQWetting, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
+
+    //binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZNoSolid, CentralQNoSolid, MixedXYZNoSolid, MixedQNoSolid, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
     
     //binary.getPreProcessor<MassLossCalculator>().setInterfaceHumidity(0.5);
     //binary.getPreProcessor<MassLossCalculator>().setDiffusivity(0.2);

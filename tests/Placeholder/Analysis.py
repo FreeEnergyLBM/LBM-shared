@@ -37,8 +37,8 @@ for t in range(tstart,tend+1,tinc):
 
     #file_name = "data/"+"MassSink_t%li.mat"%t_file
     #file_name = "data/"+"Pressure_t%li.mat"%t_file
-    file_name = "data/"+"Humidity_t%li.mat"%t_file
-    #file_name = "data/"+"OrderParameter_t%li.mat"%t_file
+    #file_name = "data/"+"Humidity_t%li.mat"%t_file
+    file_name = "data/"+"OrderParameter_t%li.mat"%t_file
     #file_name = "data/"+"ChemicalPotential_t%li.mat"%t_file
     #file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
 

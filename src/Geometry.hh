@@ -111,7 +111,7 @@ inline std::vector<int8_t> Geometry<TLattice>::findNormal(int (*condition)(const
 
     for (int idx = 0; idx < TStencil::Q; idx++){
         
-        if(condition(neighbors[k*TStencil::Q+idx])==0) {
+        if(condition(neighbors[k*TStencil::Q+idx])!=condition(k)) {
             sum[0]+=TStencil::Ci_xyz(0)[idx];
             if constexpr (TLattice::NDIM>1) sum[1]+=TStencil::Ci_xyz(1)[idx];
             if constexpr (TLattice::NDIM>2) sum[2]+=TStencil::Ci_xyz(2)[idx];

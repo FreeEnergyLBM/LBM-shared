@@ -21,20 +21,12 @@ struct InterfaceGradient : GradientBase<TDirections> {
 
 template<class TDirections=Cartesian>
 struct WettingGradient : GradientBase<TDirections> {
-    
-    inline void setTheta(double theta) {
-
-        mTheta = theta;
-
-    }
 
     inline void setPrefactor(double prefactor) {
 
         mPrefactor = prefactor;
 
     }
-
-    double mTheta = M_PI/2.;
 
     double mPrefactor = 0;
 
