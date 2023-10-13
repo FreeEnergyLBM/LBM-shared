@@ -35,12 +35,12 @@ for t in range(tstart,tend+1,tinc):
     print("t=%s"%t)
     t_file =t+t_zero
 
-    #file_name = "data/"+"MassSink_t%li.mat"%t_file
+    file_name = "data/"+"MassSink_t%li.mat"%t_file
     #file_name = "data/"+"Pressure_t%li.mat"%t_file
     #file_name = "data/"+"Density_t%li.mat"%t_file
     #file_name = "data/"+"Humidity_t%li.mat"%t_file
     #file_name = "data/"+"OrderParameter_t%li.mat"%t_file
-    file_name = "data/"+"ChemicalPotential_t%li.mat"%t_file
+    #file_name = "data/"+"ChemicalPotential_t%li.mat"%t_file
     #file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
 
     File = open(file_name, 'rb')
