@@ -1,4 +1,5 @@
 #include "BounceBack.hh"
+#include "FreeSlip.hh"
 #include "Dirichlet.hh"
 #include "InterpolatedDirichlet.hh"
 #include "Refill.hh"

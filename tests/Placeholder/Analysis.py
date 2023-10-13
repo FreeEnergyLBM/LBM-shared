@@ -37,9 +37,10 @@ for t in range(tstart,tend+1,tinc):
 
     #file_name = "data/"+"MassSink_t%li.mat"%t_file
     #file_name = "data/"+"Pressure_t%li.mat"%t_file
+    #file_name = "data/"+"Density_t%li.mat"%t_file
     #file_name = "data/"+"Humidity_t%li.mat"%t_file
-    file_name = "data/"+"OrderParameter_t%li.mat"%t_file
-    #file_name = "data/"+"ChemicalPotential_t%li.mat"%t_file
+    #file_name = "data/"+"OrderParameter_t%li.mat"%t_file
+    file_name = "data/"+"ChemicalPotential_t%li.mat"%t_file
     #file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
 
     File = open(file_name, 'rb')
@@ -106,7 +107,8 @@ for t in range(tstart,tend+1,tinc):
     plt.savefig(output, dpi=200, format='png')
     plt.close(fig)
     plt.figure()
-    plt.plot(rho[:,int(LY/2),0])
+    plt.plot(v[int(LX/2),:,0])
+    #plt.plot(rho[:,int(LY/2),0])
     plt.savefig("test_%012d.png"%(t), dpi=200, format='png')
 
     print(np.amax(v[int(LX/2),:,0]))

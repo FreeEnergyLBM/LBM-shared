@@ -9,7 +9,7 @@
 const int lx = 5; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 
-const int timesteps = 500000; // Number of iterations to perform
+const int timesteps = 200000; // Number of iterations to perform
 const int saveInterval = 10000; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
@@ -19,8 +19,8 @@ const int saveInterval = 10000; // Interval to save global data
 
 double RADIUS = 20.0;
 
-double A = 0.025;
-double kappa = 0.05;
+double A = 0.0025;
+double kappa = A*3.125;//0.005;
 const double Hsat = 0.2;
 
 using Lattice = LatticeProperties<DataOldNewEquilibrium, NoParallel, lx, ly>;
@@ -42,22 +42,12 @@ double initFluid(const int k) {
     int yy = computeY(ly, 1, k);
     //double rr2 = (xx - (lx-1)/2. - offsetx) * (xx - (lx-1)/2. - offsetx) + (yy - (ly-1)/2. - offsety) * (yy - (ly-1)/2. - offsety);
 
-    if (yy <= 0 || yy >= ly - 1) return 0;
+    //if (yy <= 0 || yy >= ly - 1) return 0;
     return 0.5-0.5*tanh(2*((yy - ly/2.))/(sqrt(8*kappa/A)));
 
 }
 
-bool interfaceCondition(const double& val, int k){
-    return val<0.5;
-}
-
-bool interfaceConditionK(int k){
-    return OrderParameter<>::get<Lattice>(k)<0.5;
-}
-
-//using traithumid = DefaultTraitHumidity<Lattice>::SetStencil<D2Q5>;
-//using traitpressure = typename DefaultTraitPressureLeeHumidity<Lattice> :: template SetBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>,BounceBack>;
-using traitpressure = typename DefaultTraitPressureLee<Lattice> :: AddForce<BodyForce<>>;
+using traitpressure = typename DefaultTraitPressureLee<Lattice> :: AddForce<BodyForce<>> ::SetCollisionOperator<MRT>;
 
 int main(int argc, char **argv){
     //mpi.init();
@@ -70,7 +60,11 @@ int main(int argc, char **argv){
     PressureLee<Lattice,traitpressure> pressure;
     BinaryLee<Lattice> binary;
 
-    binary.setDensity2(0.01);
+    binary.setDensity1(1);
+    binary.setDensity2(1);
+
+    binary.getForce<MuSourceLocal>().setBeta(A);
+    binary.getForce<MuSourceNonLocal>().setBeta(A);
     
     binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setA(A);
     binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setKappa(kappa);
@@ -92,7 +86,7 @@ int main(int argc, char **argv){
 
     // Set up the handler object for saving data
 
-    Algorithm lbm(pressure,binary);
+    Algorithm lbm(binary,pressure);
 
     // Perform the main LBM loop
     for (int timestep=0; timestep<=timesteps; timestep++) {

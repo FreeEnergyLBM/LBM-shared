@@ -30,9 +30,6 @@ class ChemicalForceBinary : public ForceBase<TMethod> {
 
 };
 
-template<int i>
-void test(){}
-
 template<class TMethod, template<class,int> class TGradientType>
 template<class TTraits>
 inline double ChemicalForceBinary<TMethod, TGradientType>::computeXYZ(int xyz, int k) {

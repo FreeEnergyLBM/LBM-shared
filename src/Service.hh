@@ -645,7 +645,13 @@ struct ct_map<>
         static constexpr auto val=noKey();
     };
 };
+/*
+template <typename ii>
+constexpr void test3(){}
 
+template <bool ii>
+constexpr void test2(){test3<ii>();}
+*/
 template<typename TKey, typename TValue, typename... TRest>
 struct ct_map<kv<TKey, TValue>, TRest...>
 {
@@ -663,10 +669,17 @@ struct ct_map<kv<TKey, TValue>, TRest...>
     {
 
         static inline constexpr auto& findVal(){
-          static_assert(sizeof...(TRest)!=0||std::is_same<typename std::remove_reference<TKKey>::type, typename std::remove_reference<TKey>::type>::value, "Key does not exist in map.");
+          //static_assert(sizeof...(TRest)!=0||std::is_same<typename std::remove_reference<TKKey>::type, typename std::remove_reference<TKey>::type>::value, "Key does not exist in map.");
           if constexpr (sizeof...(TRest)!=0){
-            return (std::is_same<TKKey, TKey>::value) ?
-              kv<TKey, TValue>::Value : ct_map<TRest...>::template get<TKKey>::val;
+            //test2<std::is_same<TKKey, TKey>::value>();
+            if constexpr (std::is_same<TKKey, TKey>::value) {
+              return kv<TKey, TValue>::Value;
+            }
+            else{
+              static_assert(sizeof...(TRest)!=0||std::is_same<typename std::remove_reference<TKKey>::type, typename std::remove_reference<TKey>::type>::value, "Key does not exist in map.");
+              return ct_map<TRest...>::template get<TKKey>::val;
+            }
+            
           }
           else {
             return kv<TKey, TValue>::Value;
