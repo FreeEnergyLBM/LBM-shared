@@ -27,14 +27,14 @@ inline void ExtrapolationOutflow::compute(TDistributionType& distribution, int k
 
     if (Geometry<Lattice>::getBoundaryType(k) != 4) return;
 
-    const int& normalq = Stencil::QMap.find(BoundaryLabels<>::get<Lattice>(k).NormalDirection)->second;
+    const int& normalq = Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<Lattice>(k).NormalDirection)->second;
 
     for (int idx = 1; idx < Stencil::Q; idx++) {
         
         
         double cidotnormal = 0;
         for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
-            cidotnormal += TTraits::Stencil::Ci_xyz(xyz)[idx]*BoundaryLabels<>::get<typename TTraits::Lattice>(k).NormalDirection[xyz];
+            cidotnormal += TTraits::Stencil::Ci_xyz(xyz)[idx]*BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection[xyz];
         }
         //if (cidotnormal > 0) TParameter::template get<Lattice>(neighbors[k * Stencil::Q+Stencil::Opposites[idx1]]) = (4*TParameter::template get<Lattice>(k) - TParameter::template get<Lattice>(neighbors[k * Stencil::Q+idx1])) / 3.0;
         

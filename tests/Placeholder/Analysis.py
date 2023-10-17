@@ -49,9 +49,13 @@ for t in range(tstart,tend+1,tinc):
 
     File2 = open(file_name, 'rb')
 
-    #file_name = "data/"+"GradientHumidity_t%li.mat"%t_file
+    file_name = "data/"+"GradientHumidity_t%li.mat"%t_file
 
-    #File3 = open(file_name, 'rb')
+    File3 = open(file_name, 'rb')
+
+    file_name = "data/"+"OrderParameter_t%li.mat"%t_file
+
+    File4 = open(file_name, 'rb')
 
     #file_name = "data/"+"Density_t%li.mat"%t_file
 
@@ -72,25 +76,41 @@ for t in range(tstart,tend+1,tinc):
     v = np.zeros((LX,LY,LZ,ndim))
 
     dat=File.read()
-    rho = np.ndarray((LX,LY,LZ),'=d',dat,0,(8*LZ*LY,8*LZ,8))
+    rho = np.ndarray((LX,LY),'=d',dat,0,(8*LY,8))
 
     dat=File2.read()
-    v = np.ndarray((LX,LY,LZ,ndim),'=d',dat,0,(ndim*8*LZ*LY,ndim*8*LZ,ndim*8,8))
+    v = np.ndarray((LX,LY,ndim),'=d',dat,0,(ndim*8*LY,ndim*8,8))
+
+    dat=File3.read()
+    gh = np.ndarray((LX,LY,ndim),'=d',dat,0,(ndim*8*LY,ndim*8,8))
+
+    dat=File4.read()
+    c = np.ndarray((LX,LY),'=d',dat,0,(8*LY,8))
 
     File.close()
     File2.close()
+    File3.close()
+    File4.close()
     
     fig,ax=plt.subplots(1,1,figsize=(6,6))
 
     output = "%s/component_plot_%012d.png"%(outDirName,t)
     #rho3=2*0.01*(rho2-0.2)*(rho2-1)*(2*rho2-0.2-1)-0.0128*rho4
     rgbv = np.zeros((LY,LX))
-    rgbv[:,:] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
+    rgbv[:,:] = np.flip(rho).transpose()
+    #rgbv[:,:] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
     #rgbv[:,:,1] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
     #rgbv[:,:,2] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
     
     #im=ax.imshow(np.flip(rho0.take(indices=slicepos,axis=sliceaxis)).transpose(),interpolation='nearest',origin='upper')
+    i2 = np.argmax(np.logical_and((c[0,:] <= 0.5),(c[0,:] > 0.1)))
 
+    #print("sum",np.sum([0.5*(liquid[0,i+1]-liquid[0,i-1]) for i in range(i2,H-2)]))
+    i1 = i2 - 1
+    c1_1 = c[0,i1]
+    c1_2 = c[0,i2]
+    h = i1 + (c1_1 - 0.5) / (c1_1 - c1_2) + 1
+    print(h)
     im=ax.imshow(rgbv,interpolation='nearest',origin='upper')
     #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis))**2+(gh.take(indices=1,axis=3).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
     #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
@@ -100,18 +120,18 @@ for t in range(tstart,tend+1,tinc):
     step=1
     X,Y=np.meshgrid(np.linspace(0,LX-1,int((LX)/step)),np.linspace(0,LY-1,int((LY)/step)))
     #print(np.sum(np.sqrt((gh.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis))**2+(gh.take(indices=1,axis=3).take(indices=slicepos,axis=sliceaxis))**2)))
-    ax.quiver(X.T,Y.T,np.flip(v[:,:,:,0].take(indices=slicepos,axis=sliceaxis)),np.flip(-v[:,:,:,1].take(indices=slicepos,axis=sliceaxis)),width=0.001,headwidth=2.5,headlength=1.5)
-    print(np.sum(rho),1/6/(49)*np.log(1/(1-0.5)))
+    #ax.quiver(X.T,Y.T,np.flip(v[:,:,:,0].take(indices=slicepos,axis=sliceaxis)),np.flip(-v[:,:,:,1].take(indices=slicepos,axis=sliceaxis)),width=0.001,headwidth=2.5,headlength=1.5)
+    print(np.sum(rho[int(LX/2),:])/(0.002/(100-h)*np.log(1/(1-0.1))))
     fig.colorbar(im)
     #ax.scatter(49,49)
     plt.savefig(output, dpi=200, format='png')
     plt.close(fig)
     plt.figure()
-    plt.plot(v[int(LX/2),:,0])
+    plt.plot(rho[int(LX/2),:])
     #plt.plot(rho[:,int(LY/2),0])
     plt.savefig("test_%012d.png"%(t), dpi=200, format='png')
 
-    print(np.amax(v[int(LX/2),:,0]))
+    print(gh[int(LX/2),51,1])
 
 
 

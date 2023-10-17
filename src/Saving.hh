@@ -52,7 +52,7 @@ ParameterSave<TLattice>::ParameterSave(std::string datadir) : mDataDir(datadir) 
     int status = system(((std::string)"mkdir -p " + mDataDir).c_str());
     if (status) print("Error creating output directory");
 #ifdef MPIPARALLEL
-    MPI_Type_create_resized(MPI_INT, 0L, sizeof(Boundary), &mMPIBoundary);
+    MPI_Type_create_resized(MPI_INT, 0L, sizeof(Boundary<TLattice::NDIM>), &mMPIBoundary);
     MPI_Type_commit(&mMPIBoundary);
 #endif
 }
@@ -62,7 +62,7 @@ ParameterSave<TLattice>::ParameterSave(ParameterSave& other) : mDataDir(other.da
     int status = system(((std::string)"mkdir -p " + mDataDir).c_str());
     if (status) print("Error creating output directory");
 #ifdef MPIPARALLEL
-    MPI_Type_create_resized(MPI_INT, 0L, sizeof(Boundary), &mMPIBoundary);
+    MPI_Type_create_resized(MPI_INT, 0L, sizeof(Boundary<TLattice::NDIM>), &mMPIBoundary);
     MPI_Type_commit(&mMPIBoundary);
 #endif
 }
@@ -250,14 +250,14 @@ inline void ParameterSave<TLattice>::SaveHeader(int timestep, int saveinterval) 
 template<class TLattice>
 void ParameterSave<TLattice>::SaveBoundaries(int timestep){
     char fdump[512];
-    sprintf(fdump, "%s/%s_t%i.mat", mDataDir.c_str(), BoundaryLabels<>::mName, timestep); //Buffer containing file name and location.
+    sprintf(fdump, "%s/%s_t%i.mat", mDataDir.c_str(), BoundaryLabels<TLattice::NDIM>::mName, timestep); //Buffer containing file name and location.
 
 #ifdef MPIPARALLEL //When MPI is used we need a different approach for saving as all nodes are trying to write to the file
 
     MPI_File fh;
     MPI_File_open(MPI_COMM_SELF, fdump, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh); //Open the file using mpi in write only mode
     MPI_File_seek(fh, sizeof(int) * mpi.rank * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size, MPI_SEEK_SET); //Skip to a certain location in the file, currently
-    MPI_File_write(fh,&BoundaryLabels<>::get<TLattice>()[TLattice::HaloSize], (TLattice::N - 2 * TLattice::HaloSize), mMPIBoundary, MPI_STATUSES_IGNORE);
+    MPI_File_write(fh,&BoundaryLabels<TLattice::NDIM>::template get<TLattice>()[TLattice::HaloSize], (TLattice::N - 2 * TLattice::HaloSize), mMPIBoundary, MPI_STATUSES_IGNORE);
     MPI_File_close(&fh);
         
 #else
@@ -265,7 +265,7 @@ void ParameterSave<TLattice>::SaveBoundaries(int timestep){
     std::ofstream fs(fdump, std::ios::out | std::ios::binary);
     fs.seekp(sizeof(int) * mpi.rank * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size);
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { 
-        fs.write((char *)(&BoundaryLabels<>::get<TLattice>()[k].Id), sizeof(int));
+        fs.write((char *)(&BoundaryLabels<TLattice::NDIM>::template get<TLattice>()[k].Id), sizeof(int));
     };
     fs.close();
 

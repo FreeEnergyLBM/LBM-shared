@@ -391,15 +391,15 @@ inline void Parameter<TObj, TLattice, T, TNum>::Save(std::string filename, int t
 
 }
 
-
+template <int TNDIM>
 struct Boundary{
     int Id;
     bool IsCorner;
-    std::vector<int8_t> NormalDirection;
+    std::array<int8_t,TNDIM> NormalDirection;
 };
 
-template<int TInstances = 1>
-struct BoundaryLabels : public ParameterSingleton<BoundaryLabels<TInstances>,Boundary,TInstances> {
+template<int TNDIM,int TInstances = 1>
+struct BoundaryLabels : public ParameterSingleton<BoundaryLabels<TNDIM,TInstances>,Boundary<TNDIM>,TInstances> {
     static constexpr const char *mName = "BoundaryLabels";
 }; //Labelling of geometry
 

@@ -72,7 +72,7 @@ inline double CentralXYZInterfaceNoSolid::compute(int direction, int k, int num)
             }
             else {
 
-                if ((Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))==0 || Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))==6 || Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))==4) && (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx]))==0 || Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx]))==6 || Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx]))==4)) {
+                if ((Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))==0 || Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))==6 || Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))==4) && (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx]))!= mInterfaceID)) {
 
                     gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num));
                     
@@ -89,6 +89,12 @@ inline double CentralXYZInterfaceNoSolid::compute(int direction, int k, int num)
                     gradientsum += 2 * Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num)) / (1 + interfacedistance);
                 
                 }                
+                else if (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx)) == mInterfaceID && Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx]))==1){
+
+                    double interfacedistance = evalInterfaceDistance(k,idx);
+                    gradientsum += 2 * Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (mInterfaceVal) / (1 + interfacedistance);
+                
+                }             
 
             }
             

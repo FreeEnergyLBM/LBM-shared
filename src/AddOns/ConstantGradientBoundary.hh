@@ -26,8 +26,8 @@ inline void ConstantGradientBoundary<TParameter>::compute(int k) {
 
     using data = Data_Base<Lattice, Stencil>;
 
-    std::vector<int>& neighbors = data::getInstance().getNeighbors();
-    std::vector<int8_t>& normal = BoundaryLabels<>::get<typename TTraits::Lattice>(k).NormalDirection;
+    const std::vector<int>& neighbors = data::getInstance().getNeighbors();
+    const std::array<int8_t,TTraits::Lattice::NDIM>& normal = BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection;
     int idx = Stencil::QMap.find(normal)->second;
 
     double magnormal = 0;

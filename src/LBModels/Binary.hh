@@ -131,7 +131,7 @@ inline void Binary<TLattice, TTraits>::initialise() { //Initialise model
         
     }
 
-    this -> mData.communicate(BoundaryLabels<>::getInstance<TLattice>());
+    this -> mData.communicate(BoundaryLabels<TTraits::Lattice::NDIM>::template getInstance<TLattice>());
 
 }
 

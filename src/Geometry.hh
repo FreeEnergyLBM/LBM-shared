@@ -29,9 +29,9 @@ class Geometry {
         static inline bool isBoundary(int k);
 
         template<class TStencil>
-        static inline std::vector<int8_t> findNormal(int (*condition)(const int),const std::vector<int>& neighbors,int k);
+        static inline std::array<int8_t,TLattice::NDIM> findNormal(int (*condition)(const int),const std::vector<int>& neighbors,int k);
 
-        static inline bool isCorner(int (*condition)(const int),const std::vector<int8_t>& normal,int k);
+        static inline bool isCorner(int (*condition)(const int),const std::array<int8_t,TLattice::NDIM>& normal,int k);
 
         static inline bool isCorner(int k);
 
@@ -68,11 +68,11 @@ inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int)
 
         //if(condition(k)==4) std::cout<<computeX(TLattice::LY,TLattice::LZ,k)<<" "<<computeY(TLattice::LY,TLattice::LZ,k)<<" "<<(int)findNormal<Stencil>(condition,neighbors,k)[0]<<" "<<(int)findNormal<Stencil>(condition,neighbors,k)[1]<<std::endl;
 
-        std::vector<int8_t> normal=findNormal<Stencil>(condition,neighbors,k);
+        std::array<int8_t,TLattice::NDIM> normal=findNormal<Stencil>(condition,neighbors,k);
 
-        Boundary boundaryk = {condition(k),isCorner(condition,normal,k),normal};
+        Boundary<TLattice::NDIM> boundaryk = {condition(k),isCorner(condition,normal,k),normal};
       
-        BoundaryLabels<>::initialise<TLattice>(boundaryk,k);
+        BoundaryLabels<TLattice::NDIM>::template initialise<TLattice>(boundaryk,k);
 
     }
 
@@ -88,22 +88,22 @@ inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int)
 template<class TLattice>
 inline bool Geometry<TLattice>::isBoundary(int k) {
 
-    return (BoundaryLabels<>::get<TLattice>(k).Id!=0);
+    return (BoundaryLabels<TLattice::NDIM>::template get<TLattice>(k).Id!=0);
 
 }
 
 template<class TLattice>
 inline bool Geometry<TLattice>::isCorner(int k) {
 
-    return BoundaryLabels<>::get<TLattice>(k).IsCorner;
+    return BoundaryLabels<TLattice::NDIM>::template get<TLattice>(k).IsCorner;
 
 }
 
 template<class TLattice>
 template<class TStencil>
-inline std::vector<int8_t> Geometry<TLattice>::findNormal(int (*condition)(const int), const std::vector<int>& neighbors,int k) {
+inline std::array<int8_t,TLattice::NDIM> Geometry<TLattice>::findNormal(int (*condition)(const int), const std::vector<int>& neighbors,int k) {
 
-    std::vector<int8_t> normal(TLattice::NDIM,0);
+    std::array<int8_t,TLattice::NDIM> normal = {};
     
     if (condition(k)==0) return normal;
 
@@ -167,7 +167,7 @@ inline std::vector<int8_t> Geometry<TLattice>::findNormal(int (*condition)(const
 }
 
 template<class TLattice>
-inline bool Geometry<TLattice>::isCorner(int (*condition)(const int),const std::vector<int8_t>& normal,int k) { // DOesnt
+inline bool Geometry<TLattice>::isCorner(int (*condition)(const int),const std::array<int8_t,TLattice::NDIM>& normal,int k) { // DOesnt
 
     if (condition(k)==0) return false;
 
@@ -184,6 +184,6 @@ inline bool Geometry<TLattice>::isCorner(int (*condition)(const int),const std::
 template<class TLattice>
 inline int& Geometry<TLattice>::getBoundaryType(int k) {
 
-    return BoundaryLabels<>::get<TLattice>(k).Id;
+    return BoundaryLabels<TLattice::NDIM>::template get<TLattice>(k).Id;
 
 }

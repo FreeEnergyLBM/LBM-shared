@@ -50,14 +50,16 @@ struct LatticeProperties{
     //! This function streams the distributions to the neighboring processor.
     template<class TDistribution>
     static void communicateDistribution(TDistribution& obj) { // currently along X only
-        Parallel.template updateDistributionBeforeCommunication<TLattice>(obj);
-        Parallel.template communicateDistribution<TLattice>(obj);
-        Parallel.template updateDistributionAfterCommunication<TLattice>(obj);
+        //Parallel.template updateDistributionBeforeCommunication<TLattice>(obj);
+        //Parallel.template communicateDistribution<TLattice>(obj);
+        //Parallel.template updateDistributionAfterCommunication<TLattice>(obj);
     }
 
     template<class TDistribution>
     static void communicateDistributionAll(TDistribution& obj) {
+        Parallel.template updateDistributionBeforeCommunicationAll<TLattice>(obj);
         Parallel.template communicateDistributionAll<TLattice>(obj);
+        Parallel.template updateDistributionAfterCommunicationAll<TLattice>(obj);
     }
 };
 
