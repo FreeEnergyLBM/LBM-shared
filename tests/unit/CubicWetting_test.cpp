@@ -7,7 +7,7 @@ using Lattice = LatticeProperties<DataOldNew, NoParallel, 2, 1>;
 using Trait = DefaultTrait<Lattice>;
 
 TEST(CubicWetting, orderParameter) {
-  BoundaryLabels<>::get<Lattice>(0).Id = true;
+  BoundaryLabels<Lattice::NDIM>::get<Lattice>(0).Id = true;
   auto orderParam = OrderParameter<>::getAddress<Lattice>(0);
   orderParam[1] = 1;
 

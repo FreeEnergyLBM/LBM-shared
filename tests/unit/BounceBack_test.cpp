@@ -11,7 +11,7 @@ using Lattice = LatticeProperties<DataOldNew, NoParallel, 2, 1>;
 TEST(BounceBackTest, TestNodePair) {
   using Trait = DefaultTrait<Lattice> ::SetStencil<D2Q9>;
 
-  BoundaryLabels<>::get<Lattice>(0).Id = 1;
+  BoundaryLabels<Lattice::NDIM>::get<Lattice>(0).Id = 1;
 
   DataOldNew<Lattice,D2Q9> data;
   auto& distr = data.getDistributionObject();

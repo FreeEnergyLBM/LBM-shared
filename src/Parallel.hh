@@ -71,20 +71,6 @@ class Parallel {
         template<class TLattice, class TDistribution>
         inline void updateDistributionAfterCommunication(TDistribution& obj);
 
-        /**
-         * \brief Function to update unknown distributions in the adjacent processors streamed from the edge.
-         * \param obj Object of the distribution.
-         */
-        template<class TLattice, class TDistribution>
-        inline void updateDistributionBeforeCommunicationAll(TDistribution& obj);
-
-        /**
-         * \brief Function to update the vector containing the distribution for the communication region (implemented along X).
-         * \param obj Object of the distribution.
-         */
-        template<class TLattice, class TDistribution>
-        inline void updateDistributionAfterCommunicationAll(TDistribution& obj);
-
         template<class TLattice, class TDistribution>
         inline void communicateDistributionAll(TDistribution& obj);
 
@@ -298,28 +284,24 @@ inline void Parallel<TDerived,TNumNeighbors>::communicateDistributionAll(TDistri
 
     #pragma omp master
     {
-    
     int nNeighbors = mNeighbors.size();
     MPI_Request commrequest[2*nNeighbors];
 
     for (int iNeighbor=0; iNeighbor<nNeighbors; iNeighbor++) {
         int tag = iNeighbor;
-        
-        MPI_Isend(&obj.getCommDistribution()[mI0SendDistr[iNeighbor]*Stencil::Q],
+        MPI_Isend(&obj.mv_Distribution[mI0Send[iNeighbor]*Stencil::Q],
                   TNumNeighbors * TLattice::LY * TLattice::LZ * Stencil::Q,
                   mpi_get_type<double,TLattice>(),
                   mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor]);
 
         tag = (iNeighbor%2==0) ? iNeighbor+1 : iNeighbor-1;
-        MPI_Irecv(&obj.getCommDistribution()[mI0RecvDistr[iNeighbor]*Stencil::Q],
+        MPI_Irecv(&obj.mv_Distribution[mI0Recv[iNeighbor]*Stencil::Q],
                   TNumNeighbors * TLattice::LY * TLattice::LZ * Stencil::Q,
                   mpi_get_type<double,TLattice>(),
                   mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor+1]);
-        
     }
 
     MPI_Waitall(2*nNeighbors, commrequest, MPI_STATUSES_IGNORE);
-    
     }
     #endif
 
@@ -338,12 +320,12 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicat
     int lw;
     if (TLattice::HaloXWidth) {
         lw = TLattice::HaloXWidth;
-        for(int x=0; x<4*lw; ++x)
+        for(int x=0; x<4; ++x)
             for(int y=0; y<ly; ++y)
                 for(int z=0; z<lz; ++z)
                     for (int idx=0; idx<TStencil::Q; ++idx) {
                         int k = z + y*lz + x*ly*lz;
-                        int xOffset = (x<2*lw) ? 0 : lx-4*lw;
+                        int xOffset = (x<2) ? lw-1 : lx-lw-3;
                         int kGlobal = z + y*lz + (x+xOffset)*ly*lz;
                        // std::cerr<<obj.getCommDistribution().size()<<" "<<k*TStencil::Q + idx<<std::endl;
                         obj.getCommDistribution()[k*TStencil::Q + idx] =
@@ -352,12 +334,12 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicat
     }
     if (TLattice::HaloYWidth) {
         lw = TLattice::HaloYWidth;
-        for(int y=0; y<4*lw; ++y)
+        for(int y=0; y<4; ++y)
             for(int x=0; x<lx; ++x)
                 for(int z=0; z<lz; ++z)
                     for (int idx=0; idx<TStencil::Q; ++idx) {
                         int k = z + x*lz + y*lx*lz;
-                        int yOffset = (y<2*lw) ? 0 : ly-4*lw;
+                        int yOffset = (y<2) ? lw-1 : ly-lw-3;
                         int kGlobal = z + (y+yOffset)*lz + x*ly*lz;
                         obj.getCommDistribution()[k*TStencil::Q + idx] =
                             obj.getDistribution()[kGlobal*TStencil::Q + idx];
@@ -380,12 +362,12 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionAfterCommunicati
     int lw;
     if (TLattice::HaloXWidth) {
         lw = TLattice::HaloXWidth;
-        for(int x=0; x<4*lw; ++x)
+        for(int x=0; x<4; ++x)
             for(int y=0; y<ly; ++y)
                 for(int z=0; z<lz; ++z)
                     for (int idx = 0; idx < TStencil::Q; ++idx) {
                         int k = z + y*lz + x*ly*lz;
-                        int xOffset = (x<2*lw) ? 0 : lx-4*lw;
+                        int xOffset = (x<2) ? lw-1 : lx-lw-3;
                         int kGlobal = z + y*lz + (x+xOffset)*ly*lz;
                         obj.getDistribution()[kGlobal*TStencil::Q + idx] =
                             obj.getCommDistribution()[k*TStencil::Q + idx];
@@ -393,96 +375,12 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionAfterCommunicati
     }
     if (TLattice::HaloYWidth) {
         lw = TLattice::HaloYWidth;
-        for(int y=0; y<4*lw; ++y)
+        for(int y=0; y<4; ++y)
             for(int x=0; x<lx; ++x)
                 for(int z=0; z<lz; ++z)
                     for (int idx = 0; idx < TStencil::Q; ++idx) {
                         int k = z + x*lz + y*lx*lz;
-                        int yOffset = (y<2*lw) ? 0 : ly-4*lw;
-                        int kGlobal = z + (y+yOffset)*lz + x*ly*lz;
-                        obj.getDistribution()[kGlobal*TStencil::Q + idx] =
-                            obj.getCommDistribution()[k*TStencil::Q + idx];
-                    }
-    }
-    }
-    return;
-}
-
-
-template<class TDerived, int TNumNeighbors>
-template<class TLattice, class TDistribution>
-inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicationAll(TDistribution& obj) {
-
-    #pragma omp master
-    {
-    using TStencil = typename TDistribution::Stencil;
-    int lz = TLattice::LZdiv;
-    int ly = TLattice::LYdiv;
-    int lx = TLattice::LXdiv;
-    int lw;
-    if (TLattice::HaloXWidth) {
-        lw = TLattice::HaloXWidth;
-        for(int x=0; x<4*lw; ++x)
-            for(int y=0; y<ly; ++y)
-                for(int z=0; z<lz; ++z)
-                    for (int idx=0; idx<TStencil::Q; ++idx) {
-                        int k = z + y*lz + x*ly*lz;
-                        int xOffset = (x<2*lw) ? 0 : lx-4*lw;
-                        int kGlobal = z + y*lz + (x+xOffset)*ly*lz;
-                       // std::cerr<<obj.getCommDistribution().size()<<" "<<k*TStencil::Q + idx<<std::endl;
-                        obj.getCommDistribution()[k*TStencil::Q + idx] =
-                            obj.getDistribution()[kGlobal*TStencil::Q + idx];
-                    }
-    }
-    if (TLattice::HaloYWidth) {
-        lw = TLattice::HaloYWidth;
-        for(int y=0; y<4*lw; ++y)
-            for(int x=0; x<lx; ++x)
-                for(int z=0; z<lz; ++z)
-                    for (int idx=0; idx<TStencil::Q; ++idx) {
-                        int k = z + x*lz + y*lx*lz;
-                        int yOffset = (y<2*lw) ? 0 : ly-4*lw;
-                        int kGlobal = z + (y+yOffset)*lz + x*ly*lz;
-                        obj.getCommDistribution()[k*TStencil::Q + idx] =
-                            obj.getDistribution()[kGlobal*TStencil::Q + idx];
-                    }
-    }
-    }
-    return;
-    
-}
-
-template<class TDerived, int TNumNeighbors>
-template<class TLattice, class TDistribution>
-inline void Parallel<TDerived,TNumNeighbors>::updateDistributionAfterCommunicationAll(TDistribution& obj) {
-    #pragma omp master
-    {
-    using TStencil = typename TDistribution::Stencil;
-    int lz = TLattice::LZdiv;
-    int ly = TLattice::LYdiv;
-    int lx = TLattice::LXdiv;
-    int lw;
-    if (TLattice::HaloXWidth) {
-        lw = TLattice::HaloXWidth;
-        for(int x=0; x<4*lw; ++x)
-            for(int y=0; y<ly; ++y)
-                for(int z=0; z<lz; ++z)
-                    for (int idx = 0; idx < TStencil::Q; ++idx) {
-                        int k = z + y*lz + x*ly*lz;
-                        int xOffset = (x<2*lw) ? 0 : lx-4*lw;
-                        int kGlobal = z + y*lz + (x+xOffset)*ly*lz;
-                        obj.getDistribution()[kGlobal*TStencil::Q + idx] =
-                            obj.getCommDistribution()[k*TStencil::Q + idx];
-                    }
-    }
-    if (TLattice::HaloYWidth) {
-        lw = TLattice::HaloYWidth;
-        for(int y=0; y<4*lw; ++y)
-            for(int x=0; x<lx; ++x)
-                for(int z=0; z<lz; ++z)
-                    for (int idx = 0; idx < TStencil::Q; ++idx) {
-                        int k = z + x*lz + y*lx*lz;
-                        int yOffset = (y<2*lw) ? 0 : ly-4*lw;
+                        int yOffset = (y<2) ? lw-1 : ly-lw-3;
                         int kGlobal = z + (y+yOffset)*lz + x*ly*lz;
                         obj.getDistribution()[kGlobal*TStencil::Q + idx] =
                             obj.getCommDistribution()[k*TStencil::Q + idx];
@@ -508,13 +406,13 @@ inline void Parallel<TDerived,TNumNeighbors>::communicateDistributionAllOld(TDis
 
     for (int iNeighbor=0; iNeighbor<nNeighbors; iNeighbor++) {
         int tag = iNeighbor;
-        MPI_Isend(&obj.getCommDistribution()[mI0SendDistr[iNeighbor]*Stencil::Q],
+        MPI_Isend(&obj.mv_OldDistribution[mI0Send[iNeighbor]*Stencil::Q],
                   TNumNeighbors * TLattice::LY * TLattice::LZ * Stencil::Q,
                   mpi_get_type<double,TLattice>(),
                   mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor]);
 
         tag = (iNeighbor%2==0) ? iNeighbor+1 : iNeighbor-1;
-        MPI_Irecv(&obj.getCommDistribution()[mI0RecvDistr[iNeighbor]*Stencil::Q],
+        MPI_Irecv(&obj.mv_OldDistribution[mI0Recv[iNeighbor]*Stencil::Q],
                   TNumNeighbors * TLattice::LY * TLattice::LZ * Stencil::Q,
                   mpi_get_type<double,TLattice>(),
                   mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor+1]);
@@ -609,10 +507,10 @@ void ParallelX<TNumNeighbors>::init() {
 
     this->mI0SendDistr = std::vector<int>(2);
     this->mI0SendDistr[0] = 0;
-    this->mI0SendDistr[1] = 3*TNumNeighbors*faceSize;
+    this->mI0SendDistr[1] = 3*faceSize;
     this->mI0RecvDistr = std::vector<int>(2);
-    this->mI0RecvDistr[0] = TNumNeighbors*faceSize;
-    this->mI0RecvDistr[1] = 2*TNumNeighbors*faceSize;
+    this->mI0RecvDistr[0] = faceSize;
+    this->mI0RecvDistr[1] = 2*faceSize;
 
     // Create MPI buffer
     #ifdef MPIPARALLEL
@@ -635,7 +533,7 @@ void ParallelX<TNumNeighbors>::init() {
 template<int TNumNeighbors>
 template<class TLattice, class TStencil>
 MPI_Datatype ParallelX<TNumNeighbors>::createDistributionType() {
-    const int faceSize = TLattice::LY*TLattice::LZ*TLattice::Neighbors;
+    const int faceSize = TLattice::LY*TLattice::LZ;
     MPI_Datatype distributionType;
     MPI_Type_vector(faceSize, 1, TStencil::Q, mpi_get_type<double,TLattice>(), &distributionType);
     MPI_Type_commit(&distributionType);
@@ -734,7 +632,7 @@ void ParallelY<TNumNeighbors>::init() {
 template<int TNumNeighbors>
 template<class TLattice, class TStencil>
 MPI_Datatype ParallelY<TNumNeighbors>::createDistributionType() {
-    const int faceSize = TLattice::LX*TLattice::LZ*TLattice::Neighbors;
+    const int faceSize = TLattice::LX*TLattice::LZ;
     MPI_Datatype distributionType;
     MPI_Type_vector(faceSize, 1, TStencil::Q, mpi_get_type<double,TLattice>(), &distributionType);
     MPI_Type_commit(&distributionType);
