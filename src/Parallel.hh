@@ -135,6 +135,8 @@ inline void Parallel<TDerived,TNumNeighbors>::communicateParameter(TParameter& o
 template<class TDerived, int TNumNeighbors>
 template<class TLattice, class TParameter>
 inline void Parallel<TDerived,TNumNeighbors>::updateParameterBeforeCommunication(TParameter& obj) {
+    #pragma omp master
+    {
     int lz = TLattice::LZdiv;
     int ly = TLattice::LYdiv;
     int lx = TLattice::LXdiv;
@@ -170,6 +172,7 @@ inline void Parallel<TDerived,TNumNeighbors>::updateParameterBeforeCommunication
                                 obj.getParameter()[kGlobal*TParameter::mInstances*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mNum + (TParameter::mNum>1)*direction];
             }
         ln += 4*lw*lx*lz;
+    }
     }
     return;
 }
@@ -177,6 +180,8 @@ inline void Parallel<TDerived,TNumNeighbors>::updateParameterBeforeCommunication
 template<class TDerived, int TNumNeighbors>
 template<class TLattice, class TParameter>
 inline void Parallel<TDerived,TNumNeighbors>::updateParameterAfterCommunication(TParameter& obj) {
+    #pragma omp master
+    {
     int lz = TLattice::LZdiv;
     int ly = TLattice::LYdiv;
     int lx = TLattice::LXdiv;
@@ -212,6 +217,7 @@ inline void Parallel<TDerived,TNumNeighbors>::updateParameterAfterCommunication(
                                 obj.getCommParameter()[kComm*TParameter::mInstances*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mNum + (TParameter::mNum>1)*direction];
             }
         ln += 4*lw*lx*lz;
+    }
     }
     return;
 }
@@ -304,6 +310,9 @@ inline void Parallel<TDerived,TNumNeighbors>::communicateDistributionAll(TDistri
 template<class TDerived, int TNumNeighbors>
 template<class TLattice, class TDistribution>
 inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunication(TDistribution& obj) {
+
+    #pragma omp master
+    {
     using TStencil = typename TDistribution::Stencil;
     int lz = TLattice::LZdiv;
     int ly = TLattice::LYdiv;
@@ -318,6 +327,7 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicat
                         int k = z + y*lz + x*ly*lz;
                         int xOffset = (x<2) ? lw-1 : lx-lw-3;
                         int kGlobal = z + y*lz + (x+xOffset)*ly*lz;
+                       // std::cerr<<obj.getCommDistribution().size()<<" "<<k*TStencil::Q + idx<<std::endl;
                         obj.getCommDistribution()[k*TStencil::Q + idx] =
                             obj.getDistribution()[kGlobal*TStencil::Q + idx];
                     }
@@ -335,12 +345,16 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicat
                             obj.getDistribution()[kGlobal*TStencil::Q + idx];
                     }
     }
+    }
     return;
+    
 }
 
 template<class TDerived, int TNumNeighbors>
 template<class TLattice, class TDistribution>
 inline void Parallel<TDerived,TNumNeighbors>::updateDistributionAfterCommunication(TDistribution& obj) {
+    #pragma omp master
+    {
     using TStencil = typename TDistribution::Stencil;
     int lz = TLattice::LZdiv;
     int ly = TLattice::LYdiv;
@@ -371,6 +385,7 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionAfterCommunicati
                         obj.getDistribution()[kGlobal*TStencil::Q + idx] =
                             obj.getCommDistribution()[k*TStencil::Q + idx];
                     }
+    }
     }
     return;
 }
@@ -461,8 +476,9 @@ void ParallelX<TNumNeighbors>::init() {
     const int faceSize = TLattice::Face[0] = TLattice::LY * TLattice::LZ;
 
     // Split lattice
-    TLattice::HaloXWidth = this->mMaxNeighbors;
+    TLattice::HaloXWidth = TLattice::Neighbors = this->mMaxNeighbors;
     TLattice::HaloSize = faceSize * this->mMaxNeighbors;
+    
     if (TLattice::LX % mpi.size == 0) {
         TLattice::LXdiv = (TLattice::LX/mpi.size + 2*TNumNeighbors);
         TLattice::LXMPIOffset = (TLattice::LXdiv - 2*TNumNeighbors) * mpi.rank;
@@ -559,8 +575,9 @@ void ParallelY<TNumNeighbors>::init() {
     const int faceSize = TLattice::Face[0] = TLattice::LX * TLattice::LZ;
 
     // Split lattice
-    TLattice::HaloYWidth = this->mMaxNeighbors;
+    TLattice::HaloYWidth = TLattice::Neighbors = this->mMaxNeighbors;
     TLattice::HaloSize = faceSize * this->mMaxNeighbors;
+
     if (TLattice::LY % mpi.size == 0) {
         TLattice::LYdiv = (TLattice::LY/mpi.size + 2*TNumNeighbors);
         TLattice::LYMPIOffset = (TLattice::LYdiv - 2*TNumNeighbors) * mpi.rank;

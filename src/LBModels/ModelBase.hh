@@ -44,14 +44,16 @@ class ModelBase { //Inherit from base class to avoid repetition of common
     public:
 
         ModelBase()
-            : mData(),
+            : latticeInit(),
+              mData(),
               mDistribution(mData.getDistributionObject())
         {
-            TLattice latticeInit; // Initialise the TLattice and parallelisation
+             // Initialise the TLattice and parallelisation
         }
 
         ModelBase(ModelBase<TLattice,TTraits>& other)
-            : mData(other.mData),
+            : latticeInit(),
+              mData(other.mData),
               mDistribution(other.mDistribution)
         {}
 
@@ -236,17 +238,18 @@ class ModelBase { //Inherit from base class to avoid repetition of common
         inline double computeVelocity(const double* distribution, const double& density,
                                 const int xyz, const int k); //Calculate velocity
 
-        typename std::remove_reference<TLattice>::type::template DataType<typename TTraits::Stencil> mData; //MOVE THIS TO BASE
+        TLattice latticeInit;
+        typename std::remove_reference<TLattice>::type::template DataType<typename TTraits::Stencil> mData;
         typename std::remove_reference<TLattice>::type::template DataType<typename TTraits::Stencil>::DistributionData& mDistribution = mData.getDistributionObject();
             //Distributions
 
         enum{ x = 0, y = 1, z = 2 }; //Indices corresponding to x, y, z directions
 
-        typename TTraits:: PreProcessors mt_PreProcessors; //MOVE THIS TO BASE
-        typename TTraits:: PostProcessors mt_PostProcessors; //MOVE THIS TO BASE
-        typename TTraits:: Forces mt_Forces; //MOVE THIS TO BASE
-        typename TTraits:: Boundaries mt_Boundaries; //MOVE THIS TO BASE
-        Geometry<TLattice> mGeometry; //MOVE THIS TO BASE
+        typename TTraits:: PreProcessors mt_PreProcessors;
+        typename TTraits:: PostProcessors mt_PostProcessors;
+        typename TTraits:: Forces mt_Forces;
+        typename TTraits:: Boundaries mt_Boundaries;
+        Geometry<TLattice> mGeometry;
 
         
         std::vector<double>& distribution = mDistribution.getDistribution(); //Reference to vector of distributions

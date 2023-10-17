@@ -21,6 +21,7 @@
 #endif
 #include "Stencil.hh"
 #include "Mpi.hh"
+#include "Parameters.hh"
 
 //Service.hh: This will contain some commonly used functions with various uses.
 
@@ -238,7 +239,13 @@ template <typename T>
   else if constexpr (std::is_same_v<T, std::complex<long double>>) {
     mpi_type = MPI_C_LONG_DOUBLE_COMPLEX;
   }
-	
+  else if constexpr (std::is_same_v<T, Boundary>) {
+    MPI_Datatype mMPIBoundary;
+    MPI_Type_create_resized(MPI_INT, 0L, sizeof(T), &mMPIBoundary);
+    MPI_Type_commit(&mMPIBoundary);
+    mpi_type = mMPIBoundary;
+  }
+   
   assert(mpi_type != MPI_DATATYPE_NULL);
 
   return mpi_type;

@@ -297,7 +297,7 @@ class DataOldNew : public Data_Base<TLattice, TStencil> {
                                                                                   //directions times number of lattice points
                 Distribution_Base<TStencil>::mv_OldDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
                                                                                      //in this case
-                Distribution_Base<TStencil>::mv_CommDistribution.resize(TStencil::Q * 4 * TLattice::Face[0]); // currently along X only
+                Distribution_Base<TStencil>::mv_CommDistribution.resize(TStencil::Q * 4 * TLattice::Face[0] * TLattice::Neighbors); // currently along X only
                 
             }
 
@@ -307,7 +307,7 @@ class DataOldNew : public Data_Base<TLattice, TStencil> {
                                                                                   //directions times number of lattice points
                 Distribution_Base<TStencil>::mv_OldDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
                                                                                      //in this case
-                Distribution_Base<TStencil>::mv_CommDistribution.resize(TStencil::Q * 4 * TLattice::Face[0]); // currently along X only
+                Distribution_Base<TStencil>::mv_CommDistribution.resize(TStencil::Q * 4 * TLattice::Face[0] * TLattice::Neighbors); // currently along X only
                 
             }
 
@@ -425,6 +425,8 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
                                                                                      //in this case
                 Distribution_Base<TStencil>::mv_EquilibriumDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
                                                                                      //in this case
+
+                Distribution_Base<TStencil>::mv_CommDistribution.resize(TStencil::Q * 4 * TLattice::Face[0] * TLattice::Neighbors); // currently along X only
                 
             }
 
@@ -437,6 +439,8 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
                                                                                      //in this case
                 Distribution_Base<TStencil>::mv_EquilibriumDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
                                                                                      //in this case
+                
+                Distribution_Base<TStencil>::mv_CommDistribution.resize(TStencil::Q * 4 * TLattice::Face[0] * TLattice::Neighbors); // currently along X only
                 
             }
 

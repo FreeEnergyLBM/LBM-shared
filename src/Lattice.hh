@@ -27,6 +27,7 @@ struct LatticeProperties{
     inline static int subArray[3] = {lx, ly, lz};
     inline static double DT = 1;
     inline static int Face[6] = {0, 0, 0, 0, 0, 0}; // FaceX=0, FaceY=0, FaceZ=0, EdgeX=0, EdgeY=0, EdgeZ=0;
+    inline static int Neighbors = 0; // FaceX=0, FaceY=0, FaceZ=0, EdgeX=0, EdgeY=0, EdgeZ=0;
     inline static TParallel Parallel;
 
     constexpr LatticeProperties(double DT=1.0) {

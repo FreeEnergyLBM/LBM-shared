@@ -9,8 +9,8 @@
 const int lx = 200; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 
-const int timesteps = 250000; // Number of iterations to perform
-const int saveInterval = 10000; // Interval to save global data
+const int timesteps = 1000; // Number of iterations to perform
+const int saveInterval = 50; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
@@ -23,7 +23,7 @@ double A = 0.025;
 double kappa = 0.05;
 const double Hsat = 0.2;
 
-using Lattice = LatticeProperties<DataOldNewEquilibrium, NoParallel, lx, ly>;
+using Lattice = LatticeProperties<DataOldNewEquilibrium, ParallelX<3>, lx, ly>;
 double offsetx = 0.0;
 double offsety = -ly/2.+2;
 // Function used to define the solid geometry
@@ -151,7 +151,7 @@ double distancefunc(int k, int idx){
 }
 
 int main(int argc, char **argv){
-    //mpi.init();
+    mpi.init();
 
     // Set up the lattice, including the resolution and data/parallelisation method
     
@@ -229,18 +229,20 @@ int main(int argc, char **argv){
     
     //Algorithm lbm(humidity,binary);
     //Algorithm lbm(binary);
-    Algorithm lbm(binary,pressure,humidity);
-    //Algorithm lbm(humidity);
+    //Algorithm lbm(binary,pressure,humidity);
+    Algorithm lbm(humidity);
     //Algorithm lbm(pressure,binary);
 
     // Perform the main LBM loop
+    saver.SaveBoundaries(0);
     for (int timestep=0; timestep<=timesteps; timestep++) {
 
         // Save the desired parameters, producing a binary file for each.
         if (timestep%saveInterval==0) {
             if(mpi.rank==0)std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
             //saver.SaveParameter<BoundaryLabels<>>(timestep);
-            saver.SaveBoundaries(timestep);
+            
+            //saver.SaveBoundaries(timestep);
             saver.SaveParameter<Humidity<>>(timestep);
             saver.SaveParameter<ChemicalPotential<>>(timestep);
             saver.SaveParameter<Density<>>(timestep);
@@ -250,6 +252,7 @@ int main(int argc, char **argv){
             saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
             saver.SaveParameter<VelocityOld<>,Lattice::NDIM>(timestep);
             saver.SaveParameter<GradientHumidity<>,Lattice::NDIM>(timestep);
+            
         }
         
         // Evolve by one timestep
