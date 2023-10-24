@@ -6,11 +6,11 @@
 // You can modify the densities and relaxation times via the 'setDensities' and 'setTaus' functions. 
 // You can modify the body force magnitude in the setMagnitudeX function
 
-const int lx = 200; // Size of domain in x direction
+const int lx = 2; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 
-const int timesteps = 10000; // Number of iterations to perform
-const int saveInterval = 1000; // Interval to save global data
+const int timesteps = 1000000; // Number of iterations to perform
+const int saveInterval = 100000; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
@@ -21,11 +21,11 @@ double RADIUS = 25.0;
 
 double A = 0.0025;
 double kappa = 0.005;
-const double Hsat = 0.3;
+const double Hsat = 0.1;
 
-using Lattice = LatticeProperties<DataOldNewEquilibrium, ParallelX<3>, lx, ly>;
+using Lattice = LatticeProperties<DataOldNewEquilibrium, NoParallel, lx, ly>;
 double offsetx = 0.0;
-double offsety = -ly/2.+2;
+double offsety = 0.0;
 // Function used to define the solid geometry
 // Here we set a solid at the top and bottom, in the conditions that return 1;
 int initBoundary(const int k) {
@@ -33,15 +33,16 @@ int initBoundary(const int k) {
     int yy = computeY(ly, 1, k);
     double rr2 = (xx - (lx-1)/2. - offsetx) * (xx - (lx-1)/2. - offsetx) + (yy - (ly-1)/2. - offsety) * (yy - (ly-1)/2. - offsety);
     
-    if (yy > 1 && (yy >= ly - 1 || xx == 1 || xx == lx - 2)) return 4;
+    //if (yy > 1 && (yy >= ly - 1 || xx == 1 || xx == lx - 2)) return 4;
+    if (yy >= ly - 1) return 4;
     if (yy <= 1) return 1;
     //if (yy == 1 || yy == ly - 2 || xx == 1 || xx == lx - 2) return 4;
     //if (xx <= 1) return 1;
     //else if (xx == lx - 2) return 4;
     //else if (xx >= lx - 1) return 1;
-    if(sqrt(rr2)<RADIUS) return 5;
     //if(sqrt(rr2)<RADIUS) return 5;
-    //else if (xx < lx/2.+offset) return 5;
+    //if(sqrt(rr2)<RADIUS) return 5;
+    if (yy < ly/2.+offsety) return 5;
     return 0;
 }
 
@@ -52,9 +53,10 @@ double initFluid(const int k) {
     //return 0.25*((double)rand()/(double)RAND_MAX);
     
     if (yy <= 1) return 0;
-    else return 0.5-0.5*tanh(2*(sqrt(rr2)-RADIUS)/(sqrt(8*kappa/A)));
-    //return 0.5-0.5*tanh(2*((xx - lx/2.-offset))/(sqrt(8*kappa/A)));
-    //return 0.5-0.5*tanh(2*((yy - ly/2.))/(sqrt(8*kappa/A)));
+    
+    //else return 0.5-0.5*tanh(2*(sqrt(rr2)-RADIUS)/(sqrt(8*kappa/A)));
+    //return 0.5-0.5*tanh(2*((xx - lx/2.-offsety))/(sqrt(8*kappa/A)));
+    return 0.5-0.5*tanh(2*((yy - ly/2.-offsety))/(sqrt(8*kappa/A)));
     //if(sqrt(rr2)<RADIUS) return 1;
     //else return 0;
 }
@@ -64,11 +66,12 @@ double initHumidity(int k) {
     int yy = computeY(ly, 1, k);
     double rr2 = (xx - (lx-1)/2. - offsetx) * (xx - (lx-1)/2. - offsetx) + (yy - (ly-1)/2. - offsety) * (yy - (ly-1)/2. - offsety);
     //return 0.25*((double)rand()/(double)RAND_MAX);
-    if(sqrt(rr2)<RADIUS&&yy > 1) return Hsat;
-    else return 0;
-    //if (xx <= lx/2.) return 0.5;
+    //if(sqrt(rr2)<RADIUS&&yy > 1) return Hsat;
+    //else return 0;
+    if (yy <= ly/2.+offsety) return Hsat;
     //if (xx <= 0 || xx >= lx - 1) return 0;
-    //return 0.5 - 0.5*(xx - (lx/2.+offset))/(lx-lx/2.-offset-1.5);
+    //return Hsat - Hsat*(xx - (lx/2.+offsety))/(lx-lx/2.-offsety-1.5);
+    return Hsat - Hsat*(yy - (ly/2.+offsety))/(ly-ly/2.-offsety-1.5);
     
     //else return 0;
     //int yy = computeY(ly, 1, k);
@@ -151,7 +154,7 @@ double distancefunc(int k, int idx){
 }
 
 int main(int argc, char **argv){
-    mpi.init();
+    //mpi.init();
 
     // Set up the lattice, including the resolution and data/parallelisation method
     

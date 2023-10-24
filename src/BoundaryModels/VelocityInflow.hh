@@ -4,7 +4,7 @@
 #include<iostream>
 
 
-class Dirichlet : public BoundaryBase {
+class VelocityInflow : public BoundaryBase {
     public:
 
         template<class TTraits, class TDistributionType>
@@ -16,19 +16,19 @@ class Dirichlet : public BoundaryBase {
         template<class TTraits, class TDistributionType>
         inline void communicatePrecompute(TDistributionType& mDistribution);
 
-        inline void setInterfaceVal(double val) {mInterfaceVal=val;};
+        inline void setWallVelocity(const std::vector<double>& momentum) {mWallMomentum=momentum;};
 
         inline void setInterfaceID(int id) {mInterfaceID=id;};
 
     private:
 
-        double mInterfaceVal;
+        std::vector<double> mWallMomentum;
         int mInterfaceID;
 
 };
 
 template<class TTraits, class TDistributionType>
-inline void Dirichlet::compute(TDistributionType& distribution, int k) { //CHANGE THIS SO YOU DONT NEED TO COMMUNICATE
+inline void VelocityInflow::compute(TDistributionType& distribution, int k) { //CHANGE THIS SO YOU DONT NEED TO COMMUNICATE
 
     if (Geometry<typename TTraits::Lattice>::getBoundaryType(k) != mInterfaceID) return;
 
@@ -37,7 +37,11 @@ inline void Dirichlet::compute(TDistributionType& distribution, int k) { //CHANG
         if(Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 0 ) {
             
             //distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getDistributionOldPointer(distribution.streamIndex(k, idx))[distribution.getOpposite(idx)] + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;
-            distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] + 2*(1.0-0.5)*mInterfaceVal/5.0;//TTraits::Stencil::Weights[idx]*
+            double cidotmomentum = 0;
+            for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
+                cidotmomentum += TTraits::Stencil::Ci_xyz(xyz)[idx] * mWallMomentum[xyz];
+            }
+            distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] - 2*TTraits::Stencil::Weights[idx]*cidotmomentum/TTraits::Stencil::Cs2;//TTraits::Stencil::Weights[idx]*
             //distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;
         
         }
@@ -47,7 +51,7 @@ inline void Dirichlet::compute(TDistributionType& distribution, int k) { //CHANG
 }
 
 template<class TTraits, class TDistributionType>
-inline void Dirichlet::communicatePrecompute(TDistributionType& distribution) {
+inline void VelocityInflow::communicatePrecompute(TDistributionType& distribution) {
 
     using Lattice = typename TTraits::Lattice;
     Lattice::communicateDistributionAll(distribution);
