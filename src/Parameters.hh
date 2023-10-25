@@ -476,7 +476,8 @@ struct MassSink : public ParameterSingleton<MassSink<TInstances>> {
 
 template<class TObj, int TInstances = 1>
 struct Laplacian : public ParameterSingleton<Laplacian<TObj,TInstances>,double,TInstances> {
-    static constexpr char mName[9+sizeof(TObj::mName)] = "Laplacian"+TObj::mName;
+    //static char __tmpname[] = "Test";
+    static constexpr const char *mName = "Laplacian";
 }; //Directional first order gradients of the order parameter
 
 template<int TInstances = 1>
@@ -502,12 +503,12 @@ struct LaplacianOrderParameter : public Laplacian<OrderParameter<TInstances>,TIn
 
 template<class TObj, int TInstances=1>
 struct Gradient : public ParameterSingleton<Gradient<TObj,TInstances>, double, TInstances> {
-    static constexpr char mName[8+sizeof(TObj::mName)] = "Gradient"+TObj::mName;
+    static constexpr const char *mName  = "Gradient";//+TObj::mName;
 }; //Directional first order gradients of the order parameter
 
 template<class TObj, int TInstances = 1>
 struct GradientMixed : public ParameterSingleton<GradientMixed<TObj,TInstances>, double, TInstances> {
-    static constexpr char mName[13+sizeof(TObj::mName)] = "GradientMixed"+TObj::mName;
+    static constexpr const char *mName  = "GradientMixed";//+TObj::mName;
 }; //Directional first order gradients of the order parameter
 
 template<int TInstances = 1>

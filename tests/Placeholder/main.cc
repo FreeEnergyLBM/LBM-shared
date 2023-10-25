@@ -9,8 +9,8 @@
 const int lx = 200; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 
-const int timesteps = 10000; // Number of iterations to perform
-const int saveInterval = 1000; // Interval to save global data
+const int timesteps = 10; // Number of iterations to perform
+const int saveInterval = 1; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
@@ -238,9 +238,10 @@ int main(int argc, char **argv){
     Algorithm lbm(pressure,binary,humidity);
     //Algorithm lbm(humidity);
     //Algorithm lbm(pressure,binary);
-
+    
     // Perform the main LBM loop
     saver.SaveBoundaries(0);
+    
     for (int timestep=0; timestep<=timesteps; timestep++) {
 
         // Save the desired parameters, producing a binary file for each.

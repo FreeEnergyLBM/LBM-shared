@@ -234,8 +234,8 @@ class GradientsWettingMultiStencil : public AddOnBase {
         inline void setPrefactor(double value){
 
             std::apply([value](auto&... gradient){
-                (gradient.template setPrefactor(value), ...);
-                                            }, mt_GradientStencil);
+                (gradient.setPrefactor(value), ...);
+                                        }, mt_GradientStencil);
 
         }
 

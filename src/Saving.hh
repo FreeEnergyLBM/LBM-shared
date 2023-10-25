@@ -4,6 +4,7 @@
 #include <any>
 #include <fstream>
 #include <iostream>
+#include <cstring>
 #include "Mpi.hh"
 #include "Service.hh"
 #include "Parameters.hh"

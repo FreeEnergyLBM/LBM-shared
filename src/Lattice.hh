@@ -28,7 +28,7 @@ struct LatticeProperties{
     inline static double DT = 1;
     inline static int Face[6] = {0, 0, 0, 0, 0, 0}; // FaceX=0, FaceY=0, FaceZ=0, EdgeX=0, EdgeY=0, EdgeZ=0;
     inline static int Neighbors = 0; // FaceX=0, FaceY=0, FaceZ=0, EdgeX=0, EdgeY=0, EdgeZ=0;
-    inline static TParallel Parallel;
+    static TParallel Parallel;
 
     constexpr LatticeProperties(double DT=1.0) {
         DT = DT;
@@ -70,6 +70,8 @@ struct LatticeProperties{
     }
 };
 
+template<template<class, class> class TData, class TParallel, int lx, int ly, int lz>
+TParallel LatticeProperties<TData,TParallel,lx,ly,lz>::Parallel;
 
 //====== LatticePropertiesRuntime ======//
 

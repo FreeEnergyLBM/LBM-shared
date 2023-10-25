@@ -118,19 +118,21 @@ template<class TLattice, class TParameter>
 inline void Parallel<TDerived,TNumNeighbors>::communicateParameter(TParameter& obj) {
     #ifdef MPIPARALLEL
     if (mpi.size == 1) return;
-
+    //std::cout<<TParameter::mName<<" "<<obj.getCommParameter()[0]<<std::endl;
+    //exit(1);
     #pragma omp master
     {
     int nNeighbors = mNeighbors.size();
     MPI_Request commrequest[2*nNeighbors];
 
     for (int iNeighbor=0; iNeighbor<nNeighbors; iNeighbor++) {
+        
         int tag = iNeighbor;
         MPI_Isend(&obj.getCommParameter()[mI0Send[iNeighbor]*obj.mNum],
                   TNumNeighbors * TLattice::Face[iNeighbor/2] * obj.mNum,
                   mpi_get_type<typename TParameter::ParamType,TLattice>(),
                   mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor]);
-
+        
         tag = (iNeighbor%2==0) ? iNeighbor+1 : iNeighbor-1;
         MPI_Irecv(&obj.getCommParameter()[mI0Recv[iNeighbor]*obj.mNum],
                   TNumNeighbors * TLattice::Face[iNeighbor/2] * obj.mNum,
@@ -597,7 +599,7 @@ class NoParallel : public Parallel<NoParallel,0> {
 template<int TNumNeighbors=1>
 class ParallelX : public Parallel<ParallelX<TNumNeighbors>,TNumNeighbors> {
     public:
-
+        
         static constexpr int mNumDirections = 1; // number of communication directions in 1D parallelisation
         static constexpr int mCommDirection[mNumDirections] = {0}; // communication direction along X
 
@@ -624,7 +626,7 @@ void ParallelX<TNumNeighbors>::init() {
     // Split lattice
     TLattice::HaloXWidth = TLattice::Neighbors = this->mMaxNeighbors;
     TLattice::HaloSize = faceSize * this->mMaxNeighbors;
-    
+    //std::cout<<this->mMaxNeighbors<<std::endl;
     if (TLattice::LX % mpi.size == 0) {
         TLattice::LXdiv = (TLattice::LX/mpi.size + 2*TNumNeighbors);
         TLattice::LXMPIOffset = (TLattice::LXdiv - 2*TNumNeighbors) * mpi.rank;

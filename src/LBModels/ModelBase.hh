@@ -48,6 +48,7 @@ class ModelBase { //Inherit from base class to avoid repetition of common
               mData(),
               mDistribution(mData.getDistributionObject())
         {
+             
              // Initialise the TLattice and parallelisation
         }
 
@@ -315,7 +316,7 @@ inline auto ModelBase<TLattice,TTraits>::getForceCalculator(TTupleType& TForceTu
 
     if constexpr(std::tuple_size<TTupleType>::value != 0){
         
-        auto tempforce=std::apply([k](auto&... forces){//See Algorithm.hh for explanation of std::apply
+        auto tempforce=std::apply([k,this](auto&... forces){//See Algorithm.hh for explanation of std::apply
 
             return std::make_unique<decltype(make_tuple_unique(std::make_tuple(getMethod(forces))...))>();
 
