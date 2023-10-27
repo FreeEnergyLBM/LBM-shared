@@ -84,6 +84,12 @@ class Parallel {
         inline void updateDistributionAfterCommunicationAllOld(TDistribution& obj);
 
         template<class TLattice, class TDistribution>
+        inline void updateDistributionBeforeCommunicationAllEquilibrium(TDistribution& obj);
+
+        template<class TLattice, class TDistribution>
+        inline void updateDistributionAfterCommunicationAllEquilibrium(TDistribution& obj);
+
+        template<class TLattice, class TDistribution>
         inline void communicateDistributionAll(TDistribution& obj);
 
         //template<class TLattice, class TDistribution>
@@ -564,6 +570,90 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionAfterCommunicati
                         int yOffset = (y<2*lw) ? 0 : ly-4*lw;
                         int kGlobal = z + (y+yOffset)*lz + x*ly*lz;
                         obj.getDistributionOld()[kGlobal*TStencil::Q + idx] =
+                            obj.getCommDistribution()[k*TStencil::Q + idx];
+                    }
+    }
+    }
+    return;
+}
+
+
+template<class TDerived, int TNumNeighbors>
+template<class TLattice, class TDistribution>
+inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicationAllEquilibrium(TDistribution& obj) {
+
+    #pragma omp master
+    {
+    using TStencil = typename TDistribution::Stencil;
+    int lz = TLattice::LZdiv;
+    int ly = TLattice::LYdiv;
+    int lx = TLattice::LXdiv;
+    int lw;
+    if (TLattice::HaloXWidth) {
+        lw = TLattice::HaloXWidth;
+        for(int x=0; x<4*lw; ++x)
+            for(int y=0; y<ly; ++y)
+                for(int z=0; z<lz; ++z)
+                    for (int idx=0; idx<TStencil::Q; ++idx) {
+                        int k = z + y*lz + x*ly*lz;
+                        int xOffset = (x<2*lw) ? 0 : lx-4*lw;
+                        int kGlobal = z + y*lz + (x+xOffset)*ly*lz;
+                       // std::cerr<<obj.getCommDistribution().size()<<" "<<k*TStencil::Q + idx<<std::endl;
+                        obj.getEquilibrium()[k*TStencil::Q + idx] =
+                            obj.getDistribution()[kGlobal*TStencil::Q + idx];
+                    }
+    }
+    if (TLattice::HaloYWidth) {
+        lw = TLattice::HaloYWidth;
+        for(int y=0; y<4*lw; ++y)
+            for(int x=0; x<lx; ++x)
+                for(int z=0; z<lz; ++z)
+                    for (int idx=0; idx<TStencil::Q; ++idx) {
+                        int k = z + x*lz + y*lx*lz;
+                        int yOffset = (y<2*lw) ? 0 : ly-4*lw;
+                        int kGlobal = z + (y+yOffset)*lz + x*ly*lz;
+                        obj.getEquilibrium()[k*TStencil::Q + idx] =
+                            obj.getDistribution()[kGlobal*TStencil::Q + idx];
+                    }
+    }
+    }
+    return;
+    
+}
+
+template<class TDerived, int TNumNeighbors>
+template<class TLattice, class TDistribution>
+inline void Parallel<TDerived,TNumNeighbors>::updateDistributionAfterCommunicationAllEquilibrium(TDistribution& obj) {
+    #pragma omp master
+    {
+    using TStencil = typename TDistribution::Stencil;
+    int lz = TLattice::LZdiv;
+    int ly = TLattice::LYdiv;
+    int lx = TLattice::LXdiv;
+    int lw;
+    if (TLattice::HaloXWidth) {
+        lw = TLattice::HaloXWidth;
+        for(int x=0; x<4*lw; ++x)
+            for(int y=0; y<ly; ++y)
+                for(int z=0; z<lz; ++z)
+                    for (int idx = 0; idx < TStencil::Q; ++idx) {
+                        int k = z + y*lz + x*ly*lz;
+                        int xOffset = (x<2*lw) ? 0 : lx-4*lw;
+                        int kGlobal = z + y*lz + (x+xOffset)*ly*lz;
+                        obj.getEquilibrium()[kGlobal*TStencil::Q + idx] =
+                            obj.getCommDistribution()[k*TStencil::Q + idx];
+                    }
+    }
+    if (TLattice::HaloYWidth) {
+        lw = TLattice::HaloYWidth;
+        for(int y=0; y<4*lw; ++y)
+            for(int x=0; x<lx; ++x)
+                for(int z=0; z<lz; ++z)
+                    for (int idx = 0; idx < TStencil::Q; ++idx) {
+                        int k = z + x*lz + y*lx*lz;
+                        int yOffset = (y<2*lw) ? 0 : ly-4*lw;
+                        int kGlobal = z + (y+yOffset)*lz + x*ly*lz;
+                        obj.getEquilibrium()[kGlobal*TStencil::Q + idx] =
                             obj.getCommDistribution()[k*TStencil::Q + idx];
                     }
     }

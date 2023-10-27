@@ -62,5 +62,6 @@ inline void ExtrapolationOutflow::communicatePrecompute(TDistributionType& distr
 
     using Lattice = typename TTraits::Lattice;
     Lattice::communicateDistributionAll(distribution);
+    Lattice::communicateDistributionAllEquilibrium(distribution);
 
 }

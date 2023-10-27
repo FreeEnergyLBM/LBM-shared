@@ -9,8 +9,8 @@
 const int lx = 200; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 
-const int timesteps = 10; // Number of iterations to perform
-const int saveInterval = 1; // Interval to save global data
+const int timesteps = 5000; // Number of iterations to perform
+const int saveInterval = 1000; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
@@ -184,9 +184,9 @@ int main(int argc, char **argv){
     double theta = 1.0*M_PI/4.0;
     double wettingprefactor = - cos(theta)*sqrt(2*A/kappa);
 
-    binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZWetting, CentralQWetting, MixedXYZWetting, MixedQWetting, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
+    //binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZWetting, CentralQWetting, MixedXYZWetting, MixedQWetting, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
 
-    //binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZNoSolid, CentralQNoSolid, MixedXYZNoSolid, MixedQNoSolid, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
+    binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZNoSolid, CentralQNoSolid, MixedXYZNoSolid, MixedQNoSolid, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
     
     //binary.getPreProcessor<MassLossCalculator>().setInterfaceHumidity(0.5);
     //binary.getPreProcessor<MassLossCalculator>().setDiffusivity(0.2);

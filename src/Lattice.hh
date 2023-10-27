@@ -63,6 +63,13 @@ struct LatticeProperties{
     }
 
     template<class TDistribution>
+    static void communicateDistributionAllEquilibrium(TDistribution& obj) {
+        Parallel.template updateDistributionBeforeCommunicationAllEquilibrium<TLattice>(obj);
+        Parallel.template communicateDistributionAll<TLattice>(obj);
+        Parallel.template updateDistributionAfterCommunicationAllEquilibrium<TLattice>(obj);
+    }
+
+    template<class TDistribution>
     static void communicateDistributionAllOld(TDistribution& obj) {
         Parallel.template updateDistributionBeforeCommunicationAllOld<TLattice>(obj);
         Parallel.template communicateDistributionAll<TLattice>(obj);
