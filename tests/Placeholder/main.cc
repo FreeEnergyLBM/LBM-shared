@@ -9,8 +9,8 @@
 const int lx = 200; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 
-const int timesteps = 5000; // Number of iterations to perform
-const int saveInterval = 1000; // Interval to save global data
+const int timesteps = 100000; // Number of iterations to perform
+const int saveInterval = 5000; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
@@ -24,6 +24,7 @@ double kappa = 0.005;
 const double Hsat = 0.3;
 
 using Lattice = LatticeProperties<DataOldNewEquilibrium, ParallelX<3>, lx, ly>;
+//using Lattice = LatticeProperties<DataOldNewEquilibrium, NoParallel, lx, ly>;
 double offsetx = 0.0;
 double offsety = -ly/2.+2;
 // Function used to define the solid geometry
@@ -117,7 +118,7 @@ double initFluid3(int k) {
 }
 */
 
-using traithumid = DefaultTraitHumidity<Lattice>::SetStencil<D2Q5>;
+using traithumid = DefaultTraitHumidity<Lattice>::SetStencil<D2Q9>;
 using traitpressure = typename DefaultTraitPressureLeeHumidity<Lattice> :: template SetBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>,BounceBack>;
 //using traitpressure = typename DefaultTraitPressureLee<Lattice> :: AddForce<BodyForce<>>;
 
@@ -143,9 +144,18 @@ double distancefunc(int k, int idx){
     //std::cout<<dist<<" "<<normaldist<<" "<<cos(normdotci/sqrt(magci))<<" "<<normdotci<<" "<<magci<<std::endl;
     //if(dist == 0.6) std::cout<<k<<std::endl;
     //std::cout<<dist<<std::endl;
-    if (idx == 0 || std::isnan(dist) || std::isinf(dist)) return 0.5;
-    else if (dist>=1) return 1;
-    else if (dist<=0) return 0;
+    if (idx == 0 || std::isnan(dist) || std::isinf(dist)) {
+        //std::cout<<"0"<<std::endl;
+        return 0.5;
+    }
+    //else if (dist>=1) {
+    //    std::cout<<"1"<<std::endl;
+    //    return 1;
+    //}
+    else if (dist<=0) {
+        //std::cout<<"2"<<std::endl;
+        return 0.5;
+    }
     return dist;//normdotci/magci/magci;
 
 }
@@ -168,7 +178,7 @@ int main(int argc, char **argv){
     // BinaryLee<Lattice> binary;
 
     binary.setDensity1(1);
-    binary.setDensity2(1);
+    binary.setDensity2(0.1);
 
     binary.getForce<MuSourceLocal>().setBeta(A);
     binary.getForce<MuSourceNonLocal>().setBeta(A);
@@ -177,11 +187,12 @@ int main(int argc, char **argv){
     binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setKappa(kappa);
 
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceHumidity(Hsat);
-    binary.getPreProcessor<MassLossCalculatorInterpolated>().setDiffusivity(0.002);
+    binary.getPreProcessor<MassLossCalculatorInterpolated>().setDiffusivity(0.02);
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceWidth(sqrt(8*kappa/A));
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setPhiGasLiquid(0,1);
+    binary.getPreProcessor<MassLossCalculatorInterpolated>().setGasDensity(0.1);
 
-    double theta = 1.0*M_PI/4.0;
+    double theta = 1.0*M_PI/6.0;
     double wettingprefactor = - cos(theta)*sqrt(2*A/kappa);
 
     //binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZWetting, CentralQWetting, MixedXYZWetting, MixedQWetting, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
@@ -192,6 +203,7 @@ int main(int argc, char **argv){
     //binary.getPreProcessor<MassLossCalculator>().setDiffusivity(0.2);
 
     using dbtype = InterpolatedDirichlet;
+    //using dbtype = Dirichlet;
 
     //humidity.getBoundary<InterpolatedDirichlet,0>().setInterfaceDistanceFunction(distancefunc);
     //humidity.getBoundary<dbtype,0>().setInterfaceID(5);
@@ -204,7 +216,7 @@ int main(int argc, char **argv){
     humidity.getBoundary<Dirichlet>().setInterfaceID(4);
     humidity.getBoundary<Dirichlet>().setInterfaceVal(0.0);
 
-    humidity.setDiffusivity(0.002);
+    humidity.setDiffusivity(0.02);
 
     humidity.getPreProcessor<HumidityBoundaryLabels>().setInterfaceCondition(interfaceCondition);
     humidity.getPreProcessor<SetHumidityLiquid>().setInterfaceVal(Hsat);
@@ -214,10 +226,13 @@ int main(int argc, char **argv){
     humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceNoSolid>>().setInterfaceVal(Hsat);
 
     humidity.getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
+    humidity.getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setGasDensity(0.1);
 
     pressure.getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
+    pressure.getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setGasDensity(0.1);
     pressure.getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setPressureCalculator(pressure.computePressure);
     pressure.getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setForceTuple(pressure.mt_Forces);
+
     //pressure.getForce<BodyForce<>>().setMagnitudeX(0.0000001);
     ParameterSave<Lattice> saver("data/");
     saver.SaveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)
@@ -249,7 +264,7 @@ int main(int argc, char **argv){
             if(mpi.rank==0)std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
             //saver.SaveParameter<BoundaryLabels<>>(timestep);
             
-            //saver.SaveBoundaries(timestep);
+            saver.SaveBoundaries(timestep);
             saver.SaveParameter<Humidity<>>(timestep);
             saver.SaveParameter<ChemicalPotential<>>(timestep);
             saver.SaveParameter<Density<>>(timestep);

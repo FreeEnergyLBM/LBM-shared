@@ -50,7 +50,7 @@ inline double CentralXYZInterfaceNoSolid::compute(int direction, int k, int num)
 
     double gradientsum = 0;
 
-    if (Geometry<Lattice>::getBoundaryType(k)==0) {
+    if (Geometry<Lattice>::getBoundaryType(k)==0||Geometry<Lattice>::getBoundaryType(k)==6) {
 
         for (int idx = 1; idx <Stencil::Q; idx++) {
 

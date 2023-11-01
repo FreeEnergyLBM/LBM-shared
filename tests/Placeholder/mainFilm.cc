@@ -9,8 +9,8 @@
 const int lx = 2; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 
-const int timesteps = 1000000; // Number of iterations to perform
-const int saveInterval = 100000; // Interval to save global data
+const int timesteps = 300000; // Number of iterations to perform
+const int saveInterval = 25000; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
@@ -21,7 +21,7 @@ double RADIUS = 25.0;
 
 double A = 0.0025;
 double kappa = 0.005;
-const double Hsat = 0.1;
+const double Hsat = 0.5;
 
 using Lattice = LatticeProperties<DataOldNewEquilibrium, NoParallel, lx, ly>;
 double offsetx = 0.0;
@@ -34,8 +34,8 @@ int initBoundary(const int k) {
     double rr2 = (xx - (lx-1)/2. - offsetx) * (xx - (lx-1)/2. - offsetx) + (yy - (ly-1)/2. - offsety) * (yy - (ly-1)/2. - offsety);
     
     //if (yy > 1 && (yy >= ly - 1 || xx == 1 || xx == lx - 2)) return 4;
-    if (yy >= ly - 1) return 4;
-    if (yy <= 1) return 1;
+    if (yy >= ly - 2) return 4;
+    if (yy <= 2) return 1;
     //if (yy == 1 || yy == ly - 2 || xx == 1 || xx == lx - 2) return 4;
     //if (xx <= 1) return 1;
     //else if (xx == lx - 2) return 4;
@@ -180,16 +180,16 @@ int main(int argc, char **argv){
     binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setKappa(kappa);
 
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceHumidity(Hsat);
-    binary.getPreProcessor<MassLossCalculatorInterpolated>().setDiffusivity(0.002);
+    binary.getPreProcessor<MassLossCalculatorInterpolated>().setDiffusivity(0.008);
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceWidth(sqrt(8*kappa/A));
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setPhiGasLiquid(0,1);
 
-    double theta = 1.0*M_PI/4.0;
+    double theta = 2.0*M_PI/4.0;
     double wettingprefactor = - cos(theta)*sqrt(2*A/kappa);
 
-    binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZWetting, CentralQWetting, MixedXYZWetting, MixedQWetting, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
+    //binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZWetting, CentralQWetting, MixedXYZWetting, MixedQWetting, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
 
-    //binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZNoSolid, CentralQNoSolid, MixedXYZNoSolid, MixedQNoSolid, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
+    binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZNoSolid, CentralQNoSolid, MixedXYZNoSolid, MixedQNoSolid, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
     
     //binary.getPreProcessor<MassLossCalculator>().setInterfaceHumidity(0.5);
     //binary.getPreProcessor<MassLossCalculator>().setDiffusivity(0.2);
@@ -207,7 +207,7 @@ int main(int argc, char **argv){
     humidity.getBoundary<Dirichlet>().setInterfaceID(4);
     humidity.getBoundary<Dirichlet>().setInterfaceVal(0.0);
 
-    humidity.setDiffusivity(0.002);
+    humidity.setDiffusivity(0.008);
 
     humidity.getPreProcessor<HumidityBoundaryLabels>().setInterfaceCondition(interfaceCondition);
     humidity.getPreProcessor<SetHumidityLiquid>().setInterfaceVal(Hsat);
@@ -236,9 +236,9 @@ int main(int argc, char **argv){
     
     // Set up the handler object for saving data
     
-    //Algorithm lbm(humidity,binary);
+    Algorithm lbm(binary,humidity);
     //Algorithm lbm(binary);
-    Algorithm lbm(pressure,binary,humidity);
+    //Algorithm lbm(pressure,binary,humidity);
     //Algorithm lbm(humidity);
     //Algorithm lbm(pressure,binary);
 

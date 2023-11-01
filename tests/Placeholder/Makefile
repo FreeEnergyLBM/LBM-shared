@@ -1,8 +1,8 @@
 ROOT_DIR =	../..
 INCS	=	-I$(ROOT_DIR)/src
-DEFS    =	-g -O3 -Wno-deprecated -Wall -std=c++17 -DMPIPARALLEL -parallel-source-info=2#-fopenmp #
+DEFS    =	-g -O3 -Wno-deprecated -Wall -std=c++17 -fopenmp -DMPIPARALLEL #
 LIBS	=	-lm
-COMP	=	mpiicpc
+COMP	=	mpicxx
 DEPS    =       
 OBJ     =	main.cc
 
