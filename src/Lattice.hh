@@ -3,6 +3,7 @@
 #include "Parallel.hh"
 #include "Data.hh"
 #include <typeinfo>
+#include <typeindex>
 #include<map>
 
 //====== LatticeProperties ======//
@@ -38,7 +39,7 @@ struct LatticeProperties{
         return *this;
     }
 
-    static std::map<std::type_info,bool> alreadycommunicatedparameter;
+    static std::map<std::type_index,bool> alreadycommunicatedparameter;
 
     enum {stream = 0, all = 1, allequilibrium = 2, allold = 3};
 
@@ -96,7 +97,7 @@ template<class TParallel, int lx, int ly, int lz>
 TParallel LatticeProperties<TParallel,lx,ly,lz>::Parallel;
 
 template<class TParallel, int lx, int ly, int lz>
-std::map<std::type_info,bool> LatticeProperties<TParallel,lx,ly,lz>::alreadycommunicatedparameter;
+std::map<std::type_index,bool> LatticeProperties<TParallel,lx,ly,lz>::alreadycommunicatedparameter;
 
 template<class TParallel, int lx, int ly, int lz>
 std::map<int,bool> LatticeProperties<TParallel,lx,ly,lz>::alreadycommunicateddistribution;
