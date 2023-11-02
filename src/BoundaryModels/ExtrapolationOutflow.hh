@@ -11,10 +11,10 @@ class ExtrapolationOutflow : public BoundaryBase {
         inline void compute(TDistributionType& mDistribution, int k);
 
         template<class TTraits>
-        inline void communicatePrecompute(){};
+        inline void communicate(){};
 
         template<class TTraits, class TDistributionType>
-        inline void communicatePrecompute(TDistributionType& mDistribution);
+        inline void communicate(TDistributionType& mDistribution);
 
     private:
 
@@ -58,7 +58,7 @@ inline void ExtrapolationOutflow::compute(TDistributionType& distribution, int k
 }
 
 template<class TTraits, class TDistributionType>
-inline void ExtrapolationOutflow::communicatePrecompute(TDistributionType& distribution) {
+inline void ExtrapolationOutflow::communicate(TDistributionType& distribution) {
 
     using Lattice = typename TTraits::Lattice;
     Lattice::communicateDistributionAll(distribution);

@@ -23,7 +23,7 @@ inline void BounceBack::compute(TDistributionType& distribution, int k) {
 
         if(Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 0 ) {
             
-            distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = distribution.getDistributionPointer(k)[distribution.getOpposite(idx)];
+            distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx));
         
         }
 

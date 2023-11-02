@@ -380,6 +380,9 @@ struct BaseTrait{
 
     using Lattice = typename TTrait::Lattice;
 
+    template<class TLattice, class TStencil>
+    using DataType = typename TTrait::template DataType<TLattice,TStencil>;
+
     static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
   };
@@ -401,6 +404,9 @@ struct BaseTrait{
     using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
 
     using Lattice = typename TTrait::Lattice;
+
+    template<class TLattice, class TStencil>
+    using DataType = typename TTrait::template DataType<TLattice,TStencil>;
 
     static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
@@ -424,6 +430,9 @@ struct BaseTrait{
 
     using Lattice = typename TTrait::Lattice;
 
+    template<class TLattice, class TStencil>
+    using DataType = typename TTrait::template DataType<TLattice,TStencil>;
+
     static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
   };
@@ -445,6 +454,9 @@ struct BaseTrait{
     using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
 
     using Lattice = typename TTrait::Lattice;
+
+    template<class TLattice, class TStencil>
+    using DataType = typename TTrait::template DataType<TLattice,TStencil>;
 
     static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
@@ -468,6 +480,9 @@ struct BaseTrait{
 
     using Lattice = typename TTrait::Lattice;
 
+    template<class TLattice, class TStencil>
+    using DataType = typename TTrait::template DataType<TLattice,TStencil>;
+
     static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
   };
@@ -489,6 +504,9 @@ struct BaseTrait{
     using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
 
     using Lattice = typename TTrait::Lattice;
+
+    template<class TLattice, class TStencil>
+    using DataType = typename TTrait::template DataType<TLattice,TStencil>;
 
     static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
@@ -512,6 +530,9 @@ struct BaseTrait{
 
     using Lattice = typename TTrait::Lattice;
 
+    template<class TLattice, class TStencil>
+    using DataType = typename TTrait::template DataType<TLattice,TStencil>;
+
     static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
   };
@@ -533,6 +554,9 @@ struct BaseTrait{
     using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
 
     using Lattice = typename TTrait::Lattice;
+    
+    template<class TLattice, class TStencil>
+    using DataType = typename TTrait::template DataType<TLattice,TStencil>;
 
     static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
@@ -556,6 +580,9 @@ struct BaseTrait{
 
     using Lattice = typename TTrait::Lattice;
 
+    template<class TLattice, class TStencil1>
+    using DataType = typename TTrait::template DataType<TLattice,TStencil1>;
+
     static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
   };
@@ -577,6 +604,34 @@ struct BaseTrait{
     using CollisionModel = TModel<TStencil>;
 
     using Lattice = typename TTrait::Lattice;
+
+    template<class TLattice, class TStencil>
+    using DataType = typename TTrait::template DataType<TLattice,TStencil>;
+
+    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
+
+  };
+
+  template<template<class, class, bool> class TDataType, bool TSeperateStream = false>
+  struct SetDataType : BaseTrait<SetDataType<TDataType>> {
+
+    using Stencil = typename TTrait::Stencil;
+
+    using Boundaries = typename TTrait::Boundaries;
+
+    using PreProcessors = typename TTrait::PreProcessors;
+
+    using PostProcessors = typename TTrait::PostProcessors;
+
+    using Forces = typename TTrait::Forces;
+
+    template<class TStencil>
+    using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
+
+    using Lattice = typename TTrait::Lattice;
+
+    template<class TLattice, class TStencil>
+    using DataType = TDataType<TLattice,TStencil,TSeperateStream>;
 
     static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 

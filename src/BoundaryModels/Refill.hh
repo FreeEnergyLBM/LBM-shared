@@ -11,6 +11,9 @@ class Refill : public BoundaryBase {
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);
 
+        template<class TTraits>
+        inline void communicatePrecompute();
+
     private:
 
 };
@@ -53,4 +56,13 @@ inline void Refill<TParam>::compute(TDistributionType& distribution, int k) {
         
     }    
 
+}
+
+template<class TParam>
+template<class TTraits>
+inline void Refill<TParam>::communicatePrecompute(){
+
+    using Lattice = typename TTraits::Lattice;
+    Lattice::communicate(TParam::template getInstance<Lattice>());
+    
 }

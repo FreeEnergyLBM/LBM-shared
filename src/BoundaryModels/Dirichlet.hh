@@ -11,10 +11,10 @@ class Dirichlet : public BoundaryBase {
         inline void compute(TDistributionType& mDistribution, int k);
 
         template<class TTraits>
-        inline void communicatePrecompute(){};
+        inline void communicate(){};
 
         template<class TTraits, class TDistributionType>
-        inline void communicatePrecompute(TDistributionType& mDistribution);
+        inline void communicate(TDistributionType& mDistribution);
 
         inline void setInterfaceVal(double val) {mInterfaceVal=val;};
 
@@ -37,7 +37,7 @@ inline void Dirichlet::compute(TDistributionType& distribution, int k) { //CHANG
         if(Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 0 ||Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 6) {
             
             //distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getDistributionOldPointer(distribution.streamIndex(k, idx))[distribution.getOpposite(idx)] + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;
-            distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;//TTraits::Stencil::Weights[idx]*
+            distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;//TTraits::Stencil::Weights[idx]*
             //distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;
         
         }
@@ -47,7 +47,7 @@ inline void Dirichlet::compute(TDistributionType& distribution, int k) { //CHANG
 }
 
 template<class TTraits, class TDistributionType>
-inline void Dirichlet::communicatePrecompute(TDistributionType& distribution) {
+inline void Dirichlet::communicate(TDistributionType& distribution) {
 
     using Lattice = typename TTraits::Lattice;
     Lattice::communicateDistributionAll(distribution);

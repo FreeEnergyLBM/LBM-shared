@@ -11,10 +11,10 @@ class VelocityInflow : public BoundaryBase {
         inline void compute(TDistributionType& mDistribution, int k);
 
         template<class TTraits>
-        inline void communicatePrecompute(){};
+        inline void communicate(){};
 
         template<class TTraits, class TDistributionType>
-        inline void communicatePrecompute(TDistributionType& mDistribution);
+        inline void communicate(TDistributionType& mDistribution);
 
         inline void setWallVelocity(const std::vector<double>& momentum) {mWallMomentum=momentum;};
 
@@ -41,7 +41,7 @@ inline void VelocityInflow::compute(TDistributionType& distribution, int k) { //
             for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
                 cidotmomentum += TTraits::Stencil::Ci_xyz(xyz)[idx] * mWallMomentum[xyz];
             }
-            distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] - 2*TTraits::Stencil::Weights[idx]*cidotmomentum/TTraits::Stencil::Cs2;//TTraits::Stencil::Weights[idx]*
+            distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) - 2*TTraits::Stencil::Weights[idx]*cidotmomentum/TTraits::Stencil::Cs2;//TTraits::Stencil::Weights[idx]*
             //distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;
         
         }
@@ -51,7 +51,7 @@ inline void VelocityInflow::compute(TDistributionType& distribution, int k) { //
 }
 
 template<class TTraits, class TDistributionType>
-inline void VelocityInflow::communicatePrecompute(TDistributionType& distribution) {
+inline void VelocityInflow::communicate(TDistributionType& distribution) {
 
     using Lattice = typename TTraits::Lattice;
     Lattice::communicateDistributionAll(distribution);

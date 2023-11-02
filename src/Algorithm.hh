@@ -78,6 +78,8 @@ class Algorithm {
          */
         inline void calculateCollisionStep(); 
 
+        inline void calculateStreamingStep(); 
+
         /**
          * \brief Apply boundary conditions for each model over the entire lattice.
          */
@@ -115,6 +117,8 @@ inline void Algorithm<TModel...>::evolve() {
     precomputeStep();
     
     calculateCollisionStep();
+
+    calculateStreamingStep();
     
     calculateBoundaryStep();
     
@@ -209,6 +213,21 @@ inline void Algorithm<TModel...>::calculateCollisionStep() { //...
         std::apply([](TModel&... models) {
 
             (models.collide(), ...);
+
+        }, mt_Models);
+
+    }
+
+}
+
+template<class ...TModel>
+inline void Algorithm<TModel...>::calculateStreamingStep() { //...
+    
+    if constexpr (sizeof...(TModel) != 0){
+
+        std::apply([](TModel&... models) {
+
+            (models.stream(), ...);
 
         }, mt_Models);
 

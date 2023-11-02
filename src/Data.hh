@@ -54,11 +54,11 @@ class Data_Base{
 
         enum{ x = 0, y = 1, z = 2 }; //!<Indices corresponding to x, y, z.
         
-        template<class, class>
+        template<class, class, bool>
         friend class DataOldNew; //DataOldNew can access private members of the base class (will need to add new data
                             //types here but I will probably change how this works).
 
-        template<class, class>
+        template<class, class, bool>
         friend class DataOldNewEquilibrium;
 
         /**
@@ -267,8 +267,13 @@ inline void Data_Base<TLattice,TStencil>::generateNeighbors() { //Loop over all 
  * type.
  * \tparam TStencil Velocity Stencil of class using this data type.
  */
-template<class TLattice, class TStencil>
+template<class TLattice, class TStencil, bool TSeperateStream = false>
 class DataOldNew : public Data_Base<TLattice, TStencil> {
+
+    public:
+
+        static constexpr bool IsStreamingSeperate = TSeperateStream;
+
     private:
 
         /**
@@ -330,16 +335,23 @@ class DataOldNew : public Data_Base<TLattice, TStencil> {
 
             }
 
+            inline double& getPostCollisionDistribution(const int k, const int idx) {
+
+                return IsStreamingSeperate ? this -> getDistributionOldPointer(k)[idx] : this -> getDistributionPointer(Distribution_Base<TStencil>::mv_DistNeighbors[k * TStencil::Q + idx])[idx]; //Return neighbor of lattice point k in direction Q
+
+            }
+
+            inline double& getPostStreamingDistribution(const int k, const int idx) {
+
+                return IsStreamingSeperate ? this -> getDistributionPointer(Distribution_Base<TStencil>::mv_DistNeighbors[k * TStencil::Q + idx])[idx] : this -> getDistributionPointer(k)[idx]; //Return neighbor of lattice point k in direction Q
+
+            }
+
         };
 
         Distribution_Derived mDistribution; //!<Object of distribution.
         
     public:
-    
-        /**
-         * \brief Streaming step in the LBM algorithm.
-         */
-        inline void stream();
 
         /**
          * \brief This function streams the distributions to the neighboring processor.
@@ -372,28 +384,24 @@ class DataOldNew : public Data_Base<TLattice, TStencil> {
 };
 
 /**
- * \details The stream() function does nothing in this class as streaming is implemented using the
- *          getStreamIndex() function in this data type.
- */
-template<class TLattice, class TStencil>
-inline void DataOldNew<TLattice, TStencil>::stream() { //Not used in this data type
-
-}
-
-/**
  * \details This performs the communicateDistribution() function for the chosen parallelisation method, which
  *          should perform the streaming step across MPI boundaries.
  */
-template<class TLattice, class TStencil>
-inline void DataOldNew<TLattice, TStencil>::communicateDistribution() {
+template<class TLattice, class TStencil, bool TSeperateStream>
+inline void DataOldNew<TLattice, TStencil, TSeperateStream>::communicateDistribution() {
     
     TLattice::communicateDistribution(mDistribution);
     
 }
 
 
-template<class TLattice, class TStencil>
+template<class TLattice, class TStencil, bool TSeperateStream = false>
 class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
+
+    public:
+
+        static constexpr bool IsStreamingSeperate = TSeperateStream;
+
     private:
 
         /**
@@ -471,17 +479,24 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
 
             }
 
+            inline double& getPostCollisionDistribution(const int k, const int idx) {
+
+                return IsStreamingSeperate ? this -> getDistributionOldPointer(k)[idx] : this -> getDistributionPointer(Distribution_Base<TStencil>::mv_DistNeighbors[k * TStencil::Q + idx])[idx]; //Return neighbor of lattice point k in direction Q
+
+            }
+
+            inline double& getPostStreamingDistribution(const int k, const int idx) {
+
+                return IsStreamingSeperate ? this -> getDistributionPointer(Distribution_Base<TStencil>::mv_DistNeighbors[k * TStencil::Q + idx])[idx] : this -> getDistributionPointer(k)[idx]; //Return neighbor of lattice point k in direction Q
+
+            }
+
         };
 
         Distribution_Derived mDistribution; //!<Object of distribution.
         
     public:
     
-        /**
-         * \brief Streaming step in the LBM algorithm.
-         */
-        inline void stream();
-
         /**
          * \brief This function streams the distributions to the neighboring processor.
          */
@@ -513,20 +528,11 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
 };
 
 /**
- * \details The stream() function does nothing in this class as streaming is implemented using the
- *          getStreamIndex() function in this data type.
- */
-template<class TLattice, class TStencil>
-inline void DataOldNewEquilibrium<TLattice, TStencil>::stream() { //Not used in this data type
-
-}
-
-/**
  * \details This performs the communicateDistribution() function for the chosen parallelisation method, which
  *          should perform the streaming step across MPI boundaries.
  */
-template<class TLattice, class TStencil>
-inline void DataOldNewEquilibrium<TLattice, TStencil>::communicateDistribution() {
+template<class TLattice, class TStencil, bool TSeperateStream>
+inline void DataOldNewEquilibrium<TLattice, TStencil, TSeperateStream>::communicateDistribution() {
     
     TLattice::communicateDistribution(mDistribution);
     

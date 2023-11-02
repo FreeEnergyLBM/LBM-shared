@@ -23,7 +23,7 @@ double A = 0.0025;
 double kappa = 0.005;
 const double Hsat = 0.3;
 
-using Lattice = LatticeProperties<DataOldNewEquilibrium, ParallelX<3>, lx, ly>;
+using Lattice = LatticeProperties<ParallelX<3>, lx, ly>;
 //using Lattice = LatticeProperties<DataOldNewEquilibrium, NoParallel, lx, ly>;
 double offsetx = 0.0;
 double offsety = -ly/2.+2;
@@ -168,9 +168,9 @@ int main(int argc, char **argv){
     // We need to modify the traits of the navier stokes model to include a bodyforce and change the collision model to MRT, so that high viscosity contrasts produce accurate results.
     // We need to add a chemical potential calculator to one of the models too, given to the first NComponent model.
 
-    EvaporationHumidity<Lattice,traithumid> humidity;
-    PressureLeeHumidity<Lattice,traitpressure> pressure;
-    BinaryLeeHumidity<Lattice> binary;
+    EvaporationHumidity<Lattice,typename traithumid::SetDataType<DataOldNewEquilibrium>> humidity;
+    PressureLeeHumidity<Lattice,typename traitpressure::SetDataType<DataOldNewEquilibrium>> pressure;
+    BinaryLeeHumidity<Lattice,typename DefaultTraitBinaryLeeHumidity<Lattice>:: template SetDataType<DataOldNewEquilibrium>> binary;
 
     //PressureLee<Lattice,traitpressure> pressure;
     //BinaryLee<Lattice> binary;

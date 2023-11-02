@@ -9,6 +9,7 @@
 #include "../AddOns/AddOns.hh"
 #include "../Collide.hh"
 #include "../Service.hh"
+#include "../Data.hh"
 
 template<class TLattice=void, int t_NumberOfComponents=1>
 struct DefaultTrait : BaseTrait<DefaultTrait<TLattice,t_NumberOfComponents>> {
@@ -27,6 +28,9 @@ struct DefaultTrait : BaseTrait<DefaultTrait<TLattice,t_NumberOfComponents>> {
     using CollisionModel = SRT<TStencil>;
 
     using Lattice = TLattice;
+
+    template<class Tlattice, class TStencil>
+    using DataType = DataOldNew<TLattice,TStencil>;
 
     static constexpr int NumberOfComponents = t_NumberOfComponents;
 
@@ -87,6 +91,8 @@ class ModelBase { //Inherit from base class to avoid repetition of common
         inline void communicatePostprocessBoundaries(TTupleType& tup);
 
         inline virtual void collide() = 0; //Collision step
+
+        inline virtual void stream(); //Collision step
 
         inline virtual void boundaries(); //Boundary calculation
 
@@ -205,7 +211,7 @@ class ModelBase { //Inherit from base class to avoid repetition of common
                                                         return (TTraits::template CollisionModel<typename TTraits::Stencil>::template forcing<typename TTraits::Lattice,decltype(prefactors)>(this->mt_Forces,&(std::get<typename ForcingMap::template get<typename remove_const_and_reference<decltype(prefactors)>::type>>(tempTuple).val[0]),inversetau,idx) + ...);
                                                                                                                 }, *tempforceprefactors);
                     
-                    mDistribution.getDistributionPointer(mDistribution.streamIndex(k, idx))[idx] = collision;
+                    mDistribution.getPostCollisionDistribution(k,idx) = collision;
 
                 }
             }
@@ -216,7 +222,7 @@ class ModelBase { //Inherit from base class to avoid repetition of common
                 
                     double collision=TTraits::template CollisionModel<typename TTraits::Stencil>::template collide<typename TTraits::Lattice>(olddistributions,equilibriums,inversetau,idx);
 
-                    mDistribution.getDistributionPointer(mDistribution.streamIndex(k, idx))[idx] = collision;
+                    mDistribution.getPostCollisionDistribution(k,idx) = collision;
 
                 }
             }
@@ -240,8 +246,8 @@ class ModelBase { //Inherit from base class to avoid repetition of common
                                 const int xyz, const int k); //Calculate velocity
 
         TLattice latticeInit;
-        typename std::remove_reference<TLattice>::type::template DataType<typename TTraits::Stencil> mData;
-        typename std::remove_reference<TLattice>::type::template DataType<typename TTraits::Stencil>::DistributionData& mDistribution = mData.getDistributionObject();
+        typename TTraits::template DataType<TLattice,typename TTraits::Stencil> mData;
+        typename TTraits::template DataType<TLattice,typename TTraits::Stencil>::DistributionData& mDistribution = mData.getDistributionObject();
             //Distributions
 
         enum{ x = 0, y = 1, z = 2 }; //Indices corresponding to x, y, z directions
@@ -339,6 +345,8 @@ inline auto ModelBase<TLattice,TTraits>::getForceCalculator(TTupleType& TForceTu
 template<class TLattice, class TTraits>
 inline void ModelBase<TLattice,TTraits>::precompute() {
 
+    TLattice::ResetParallelTracking();
+
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //loop over k
 
@@ -353,6 +361,42 @@ inline void ModelBase<TLattice,TTraits>::precompute() {
     communicateTuple(mt_PreProcessors);
     communicatePrecomputeTuple(mt_Forces);
     communicatePrecomputeBoundaries(mt_Boundaries);
+
+    TLattice::ResetParallelTracking();
+
+    #pragma omp master
+    {
+    mDistribution.getDistribution().swap(mDistribution.getDistributionOld()); //swap old and new distributions
+                                                                                //before collision
+    }
+    
+}
+
+
+template<class TLattice, class TTraits>
+inline void ModelBase<TLattice,TTraits>::stream() {
+
+    TLattice::ResetParallelTracking();
+
+    if constexpr (TTraits::template DataType<TLattice,typename TTraits::Stencil>::IsStreamingSeperate){
+
+        #pragma omp for schedule(guided)
+        for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //loop over k
+
+            for (int idx = 0; idx <TTraits::Stencil::Q; idx++) {
+
+                mDistribution.getPostStreamingDistribution(k,idx) = mDistribution.getPostCollisionDistribution(k)[idx]; 
+            
+            }
+
+        }
+
+    }
+
+    this -> mData.communicateDistribution();
+    communicateTuple(mt_Boundaries);
+
+    TLattice::ResetParallelTracking();
 
     #pragma omp master
     {
@@ -475,7 +519,7 @@ inline void ModelBase<TLattice,TTraits>::communicatePrecomputeBoundaries(TTupleT
 
         std::apply([this](auto&... obj){//See Algorithm.hh for explanation of std::apply
 
-            (obj.template communicatePrecompute<TTraits>(this -> mDistribution),...);
+            (obj.template communicatePrecompute<TTraits>(),...);
 
         }, tup);
 
@@ -494,7 +538,7 @@ inline void ModelBase<TLattice,TTraits>::communicatePostprocessBoundaries(TTuple
 
         std::apply([this](auto&... obj){//See Algorithm.hh for explanation of std::apply
 
-            (obj.template communicatePostProcess<TTraits>(this -> mDistribution),...);
+            (obj.template communicatePostProcess<TTraits>(),...);
 
         }, tup);
 
@@ -504,6 +548,8 @@ inline void ModelBase<TLattice,TTraits>::communicatePostprocessBoundaries(TTuple
 
 template<class TLattice, class TTraits>
 inline void ModelBase<TLattice,TTraits>::postprocess() {
+
+    TLattice::ResetParallelTracking();
 
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //loop over k
@@ -519,11 +565,15 @@ inline void ModelBase<TLattice,TTraits>::postprocess() {
     communicateTuple(mt_PostProcessors);
     communicatePostprocessTuple(mt_Forces);
     communicatePrecomputeBoundaries(mt_Boundaries);
+
+    TLattice::ResetParallelTracking();
     
 }
 
 template<class TLattice, class TTraits>
 inline void ModelBase<TLattice,TTraits>::boundaries() {
+
+    TLattice::ResetParallelTracking();
 
     #pragma omp for schedule(guided)
     for (int k = 0; k <TLattice::N; k++) { //loop over k
@@ -539,5 +589,7 @@ inline void ModelBase<TLattice,TTraits>::boundaries() {
         }
 
     }
+
+    TLattice::ResetParallelTracking();
     
 }

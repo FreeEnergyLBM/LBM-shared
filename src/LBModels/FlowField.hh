@@ -74,8 +74,6 @@ inline void FlowField<TLattice, TTraits>::collide() { //Collision step
         
     }
 
-    this -> mData.communicateDistribution();
-
 }
 
 template<class TLattice, class TTraits>

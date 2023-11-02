@@ -10,10 +10,10 @@ class InterpolatedDirichlet : public BoundaryBase {
         inline void compute(TDistributionType& mDistribution, int k);
 
         template<class TTraits>
-        inline void communicatePrecompute(){};
+        inline void communicate(){};
 
         template<class TTraits, class TDistributionType>
-        inline void communicatePrecompute(TDistributionType& mDistribution);
+        inline void communicate(TDistributionType& mDistribution);
 
         inline void setInterfaceVal(double val) {mInterfaceVal = val;};
 
@@ -58,8 +58,8 @@ inline void InterpolatedDirichlet::compute(TDistributionType& distribution, int 
             
             //distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = - distribution.getDistributionOldPointer(distribution.streamIndex(k, idx))[distribution.getOpposite(idx)] + ((2.0 * dist - 1.0) / (2.0 * dist + 1.0)) * distribution.getDistributionOldPointer(distribution.streamIndex(distribution.streamIndex(k, idx), idx))[distribution.getOpposite(idx)] + ((2.0 * dist - 1.0) / (2.0 * dist + 1.0)) * distribution.getDistributionOldPointer(distribution.streamIndex(k, idx))[idx] + 2 * ((2.0) / (2.0 * dist + 1.0)) * TTraits::Stencil::Weights[idx] * mInterfaceVal;
 
-            if (dist <= 0.5) distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -2 * (dist) * distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] + (2 * dist - 1) * distribution.getDistributionPointer(distribution.streamIndex(k, idx))[distribution.getOpposite(idx)] + 2 * TTraits::Stencil::Weights[idx] * mInterfaceVal;
-            else distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = - 1.0 / (2.0*dist) * distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] + (1-1.0 / (2.0 * dist)) * distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, idx), idx))[idx] + 2 * (1.0/(2.0 * dist)) * TTraits::Stencil::Weights[idx] * mInterfaceVal;
+            if (dist <= 0.5) distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -2 * (dist) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) + (2 * dist - 1) * distribution.getPostCollisionDistribution(distribution.streamIndex(distribution.streamIndex(k, idx), idx),distribution.getOpposite(idx)) + 2 * TTraits::Stencil::Weights[idx] * mInterfaceVal;
+            else distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = - 1.0 / (2.0*dist) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) + (1-1.0 / (2.0 * dist)) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),idx) + 2 * (1.0/(2.0 * dist)) * TTraits::Stencil::Weights[idx] * mInterfaceVal;
             //distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getDistributionOldPointer(distribution.streamIndex(k, idx))[distribution.getOpposite(idx)] + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;
 
         }
@@ -69,7 +69,7 @@ inline void InterpolatedDirichlet::compute(TDistributionType& distribution, int 
 }
 
 template<class TTraits, class TDistributionType>
-inline void InterpolatedDirichlet::communicatePrecompute(TDistributionType& distribution) {
+inline void InterpolatedDirichlet::communicate(TDistributionType& distribution) {
 
     using Lattice = typename TTraits::Lattice;
     Lattice::communicateDistributionAll(distribution);

@@ -2,19 +2,18 @@
 #include "Service.hh"
 #include "Parallel.hh"
 #include "Data.hh"
-// TODO: Fix cyclic include of Data.hh
-
-
+#include <typeinfo>
+#include<map>
 
 //====== LatticeProperties ======//
 
-template<template<class, class> class TData, class TParallel, int lx, int ly, int lz = 1>
+template<class TParallel, int lx, int ly, int lz = 1>
 struct LatticeProperties{
-    using TLattice = LatticeProperties<TData,TParallel,lx,ly,lz>;
+    using TLattice = LatticeProperties<TParallel,lx,ly,lz>;
 
-    template<class TStencil>
-    using DataType = TData<TLattice, TStencil>;//!<This will change the "DataType" implementation, which will govern the access of non-local data
-    static_assert(std::is_base_of< Data_Base<TLattice,D1Q3>, DataType<D1Q3> >::value, "ERROR: Chosen data method is not a data class.");
+    //template<class TStencil>
+    //using DataType = TData<TLattice, TStencil>;//!<This will change the "DataType" implementation, which will govern the access of non-local data
+    //static_assert(std::is_base_of< Data_Base<TLattice,D1Q3>, DataType<D1Q3> >::value, "ERROR: Chosen data method is not a data class.");
 
     static constexpr int NDIM = 3 - (lx <= 1 || ly <= 1 || lz <=1 ) * (1 + ((lx <= 1 && ly <=1)||(lx <= 1 && lz <=1)||(ly <= 1 && lz <=1)));
     static constexpr int LX = lx;
@@ -39,12 +38,24 @@ struct LatticeProperties{
         return *this;
     }
 
+    static std::map<std::type_info,bool> alreadycommunicatedparameter;
+
+    enum {stream = 0, all = 1, allequilibrium = 2, allold = 3};
+
+    static std::map<int,bool> alreadycommunicateddistribution;
+
+    static void ResetParallelTracking() {
+        for (auto& [_, value] : alreadycommunicatedparameter) value = false;
+        for (auto& [_, value] : alreadycommunicateddistribution) value = false;
+    }
+
     //! This function communicates the halo regions of a parameter.
     template<class TParameter>
     static void communicate(TParameter& obj) {
         Parallel.template updateParameterBeforeCommunication<TLattice>(obj);
         Parallel.template communicateParameter<TLattice>(obj);
         Parallel.template updateParameterAfterCommunication<TLattice>(obj);
+        alreadycommunicatedparameter[typeid(obj)] = true;
     }
 
     //! This function streams the distributions to the neighboring processor.
@@ -53,6 +64,7 @@ struct LatticeProperties{
         Parallel.template updateDistributionBeforeCommunication<TLattice>(obj);
         Parallel.template communicateDistribution<TLattice>(obj);
         Parallel.template updateDistributionAfterCommunication<TLattice>(obj);
+        alreadycommunicateddistribution[stream] = true;
     }
 
     template<class TDistribution>
@@ -60,6 +72,7 @@ struct LatticeProperties{
         Parallel.template updateDistributionBeforeCommunicationAll<TLattice>(obj);
         Parallel.template communicateDistributionAll<TLattice>(obj);
         Parallel.template updateDistributionAfterCommunicationAll<TLattice>(obj);
+        alreadycommunicateddistribution[all] = true;
     }
 
     template<class TDistribution>
@@ -67,6 +80,7 @@ struct LatticeProperties{
         Parallel.template updateDistributionBeforeCommunicationAllEquilibrium<TLattice>(obj);
         Parallel.template communicateDistributionAll<TLattice>(obj);
         Parallel.template updateDistributionAfterCommunicationAllEquilibrium<TLattice>(obj);
+        alreadycommunicateddistribution[allequilibrium] = true;
     }
 
     template<class TDistribution>
@@ -74,11 +88,18 @@ struct LatticeProperties{
         Parallel.template updateDistributionBeforeCommunicationAllOld<TLattice>(obj);
         Parallel.template communicateDistributionAll<TLattice>(obj);
         Parallel.template updateDistributionAfterCommunicationAllOld<TLattice>(obj);
+        alreadycommunicateddistribution[allold] = true;
     }
 };
 
-template<template<class, class> class TData, class TParallel, int lx, int ly, int lz>
-TParallel LatticeProperties<TData,TParallel,lx,ly,lz>::Parallel;
+template<class TParallel, int lx, int ly, int lz>
+TParallel LatticeProperties<TParallel,lx,ly,lz>::Parallel;
+
+template<class TParallel, int lx, int ly, int lz>
+std::map<std::type_info,bool> LatticeProperties<TParallel,lx,ly,lz>::alreadycommunicatedparameter;
+
+template<class TParallel, int lx, int ly, int lz>
+std::map<int,bool> LatticeProperties<TParallel,lx,ly,lz>::alreadycommunicateddistribution;
 
 //====== LatticePropertiesRuntime ======//
 

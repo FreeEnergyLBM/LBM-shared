@@ -34,7 +34,7 @@ inline void FreeSlip::compute(TDistributionType& distribution, int k) {
 
             const int& newidx = TTraits::Stencil::QMap.find(newdir)->second;
             
-            distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = distribution.getDistributionPointer(k)[newidx];
+            distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),newidx);
         
         }
 
