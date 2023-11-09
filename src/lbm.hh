@@ -15,5 +15,6 @@
 #include "Parallel.hh"
 #include "Collide.hh"
 #include "Forcing.hh"
+#include "Input.hh"
 
 
