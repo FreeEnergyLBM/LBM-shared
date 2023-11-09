@@ -12,6 +12,8 @@ template<class TParallel, int lx, int ly, int lz = 1>
 struct LatticeProperties{
     using TLattice = LatticeProperties<TParallel,lx,ly,lz>;
 
+    inline static void init(){}
+
     //template<class TStencil>
     //using DataType = TData<TLattice, TStencil>;//!<This will change the "DataType" implementation, which will govern the access of non-local data
     //static_assert(std::is_base_of< Data_Base<TLattice,D1Q3>, DataType<D1Q3> >::value, "ERROR: Chosen data method is not a data class.");
@@ -132,21 +134,25 @@ std::map<int,bool> LatticeProperties<TParallel,lx,ly,lz>::alreadycommunicateddis
 
 //====== LatticePropertiesRuntime ======//
 
-template<template<class, class> class TData, class TParallel, int TNDIM>
+template<class TParallel, int TNDIM>
 struct LatticePropertiesRuntime {
-    using TLattice = LatticePropertiesRuntime<TData,TParallel,TNDIM>;
+    using TLattice = LatticePropertiesRuntime<TParallel,TNDIM>;
 
-    constexpr LatticePropertiesRuntime(int lx, int ly, double DT=1.0) : LatticePropertiesRuntime(lx, ly, 1, DT) {}
+    constexpr LatticePropertiesRuntime() {
+        Parallel.template init<TLattice>();
+    }
 
-    constexpr LatticePropertiesRuntime(int lx, int ly, int lz, double DT=1.0) {
-        if(TNDIM<=2&&lz>1) throw std::runtime_error("lz cannot be greater than 1 for a 2D simulation");
+    inline static void init(int lx, int ly, int lz, double DT=1.0){
+        if(TNDIM<=1&&((lx>1&&ly>1)||(lx>1&&lz>1)||(ly>1&&lz>1))) throw std::runtime_error("1D simulation but dimensions given to the LatticePropertiesRuntine class are not 1D");
+        if(TNDIM<=2&&(lx>1&&ly>1&&lz>1)) throw std::runtime_error("2D simulation but dimensions given to the LatticePropertiesRuntine class are not 2D");
         LX = lx;
         LY = ly;
         LZ = lz;
+        subArray[0] = lx;
+        subArray[1] = ly;
+        subArray[2] = lz;
         N = lx * ly * lz;
-        LXdiv = lx; LYdiv = ly; LZdiv = lz;
-        LXMPIOffset = 0; LYMPIOffset = 0; LZMPIOffset = 0;
-        HaloSize = 0; HaloXWidth = 0; HaloYWidth = 0; HaloZWidth = 0;
+        LXdiv = lx; LYdiv = ly; LZdiv = lz;;
         DT = DT;
     }
 
@@ -155,18 +161,106 @@ struct LatticePropertiesRuntime {
     }
 
     static constexpr int NDIM = TNDIM;
-    static int LX;
-    static int LY;
-    static int LZ;
-    static int N;
-    static int LXdiv, LYdiv, LZdiv;
-    static int LXMPIOffset, LYMPIOffset, LZMPIOffset;
-    static int HaloSize, HaloXWidth, HaloYWidth, HaloZWidth;
-    static double DT;
+    inline static int LX = 0;
+    inline static int LY = 0;
+    inline static int LZ = 0;
+    inline static int N = 0;
+    inline static int LXdiv = 0, LYdiv = 0, LZdiv = 0;
+    inline static int LXMPIOffset = 0, LYMPIOffset = 0, LZMPIOffset = 0;
+    inline static int HaloSize = 0, HaloXWidth = 0, HaloYWidth = 0, HaloZWidth = 0;
+    inline static int subArray[3] = {};
+    inline static double DT = 1.0;
+    inline static int Face[6] = {}; // FaceX=0, FaceY=0, FaceZ=0, EdgeX=0, EdgeY=0, EdgeZ=0;
+    inline static int Neighbors = 0; // FaceX=0, FaceY=0, FaceZ=0, EdgeX=0, EdgeY=0, EdgeZ=0;
+    static TParallel Parallel;
 
-    template<class TStencil>
-    using DataType = TData<TLattice, TStencil>;//!<This will change the "DataType" implementation, which will govern the access of non-local data
+    static std::map<std::type_index,bool> alreadycommunicatedparameter;
 
-    static_assert(std::is_base_of< Data_Base<TLattice,D1Q3>, DataType<D1Q3> >::value,
-                  "ERROR: Chosen data method is not a data class.");
+    enum {stream = 0, all = 1, allequilibrium = 2, allold = 3};
+
+    static std::map<int,bool> alreadycommunicateddistribution;
+
+    static void ResetParallelTracking() {
+        #pragma omp master
+        {
+        for (auto& [_, value] : alreadycommunicatedparameter) value = false;
+        for (auto& [_, value] : alreadycommunicateddistribution) value = false;
+        }
+    }
+
+    //! This function communicates the halo regions of a parameter.
+    template<class TParameter>
+    static void communicate(TParameter& obj) {
+        #pragma omp master
+        {
+        if (!alreadycommunicatedparameter[typeid(obj)]) {
+            Parallel.template updateParameterBeforeCommunication<TLattice>(obj);
+            Parallel.template communicateParameter<TLattice>(obj);
+            Parallel.template updateParameterAfterCommunication<TLattice>(obj);
+        }
+        alreadycommunicatedparameter[typeid(obj)] = true;
+        }
+    }
+
+    //! This function streams the distributions to the neighboring processor.
+    template<class TDistribution>
+    static void communicateDistribution(TDistribution& obj) { // currently along X only
+        #pragma omp master
+        {
+        if (!alreadycommunicateddistribution[stream]) {
+            Parallel.template updateDistributionBeforeCommunication<TLattice>(obj);
+            Parallel.template communicateDistribution<TLattice>(obj);
+            Parallel.template updateDistributionAfterCommunication<TLattice>(obj);
+        }
+        alreadycommunicateddistribution[stream] = true;
+        }
+    }
+
+    template<class TDistribution>
+    static void communicateDistributionAll(TDistribution& obj) {
+        #pragma omp master
+        {
+        if (!alreadycommunicateddistribution[all]) {
+            Parallel.template updateDistributionBeforeCommunicationAll<TLattice>(obj);
+            Parallel.template communicateDistributionAll<TLattice>(obj);
+            Parallel.template updateDistributionAfterCommunicationAll<TLattice>(obj);
+        }
+        alreadycommunicateddistribution[all] = true;
+        }
+    }
+
+    template<class TDistribution>
+    static void communicateDistributionAllEquilibrium(TDistribution& obj) {
+        #pragma omp master
+        {
+        if (!alreadycommunicateddistribution[allequilibrium]) {
+            Parallel.template updateDistributionBeforeCommunicationAllEquilibrium<TLattice>(obj);
+            Parallel.template communicateDistributionAll<TLattice>(obj);
+            Parallel.template updateDistributionAfterCommunicationAllEquilibrium<TLattice>(obj);
+        }
+        alreadycommunicateddistribution[allequilibrium] = true;
+        }
+    }
+
+    template<class TDistribution>
+    static void communicateDistributionAllOld(TDistribution& obj) {
+        #pragma omp master
+        {
+        if (!alreadycommunicateddistribution[allold]) {
+            Parallel.template updateDistributionBeforeCommunicationAllOld<TLattice>(obj);
+            Parallel.template communicateDistributionAll<TLattice>(obj);
+            Parallel.template updateDistributionAfterCommunicationAllOld<TLattice>(obj);
+        }
+        alreadycommunicateddistribution[allold] = true;
+        }
+    }
 };
+
+template<class TParallel, int TNDIM>
+TParallel LatticePropertiesRuntime<TParallel,TNDIM>::Parallel;
+
+template<class TParallel, int TNDIM>
+std::map<std::type_index,bool> LatticePropertiesRuntime<TParallel,TNDIM>::alreadycommunicatedparameter;
+
+template<class TParallel, int TNDIM>
+std::map<int,bool> LatticePropertiesRuntime<TParallel,TNDIM>::alreadycommunicateddistribution;

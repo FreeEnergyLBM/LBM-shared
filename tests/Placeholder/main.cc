@@ -23,7 +23,8 @@ double A = 0.025;
 double kappa = 0.05;
 const double Hsat = 0.3;
 
-using Lattice = LatticeProperties<ParallelX<3>, lx, ly>;
+//using Lattice = LatticeProperties<ParallelX<3>, lx, ly>;
+using Lattice = LatticePropertiesRuntime<ParallelX<3>, 2>;
 //using Lattice = LatticeProperties<NoParallel, lx, ly>;
 double offsetx = 0.0;
 double offsety = -ly/2.+12;
@@ -163,7 +164,7 @@ double distancefunc(int k, int idx){
 
 int main(int argc, char **argv){
     mpi.init();
-
+    Lattice::init(lx,ly,1);
     // Set up the lattice, including the resolution and data/parallelisation method
     
     // We need to modify the traits of the navier stokes model to include a bodyforce and change the collision model to MRT, so that high viscosity contrasts produce accurate results.
