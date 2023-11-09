@@ -11,6 +11,9 @@ using Lattice = LatticeProperties<Parallel_Pattern, xsize, ysize>;
 
 
 TEST(ParallelY_Test, TestCommunicate) {
+
+  Lattice::ResetParallelTracking();
+
   Lattice lattice;
   std::vector<double> &density = Density<>::getInstance<Lattice>().mv_Parameter;
   int xLocalSize = Lattice::LXdiv;
@@ -43,6 +46,9 @@ TEST(ParallelY_Test, TestCommunicate) {
 
 
 TEST(ParallelY_Test, TestCommunicateDistributionD2Q5) {
+
+  Lattice::ResetParallelTracking();
+
   Lattice lattice;
   using DQ = D2Q5;
   constexpr int Q = DQ::Q;
@@ -90,6 +96,9 @@ TEST(ParallelY_Test, TestCommunicateDistributionD2Q5) {
 
 
 TEST(ParallelY_Test, TestCommunicateDistributionD2Q9) {
+
+  Lattice::ResetParallelTracking();
+
   Lattice lattice;
   using DQ = D2Q9;
   constexpr int Q = DQ::Q;
