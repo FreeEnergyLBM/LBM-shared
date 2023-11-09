@@ -124,6 +124,8 @@ inline void ChemicalPotentialCalculatorBinaryLee::compute(int k){
 
     using Lattice = typename TTraits::Lattice;
 
+    if (Geometry<Lattice>::getBoundaryType(k)==1) return;
+
     ChemicalPotential<>::get<Lattice>(k) = 2 * mA * OrderParameter<>::get<Lattice>(k)
                                            - 6 * mA * pow(OrderParameter<>::get<Lattice>(k), 2)
                                            + 4 * mA * pow(OrderParameter<>::get<Lattice>(k), 3)

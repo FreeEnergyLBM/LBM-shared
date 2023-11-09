@@ -43,7 +43,7 @@ inline void InterpolatedDirichlet::compute(TDistributionType& distribution, int 
     
     for (int idx = 1; idx < TTraits::Stencil::Q; idx++) {
 
-        if (Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 0 || Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 6) {
+        if (Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 0 || Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 6|| Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 1) {
 
             double dist = evalDistanceFunction(distribution.streamIndex(k, idx),distribution.getOpposite(idx));
             

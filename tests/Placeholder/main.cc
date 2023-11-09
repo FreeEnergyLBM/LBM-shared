@@ -9,8 +9,8 @@
 const int lx = 200; // Size of domain in x direction
 const int ly = 100; // Size of domain in y direction
 
-const int timesteps = 100000; // Number of iterations to perform
-const int saveInterval = 5000; // Interval to save global data
+const int timesteps = 5000; // Number of iterations to perform
+const int saveInterval = 1000; // Interval to save global data
 
 //Parameters to control the surface tension and width of the diffuse interface
 //Use these if you want the surface tensions to all be the same
@@ -19,21 +19,22 @@ const int saveInterval = 5000; // Interval to save global data
 
 double RADIUS = 25.0;
 
-double A = 0.0025;
-double kappa = 0.005;
+double A = 0.025;
+double kappa = 0.05;
 const double Hsat = 0.3;
 
 using Lattice = LatticeProperties<ParallelX<3>, lx, ly>;
-//using Lattice = LatticeProperties<DataOldNewEquilibrium, NoParallel, lx, ly>;
+//using Lattice = LatticeProperties<NoParallel, lx, ly>;
 double offsetx = 0.0;
-double offsety = -ly/2.+2;
+double offsety = -ly/2.+12;
 // Function used to define the solid geometry
 // Here we set a solid at the top and bottom, in the conditions that return 1;
 int initBoundary(const int k) {
     int xx = computeXGlobal<Lattice>(k);
     int yy = computeY(ly, 1, k);
     double rr2 = (xx - (lx-1)/2. - offsetx) * (xx - (lx-1)/2. - offsetx) + (yy - (ly-1)/2. - offsety) * (yy - (ly-1)/2. - offsety);
-    
+    //return 0;
+    //if (yy > 1 && (yy >= ly - 1 || xx == 1 || xx == lx - 2)) return 4;
     if (yy > 1 && (yy >= ly - 1 || xx == 1 || xx == lx - 2)) return 4;
     if (yy <= 1) return 1;
     //if (yy == 1 || yy == ly - 2 || xx == 1 || xx == lx - 2) return 4;
@@ -177,27 +178,30 @@ int main(int argc, char **argv){
 
     // BinaryLee<Lattice> binary;
 
-    binary.setDensity1(1);
-    binary.setDensity2(0.1);
+    double dens1 = 1;
+    double dens2 = 1;
+
+    binary.setDensity1(dens1);
+    binary.setDensity2(dens2);
 
     binary.getForce<MuSourceLocal>().setBeta(A);
     binary.getForce<MuSourceNonLocal>().setBeta(A);
     
     binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setA(A);
     binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setKappa(kappa);
-
+    
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceHumidity(Hsat);
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setDiffusivity(0.02);
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceWidth(sqrt(8*kappa/A));
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setPhiGasLiquid(0,1);
     binary.getPreProcessor<MassLossCalculatorInterpolated>().setGasDensity(0.1);
-
-    double theta = 1.0*M_PI/6.0;
+    
+    double theta = 1.0*M_PI/2.0;
     double wettingprefactor = - cos(theta)*sqrt(2*A/kappa);
 
     //binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZWetting, CentralQWetting, MixedXYZWetting, MixedQWetting, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
 
-    binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZNoSolid, CentralQNoSolid, MixedXYZNoSolid, MixedQNoSolid, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
+    binary.getPreProcessor<GradientsMultiStencil<OrderParameter<>, CentralXYZNoSolid, CentralQNoSolid, MixedXYZNoSolid, MixedQNoSolid, LaplacianCentralWetting>>().setWettingPrefactor(wettingprefactor);
     
     //binary.getPreProcessor<MassLossCalculator>().setInterfaceHumidity(0.5);
     //binary.getPreProcessor<MassLossCalculator>().setDiffusivity(0.2);
@@ -221,15 +225,15 @@ int main(int argc, char **argv){
     humidity.getPreProcessor<HumidityBoundaryLabels>().setInterfaceCondition(interfaceCondition);
     humidity.getPreProcessor<SetHumidityLiquid>().setInterfaceVal(Hsat);
 
-    humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceNoSolid>>().setInterfaceDistance(distancefunc);
+    humidity.getPostProcessor<Gradients<Humidity<>, CentralXYZInterfaceNoSolid>>().setInterfaceDistance(distancefunc);
     //humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceNoSolid>>().setInterfaceCondition(interfaceConditionK);
-    humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceNoSolid>>().setInterfaceVal(Hsat);
+    humidity.getPostProcessor<Gradients<Humidity<>, CentralXYZInterfaceNoSolid>>().setInterfaceVal(Hsat);
 
     humidity.getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
-    humidity.getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setGasDensity(0.1);
+    humidity.getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setGasDensity(dens2);
 
     pressure.getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
-    pressure.getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setGasDensity(0.1);
+    pressure.getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setGasDensity(dens2);
     pressure.getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setPressureCalculator(pressure.computePressure);
     pressure.getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setForceTuple(pressure.mt_Forces);
 
@@ -270,6 +274,7 @@ int main(int argc, char **argv){
             saver.SaveParameter<Density<>>(timestep);
             saver.SaveParameter<Pressure<>>(timestep);
             saver.SaveParameter<OrderParameter<>>(timestep);
+            saver.SaveParameter<LaplacianOrderParameter<>>(timestep);
             saver.SaveParameter<MassSink<>>(timestep);
             saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
             saver.SaveParameter<VelocityOld<>,Lattice::NDIM>(timestep);

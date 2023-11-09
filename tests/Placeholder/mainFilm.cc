@@ -23,7 +23,7 @@ double A = 0.0025;
 double kappa = 0.005;
 const double Hsat = 0.5;
 
-using Lattice = LatticeProperties<DataOldNewEquilibrium, NoParallel, lx, ly>;
+using Lattice = LatticeProperties<NoParallel, lx, ly>;
 double offsetx = 0.0;
 double offsety = 0.0;
 // Function used to define the solid geometry

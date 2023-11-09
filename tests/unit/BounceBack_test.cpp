@@ -6,7 +6,7 @@
 #include "Parallel.hh"
 #include "LBModels/ModelBase.hh"
 
-using Lattice = LatticeProperties<DataOldNew, NoParallel, 2, 1>;
+using Lattice = LatticeProperties<NoParallel, 2, 1>;
 
 TEST(BounceBackTest, TestNodePair) {
   using Trait = DefaultTrait<Lattice> ::SetStencil<D2Q9>;

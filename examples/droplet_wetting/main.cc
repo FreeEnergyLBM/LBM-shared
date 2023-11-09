@@ -15,7 +15,7 @@ const double dropRadius = 20; // Radius to initialise the droplet
 
 
 // Set up the lattice, including the resolution and data/parallelisation method
-using Lattice = LatticeProperties<DataOldNew, ParallelX<1>, lx, ly, lz>;
+using Lattice = LatticeProperties<ParallelX<1>, lx, ly, lz>;
 
 
 

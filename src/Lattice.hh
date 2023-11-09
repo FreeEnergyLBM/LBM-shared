@@ -46,50 +46,78 @@ struct LatticeProperties{
     static std::map<int,bool> alreadycommunicateddistribution;
 
     static void ResetParallelTracking() {
+        #pragma omp master
+        {
         for (auto& [_, value] : alreadycommunicatedparameter) value = false;
         for (auto& [_, value] : alreadycommunicateddistribution) value = false;
+        }
     }
 
     //! This function communicates the halo regions of a parameter.
     template<class TParameter>
     static void communicate(TParameter& obj) {
-        Parallel.template updateParameterBeforeCommunication<TLattice>(obj);
-        Parallel.template communicateParameter<TLattice>(obj);
-        Parallel.template updateParameterAfterCommunication<TLattice>(obj);
+        #pragma omp master
+        {
+        if (!alreadycommunicatedparameter[typeid(obj)]) {
+            Parallel.template updateParameterBeforeCommunication<TLattice>(obj);
+            Parallel.template communicateParameter<TLattice>(obj);
+            Parallel.template updateParameterAfterCommunication<TLattice>(obj);
+        }
         alreadycommunicatedparameter[typeid(obj)] = true;
+        }
     }
 
     //! This function streams the distributions to the neighboring processor.
     template<class TDistribution>
     static void communicateDistribution(TDistribution& obj) { // currently along X only
-        Parallel.template updateDistributionBeforeCommunication<TLattice>(obj);
-        Parallel.template communicateDistribution<TLattice>(obj);
-        Parallel.template updateDistributionAfterCommunication<TLattice>(obj);
+        #pragma omp master
+        {
+        if (!alreadycommunicateddistribution[stream]) {
+            Parallel.template updateDistributionBeforeCommunication<TLattice>(obj);
+            Parallel.template communicateDistribution<TLattice>(obj);
+            Parallel.template updateDistributionAfterCommunication<TLattice>(obj);
+        }
         alreadycommunicateddistribution[stream] = true;
+        }
     }
 
     template<class TDistribution>
     static void communicateDistributionAll(TDistribution& obj) {
-        Parallel.template updateDistributionBeforeCommunicationAll<TLattice>(obj);
-        Parallel.template communicateDistributionAll<TLattice>(obj);
-        Parallel.template updateDistributionAfterCommunicationAll<TLattice>(obj);
+        #pragma omp master
+        {
+        if (!alreadycommunicateddistribution[all]) {
+            Parallel.template updateDistributionBeforeCommunicationAll<TLattice>(obj);
+            Parallel.template communicateDistributionAll<TLattice>(obj);
+            Parallel.template updateDistributionAfterCommunicationAll<TLattice>(obj);
+        }
         alreadycommunicateddistribution[all] = true;
+        }
     }
 
     template<class TDistribution>
     static void communicateDistributionAllEquilibrium(TDistribution& obj) {
-        Parallel.template updateDistributionBeforeCommunicationAllEquilibrium<TLattice>(obj);
-        Parallel.template communicateDistributionAll<TLattice>(obj);
-        Parallel.template updateDistributionAfterCommunicationAllEquilibrium<TLattice>(obj);
+        #pragma omp master
+        {
+        if (!alreadycommunicateddistribution[allequilibrium]) {
+            Parallel.template updateDistributionBeforeCommunicationAllEquilibrium<TLattice>(obj);
+            Parallel.template communicateDistributionAll<TLattice>(obj);
+            Parallel.template updateDistributionAfterCommunicationAllEquilibrium<TLattice>(obj);
+        }
         alreadycommunicateddistribution[allequilibrium] = true;
+        }
     }
 
     template<class TDistribution>
     static void communicateDistributionAllOld(TDistribution& obj) {
-        Parallel.template updateDistributionBeforeCommunicationAllOld<TLattice>(obj);
-        Parallel.template communicateDistributionAll<TLattice>(obj);
-        Parallel.template updateDistributionAfterCommunicationAllOld<TLattice>(obj);
+        #pragma omp master
+        {
+        if (!alreadycommunicateddistribution[allold]) {
+            Parallel.template updateDistributionBeforeCommunicationAllOld<TLattice>(obj);
+            Parallel.template communicateDistributionAll<TLattice>(obj);
+            Parallel.template updateDistributionAfterCommunicationAllOld<TLattice>(obj);
+        }
         alreadycommunicateddistribution[allold] = true;
+        }
     }
 };
 

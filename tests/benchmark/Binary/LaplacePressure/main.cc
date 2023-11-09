@@ -10,7 +10,7 @@ const int ly = 60; // Size of domain in y direction
 const int radius = 20; // Droplet radius
 
 
-using Lattice = LatticeProperties<DataOldNew, NoParallel, lx, ly>;
+using Lattice = LatticeProperties<NoParallel, lx, ly>;
 
 
 double initFluid(const int k) {

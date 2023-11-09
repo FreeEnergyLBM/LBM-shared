@@ -7,7 +7,7 @@ constexpr int xsize = 8;
 constexpr int ysize = 8;
 constexpr int width = 2;
 using Parallel_Pattern = ParallelY<width>;
-using Lattice = LatticeProperties<DataOldNew, Parallel_Pattern, xsize, ysize>;
+using Lattice = LatticeProperties<Parallel_Pattern, xsize, ysize>;
 
 
 TEST(ParallelY_Test, TestCommunicate) {

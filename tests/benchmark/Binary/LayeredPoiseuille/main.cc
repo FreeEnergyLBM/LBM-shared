@@ -11,7 +11,7 @@ const int saveInterval = 10000; // Interval to save global data
 const double force = 1e-6; // Driving force, equivalent to the pressure gradient
 
 
-using Lattice = LatticeProperties<DataOldNew, NoParallel, lx, ly>;
+using Lattice = LatticeProperties<NoParallel, lx, ly>;
 
 
 int initSolid(const int k) {

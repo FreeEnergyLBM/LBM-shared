@@ -43,7 +43,7 @@ int main(int argc, char **argv){
     mpi.init();
 
     // Set up the lattice, including the resolution and data/parallelisation method
-    using Lattice = LatticeProperties<DataOldNew, ParallelX<1>, lx, ly>;
+    using Lattice = LatticeProperties<ParallelX<1>, lx, ly>;
 
     // We need to modify the traits of the model to include a body force as an 'AddOn'.
     // We modify the default traits for the 'FlowFieldBinary' model, adding a bodyforce and setting the collision model to MRT, which improves accuracy at higher viscosity ratios

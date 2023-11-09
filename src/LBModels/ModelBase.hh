@@ -397,12 +397,6 @@ inline void ModelBase<TLattice,TTraits>::stream() {
     communicateTuple(mt_Boundaries);
 
     TLattice::ResetParallelTracking();
-
-    #pragma omp master
-    {
-    mDistribution.getDistribution().swap(mDistribution.getDistributionOld()); //swap old and new distributions
-                                                                                //before collision
-    }
     
 }
 

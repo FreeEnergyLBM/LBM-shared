@@ -24,7 +24,7 @@ inline void FreeSlip::compute(TDistributionType& distribution, int k) {
 
     for (int idx = 0; idx < TTraits::Stencil::Q; idx++) {
 
-        if(Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 0 ) {
+        if(Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 0 || Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 6 ) {
 
             std::array<int8_t,TTraits::Lattice::NDIM> newdir = {};
 
@@ -33,8 +33,12 @@ inline void FreeSlip::compute(TDistributionType& distribution, int k) {
             if constexpr (TTraits::Lattice::NDIM>=3) newdir[2] = (int8_t)(TTraits::Stencil::Ci_z[idx]-2*(int)normal[2]*(TTraits::Stencil::Ci_z[idx]!=0));
 
             const int& newidx = TTraits::Stencil::QMap.find(newdir)->second;
+            //#pragma omp critical
+            //{
+            //std::cout<<idx<<" "<<newidx<<std::endl;
+            //}
             
-            distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),newidx);
+            distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq),newidx))[newidx];//distribution.getPostCollisionDistribution(distribution.streamIndex(k, normalq),newidx);
         
         }
 

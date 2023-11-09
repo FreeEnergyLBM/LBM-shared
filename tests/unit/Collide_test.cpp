@@ -10,7 +10,7 @@
 
 double epsilon = 1e-10;
 
-using Lattice = LatticeProperties<DataOldNew, NoParallel, 1, 1>;
+using Lattice = LatticeProperties<NoParallel, 1, 1>;
 
 TEST(CollideTest, computeGammaD2Q9) {
   CollisionBase<Lattice,D2Q9> collision;
