@@ -26,8 +26,9 @@ std::string datadir = "data/";
 InputParameters params;
 
 //using Lattice = LatticeProperties<ParallelX<3>, lx, ly>;
-using Lattice = LatticePropertiesRuntime<ParallelX<3>, 2>;
+//using Lattice = LatticePropertiesRuntime<ParallelX<3>, 2>;
 //using Lattice = LatticeProperties<NoParallel, lx, ly>;
+using Lattice = LatticePropertiesRuntime<NoParallel, 2>;
 
 // Function used to define the solid geometry
 // Here we set a solid at the top and bottom, in the conditions that return 1;
@@ -37,14 +38,17 @@ int initBoundary(const int k) {
     double rr2 = (xx - (lx-1)/2. - offsetx) * (xx - (lx-1)/2. - offsetx) + (yy - (ly-1)/2. - offsety) * (yy - (ly-1)/2. - offsety);
     //return 0;
     //if (yy > 1 && (yy >= ly - 1 || xx == 1 || xx == lx - 2)) return 4;
-    if (yy > 1 && (yy >= ly - 1 || xx == 1 || xx == lx - 2)) return 4;
+    if (yy >= ly - 2) return 2;
+    if (yy>=ly/2 && (xx <= 1 || xx >= lx - 2)) return 3;
+    if ((xx<lx/4||xx>3*lx/4)&&yy<ly/2) return 1 ;
     if (yy <= 1) return 1;
     //if (yy == 1 || yy == ly - 2 || xx == 1 || xx == lx - 2) return 4;
     //if (xx <= 1) return 1;
     //else if (xx == lx - 2) return 4;
     //else if (xx >= lx - 1) return 1;
-    if(sqrt(rr2)<radius) return 5;
     //if(sqrt(rr2)<radius) return 5;
+    //if(sqrt(rr2)<radius) return 5;
+    if (yy<ly/2+offsety) return 5;
     //else if (xx < lx/2.+offset) return 5;
     return 0;
 }
@@ -56,9 +60,9 @@ double initFluid(const int k) {
     //return 0.25*((double)rand()/(double)RAND_MAX);
     
     if (yy <= 1) return 0;
-    else return 0.5-0.5*tanh(2*(sqrt(rr2)-radius)/(sqrt(8*kappa/A)));
+    //else return 0.5-0.5*tanh(2*(sqrt(rr2)-radius)/(sqrt(8*kappa/A)));
     //return 0.5-0.5*tanh(2*((xx - lx/2.-offset))/(sqrt(8*kappa/A)));
-    //return 0.5-0.5*tanh(2*((yy - ly/2.))/(sqrt(8*kappa/A)));
+    return 0.5-0.5*tanh(2*((yy - ly/2.-offsety))/(sqrt(8*kappa/A)));
     //if(sqrt(rr2)<radius) return 1;
     //else return 0;
 }
@@ -68,7 +72,8 @@ double initHumidity(int k) {
     int yy = computeY(ly, 1, k);
     double rr2 = (xx - (lx-1)/2. - offsetx) * (xx - (lx-1)/2. - offsetx) + (yy - (ly-1)/2. - offsety) * (yy - (ly-1)/2. - offsety);
     //return 0.25*((double)rand()/(double)RAND_MAX);
-    if(sqrt(rr2)<radius&&yy > 1) return Hsat;
+    //if(sqrt(rr2)<radius&&yy > 1) return Hsat;
+    if (yy<ly/2+offsety) return Hsat;
     else return 0;
     //if (xx <= lx/2.) return 0.5;
     //if (xx <= 0 || xx >= lx - 1) return 0;
@@ -157,7 +162,7 @@ double distancefunc(int k, int idx){
 }
 
 void initParams(std::string inputfile) {
-    
+
     params.addParameter<int>(lx,"lx");
     params.addParameter<int>(ly,"ly");
     params.addParameter<int>(timesteps,"timesteps");
@@ -192,7 +197,7 @@ EvaporationHumidity<Lattice, TTrait> initHumidity(){
     humidity.template getBoundary<dbtype>().setInterfaceID(5);
     humidity.template getBoundary<dbtype>().setInterfaceVal(Hsat);
 
-    humidity.template getBoundary<Dirichlet>().setInterfaceID(4);
+    humidity.template getBoundary<Dirichlet>().setInterfaceID({2,3});
     humidity.template getBoundary<Dirichlet>().setInterfaceVal(Hwall);
 
     humidity.setDiffusivity(diffusivity);
@@ -200,9 +205,9 @@ EvaporationHumidity<Lattice, TTrait> initHumidity(){
     humidity.template getPreProcessor<HumidityBoundaryLabels>().setInterfaceCondition(interfaceCondition);
     humidity.template getPreProcessor<SetHumidityLiquid>().setInterfaceVal(Hsat);
 
-    humidity.template getPostProcessor<Gradients<Humidity<>, CentralXYZInterfaceNoSolid>>().setInterfaceDistance(distancefunc);
-    //humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceNoSolid>>().setInterfaceCondition(interfaceConditionK);
-    humidity.template getPostProcessor<Gradients<Humidity<>, CentralXYZInterfaceNoSolid>>().setInterfaceVal(Hsat);
+    humidity.template getPostProcessor<Gradients<Humidity<>, CentralXYZInterfaceBounceBack>>().setInterfaceDistance(distancefunc);
+    //humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceBounceBack>>().setInterfaceCondition(interfaceConditionK);
+    humidity.template getPostProcessor<Gradients<Humidity<>, CentralXYZInterfaceBounceBack>>().setInterfaceVal(Hsat);
 
     humidity.template getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
     humidity.template getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setGasDensity(dens2);
@@ -211,21 +216,42 @@ EvaporationHumidity<Lattice, TTrait> initHumidity(){
 
 }
 
-template<typename TTrait = typename traitpressure::SetDataType<DataOldNewEquilibrium>>
+template<class TLattice>
+using DefaultTraitPressureLeeHumidityInflow = typename DefaultTraitPressureLee<TLattice> :: template AddPreProcessor<Swapper<Velocity<>, VelocityOld<>, TLattice::NDIM>>
+                                                                                   :: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>
+                                                                                   :: template SetBoundary<FreeSlip,VelocityInflow>;
+
+//template<typename TTrait = typename traitpressure::SetDataType<DataOldNewEquilibrium>>
+template<typename TTrait = typename DefaultTraitPressureLeeHumidityInflow<Lattice>:: template SetDataType<DataOldNewEquilibrium>>
 PressureLeeHumidity<Lattice, TTrait> initPressure(){
 
     PressureLeeHumidity<Lattice,TTrait> pressure;
 
     pressure.template getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
     pressure.template getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setGasDensity(dens2);
-    pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setPressureCalculator(pressure.computePressure);
-    pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setForceTuple(pressure.mt_Forces);
+    //pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setPressureCalculator(pressure.computePressure);
+    //pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setForceTuple(pressure.mt_Forces);
+    pressure.template getBoundary<FreeSlip>().setInterfaceID({1,2});
+    pressure.template getBoundary<VelocityInflow>().setInterfaceID(3);
+    pressure.template getBoundary<VelocityInflow>().setWallVelocity({0.001,0});
+    //pressure.template getPreProcessor<ConstantGradientBoundary<Pressure<>>>().setInterfaceID(100);
 
     return pressure;
 
 }
 
-template<typename TTrait = typename DefaultTraitBinaryLeeHumidity<Lattice>:: template SetDataType<DataOldNewEquilibrium>>
+template<class TLattice>
+using DefaultTraitBinaryLeeHumidityInflow = typename DefaultTraitBinaryLee<TLattice> :: template SetPostProcessor<GradientsMultiStencil<Pressure<>, CentralXYZBounceBack, CentralQBounceBack,
+                                                                                                                                MixedXYZBounceBack, MixedQBounceBack>,
+                                                                                              ChemicalPotentialCalculatorBinaryLee>
+                                                                               :: template AddPreProcessor<GradientsMultiStencil<OrderParameter<>, CentralXYZMirrorSolid, CentralQMirrorSolid,
+                                                                                                                                      MixedXYZMirrorSolid, MixedQMirrorSolid,        
+                                                                                                                                      LaplacianCentralMirrorSolid>,MassLossCalculatorInterpolated>
+                                                                               :: template AddForce<EvaporationPhaseSource<EvaporationSourceMethod>>
+                                                                               :: template SetBoundary<BounceBack>;
+
+//template<typename TTrait = typename DefaultTraitBinaryLeeHumidity<Lattice>:: template SetDataType<DataOldNewEquilibrium>>
+template<typename TTrait = typename DefaultTraitBinaryLeeHumidityInflow<Lattice>:: template SetDataType<DataOldNewEquilibrium>>
 BinaryLeeHumidity<Lattice, TTrait> initBinary(){
 
     BinaryLeeHumidity<Lattice, TTrait> binary;
@@ -244,10 +270,13 @@ BinaryLeeHumidity<Lattice, TTrait> initBinary(){
     binary.template getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceWidth(sqrt(8*kappa/A));
     binary.template getPreProcessor<MassLossCalculatorInterpolated>().setPhiGasLiquid(0,1);
     binary.template getPreProcessor<MassLossCalculatorInterpolated>().setGasDensity(dens2);
+
+    binary.template getBoundary<BounceBack>().setInterfaceID({1,2,3});
     
     double wettingprefactor = - cos(theta*M_PI/180.0)*sqrt(2*A/kappa);
 
-    binary.template getPreProcessor<GradientsMultiStencil<OrderParameter<>, CentralXYZNoSolid, CentralQNoSolid, MixedXYZNoSolid, MixedQNoSolid, LaplacianCentralWetting>>().setWettingPrefactor(wettingprefactor);
+    //binary.template getPreProcessor<GradientsMultiStencil<OrderParameter<>, CentralXYZBounceBack, CentralQBounceBack, MixedXYZBounceBack, MixedQBounceBack, LaplacianCentralWetting>>().setWettingPrefactor(wettingprefactor);
+    binary.template getPreProcessor<GradientsMultiStencil<OrderParameter<>, CentralXYZMirrorSolid, CentralQMirrorSolid,MixedXYZMirrorSolid, MixedQMirrorSolid,LaplacianCentralMirrorSolid>>().setWettingPrefactor(wettingprefactor);
 
     return binary;
 

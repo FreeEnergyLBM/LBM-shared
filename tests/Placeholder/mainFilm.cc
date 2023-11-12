@@ -189,7 +189,7 @@ int main(int argc, char **argv){
 
     //binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZWetting, CentralQWetting, MixedXYZWetting, MixedQWetting, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
 
-    binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZNoSolid, CentralQNoSolid, MixedXYZNoSolid, MixedQNoSolid, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
+    binary.getPreProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZBounceBack, CentralQBounceBack, MixedXYZBounceBack, MixedQBounceBack, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
     
     //binary.getPreProcessor<MassLossCalculator>().setInterfaceHumidity(0.5);
     //binary.getPreProcessor<MassLossCalculator>().setDiffusivity(0.2);
@@ -212,9 +212,9 @@ int main(int argc, char **argv){
     humidity.getPreProcessor<HumidityBoundaryLabels>().setInterfaceCondition(interfaceCondition);
     humidity.getPreProcessor<SetHumidityLiquid>().setInterfaceVal(Hsat);
 
-    humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceNoSolid>>().setInterfaceDistance(distancefunc);
-    //humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceNoSolid>>().setInterfaceCondition(interfaceConditionK);
-    humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceNoSolid>>().setInterfaceVal(Hsat);
+    humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceBounceBack>>().setInterfaceDistance(distancefunc);
+    //humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceBounceBack>>().setInterfaceCondition(interfaceConditionK);
+    humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceBounceBack>>().setInterfaceVal(Hsat);
 
     humidity.getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
 

@@ -22,7 +22,7 @@ tinc = struct.unpack('=i', HeaderFile.read(4))[0]
 
 slicepos=0
 
-sliceaxis=2
+sliceaxis=1
 if LY==1:
     sliceaxis=1
 elif LX==1:
@@ -88,11 +88,11 @@ for t in range(tstart,tend+1,tinc):
 
     File = open(file_name, 'rb')
 
-    file_name = "data/"+"MassSink_t%li.mat"%t_file
+    #file_name = "data/"+"MassSink_t%li.mat"%t_file
     #file_name = "data/"+"Pressure_t%li.mat"%t_file
     #file_name = "data/"+"Density_t%li.mat"%t_file
     #file_name = "data/"+"Humidity_t%li.mat"%t_file
-    #file_name = "data/"+"OrderParameter_t%li.mat"%t_file
+    file_name = "data/"+"LaplacianOrderParameter_t%li.mat"%t_file
     #file_name = "data/"+"ChemicalPotential_t%li.mat"%t_file
     #file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
 
@@ -107,6 +107,16 @@ for t in range(tstart,tend+1,tinc):
     #file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
 
     File00 = open(file_name, 'rb')
+
+    file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
+    #file_name = "data/"+"Pressure_t%li.mat"%t_file
+    #file_name = "data/"+"Density_t%li.mat"%t_file
+    #file_name = "data/"+"Humidity_t%li.mat"%t_file
+    #file_name = "data/"+"LaplacianOrderParameter_t%li.mat"%t_file
+    #file_name = "data/"+"ChemicalPotential_t%li.mat"%t_file
+    #file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
+
+    FileSolid = open(file_name, 'rb')
     
     file_name = "data/"+"Velocity_t%li.mat"%t_file
 
@@ -138,6 +148,7 @@ for t in range(tstart,tend+1,tinc):
     rho = np.zeros((LX,LY,LZ))
     rho2 = np.zeros((LX,LY,LZ))
     v = np.zeros((LX,LY,LZ,ndim))
+    solid = np.zeros((LX,LY,LZ))
 
     dat=File.read()
     rho = np.ndarray((LX,LY),'=d',dat,0,(8*LY,8))
@@ -148,6 +159,15 @@ for t in range(tstart,tend+1,tinc):
 
     dat=File00.read()
     humidity = np.ndarray((LX,LY),'=d',dat,0,(8*LY,8))
+
+    dat=FileSolid.read()
+    solid = np.ndarray((LX,LY),'=i',dat,0,(4*LY,4))
+
+    liquid = np.array(rho)
+    liquid[np.where(solid==1)[0],np.where(solid==1)[1]] = 0.5
+
+    mlnosolid = np.array(rho2)
+    mlnosolid[np.where(solid==1)[0],np.where(solid==1)[1]] = 0.0
 
     dat=File2.read()
     v = np.ndarray((LX,LY,ndim),'=d',dat,0,(ndim*8*LY,ndim*8,8))
@@ -168,7 +188,7 @@ for t in range(tstart,tend+1,tinc):
     output = "%s/component_plot_%012d.png"%(outDirName,t)
     #rho3=2*0.01*(rho2-0.2)*(rho2-1)*(2*rho2-0.2-1)-0.0128*rho4
     rgbv = np.zeros((LY,LX))
-    rgbv[:,:] = np.flip(humidity).transpose()
+    rgbv[:,:] = np.flip(mlnosolid).transpose()
     #rgbv[:,:] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
     #rgbv[:,:,1] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
     #rgbv[:,:,2] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
@@ -193,14 +213,15 @@ for t in range(tstart,tend+1,tinc):
     step=1
     X,Y=np.meshgrid(np.linspace(0,LX-1,int((LX)/step)),np.linspace(0,LY-1,int((LY)/step)))
     #print(np.sum(np.sqrt((gh.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis))**2+(gh.take(indices=1,axis=3).take(indices=slicepos,axis=sliceaxis))**2)))
-    #ax.quiver(X.T,Y.T,np.flip(v[:,:,:,0].take(indices=slicepos,axis=sliceaxis)),np.flip(-v[:,:,:,1].take(indices=slicepos,axis=sliceaxis)),width=0.001,headwidth=2.5,headlength=1.5)
+    #ax.quiver(X.T,Y.T,np.flip(v[:,:,0].take(indices=slicepos,axis=sliceaxis)),np.flip(-v[:,:,1].take(indices=slicepos,axis=sliceaxis)),width=0.001,headwidth=2.5,headlength=1.5)
+    ax.quiver(X.T,Y.T,np.flip(-v[:,:,0]),np.flip(-v[:,:,1]),width=0.001,headwidth=1.5,headlength=1.5)
     #print(np.sum(rho[int(LX/2),:])/(0.002/(100-h)*np.log(1/(1-0.1))))
     print("HERE ",np.sum(rho))
     print("HERE ",rho[LX//8,LY//2])
     print("HERE ",rho[LX//2,LY//6])
     fig.colorbar(im)
     #ax.scatter(49,49)
-    plt.savefig(output, dpi=200, format='png')
+    plt.savefig(output, dpi=400, format='png')
     plt.close(fig)
     #plt.figure()
     #plt.plot(rho[int(LX/2),:])

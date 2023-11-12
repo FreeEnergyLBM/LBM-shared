@@ -2,7 +2,7 @@
 
 int main(int argc, char **argv){
 
-    mpi.init();
+    //mpi.init();
     initParams("input.txt");
 
     auto binary = initBinary<>();
@@ -18,7 +18,6 @@ int main(int argc, char **argv){
 
     ParameterSave<Lattice> saver(datadir);
     saver.SaveHeader(timesteps, saveInterval);
-    saver.SaveBoundaries(0);
     
     for (int timestep=0; timestep<=timesteps; timestep++) {
 

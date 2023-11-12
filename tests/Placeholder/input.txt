@@ -1,0 +1,5 @@
+lx=240
+theta=90
+saveInterval=1
+timesteps=10
+offsety=-10

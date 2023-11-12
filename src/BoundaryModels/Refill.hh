@@ -14,7 +14,14 @@ class Refill : public BoundaryBase {
         template<class TTraits>
         inline void communicatePrecompute();
 
+        inline void setInterfaceID(int id) {mInterfaceID[0]=id;};
+
+        inline void setInterfaceID(const std::vector<int>& id) {mInterfaceID=id;};
+
     private:
+
+        double mInterfaceVal;
+        std::vector<int> mInterfaceID = {6};
 
 };
 
@@ -27,34 +34,40 @@ inline void Refill<TParam>::compute(TDistributionType& distribution, int k) {
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
-    if (Geometry<Lattice>::getBoundaryType(k) != 6) return;
-
-    using DataType = Data_Base<Lattice, Stencil>;
-    DataType& data = DataType::getInstance();
-
-    double avgparam = 0;
-    int sum = 0;
-
-    for (int idx = 0; idx < Stencil::Q; idx++) {
-
-        int neighbor = data.getNeighbors()[k * Stencil::Q + idx];
-        if (Geometry < Lattice>::getBoundaryType(neighbor) == 0) {
-            avgparam += TParam::template get<Lattice>(neighbor);
-            sum+=1;
-        }
-
+    for (int i : mInterfaceID){
+        if(Geometry<typename TTraits::Lattice>::getBoundaryType(k) == i) goto runloop;
     }
 
-    avgparam *= 1.0/(double)sum;
+    return;
 
-    for (int idx = 0; idx < Stencil::Q; idx++) {
-   
-        double updatedist = Stencil::Weights[idx] * avgparam * CollisionBase<Lattice,Stencil>::computeVelocityFactorFirstOrder(Velocity<>::getAddress<Lattice>(k,0), idx) + (distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] - distribution.getEquilibriumPointer(k)[distribution.getOpposite(idx)]);
+    runloop:
 
-        distribution.getDistributionPointer(k)[idx] = updatedist;
-        distribution.getDistributionOldPointer(k)[idx] = updatedist;
-        
-    }    
+        using DataType = Data_Base<Lattice, Stencil>;
+        DataType& data = DataType::getInstance();
+
+        double avgparam = 0;
+        int sum = 0;
+
+        for (int idx = 0; idx < Stencil::Q; idx++) {
+
+            int neighbor = data.getNeighbors()[k * Stencil::Q + idx];
+            if (Geometry < Lattice>::getBoundaryType(neighbor) == 0) {
+                avgparam += TParam::template get<Lattice>(neighbor);
+                sum+=1;
+            }
+
+        }
+
+        avgparam *= 1.0/(double)sum;
+
+        for (int idx = 0; idx < Stencil::Q; idx++) {
+    
+            double updatedist = Stencil::Weights[idx] * avgparam * CollisionBase<Lattice,Stencil>::computeVelocityFactorFirstOrder(Velocity<>::getAddress<Lattice>(k,0), idx) + (distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] - distribution.getEquilibriumPointer(k)[distribution.getOpposite(idx)]);
+
+            distribution.getDistributionPointer(k)[idx] = updatedist;
+            distribution.getDistributionOldPointer(k)[idx] = updatedist;
+            
+        }    
 
 }
 

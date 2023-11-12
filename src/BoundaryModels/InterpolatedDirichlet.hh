@@ -17,7 +17,9 @@ class InterpolatedDirichlet : public BoundaryBase {
 
         inline void setInterfaceVal(double val) {mInterfaceVal = val;};
 
-        inline void setInterfaceID(int id) {mInterfaceID = id;};
+            inline void setInterfaceID(int id) {mInterfaceID[0]=id;};
+
+        inline void setInterfaceID(const std::vector<int>& id) {mInterfaceID=id;};
 
         inline void setInterfaceDistanceFunction(double (*func)(int idx, int k)){
 
@@ -32,38 +34,39 @@ class InterpolatedDirichlet : public BoundaryBase {
         double (*evalDistanceFunction)(int idx, int k) = &defaultDistanceFunction;
 
         double mInterfaceVal;
-        int mInterfaceID;
+        std::vector<int> mInterfaceID = {4};
 
 };
 
 template<class TTraits, class TDistributionType>
 inline void InterpolatedDirichlet::compute(TDistributionType& distribution, int k) {
 
-    if (Geometry<typename TTraits::Lattice>::getBoundaryType(k) != mInterfaceID) return;
-    
-    for (int idx = 1; idx < TTraits::Stencil::Q; idx++) {
+    for (int i : mInterfaceID){
+        if(Geometry<typename TTraits::Lattice>::getBoundaryType(k) == i) goto runloop;
+    }
 
-        if (Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 0 || Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 6|| Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 1) {
+    return;
+
+    runloop:
+    
+        for (int idx = 1; idx < TTraits::Stencil::Q; idx++) {
+
+            bool cont = true;
+
+            for (int i : mInterfaceID){
+                if(Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == i) goto dontapply;
+            }
+
+            cont = false;
+
+            dontapply:
+                if (cont) continue;
 
             double dist = evalDistanceFunction(distribution.streamIndex(k, idx),distribution.getOpposite(idx));
             
-            //std::cout<<dist<<std::endl;
-            //#pragma omp critical
-            //{
-            //std::cout<<dist<<" "<<idx<<" "<<OrderParameter<>::get<typename TTraits::Lattice>(distribution.streamIndex(k, idx))<<std::endl;//fabs(normaldist * normdotci/magci)<<std::endl;
-            //}
-            //distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = 2.0 * (dist - 1.0) * distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] - (pow(2.0 * dist - 1.0, 2) / (2.0 * dist + 1.0)) * distribution.getDistributionPointer(distribution.streamIndex(k, idx))[distribution.getOpposite(idx)] + 2.0 * ((2.0 * dist - 1.0) / (2.0 * dist + 1.0)) * distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, idx), idx))[idx] + 2.0 * ((3.0 - 2.0 * dist) / (2.0 * dist + 1.0)) * TTraits::Stencil::Weights[idx] * mInterfaceVal;
-            //double gamma;
-            //distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = 1.0/(1.0+2.0*dist-) * distribution.getDistributionOldPointer(distribution.streamIndex(k, idx))[distribution.getOpposite(idx)] - (pow(2.0 * dist - 1.0, 2) / (2.0 * dist + 1.0)) * distribution.getDistributionOldPointer(distribution.streamIndex(distribution.streamIndex(k, idx), idx))[distribution.getOpposite(idx)] + 2.0 * ((2.0 * dist - 1.0) / (2.0 * dist + 1.0)) * distribution.getDistributionOldPointer(distribution.streamIndex(k, idx))[idx] + 2.0 * ((3.0 - 2.0 * dist) / (2.0 * dist + 1.0)) * TTraits::Stencil::Weights[idx] * mInterfaceVal;
-            
-            //distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = - distribution.getDistributionOldPointer(distribution.streamIndex(k, idx))[distribution.getOpposite(idx)] + ((2.0 * dist - 1.0) / (2.0 * dist + 1.0)) * distribution.getDistributionOldPointer(distribution.streamIndex(distribution.streamIndex(k, idx), idx))[distribution.getOpposite(idx)] + ((2.0 * dist - 1.0) / (2.0 * dist + 1.0)) * distribution.getDistributionOldPointer(distribution.streamIndex(k, idx))[idx] + 2 * ((2.0) / (2.0 * dist + 1.0)) * TTraits::Stencil::Weights[idx] * mInterfaceVal;
-
             if (dist <= 0.5) distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -2 * (dist) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) + (2 * dist - 1) * distribution.getPostCollisionDistribution(distribution.streamIndex(distribution.streamIndex(k, idx), idx),distribution.getOpposite(idx)) + 2 * TTraits::Stencil::Weights[idx] * mInterfaceVal;
             else distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = - 1.0 / (2.0*dist) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) + (1-1.0 / (2.0 * dist)) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),idx) + 2 * (1.0/(2.0 * dist)) * TTraits::Stencil::Weights[idx] * mInterfaceVal;
-            //distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getDistributionOldPointer(distribution.streamIndex(k, idx))[distribution.getOpposite(idx)] + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;
 
-        }
-        
     }    
 
 }

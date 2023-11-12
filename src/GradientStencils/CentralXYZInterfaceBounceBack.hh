@@ -2,7 +2,7 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct CentralXYZInterfaceNoSolid : InterfaceGradient<Cartesian> {
+struct CentralXYZInterfaceBounceBack : InterfaceGradient<Cartesian> {
     
     template<class TTraits, class TParameter>
     inline double compute( int direction, int k, int num = 0);
@@ -39,7 +39,7 @@ struct CentralXYZInterfaceNoSolid : InterfaceGradient<Cartesian> {
 };
 
 template<class TTraits, class TParameter>
-inline double CentralXYZInterfaceNoSolid::compute(int direction, int k, int num) {
+inline double CentralXYZInterfaceBounceBack::compute(int direction, int k, int num) {
     
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;

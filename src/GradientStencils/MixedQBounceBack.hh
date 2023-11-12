@@ -2,7 +2,7 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct MixedQNoSolid : GradientBase<AllDirections> {
+struct MixedQBounceBack : GradientBase<AllDirections> {
 
     template<class TTraits, class TParameter>
     static inline double compute(const int direction, const int k, int num = 0);
@@ -13,7 +13,7 @@ struct MixedQNoSolid : GradientBase<AllDirections> {
 };
 
 template<class TTraits, class TParameter>
-inline double MixedQNoSolid::compute(const int direction, const int k, int num){
+inline double MixedQBounceBack::compute(const int direction, const int k, int num){
 
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;

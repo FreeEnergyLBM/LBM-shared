@@ -2,7 +2,7 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct CentralXYZNoSolid : GradientBase<Cartesian> {
+struct CentralXYZBounceBack : GradientBase<Cartesian> {
     
     template<class TTraits, class TParameter>
     static inline double compute( int direction, int k, int num = 0);
@@ -13,7 +13,7 @@ struct CentralXYZNoSolid : GradientBase<Cartesian> {
 };
 
 template<class TTraits, class TParameter>
-inline double CentralXYZNoSolid::compute(int direction, int k, int num) {
+inline double CentralXYZBounceBack::compute(int direction, int k, int num) {
     
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;

@@ -18,31 +18,44 @@ class Dirichlet : public BoundaryBase {
 
         inline void setInterfaceVal(double val) {mInterfaceVal=val;};
 
-        inline void setInterfaceID(int id) {mInterfaceID=id;};
+        inline void setInterfaceID(int id) {mInterfaceID[0]=id;};
+
+        inline void setInterfaceID(const std::vector<int>& id) {mInterfaceID=id;};
 
     private:
 
         double mInterfaceVal;
-        int mInterfaceID;
+        std::vector<int> mInterfaceID = {4};
 
 };
 
 template<class TTraits, class TDistributionType>
-inline void Dirichlet::compute(TDistributionType& distribution, int k) { //CHANGE THIS SO YOU DONT NEED TO COMMUNICATE
+inline void Dirichlet::compute(TDistributionType& distribution, int k) {
 
-    if (Geometry<typename TTraits::Lattice>::getBoundaryType(k) != mInterfaceID) return;
+    for (int i : mInterfaceID){
+        if(Geometry<typename TTraits::Lattice>::getBoundaryType(k) == i) goto runloop;
+    }
 
-    for (int idx = 0; idx < TTraits::Stencil::Q; idx++) {
+    return;
 
-        if(Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 0 ||Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == 6) {
-            
-            //distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getDistributionOldPointer(distribution.streamIndex(k, idx))[distribution.getOpposite(idx)] + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;
-            distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;//TTraits::Stencil::Weights[idx]*
-            //distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;
-        
-        }
+    runloop:
 
-    }    
+        for (int idx = 0; idx < TTraits::Stencil::Q; idx++) {
+
+            bool cont = true;
+
+            for (int i : mInterfaceID){
+                if(Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == i) goto dontapply;
+            }
+
+            cont = false;
+
+            dontapply:
+                if (cont) continue;
+
+            distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;
+
+        }    
 
 }
 

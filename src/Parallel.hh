@@ -516,7 +516,7 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicat
                         int kGlobal = z + y*lz + (x+xOffset)*ly*lz;
                        // std::cerr<<obj.getCommDistribution().size()<<" "<<k*TStencil::Q + idx<<std::endl;
                         obj.getCommDistribution()[k*TStencil::Q + idx] =
-                            obj.getDistribution()[kGlobal*TStencil::Q + idx];
+                            obj.getDistributionOld()[kGlobal*TStencil::Q + idx];
                     }
     }
     if (TLattice::HaloYWidth) {
@@ -529,7 +529,7 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicat
                         int yOffset = (y<2*lw) ? 0 : ly-4*lw;
                         int kGlobal = z + (y+yOffset)*lz + x*ly*lz;
                         obj.getCommDistribution()[k*TStencil::Q + idx] =
-                            obj.getDistribution()[kGlobal*TStencil::Q + idx];
+                            obj.getDistributionOld()[kGlobal*TStencil::Q + idx];
                     }
     }
     }
@@ -599,8 +599,8 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicat
                         int xOffset = (x<2*lw) ? 0 : lx-4*lw;
                         int kGlobal = z + y*lz + (x+xOffset)*ly*lz;
                        // std::cerr<<obj.getCommDistribution().size()<<" "<<k*TStencil::Q + idx<<std::endl;
-                        obj.getEquilibrium()[k*TStencil::Q + idx] =
-                            obj.getDistribution()[kGlobal*TStencil::Q + idx];
+                        obj.getCommDistribution()[k*TStencil::Q + idx] =
+                            obj.getEquilibrium()[kGlobal*TStencil::Q + idx];
                     }
     }
     if (TLattice::HaloYWidth) {
@@ -612,8 +612,8 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicat
                         int k = z + x*lz + y*lx*lz;
                         int yOffset = (y<2*lw) ? 0 : ly-4*lw;
                         int kGlobal = z + (y+yOffset)*lz + x*ly*lz;
-                        obj.getEquilibrium()[k*TStencil::Q + idx] =
-                            obj.getDistribution()[kGlobal*TStencil::Q + idx];
+                        obj.getCommDistribution()[k*TStencil::Q + idx] =
+                            obj.getEquilibrium()[kGlobal*TStencil::Q + idx];
                     }
     }
     }
