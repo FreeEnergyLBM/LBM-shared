@@ -2,7 +2,7 @@ ROOT_DIR = ../..
 INC_DIR = $(ROOT_DIR)/src
 INC = $(addprefix -I, $(INC_DIR))
 
-TESTS = ParallelX_test ParallelY_test Collide_test BounceBack_test CubicWetting_test FlowField_test
+TESTS = ParallelX_test ParallelY_test ParallelZ_test Collide_test BounceBack_test CubicWetting_test FlowField_test # TODO: ParallelXY_test ParallelXZ_test ParallelYZ_test ParallelXYZ_test
 RUN_TESTS = $(addprefix run_, $(TESTS))
 
 CXX = mpicxx
