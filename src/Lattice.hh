@@ -48,7 +48,7 @@ struct LatticeProperties{
 
     enum {stream = 0, all = 1, allequilibrium = 2, allold = 3};
 
-    static std::map<std::pair<int,std::type_index>,bool> alreadycommunicateddistribution;
+    static std::unordered_map<std::pair<int,double*>,bool,pair_hash> alreadycommunicateddistribution;
 
     static void ResetParallelTracking() {
         #pragma omp master
@@ -63,7 +63,7 @@ struct LatticeProperties{
     static void communicate(TParameter& obj) {
         #pragma omp master
         {
-        if (!alreadycommunicatedparameter[typeid(obj)]) {
+        if (!alreadycommunicatedparameter.count(typeid(obj))||!alreadycommunicatedparameter.at(typeid(obj))) {
             Parallel.template updateParameterBeforeCommunication<TLattice>(obj);
             Parallel.template communicateParameter<TLattice>(obj);
             Parallel.template updateParameterAfterCommunication<TLattice>(obj);
@@ -77,12 +77,13 @@ struct LatticeProperties{
     static void communicateDistribution(TDistribution& obj) { // currently along X only
         #pragma omp master
         {
-        if (!alreadycommunicateddistribution[{typeid(obj),stream}]) {
+        //std::pair<int,Distribution_Base<D2Q9>> a = std::make_pair(0,obj);
+        if (true){//!alreadycommunicateddistribution.count(std::make_pair(0,obj))||!alreadycommunicateddistribution.at(std::make_pair(0,obj))) {
             Parallel.template updateDistributionBeforeCommunication<TLattice>(obj);
             Parallel.template communicateDistribution<TLattice>(obj);
             Parallel.template updateDistributionAfterCommunication<TLattice>(obj);
         }
-        alreadycommunicateddistribution[{typeid(obj),stream}] = true;
+        alreadycommunicateddistribution[std::make_pair(0,obj.getDistributionPointer(0))] = true;
         }
     }
 
@@ -90,12 +91,12 @@ struct LatticeProperties{
     static void communicateDistributionAll(TDistribution& obj) {
         #pragma omp master
         {
-        if (!alreadycommunicateddistribution[{typeid(obj),all}]) {
+        if (true){//!alreadycommunicateddistribution.count(std::make_pair(1,obj))||!alreadycommunicateddistribution.at(std::make_pair(1,obj))) {
             Parallel.template updateDistributionBeforeCommunicationAll<TLattice>(obj);
             Parallel.template communicateDistributionAll<TLattice>(obj);
             Parallel.template updateDistributionAfterCommunicationAll<TLattice>(obj);
         }
-        alreadycommunicateddistribution[{typeid(obj),all}] = true;
+        alreadycommunicateddistribution[std::make_pair(1,obj.getDistributionPointer(0))] = true;
         }
     }
 
@@ -103,12 +104,12 @@ struct LatticeProperties{
     static void communicateDistributionAllEquilibrium(TDistribution& obj) {
         #pragma omp master
         {
-        if (!alreadycommunicateddistribution[{typeid(obj),allequilibrium}]) {
+        if (true){//!alreadycommunicateddistribution.count(std::make_pair(2,obj))||!alreadycommunicateddistribution.at(std::make_pair(2,obj))) {
             Parallel.template updateDistributionBeforeCommunicationAllEquilibrium<TLattice>(obj);
             Parallel.template communicateDistributionAll<TLattice>(obj);
             Parallel.template updateDistributionAfterCommunicationAllEquilibrium<TLattice>(obj);
         }
-        alreadycommunicateddistribution[{typeid(obj),allequilibrium}] = true;
+        alreadycommunicateddistribution[std::make_pair(2,obj.getDistributionPointer(0))] = true;
         }
     }
 
@@ -116,12 +117,12 @@ struct LatticeProperties{
     static void communicateDistributionAllOld(TDistribution& obj) {
         #pragma omp master
         {
-        if (!alreadycommunicateddistribution[{typeid(obj),allold}]) {
+        if (true){//!alreadycommunicateddistribution.count(std::make_pair(3,obj))||!alreadycommunicateddistribution.at(std::make_pair(3,obj))) {
             Parallel.template updateDistributionBeforeCommunicationAllOld<TLattice>(obj);
             Parallel.template communicateDistributionAll<TLattice>(obj);
             Parallel.template updateDistributionAfterCommunicationAllOld<TLattice>(obj);
         }
-        alreadycommunicateddistribution[{typeid(obj),allold}] = true;
+        alreadycommunicateddistribution[std::make_pair(3,obj.getDistributionPointer(0))] = true;
         }
     }
 };
@@ -133,7 +134,7 @@ template<class TParallel, int lx, int ly, int lz>
 std::map<std::type_index,bool> LatticeProperties<TParallel,lx,ly,lz>::alreadycommunicatedparameter;
 
 template<class TParallel, int lx, int ly, int lz>
-std::map<std::pair<int,std::type_index>,bool> LatticeProperties<TParallel,lx,ly,lz>::alreadycommunicateddistribution;
+std::unordered_map<std::pair<int,double*>,bool,pair_hash> LatticeProperties<TParallel,lx,ly,lz>::alreadycommunicateddistribution;
 
 //====== LatticePropertiesRuntime ======//
 
