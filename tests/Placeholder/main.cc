@@ -2,7 +2,7 @@
 
 int main(int argc, char **argv){
 
-    //mpi.init();
+    mpi.init();
     initParams("input.txt");
 
     auto binary = initBinary<>();

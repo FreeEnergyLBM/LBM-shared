@@ -15,7 +15,7 @@ LZ=struct.unpack('=i', HeaderFile.read(4))[0]
 ndim=struct.unpack('=i', HeaderFile.read(4))[0]
 
 t_zero = 0
-tstart = 0
+tstart = 5000
 
 tend = struct.unpack('=i', HeaderFile.read(4))[0]
 tinc = struct.unpack('=i', HeaderFile.read(4))[0]
@@ -88,11 +88,11 @@ for t in range(tstart,tend+1,tinc):
 
     File = open(file_name, 'rb')
 
-    #file_name = "data/"+"MassSink_t%li.mat"%t_file
+    file_name = "data/"+"MassSink_t%li.mat"%t_file
     #file_name = "data/"+"Pressure_t%li.mat"%t_file
     #file_name = "data/"+"Density_t%li.mat"%t_file
     #file_name = "data/"+"Humidity_t%li.mat"%t_file
-    file_name = "data/"+"LaplacianOrderParameter_t%li.mat"%t_file
+    #file_name = "data/"+"LaplacianOrderParameter_t%li.mat"%t_file
     #file_name = "data/"+"ChemicalPotential_t%li.mat"%t_file
     #file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
 
@@ -166,7 +166,7 @@ for t in range(tstart,tend+1,tinc):
     liquid = np.array(rho)
     liquid[np.where(solid==1)[0],np.where(solid==1)[1]] = 0.5
 
-    mlnosolid = np.array(rho2)
+    mlnosolid = np.array(humidity)
     mlnosolid[np.where(solid==1)[0],np.where(solid==1)[1]] = 0.0
 
     dat=File2.read()

@@ -16,7 +16,6 @@ class BounceBack : public BoundaryBase {
 
     private:
 
-        double mInterfaceVal;
         std::vector<int> mInterfaceID = {1};
 
 };

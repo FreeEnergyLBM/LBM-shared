@@ -306,15 +306,8 @@ class DataOldNew : public Data_Base<TLattice, TStencil> {
                 
             }
 
-            Distribution_Derived(Distribution_Derived& other) : Distribution_Base<TStencil>(other.mv_Neighbors), mv_Neighbors(other.mv_Neighbors) { //Initialise mv_DistNeighbors
-
-                Distribution_Base<TStencil>::mv_Distribution.resize(TStencil::Q * TLattice::N); //Array size is number of
-                                                                                  //directions times number of lattice points
-                Distribution_Base<TStencil>::mv_OldDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
-                                                                                     //in this case
-                Distribution_Base<TStencil>::mv_CommDistribution.resize(TStencil::Q * 4 * TLattice::Face[0] * TLattice::Neighbors); // currently along X only
-                
-            }
+            Distribution_Derived(Distribution_Derived& other) = default;// : Distribution_Base<TStencil>(other.mv_Neighbors), mv_Neighbors(other.mv_Neighbors) {}
+            Distribution_Derived(const Distribution_Derived& other) = default;
 
             /**
              * \brief Returns the opposite index at the chosen index (Rotation by 180 degrees).
@@ -438,19 +431,8 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
                 
             }
 
-            Distribution_Derived(Distribution_Derived& other) : Distribution_Base<TStencil>(other.mv_Neighbors), mv_Neighbors(other.mv_Neighbors) { //Initialise mv_DistNeighbors
-
-                Distribution_Base<TStencil>::mv_Distribution.resize(TStencil::Q * TLattice::N); //Array size is number of
-                                                                                  //directions times number of
-                                                                                  //lattice points
-                Distribution_Base<TStencil>::mv_OldDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
-                                                                                     //in this case
-                Distribution_Base<TStencil>::mv_EquilibriumDistribution.resize(TStencil::Q * TLattice::N); //Old distributions needed
-                                                                                     //in this case
-                
-                Distribution_Base<TStencil>::mv_CommDistribution.resize(TStencil::Q * 4 * TLattice::Face[0] * TLattice::Neighbors); // currently along X only
-                
-            }
+            Distribution_Derived(Distribution_Derived& other) = default;// : Distribution_Base<TStencil>(other.mv_Neighbors), mv_Neighbors(other.mv_Neighbors) {}
+            Distribution_Derived(const Distribution_Derived& other) = default;
 
             /**
              * \brief Returns the opposite index at the chosen index (Rotation by 180 degrees).

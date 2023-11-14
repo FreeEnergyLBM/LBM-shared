@@ -22,13 +22,14 @@ double dens1 = 1;
 double dens2 = 1;
 double diffusivity = 0.02;
 std::string datadir = "data/";
+double inflowvelocity = 0;
 
 InputParameters params;
 
 //using Lattice = LatticeProperties<ParallelX<3>, lx, ly>;
-//using Lattice = LatticePropertiesRuntime<ParallelX<3>, 2>;
+using Lattice = LatticePropertiesRuntime<ParallelX<3>, 2>;
 //using Lattice = LatticeProperties<NoParallel, lx, ly>;
-using Lattice = LatticePropertiesRuntime<NoParallel, 2>;
+//using Lattice = LatticePropertiesRuntime<NoParallel, 2>;
 
 // Function used to define the solid geometry
 // Here we set a solid at the top and bottom, in the conditions that return 1;
@@ -39,7 +40,8 @@ int initBoundary(const int k) {
     //return 0;
     //if (yy > 1 && (yy >= ly - 1 || xx == 1 || xx == lx - 2)) return 4;
     if (yy >= ly - 2) return 2;
-    if (yy>=ly/2 && (xx <= 1 || xx >= lx - 2)) return 3;
+    if (yy>=ly/2 && (xx <= 1)) return 3;
+    if (yy>=ly/2 && (xx >= lx - 2)) return 4;
     if ((xx<lx/4||xx>3*lx/4)&&yy<ly/2) return 1 ;
     if (yy <= 1) return 1;
     //if (yy == 1 || yy == ly - 2 || xx == 1 || xx == lx - 2) return 4;
@@ -126,7 +128,7 @@ double initFluid3(int k) {
 }
 */
 
-using traithumid = DefaultTraitHumidity<Lattice>::SetStencil<D2Q9>;
+using traithumid = DefaultTraitHumidity<Lattice>::SetStencil<D2Q9>:: template SetBoundary<InterpolatedDirichlet,Dirichlet,ExtrapolationOutflow,Refill<Humidity<>>,FreeSlip>;
 using traitpressure = typename DefaultTraitPressureLeeHumidity<Lattice> :: template SetBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>,BounceBack>;
 //using traitpressure = typename DefaultTraitPressureLee<Lattice> :: AddForce<BodyForce<>>;
 
@@ -178,6 +180,7 @@ void initParams(std::string inputfile) {
     params.addParameter<double>(dens1,"dens1");
     params.addParameter<double>(dens2,"dens2");
     params.addParameter<double>(diffusivity,"diffusivity");
+    params.addParameter<double>(inflowvelocity,"inflowvelocity");
     params.addParameter<std::string>(datadir,"datadir");
 
     params.readInput(inputfile);
@@ -200,6 +203,8 @@ EvaporationHumidity<Lattice, TTrait> initHumidity(){
     humidity.template getBoundary<Dirichlet>().setInterfaceID({2,3});
     humidity.template getBoundary<Dirichlet>().setInterfaceVal(Hwall);
 
+    humidity.template getBoundary<ExtrapolationOutflow>().setInterfaceID({4});
+
     humidity.setDiffusivity(diffusivity);
 
     humidity.template getPreProcessor<HumidityBoundaryLabels>().setInterfaceCondition(interfaceCondition);
@@ -219,7 +224,7 @@ EvaporationHumidity<Lattice, TTrait> initHumidity(){
 template<class TLattice>
 using DefaultTraitPressureLeeHumidityInflow = typename DefaultTraitPressureLee<TLattice> :: template AddPreProcessor<Swapper<Velocity<>, VelocityOld<>, TLattice::NDIM>>
                                                                                    :: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>
-                                                                                   :: template SetBoundary<FreeSlip,VelocityInflow>;
+                                                                                   :: template SetBoundary<FreeSlip,VelocityInflow,BounceBack>;
 
 //template<typename TTrait = typename traitpressure::SetDataType<DataOldNewEquilibrium>>
 template<typename TTrait = typename DefaultTraitPressureLeeHumidityInflow<Lattice>:: template SetDataType<DataOldNewEquilibrium>>
@@ -231,9 +236,10 @@ PressureLeeHumidity<Lattice, TTrait> initPressure(){
     pressure.template getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setGasDensity(dens2);
     //pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setPressureCalculator(pressure.computePressure);
     //pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setForceTuple(pressure.mt_Forces);
-    pressure.template getBoundary<FreeSlip>().setInterfaceID({1,2});
-    pressure.template getBoundary<VelocityInflow>().setInterfaceID(3);
-    pressure.template getBoundary<VelocityInflow>().setWallVelocity({0.001,0});
+    pressure.template getBoundary<BounceBack>().setInterfaceID({1});
+    pressure.template getBoundary<FreeSlip>().setInterfaceID({2});
+    pressure.template getBoundary<VelocityInflow>().setInterfaceID({3,4});
+    pressure.template getBoundary<VelocityInflow>().setWallVelocity({inflowvelocity,0});
     //pressure.template getPreProcessor<ConstantGradientBoundary<Pressure<>>>().setInterfaceID(100);
 
     return pressure;
@@ -271,7 +277,7 @@ BinaryLeeHumidity<Lattice, TTrait> initBinary(){
     binary.template getPreProcessor<MassLossCalculatorInterpolated>().setPhiGasLiquid(0,1);
     binary.template getPreProcessor<MassLossCalculatorInterpolated>().setGasDensity(dens2);
 
-    binary.template getBoundary<BounceBack>().setInterfaceID({1,2,3});
+    binary.template getBoundary<BounceBack>().setInterfaceID({1,2,3,4});
     
     double wettingprefactor = - cos(theta*M_PI/180.0)*sqrt(2*A/kappa);
 
