@@ -1,6 +1,6 @@
 lx=240
 theta=90
-saveInterval=1
-timesteps=20
+saveInterval=100
+timesteps=2000
 offsety=-10
 inflowvelocity=0.001
