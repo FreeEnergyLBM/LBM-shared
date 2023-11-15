@@ -43,7 +43,7 @@ int initBoundary(const int k) {
     if (yy>=ly/2 && (xx <= 1)) return 3;
     if (yy>=ly/2 && (xx >= lx - 2)) return 4;
     if ((xx<lx/4||xx>3*lx/4)&&yy<ly/2) return 1 ;
-    if (yy <= 1) return 1;
+    if (yy <= 5) return 1;
     //if (yy == 1 || yy == ly - 2 || xx == 1 || xx == lx - 2) return 4;
     //if (xx <= 1) return 1;
     //else if (xx == lx - 2) return 4;
@@ -249,10 +249,10 @@ PressureLeeHumidity<Lattice, TTrait> initPressure(){
 template<class TLattice>
 using DefaultTraitBinaryLeeHumidityInflow = typename DefaultTraitBinaryLee<TLattice> :: template SetPostProcessor<GradientsMultiStencil<Pressure<>, CentralXYZBounceBack, CentralQBounceBack,
                                                                                                                                 MixedXYZBounceBack, MixedQBounceBack>,
-                                                                                              ChemicalPotentialCalculatorBinaryLee>
-                                                                               :: template AddPreProcessor<GradientsMultiStencil<OrderParameter<>, CentralXYZMirrorSolid, CentralQMirrorSolid,
-                                                                                                                                      MixedXYZMirrorSolid, MixedQMirrorSolid,        
-                                                                                                                                      LaplacianCentralMirrorSolid>,MassLossCalculatorInterpolated>
+                                                                                              ChemicalPotentialCalculatorBinaryLee,NoFluxSolid<OrderParameter<>>>
+                                                                               :: template AddPreProcessor<GradientsMultiStencil<OrderParameter<>, CentralXYZ, CentralQ,
+                                                                                                                                      MixedXYZ, MixedQ,        
+                                                                                                                                      LaplacianCentral>,MassLossCalculatorInterpolated>
                                                                                :: template AddForce<EvaporationPhaseSource<EvaporationSourceMethod>>
                                                                                :: template SetBoundary<BounceBack>;
 
@@ -282,7 +282,7 @@ BinaryLeeHumidity<Lattice, TTrait> initBinary(){
     double wettingprefactor = - cos(theta*M_PI/180.0)*sqrt(2*A/kappa);
 
     //binary.template getPreProcessor<GradientsMultiStencil<OrderParameter<>, CentralXYZBounceBack, CentralQBounceBack, MixedXYZBounceBack, MixedQBounceBack, LaplacianCentralWetting>>().setWettingPrefactor(wettingprefactor);
-    binary.template getPreProcessor<GradientsMultiStencil<OrderParameter<>, CentralXYZMirrorSolid, CentralQMirrorSolid,MixedXYZMirrorSolid, MixedQMirrorSolid,LaplacianCentralMirrorSolid>>().setWettingPrefactor(wettingprefactor);
+    binary.template getPreProcessor<GradientsMultiStencil<OrderParameter<>, CentralXYZ, CentralQ,MixedXYZ, MixedQ,LaplacianCentral>>().setWettingPrefactor(wettingprefactor);
 
     return binary;
 

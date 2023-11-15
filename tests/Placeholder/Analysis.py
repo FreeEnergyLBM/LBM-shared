@@ -188,7 +188,7 @@ for t in range(tstart,tend+1,tinc):
     output = "%s/component_plot_%012d.png"%(outDirName,t)
     #rho3=2*0.01*(rho2-0.2)*(rho2-1)*(2*rho2-0.2-1)-0.0128*rho4
     rgbv = np.zeros((LY,LX))
-    rgbv[:,:] = np.flip(mlnosolid).transpose()
+    rgbv[:,:] = np.flip(rho).transpose()
     #rgbv[:,:] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
     #rgbv[:,:,1] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
     #rgbv[:,:,2] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()

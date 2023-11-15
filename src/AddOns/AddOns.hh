@@ -8,3 +8,4 @@
 #include "Swapper.hh"
 
 #include "ConstantGradientBoundary.hh"
+#include "NoFluxSolid.hh"
