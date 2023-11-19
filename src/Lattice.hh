@@ -22,14 +22,15 @@ struct LatticeProperties{
     //static_assert(std::is_base_of< Data_Base<TLattice,D1Q3>, DataType<D1Q3> >::value, "ERROR: Chosen data method is not a data class.");
 
     static constexpr int NDIM = 3 - (lx <= 1 || ly <= 1 || lz <=1 ) * (1 + ((lx <= 1 && ly <=1)||(lx <= 1 && lz <=1)||(ly <= 1 && lz <=1)));
-    static constexpr int LX = lx;
-    static constexpr int LY = ly;
-    static constexpr int LZ = lz;
-    inline static int N = lx * ly * lz;
-    inline static int LXdiv = lx, LYdiv = ly, LZdiv = lz;
-    inline static int LXMPIOffset = 0, LYMPIOffset = 0, LZMPIOffset = 0;
-    inline static int HaloSize = 0, HaloXWidth = 0, HaloYWidth = 0, HaloZWidth = 0;
-    inline static int subArray[3] = {lx, ly, lz};
+    static constexpr int LX = lx; // Global length x
+    static constexpr int LY = ly; // Global length y
+    static constexpr int LZ = lz; // Global length z
+    inline static int N = lx * ly * lz; // Total size of the simulation
+    inline static int LXdiv = lx, LYdiv = ly, LZdiv = lz; // Local lengths (including halo)
+    inline static int LXMPIOffset = 0, LYMPIOffset = 0, LZMPIOffset = 0; // Coordinates for the start of local regions (excluding halo)
+    inline static int HaloXWidth = 0, HaloYWidth = 0, HaloZWidth = 0; // Widths of the halo regions
+    inline static int HaloSize = 0; // Size of each halo region (in each direction)
+    inline static int subArray[3] = {lx, ly, lz}; // Local lengths (excluding halo)
     inline static double DT = 1;
     inline static int Face[6] = {0, 0, 0, 0, 0, 0}; // FaceX=0, FaceY=0, FaceZ=0, EdgeX=0, EdgeY=0, EdgeZ=0;
     inline static int Neighbors = 0; // FaceX=0, FaceY=0, FaceZ=0, EdgeX=0, EdgeY=0, EdgeZ=0;

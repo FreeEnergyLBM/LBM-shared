@@ -7,5 +7,6 @@
 
 #include "Swapper.hh"
 
+#include "SimpleMassLossCalculator.hh"
 #include "ConstantGradientBoundary.hh"
 #include "NoFluxSolid.hh"

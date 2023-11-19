@@ -168,26 +168,44 @@ void writeArrayTxt(MPI_File file, std::vector<T> data, std::string fmt, std::str
     }
     MPI_File_seek_shared(file, offset, MPI_SEEK_CUR);
 }
+
+#else
+template<class TLattice, typename T>
+void writeArrayTxt(std::ofstream& file, std::vector<T> data, std::string fmt, std::string delim="\n", std::string end="NONE", int ndim=1, std::string dimDelim=" ") {
+    // Convert data to plaintext
+    std::string dataString = "";
+    for (int iData=0; iData<TLattice::N; iData++) {
+        dataString += formatPoint(&data[iData*ndim], fmt, dimDelim, delim, ndim);
+    }
+    file << dataString;
+}
 #endif
 
 
 template<class TLattice>
 template<typename... TParameter>
 void ParameterSave<TLattice>::saveVTK(int timestep, TParameter&... params) {
-#ifdef MPIPARALLEL
 
     char filename[512];
     sprintf(filename, "%s/data_%d.vtk", mDataDir.c_str(), timestep);
+    #ifdef MPIPARALLEL
     MPI_File file;
     MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
+    #else
+    std::ofstream file(filename);
+    #endif
 
     // Write the header
+    char header[1024];
+    int nPoints = TLattice::LX * TLattice::LY * TLattice::LZ;
+    sprintf(header, "# vtk DataFile Version 3.0\nSimulation data at timestep %d\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %d %d %d\nORIGIN 0 0 0\nSPACING 1 1 1\nPOINT_DATA %d\n", timestep, TLattice::LZ, TLattice::LY, TLattice::LX, nPoints);
+    #ifdef MPIPARALLEL
     if (mpi.rank == 0) {
-        char header[1024];
-        int nPoints = TLattice::LX * TLattice::LY * TLattice::LZ;
-        sprintf(header, "# vtk DataFile Version 3.0\nSimulation data at timestep %d\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %d %d %d\nORIGIN 0 0 0\nSPACING 1 1 1\nPOINT_DATA %d\n", timestep, TLattice::LX, TLattice::LY, TLattice::LZ, nPoints);
         MPI_File_write_shared(file, header, strlen(header), MPI_CHAR, MPI_STATUS_IGNORE);
     }
+    #else
+    file << header;
+    #endif
 
     // Write each parameter
     ([&]
@@ -195,15 +213,19 @@ void ParameterSave<TLattice>::saveVTK(int timestep, TParameter&... params) {
         int directions = params.mDirections;
         auto data = params.getParameter();
         // Write header
+        char dataHeader[1024];
+        if (directions == 1) {
+            sprintf(dataHeader, "\nSCALARS %s float\nLOOKUP_TABLE default\n", TParameter::mName);
+        } else {
+            sprintf(dataHeader, "\nVECTORS %s float\n", TParameter::mName);
+        }
+        #ifdef MPIPARALLEL
         if (mpi.rank == 0) {
-            char dataHeader[1024];
-            if (directions == 1) {
-                sprintf(dataHeader, "\nSCALARS %s float\nLOOKUP_TABLE default\n", TParameter::mName);
-            } else {
-                sprintf(dataHeader, "\nVECTORS %s float\n", TParameter::mName);
-            }
             MPI_File_write_shared(file, dataHeader, strlen(dataHeader), MPI_CHAR, MPI_STATUS_IGNORE);
         }
+        #else
+        file << dataHeader;
+        #endif
         // If 2D vectors, fill the z-component with zeros
         if (directions == 2) {
             directions = 3;
@@ -217,10 +239,6 @@ void ParameterSave<TLattice>::saveVTK(int timestep, TParameter&... params) {
         // Write data
         writeArrayTxt<TLattice>(file, data, "%13.8f", "\n", "NONE", directions, " ");
     } (), ...);
-
-#else
-    print("Cannot currently save VTK files without MPI.");
-#endif
 }
 
 

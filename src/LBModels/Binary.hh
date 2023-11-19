@@ -62,6 +62,7 @@ class Binary: public CollisionBase<TLattice, typename TTraits::Stencil>, public 
 
 };
 
+
 template<class TLattice, class TTraits>
 inline void Binary<TLattice, TTraits>::collide() {
 

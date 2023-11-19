@@ -63,6 +63,51 @@ inline int computeZ(const int& LY,const int& LZ,const int k) //Compute Y directi
 
 }
 
+/// Compute the global x coordinate using the local index
+template<class TLattice>
+inline int computeX(int k) {
+  int xlocal = k / (TLattice::LYdiv * TLattice::LZdiv);
+  return TLattice::LXMPIOffset + xlocal;
+}
+
+/// Compute the global y coordinate using the local index
+template<class TLattice>
+inline int computeY(int k) {
+  int lyz = TLattice::LYdiv * TLattice::LZdiv;
+  int xlocal = k / lyz;
+  int ylocal = (k - xlocal*lyz) / TLattice::LZdiv;
+  return TLattice::LYMPIOffset + ylocal;
+}
+
+/// Compute the global z coordinate using the local index
+template<class TLattice>
+inline int computeZ(int k) {
+  int zlocal = k % TLattice::LZdiv;
+  return TLattice::LZMPIOffset + zlocal;
+}
+
+/// Compute the global x,y,z coordinates using the local index
+template<class TLattice>
+inline std::array<int,3> computeXYZ(int k) {
+  int lyz = TLattice::LYdiv * TLattice::LZdiv;
+  int xlocal = k / lyz;
+  int ylocal = (k - xlocal*lyz) / TLattice::LZdiv;
+  int zlocal = k % TLattice::LZdiv;
+  return {TLattice::LXMPIOffset+xlocal, TLattice::LYMPIOffset+ylocal, TLattice::LZMPIOffset+zlocal};
+}
+
+/// Compute the local index from the local x,y,z coordinates
+template<class TLattice>
+inline int computeK(int x, int y, int z) {
+  int xlocal = x + TLattice::HaloXWidth;
+  int ylocal = y + TLattice::HaloYWidth;
+  int zlocal = z + TLattice::HaloZWidth;
+  int lylocal = TLattice::LYdiv;
+  int lzlocal = TLattice::LZdiv;
+  return xlocal*lylocal*lzlocal + ylocal*lzlocal + zlocal;
+}
+
+
 /**
   * \brief Returns true if the current TLattice point lies on a periodic boundary.
   * \param k Index of current TLattice point.
