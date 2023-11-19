@@ -4,10 +4,10 @@
 # SBATCH -N 1
 #SBATCH -n 8
 #SBATCH -c 10
-#SBATCH -t 00:15:00
+#SBATCH -t 01:30:00
 # SBATCH --ntasks-per-socket=2
 #SBATCH --cpus-per-task=10
-#SBATCH -p test
+#SBATCH -p shared
 #SBATCH -o ./out/output.%j.out # STDOUT
 # SBATCH --mem=8G 
 export OMP_PROC_BIND=true

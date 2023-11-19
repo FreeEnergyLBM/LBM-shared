@@ -12,9 +12,10 @@ int main(int argc, char **argv){
     Geometry<Lattice>::initialiseBoundaries(initBoundary);
     OrderParameter<>::set<Lattice>(initFluid);
     OrderParameterOld<>::set<Lattice>(initFluid);
-    Humidity<>::set<Lattice>(initHumidity);
+    //Humidity<>::set<Lattice>(initHumidity);
 
-    Algorithm lbm(pressure,binary,humidity);
+    //Algorithm lbm(pressure,binary,humidity);
+    Algorithm lbm(binary,pressure);//,humidity);
 
     ParameterSave<Lattice> saver(datadir);
     saver.SaveHeader(timesteps, saveInterval);

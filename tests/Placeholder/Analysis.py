@@ -78,12 +78,12 @@ for t in range(tstart,tend+1,tinc):
     print("t=%s"%t)
     t_file =t+t_zero
 
-    file_name = "data/"+"OrderParameter_t%li.mat"%t_file
+    #file_name = "data/"+"OrderParameter_t%li.mat"%t_file
     #file_name = "data/"+"Pressure_t%li.mat"%t_file
     #file_name = "data/"+"Density_t%li.mat"%t_file
     #file_name = "data/"+"Humidity_t%li.mat"%t_file
     #file_name = "data/"+"OrderParameter_t%li.mat"%t_file
-    #file_name = "data/"+"ChemicalPotential_t%li.mat"%t_file
+    file_name = "data/"+"ChemicalPotential_t%li.mat"%t_file
     #file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
 
     File = open(file_name, 'rb')
@@ -188,7 +188,7 @@ for t in range(tstart,tend+1,tinc):
     output = "%s/component_plot_%012d.png"%(outDirName,t)
     #rho3=2*0.01*(rho2-0.2)*(rho2-1)*(2*rho2-0.2-1)-0.0128*rho4
     rgbv = np.zeros((LY,LX))
-    rgbv[:,:] = np.flip(rho).transpose()
+    rgbv[:,:] = np.flip(liquid).transpose()
     #rgbv[:,:] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
     #rgbv[:,:,1] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
     #rgbv[:,:,2] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
@@ -216,6 +216,7 @@ for t in range(tstart,tend+1,tinc):
     #ax.quiver(X.T,Y.T,np.flip(v[:,:,0].take(indices=slicepos,axis=sliceaxis)),np.flip(-v[:,:,1].take(indices=slicepos,axis=sliceaxis)),width=0.001,headwidth=2.5,headlength=1.5)
     ax.quiver(X.T,Y.T,np.flip(-v[:,:,0]),np.flip(-v[:,:,1]),width=0.001,headwidth=1.5,headlength=1.5)
     #print(np.sum(rho[int(LX/2),:])/(0.002/(100-h)*np.log(1/(1-0.1))))
+    print("V ",np.amax(v))
     print("HERE ",np.sum(rho))
     print("HERE ",rho[LX//8,LY//2])
     print("HERE ",rho[LX//2,LY//6])
