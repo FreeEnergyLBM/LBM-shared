@@ -3,6 +3,7 @@
 #include "CentralXYZMirrorSolid.hh"
 #include "CentralXYZInterface.hh"
 #include "CentralXYZInterfaceBounceBack.hh"
+#include "CentralXYZInterfaceMirrorSolid.hh"
 #include "CentralXYZWetting.hh"
 #include "CentralXYZFourthOrder.hh"
 #include "Laplacian.hh"

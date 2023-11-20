@@ -17,5 +17,6 @@ run.exe: $(OBJ)
 
 clean:
 	rm -f *.o run.exe
-	rm -r data
+	
 
+#rm -r data

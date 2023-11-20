@@ -29,12 +29,12 @@ inline double CentralXYZMirrorSolid::compute(int direction, int k, int num) {
     for (int idx = 1; idx <Stencil::Q; idx++) {
         
         if ((Geometry<Lattice>::getBoundaryType(data.getNeighbor(k,idx))==1)) {
+            
+                const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, idx)).NormalDirection)->second;
 
-            const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, idx)).NormalDirection)->second;
+                double csolid = TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, idx), normalq), num);
 
-            double csolid = TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, idx), normalq), num);
-
-            gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * csolid;
+                gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * csolid;
 
         }
         else {

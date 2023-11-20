@@ -29,6 +29,10 @@ inline void ConstantGradientBoundary<TParameter>::compute(int k) {
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
+    using DataType = Data_Base<typename TTraits::Lattice, typename TTraits::Stencil>;
+
+    DataType& data = DataType::getInstance();
+
     for (int i : mInterfaceID){
         if(Geometry<typename TTraits::Lattice>::getBoundaryType(k) == i) goto runloop;
     }
@@ -37,11 +41,12 @@ inline void ConstantGradientBoundary<TParameter>::compute(int k) {
 
     runloop:
 
-        using data = Data_Base<Lattice, Stencil>;
+        //using data = Data_Base<Lattice, Stencil>;
 
-        const std::vector<int>& neighbors = data::getInstance().getNeighbors();
+        const std::vector<int>& neighbors = DataType::getInstance().getNeighbors();
         const std::array<int8_t,TTraits::Lattice::NDIM>& normal = BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection;
         int idx = Stencil::QMap.find(normal)->second;
+        if(idx>0){
 
         double magnormal = 0;
 
@@ -71,6 +76,16 @@ inline void ConstantGradientBoundary<TParameter>::compute(int k) {
             TParameter::template get<Lattice>(neighbors[k * Stencil::Q+Stencil::Opposites[idx2]]) = (4*TParameter::template get<Lattice>(k) - TParameter::template get<Lattice>(neighbors[k * Stencil::Q+idx2])) / 3.0;
             */
         }
-        else TParameter::template get<Lattice>(k) = (4*TParameter::template get<Lattice>(neighbors[k * Stencil::Q+idx]) - TParameter::template get<Lattice>(neighbors[neighbors[k * Stencil::Q+idx] * Stencil::Q+idx])) / 3.0;
+        else {
+            TParameter::template get<Lattice>(k) = (4*TParameter::template get<Lattice>(neighbors[k * Stencil::Q+idx]) - TParameter::template get<Lattice>(neighbors[neighbors[k * Stencil::Q+idx] * Stencil::Q+idx])) / 3.0;
+            for (int i : mInterfaceID){
+                if(Geometry<typename TTraits::Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx])) == i){
+                    TParameter::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[idx])) = (4*TParameter::template get<Lattice>(neighbors[k * Stencil::Q+idx]) - TParameter::template get<Lattice>(neighbors[neighbors[k * Stencil::Q+idx] * Stencil::Q+idx])) / 3.0;
+                    break;
+                }
+            }
+        }
+
+        }
     
 }

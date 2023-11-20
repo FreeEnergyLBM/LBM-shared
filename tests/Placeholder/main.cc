@@ -1,9 +1,31 @@
 #include "main.hh"
+#include <cstdlib>
 
 int main(int argc, char **argv){
 
+    int seed;
+    std::string seedstr;
+    
+    //exit(1);
+    if (argc!=0){
+        //std::cerr<<argv[1]<<std::endl;
+        seed=std::atoi(argv[1]);
+        //std::cerr<<seed<<std::endl;
+        seedstr=std::to_string(seed);
+    }
+    else{
+        seedstr="";
+    }
+    
     mpi.init();
-    initParams("input.txt");
+    initParams("input"+seedstr+".txt");
+
+    if(mpi.rank==0&&argc==0){
+        int ret;
+        std::string tmp="rm input"+seedstr+".txt";
+        const char *array = tmp.c_str();
+        ret = std::system(array);
+    }
 
     auto binary = initBinary<>();
     auto pressure = initPressure<>();
@@ -12,10 +34,11 @@ int main(int argc, char **argv){
     Geometry<Lattice>::initialiseBoundaries(initBoundary);
     OrderParameter<>::set<Lattice>(initFluid);
     OrderParameterOld<>::set<Lattice>(initFluid);
-    //Humidity<>::set<Lattice>(initHumidity);
+    Humidity<>::set<Lattice>(initHumidity);
 
-    //Algorithm lbm(pressure,binary,humidity);
-    Algorithm lbm(binary,pressure);//,humidity);
+    Algorithm lbm(binary,pressure,humidity);
+    //Algorithm lbm(humidity);//,pressure,binary);
+    //Algorithm lbm(binary,pressure);//,humidity);
 
     ParameterSave<Lattice> saver(datadir);
     saver.SaveHeader(timesteps, saveInterval);
@@ -39,7 +62,7 @@ int main(int argc, char **argv){
             saver.SaveParameter<GradientHumidity<>,Lattice::NDIM>(timestep);
             
         }
-        
+        AfterEquilibration(timestep,binary);
         // Evolve by one timestep
         lbm.evolve();
         

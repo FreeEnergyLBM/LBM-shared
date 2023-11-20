@@ -4,7 +4,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy import optimize
 
-HeaderFile = open("data/Header.mat", 'rb')
+datadir = "data/simple/lx_228/ly_200/postwidth_162/offsety_-17/theta_30/"
+
+HeaderFile = open(datadir+"Header.mat", 'rb')
 
 LX=struct.unpack('=i', HeaderFile.read(4))[0]
 
@@ -79,16 +81,16 @@ for t in range(tstart,tend+1,tinc):
     t_file =t+t_zero
 
     #file_name = "data/"+"OrderParameter_t%li.mat"%t_file
-    #file_name = "data/"+"Pressure_t%li.mat"%t_file
+    #file_name = datadir+"Pressure_t%li.mat"%t_file
     #file_name = "data/"+"Density_t%li.mat"%t_file
     #file_name = "data/"+"Humidity_t%li.mat"%t_file
-    #file_name = "data/"+"OrderParameter_t%li.mat"%t_file
-    file_name = "data/"+"ChemicalPotential_t%li.mat"%t_file
+    file_name = datadir+"OrderParameter_t%li.mat"%t_file
+    #file_name = datadir+"ChemicalPotential_t%li.mat"%t_file
     #file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
 
     File = open(file_name, 'rb')
 
-    file_name = "data/"+"MassSink_t%li.mat"%t_file
+    file_name = datadir+"MassSink_t%li.mat"%t_file
     #file_name = "data/"+"Pressure_t%li.mat"%t_file
     #file_name = "data/"+"Density_t%li.mat"%t_file
     #file_name = "data/"+"Humidity_t%li.mat"%t_file
@@ -98,7 +100,7 @@ for t in range(tstart,tend+1,tinc):
 
     File0 = open(file_name, 'rb')
 
-    file_name = "data/"+"Humidity_t%li.mat"%t_file
+    file_name = datadir+"Humidity_t%li.mat"%t_file
     #file_name = "data/"+"Pressure_t%li.mat"%t_file
     #file_name = "data/"+"Density_t%li.mat"%t_file
     #file_name = "data/"+"Humidity_t%li.mat"%t_file
@@ -108,7 +110,7 @@ for t in range(tstart,tend+1,tinc):
 
     File00 = open(file_name, 'rb')
 
-    file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
+    file_name = datadir+"BoundaryLabels_t%li.mat"%t_file
     #file_name = "data/"+"Pressure_t%li.mat"%t_file
     #file_name = "data/"+"Density_t%li.mat"%t_file
     #file_name = "data/"+"Humidity_t%li.mat"%t_file
@@ -118,15 +120,15 @@ for t in range(tstart,tend+1,tinc):
 
     FileSolid = open(file_name, 'rb')
     
-    file_name = "data/"+"Velocity_t%li.mat"%t_file
+    file_name = datadir+"Velocity_t%li.mat"%t_file
 
     File2 = open(file_name, 'rb')
 
-    file_name = "data/"+"GradientHumidity_t%li.mat"%t_file
+    file_name = datadir+"GradientHumidity_t%li.mat"%t_file
 
     File3 = open(file_name, 'rb')
 
-    file_name = "data/"+"OrderParameter_t%li.mat"%t_file
+    file_name = datadir+"OrderParameter_t%li.mat"%t_file
 
     File4 = open(file_name, 'rb')
 
@@ -164,10 +166,10 @@ for t in range(tstart,tend+1,tinc):
     solid = np.ndarray((LX,LY),'=i',dat,0,(4*LY,4))
 
     liquid = np.array(rho)
-    liquid[np.where(solid==1)[0],np.where(solid==1)[1]] = 0.5
+    liquid[np.where(solid==1)[0],np.where(solid==1)[1]] = 1
 
-    mlnosolid = np.array(humidity)
-    mlnosolid[np.where(solid==1)[0],np.where(solid==1)[1]] = 0.0
+    mlnosolid = np.array(rho2)
+    mlnosolid[np.where(solid==1)[0],np.where(solid==1)[1]] = 0.5
 
     dat=File2.read()
     v = np.ndarray((LX,LY,ndim),'=d',dat,0,(ndim*8*LY,ndim*8,8))
@@ -218,6 +220,7 @@ for t in range(tstart,tend+1,tinc):
     #print(np.sum(rho[int(LX/2),:])/(0.002/(100-h)*np.log(1/(1-0.1))))
     print("V ",np.amax(v))
     print("HERE ",np.sum(rho))
+    print("HERE ",np.sum(rho>0.5))
     print("HERE ",rho[LX//8,LY//2])
     print("HERE ",rho[LX//2,LY//6])
     fig.colorbar(im)
