@@ -10,3 +10,4 @@
 #include "SimpleMassLossCalculator.hh"
 #include "ConstantGradientBoundary.hh"
 #include "NoFluxSolid.hh"
+#include "ConvectBoundary.hh"

@@ -63,7 +63,10 @@ inline void ConstantGradientBoundary<TParameter>::compute(int k) {
                 for (int xyz = 0; xyz < Lattice::NDIM; xyz++) {
                     cidotnormal += Stencil::Ci_xyz(xyz)[idx1]*normal[xyz];
                 }
-                if (cidotnormal > 0) TParameter::template get<Lattice>(k) = (4*TParameter::template get<Lattice>(neighbors[k * Stencil::Q+idx1]) - TParameter::template get<Lattice>(neighbors[neighbors[k * Stencil::Q+idx1] * Stencil::Q+idx1])) / 3.0;
+                if (cidotnormal > 0) {
+                    TParameter::template get<Lattice>(k) = (4*TParameter::template get<Lattice>(neighbors[k * Stencil::Q+idx1]) - TParameter::template get<Lattice>(neighbors[neighbors[k * Stencil::Q+idx1] * Stencil::Q+idx1])) / 3.0;
+                    TParameter::template get<Lattice>(neighbors[k * Stencil::Q+Stencil::Opposites[idx1]]) = (4*TParameter::template get<Lattice>(neighbors[k * Stencil::Q+idx1]) - TParameter::template get<Lattice>(neighbors[neighbors[k * Stencil::Q+idx1] * Stencil::Q+idx1])) / 3.0;
+                }
             }
             /*
             if constexpr (Lattice::NDIM==)
@@ -78,12 +81,9 @@ inline void ConstantGradientBoundary<TParameter>::compute(int k) {
         }
         else {
             TParameter::template get<Lattice>(k) = (4*TParameter::template get<Lattice>(neighbors[k * Stencil::Q+idx]) - TParameter::template get<Lattice>(neighbors[neighbors[k * Stencil::Q+idx] * Stencil::Q+idx])) / 3.0;
-            for (int i : mInterfaceID){
-                if(Geometry<typename TTraits::Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx])) == i){
-                    TParameter::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[idx])) = (4*TParameter::template get<Lattice>(neighbors[k * Stencil::Q+idx]) - TParameter::template get<Lattice>(neighbors[neighbors[k * Stencil::Q+idx] * Stencil::Q+idx])) / 3.0;
-                    break;
-                }
-            }
+
+            TParameter::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[idx])) = (4*TParameter::template get<Lattice>(neighbors[k * Stencil::Q+idx]) - TParameter::template get<Lattice>(neighbors[neighbors[k * Stencil::Q+idx] * Stencil::Q+idx])) / 3.0;
+
         }
 
         }

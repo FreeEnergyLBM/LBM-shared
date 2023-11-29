@@ -1,18 +1,15 @@
 #pragma once
 #include "BoundaryBase.hh"
-#include "../Geometry.hh"
 #include<iostream>
 
 
 class FreeSlip : public BoundaryBase {
     public:
 
+        FreeSlip() { this->setInterfaceID(1); }
+
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);
-
-        inline void setInterfaceID(int id) {mInterfaceID[0]=id;};
-
-        inline void setInterfaceID(const std::vector<int>& id) {mInterfaceID=id;};
 
         template<class TTraits, class TDistributionType>
         inline void communicate(TDistributionType& mDistribution);
@@ -20,63 +17,45 @@ class FreeSlip : public BoundaryBase {
         template<class TTraits>
         inline void communicate(){};
 
-    private:
-
-        double mInterfaceVal;
-        std::vector<int> mInterfaceID = {1};
-
 };
 
 template<class TTraits, class TDistributionType>
 inline void FreeSlip::compute(TDistributionType& distribution, int k) {
 
-    for (int i : mInterfaceID){
-        if(Geometry<typename TTraits::Lattice>::getBoundaryType(k) == i) goto runloop;
-    }
+    using Lattice = typename TTraits::Lattice;
 
-    return;
+    if (!this->apply<Lattice>(k)) return;
 
-    runloop:
+    const std::array<int8_t,TTraits::Lattice::NDIM>& normal = BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection;
+    int normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection)->second;
 
-        const std::array<int8_t,TTraits::Lattice::NDIM>& normal = BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection;
-        int normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection)->second;
+    for (int idx = 0; idx < TTraits::Stencil::Q; idx++) {
 
-        for (int idx = 0; idx < TTraits::Stencil::Q; idx++) {
+        if (this->apply<Lattice>(distribution.streamIndex(k, idx))) continue;
 
-            bool cont = true;
+        if (Geometry<typename TTraits::Lattice>::isCorner(k)) {
 
-            for (int i : mInterfaceID){
-                if(Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == i) goto dontapply;
-            }
+            std::array<int8_t,TTraits::Lattice::NDIM> cinorm = {};
 
-            cont = false;
+            cinorm[0] = (int8_t)((int)normal[0]*(TTraits::Stencil::Ci_x[idx]==(int)normal[0]));
+            if constexpr (TTraits::Lattice::NDIM>=2) cinorm[1] = (int8_t)((int)normal[1]*(TTraits::Stencil::Ci_y[idx]==(int)normal[1]));
+            if constexpr (TTraits::Lattice::NDIM>=3) cinorm[2] = (int8_t)((int)normal[2]*(TTraits::Stencil::Ci_z[idx]==(int)normal[2]));
 
-            dontapply:
-                if (cont) continue;
+            normalq = TTraits::Stencil::QMap.find(cinorm)->second;
 
-            if (Geometry<typename TTraits::Lattice>::isCorner(k)) {
+        }
 
-                std::array<int8_t,TTraits::Lattice::NDIM> cinorm = {};
+        std::array<int8_t,TTraits::Lattice::NDIM> newdir = {};
 
-                cinorm[0] = (int8_t)((int)normal[0]*(TTraits::Stencil::Ci_x[idx]==(int)normal[0]));
-                if constexpr (TTraits::Lattice::NDIM>=2) cinorm[1] = (int8_t)((int)normal[1]*(TTraits::Stencil::Ci_y[idx]==(int)normal[1]));
-                if constexpr (TTraits::Lattice::NDIM>=3) cinorm[2] = (int8_t)((int)normal[2]*(TTraits::Stencil::Ci_z[idx]==(int)normal[2]));
+        newdir[0] = (int8_t)(TTraits::Stencil::Ci_x[idx]-2*(int)normal[0]*(TTraits::Stencil::Ci_x[idx]==(int)normal[0]));
+        if constexpr (TTraits::Lattice::NDIM>=2) newdir[1] = (int8_t)(TTraits::Stencil::Ci_y[idx]-2*(int)normal[1]*(TTraits::Stencil::Ci_y[idx]==(int)normal[1]));
+        if constexpr (TTraits::Lattice::NDIM>=3) newdir[2] = (int8_t)(TTraits::Stencil::Ci_z[idx]-2*(int)normal[2]*(TTraits::Stencil::Ci_z[idx]==(int)normal[2]));
 
-                normalq = TTraits::Stencil::QMap.find(cinorm)->second;
+        const int& newidx = TTraits::Stencil::QMap.find(newdir)->second;
+        
+        distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq),newidx))[newidx];//distribution.getPostCollisionDistribution(distribution.streamIndex(k, normalq),newidx);
 
-            }
-
-            std::array<int8_t,TTraits::Lattice::NDIM> newdir = {};
-
-            newdir[0] = (int8_t)(TTraits::Stencil::Ci_x[idx]-2*(int)normal[0]*(TTraits::Stencil::Ci_x[idx]==(int)normal[0]));
-            if constexpr (TTraits::Lattice::NDIM>=2) newdir[1] = (int8_t)(TTraits::Stencil::Ci_y[idx]-2*(int)normal[1]*(TTraits::Stencil::Ci_y[idx]==(int)normal[1]));
-            if constexpr (TTraits::Lattice::NDIM>=3) newdir[2] = (int8_t)(TTraits::Stencil::Ci_z[idx]-2*(int)normal[2]*(TTraits::Stencil::Ci_z[idx]==(int)normal[2]));
-
-            const int& newidx = TTraits::Stencil::QMap.find(newdir)->second;
-            
-            distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq),newidx))[newidx];//distribution.getPostCollisionDistribution(distribution.streamIndex(k, normalq),newidx);
-
-        }    
+    }    
 
 }
 

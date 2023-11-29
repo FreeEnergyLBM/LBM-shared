@@ -7,6 +7,8 @@
 class ExtrapolationOutflow : public BoundaryBase {
     public:
 
+        ExtrapolationOutflow() { this->setInterfaceID(4); }
+
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);
 
@@ -16,14 +18,6 @@ class ExtrapolationOutflow : public BoundaryBase {
         template<class TTraits, class TDistributionType>
         inline void communicate(TDistributionType& mDistribution);
 
-        inline void setInterfaceID(int id) {mInterfaceID[0]=id;};
-
-        inline void setInterfaceID(const std::vector<int>& id) {mInterfaceID=id;};
-
-    private:
-
-        double mInterfaceVal;
-        std::vector<int> mInterfaceID = {4};
 
 };
 
@@ -32,45 +26,30 @@ inline void ExtrapolationOutflow::compute(TDistributionType& distribution, int k
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
-    for (int i : mInterfaceID){
-        if(Geometry<typename TTraits::Lattice>::getBoundaryType(k) == i) goto runloop;
-    }
+    if (!this->apply<Lattice>(k)) return;
 
-    return;
+    const int& normalq = Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<Lattice>(k).NormalDirection)->second;
 
-    runloop:
+    for (int idx = 1; idx < Stencil::Q; idx++) {
+        
+        if (this->apply<Lattice>(distribution.streamIndex(k, idx))) continue;
 
-        const int& normalq = Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<Lattice>(k).NormalDirection)->second;
-
-        for (int idx = 1; idx < Stencil::Q; idx++) {
+        double cidotnormal = 0;
+        for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
+            cidotnormal += TTraits::Stencil::Ci_xyz(xyz)[idx]*BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection[xyz];
+        }
+        
+        if(cidotnormal!=0) {
             
-            bool cont = true;
+            distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = (4.0*distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx] - distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq), normalq))[idx])/3.0;
 
-            for (int i : mInterfaceID){
-                if(Geometry<typename TTraits::Lattice>::getBoundaryType(distribution.streamIndex(k, idx)) == i) goto dontapply;
-            }
+        
+        }
+        else{
+            distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = distribution.getEquilibriumPointer(distribution.streamIndex(k, normalq))[idx];//TTraits::Stencil::Weights
+        }
 
-            cont = false;
-
-            dontapply:
-                if (cont) continue;
-
-            double cidotnormal = 0;
-            for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
-                cidotnormal += TTraits::Stencil::Ci_xyz(xyz)[idx]*BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection[xyz];
-            }
-            
-            if(cidotnormal!=0) {
-                
-                distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = (4.0*distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx] - distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq), normalq))[idx])/3.0;
-
-            
-            }
-            else{
-                distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = distribution.getEquilibriumPointer(distribution.streamIndex(k, normalq))[idx];//TTraits::Stencil::Weights
-            }
-
-        }    
+    }    
 
 }
 

@@ -258,6 +258,18 @@ class ModelBase { //Inherit from base class to avoid repetition of common
         typename TTraits:: Boundaries mt_Boundaries;
         Geometry<TLattice> mGeometry;
 
+        inline void setCollideID(int id) {mCollideIDs[0]=id;};
+
+        inline void setCollideID(const std::vector<int>& id) {mCollideIDs=id;};
+
+        inline bool isCollisionNode(int k) {
+            bool apply = false;
+            for (int i : mCollideIDs){
+                if(Geometry<TLattice>::getBoundaryType(k) == i) apply=true;
+            }
+            return apply;
+        }
+        std::vector<int> mCollideIDs = {0};
         
         std::vector<double>& distribution = mDistribution.getDistribution(); //Reference to vector of distributions
         
@@ -583,6 +595,8 @@ inline void ModelBase<TLattice,TTraits>::boundaries() {
         }
 
     }
+
+    //this -> mData.communicateDistribution();
 
     TLattice::ResetParallelTracking();
     

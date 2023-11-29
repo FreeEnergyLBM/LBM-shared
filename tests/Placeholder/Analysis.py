@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy import optimize
 
-datadir = "data/simple/lx_228/ly_200/postwidth_162/offsety_-17/theta_30/"
+datadir = "data/test/pore/lx_228/ly_200/postwidth_162/offsety_-17/theta_30/"
 
 HeaderFile = open(datadir+"Header.mat", 'rb')
 
@@ -19,7 +19,8 @@ ndim=struct.unpack('=i', HeaderFile.read(4))[0]
 t_zero = 0
 tstart = 0
 
-tend = struct.unpack('=i', HeaderFile.read(4))[0]
+tend = 300000#
+struct.unpack('=i', HeaderFile.read(4))[0]
 tinc = struct.unpack('=i', HeaderFile.read(4))[0]
 
 slicepos=0
@@ -166,10 +167,10 @@ for t in range(tstart,tend+1,tinc):
     solid = np.ndarray((LX,LY),'=i',dat,0,(4*LY,4))
 
     liquid = np.array(rho)
-    liquid[np.where(solid==1)[0],np.where(solid==1)[1]] = 1
+    liquid[np.where(np.logical_or(solid==1,solid==-1))[0],np.where(np.logical_or(solid==1,solid==-1))[1]] = 0.5
 
-    mlnosolid = np.array(rho2)
-    mlnosolid[np.where(solid==1)[0],np.where(solid==1)[1]] = 0.5
+    mlnosolid = np.array(humidity)
+    mlnosolid[np.where(np.logical_or(solid==1,solid==-1))[0],np.where(np.logical_or(solid==1,solid==-1))[1]] = 0.0
 
     dat=File2.read()
     v = np.ndarray((LX,LY,ndim),'=d',dat,0,(ndim*8*LY,ndim*8,8))
@@ -206,17 +207,20 @@ for t in range(tstart,tend+1,tinc):
     print(h)
     
     im=ax.imshow(rgbv,interpolation='nearest',origin='upper')
+    #ax.contour(np.flip(liquid).T, levels=[0.5], colors="k", zorder=1, linewidths=0.75)
     #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2).take(indices=slicepos,axis=sliceaxis))**2+(gh.take(indices=1,axis=2).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
     #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2))**2+(gh.take(indices=1,axis=2))**2),interpolation='nearest',origin='upper')
     #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
     #im=ax.imshow(np.sqrt((v.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis))**2+(v.take(indices=1,axis=3).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
     #print(np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()[70,70])
     #ax.scatter(70,70)
-    step=1
-    X,Y=np.meshgrid(np.linspace(0,LX-1,int((LX)/step)),np.linspace(0,LY-1,int((LY)/step)))
+    stepx=1
+    stepy=1
+    X,Y=np.meshgrid(np.linspace(0,LX-1,int((LX)/stepx)),np.linspace(0,LY-1,int((LY)/stepy)))
     #print(np.sum(np.sqrt((gh.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis))**2+(gh.take(indices=1,axis=3).take(indices=slicepos,axis=sliceaxis))**2)))
     #ax.quiver(X.T,Y.T,np.flip(v[:,:,0].take(indices=slicepos,axis=sliceaxis)),np.flip(-v[:,:,1].take(indices=slicepos,axis=sliceaxis)),width=0.001,headwidth=2.5,headlength=1.5)
-    ax.quiver(X.T,Y.T,np.flip(-v[:,:,0]),np.flip(-v[:,:,1]),width=0.001,headwidth=1.5,headlength=1.5)
+    #ax.quiver(X.T,Y.T,np.flip(-v[0:-1:stepx,0:-1:stepy,0]),np.flip(v[0:-1:stepx,0:-1:stepy,1]),width=0.0002,headwidth=7.5,headlength=7.5)
+    ax.quiver(X.T,Y.T,np.flip(-v[0:LX:stepx,0:LY:stepy,0]),np.flip(v[0:LX:stepx,0:LY:stepy,1]),width=0.0002,headwidth=7.5,headlength=7.5)
     #print(np.sum(rho[int(LX/2),:])/(0.002/(100-h)*np.log(1/(1-0.1))))
     print("V ",np.amax(v))
     print("HERE ",np.sum(rho))

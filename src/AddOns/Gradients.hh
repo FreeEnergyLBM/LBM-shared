@@ -52,6 +52,9 @@ inline void Gradients<TParam, TGradientStencil>::compute(int k) { //Not necessar
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
     using GradientType = typename TGradientStencil::template GradientType<TParam>;
+
+    if (Geometry<Lattice>::isBulkSolid(k)) return;
+
     constexpr int numdir = TGradientStencil::template getNumberOfDirections<Stencil>();
     
     for (int component = 0 ; component < TParam::instances; component++){

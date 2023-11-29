@@ -23,6 +23,8 @@ template<class TParam>
 template<class TTraits>
 inline void NoFluxSolid<TParam>::compute(int k){
 
+    if (Geometry<typename TTraits::Lattice>::isBulkSolid(k)) return;
+
     //int normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection)->second;
 
     using DataType = Data_Base<typename TTraits::Lattice, typename TTraits::Stencil>;

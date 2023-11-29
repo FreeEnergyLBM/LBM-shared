@@ -23,7 +23,7 @@ class SimpleMassLossCalculator : public AddOnBase {
 
 template<class TTraits>
 inline void SimpleMassLossCalculator::compute(int k){
-    if (Geometry<typename TTraits::Lattice>::getBoundaryType(k)==1) return;
+    if (Geometry<typename TTraits::Lattice>::isBulkSolid(k)) return;
 
     // Get the local gradient of the order parameter
     double gradOP = 0;

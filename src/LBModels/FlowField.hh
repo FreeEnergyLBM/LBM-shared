@@ -56,7 +56,7 @@ inline void FlowField<TLattice, TTraits>::collide() { //Collision step
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { //loop over k
 
-        if(Geometry<TLattice>::getBoundaryType(k)!=1){
+        if(this->isCollisionNode(k)){
 
             double* old_distribution = this -> mDistribution.getDistributionOldPointer(k);
 
@@ -113,7 +113,7 @@ inline void FlowField<TLattice, TTraits>::computeMomenta() { //Calculate Density
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //Loop over k
 
-        if(Geometry<TLattice>::getBoundaryType(k)!=1){
+        if(this->isCollisionNode(k)){
 
             double* distribution = this -> mDistribution.getDistributionPointer(k);
             velocity[k * Stencil::D + x] = this -> computeVelocity(distribution, density[k], x, k); //Calculate velocities
@@ -216,7 +216,7 @@ inline void FlowFieldPressure<TLattice, TTraits>::collide() { //Collision step
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { //loop over k
 
-        if(Geometry<TLattice>::getBoundaryType(k)!=1){
+        if(this->isCollisionNode(k)){
 
             double* old_distribution = this -> mDistribution.getDistributionOldPointer(k);
 
@@ -279,7 +279,7 @@ inline void FlowFieldPressure<TLattice, TTraits>::computeMomenta() { //Calculate
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //Loop over k
 
-        if(Geometry<TLattice>::getBoundaryType(k)!=1){
+        if(this->isCollisionNode(k)){
 
             double* distribution = ModelBase<TLattice, TTraits>::mDistribution.getDistributionPointer(k);
 

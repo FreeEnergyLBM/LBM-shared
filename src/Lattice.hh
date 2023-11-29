@@ -213,7 +213,7 @@ struct LatticePropertiesRuntime {
         #pragma omp master
         {
         //std::pair<int,Distribution_Base<D2Q9>> a = std::make_pair(0,obj);
-        if (true){//!alreadycommunicateddistribution.count(std::make_pair(0,obj))||!alreadycommunicateddistribution.at(std::make_pair(0,obj))) {
+        if (!alreadycommunicateddistribution.count(std::make_pair(0,obj.getDistributionPointer(0)))||!alreadycommunicateddistribution.at(std::make_pair(0,obj.getDistributionPointer(0)))) {
             Parallel.template updateDistributionBeforeCommunication<TLattice>(obj);
             Parallel.template communicateDistribution<TLattice>(obj);
             Parallel.template updateDistributionAfterCommunication<TLattice>(obj);
@@ -226,7 +226,7 @@ struct LatticePropertiesRuntime {
     static void communicateDistributionAll(TDistribution& obj) {
         #pragma omp master
         {
-        if (true){//!alreadycommunicateddistribution.count(std::make_pair(1,obj))||!alreadycommunicateddistribution.at(std::make_pair(1,obj))) {
+        if (!alreadycommunicateddistribution.count(std::make_pair(1,obj.getDistributionPointer(0)))||!alreadycommunicateddistribution.at(std::make_pair(1,obj.getDistributionPointer(0)))) {
             Parallel.template updateDistributionBeforeCommunicationAll<TLattice>(obj);
             Parallel.template communicateDistributionAll<TLattice>(obj);
             Parallel.template updateDistributionAfterCommunicationAll<TLattice>(obj);
@@ -239,7 +239,7 @@ struct LatticePropertiesRuntime {
     static void communicateDistributionAllEquilibrium(TDistribution& obj) {
         #pragma omp master
         {
-        if (true){//!alreadycommunicateddistribution.count(std::make_pair(2,obj))||!alreadycommunicateddistribution.at(std::make_pair(2,obj))) {
+        if (!alreadycommunicateddistribution.count(std::make_pair(2,obj.getDistributionPointer(0)))||!alreadycommunicateddistribution.at(std::make_pair(2,obj.getDistributionPointer(0)))) {
             Parallel.template updateDistributionBeforeCommunicationAllEquilibrium<TLattice>(obj);
             Parallel.template communicateDistributionAll<TLattice>(obj);
             Parallel.template updateDistributionAfterCommunicationAllEquilibrium<TLattice>(obj);
@@ -252,7 +252,7 @@ struct LatticePropertiesRuntime {
     static void communicateDistributionAllOld(TDistribution& obj) {
         #pragma omp master
         {
-        if (true){//!alreadycommunicateddistribution.count(std::make_pair(3,obj))||!alreadycommunicateddistribution.at(std::make_pair(3,obj))) {
+        if (!alreadycommunicateddistribution.count(std::make_pair(3,obj.getDistributionPointer(0)))||!alreadycommunicateddistribution.at(std::make_pair(3,obj.getDistributionPointer(0)))) {
             Parallel.template updateDistributionBeforeCommunicationAllOld<TLattice>(obj);
             Parallel.template communicateDistributionAll<TLattice>(obj);
             Parallel.template updateDistributionAfterCommunicationAllOld<TLattice>(obj);

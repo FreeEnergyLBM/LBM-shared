@@ -5,24 +5,23 @@ int main(int argc, char **argv){
 
     int seed;
     std::string seedstr;
-    
+    mpi.init();
     //exit(1);
     if (argc!=0){
         //std::cerr<<argv[1]<<std::endl;
         seed=std::atoi(argv[1]);
         //std::cerr<<seed<<std::endl;
         seedstr=std::to_string(seed);
+        initParams("input/input"+seedstr+".txt");
     }
     else{
         seedstr="";
+        initParams("input.txt");
     }
-    
-    mpi.init();
-    initParams("input"+seedstr+".txt");
 
     if(mpi.rank==0&&argc==0){
         int ret;
-        std::string tmp="rm input"+seedstr+".txt";
+        std::string tmp="rm input/input"+seedstr+".txt";
         const char *array = tmp.c_str();
         ret = std::system(array);
     }
@@ -31,12 +30,12 @@ int main(int argc, char **argv){
     auto pressure = initPressure<>();
     auto humidity = initHumidity<>();
 
-    Geometry<Lattice>::initialiseBoundaries(initBoundary);
+    Geometry<Lattice>::initialiseBoundaries(initBoundary,{0,5,6});
     OrderParameter<>::set<Lattice>(initFluid);
     OrderParameterOld<>::set<Lattice>(initFluid);
     Humidity<>::set<Lattice>(initHumidity);
 
-    Algorithm lbm(binary,pressure,humidity);
+    Algorithm lbm(binary,pressure,humidity);//
     //Algorithm lbm(humidity);//,pressure,binary);
     //Algorithm lbm(binary,pressure);//,humidity);
 

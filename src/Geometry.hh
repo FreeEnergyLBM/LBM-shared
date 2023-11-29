@@ -35,7 +35,13 @@ class Geometry {
 
         static inline bool isCorner(int k);
 
-        static inline void initialiseBoundaries(int (*condition)(const int));
+        static inline bool isBulkSolid(int k,int (*condition)(const int),const std::vector<int>& neighbors,std::vector<int> fluidvals);
+
+        static inline bool isBulkSolid(int k);
+
+        static inline void initialiseBoundaries(int (*condition)(const int),int fluidval = 0);
+
+        static inline void initialiseBoundaries(int (*condition)(const int),std::vector<int> fluidvals);
 
         static inline int& getBoundaryType(int k);
 
@@ -43,9 +49,10 @@ class Geometry {
 
         enum
         {
-            Solid = 0,
-            Fluid = 1,
-            SolidWall = 2,
+            BulkSolid = -1,
+            Fluid = 0,
+            Wall = 1,
+            Wall2 = 2,
             InletWall = 3,
             OutletWall = 4,
             HumidityInterface = 5,
@@ -54,9 +61,25 @@ class Geometry {
 
 };
 
+template<class TLattice>
+inline bool Geometry<TLattice>::isBulkSolid(int k,int (*condition)(const int),const std::vector<int>& neighbors,std::vector<int> fluidvals) {
+
+    using Stencil = std::conditional_t<TLattice::NDIM == 1, D1Q3, std::conditional_t<TLattice::NDIM == 2, D2Q9, D3Q27>>;
+
+    bool bulksolid = true;
+        
+    for (int idx = 0; idx < Stencil::Q; idx++) {
+        for (int i : fluidvals){
+            if(condition(neighbors[k*Stencil::Q+idx]) == i) bulksolid=false;
+        }
+    }
+
+    return bulksolid;
+
+}
 
 template<class TLattice>
-inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int)) {
+inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int),std::vector<int> fluidvals) {
 
     using Stencil = std::conditional_t<TLattice::NDIM == 1, D1Q3, std::conditional_t<TLattice::NDIM == 2, D2Q9, D3Q27>>;
 
@@ -66,17 +89,31 @@ inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int)
 
     for(int k = TLattice::HaloSize; k < TLattice::N-TLattice::HaloSize; k++) {
 
-        //if(condition(k)==4) std::cout<<computeX(TLattice::LY,TLattice::LZ,k)<<" "<<computeY(TLattice::LY,TLattice::LZ,k)<<" "<<(int)findNormal<Stencil>(condition,neighbors,k)[0]<<" "<<(int)findNormal<Stencil>(condition,neighbors,k)[1]<<std::endl;
+        int solidval;
+        
+        if (isBulkSolid(k,condition,neighbors,fluidvals)) {
+            solidval = -1;
+        }
+        else {
+            solidval = condition(k);
+        }
 
         std::array<int8_t,TLattice::NDIM> normal=findNormal<Stencil>(condition,neighbors,k);
 
-        Boundary<TLattice::NDIM> boundaryk = {condition(k),isCorner(condition,normal,k),normal};
+        Boundary<TLattice::NDIM> boundaryk = {solidval,isCorner(condition,normal,k),normal};
       
         BoundaryLabels<TLattice::NDIM>::template initialise<TLattice>(boundaryk,k);
 
     }
 
     neighbors.resize(0);
+
+}
+
+template<class TLattice>
+inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int), int fluidval) {
+
+    initialiseBoundaries(condition,{fluidval});
 
 }
 
@@ -100,12 +137,19 @@ inline bool Geometry<TLattice>::isCorner(int k) {
 }
 
 template<class TLattice>
+inline bool Geometry<TLattice>::isBulkSolid(int k) {
+
+    return (BoundaryLabels<TLattice::NDIM>::template get<TLattice>(k).Id==-1);
+
+}
+
+template<class TLattice>
 template<class TStencil>
 inline std::array<int8_t,TLattice::NDIM> Geometry<TLattice>::findNormal(int (*condition)(const int), const std::vector<int>& neighbors,int k) {
 
     std::array<int8_t,TLattice::NDIM> normal = {};
     
-    if (condition(k)==0) return normal;
+    if (condition(k)==0||condition(k)==-1) return normal;
 
     std::vector<int> sum(TLattice::NDIM,0);
 
@@ -169,7 +213,7 @@ inline std::array<int8_t,TLattice::NDIM> Geometry<TLattice>::findNormal(int (*co
 template<class TLattice>
 inline bool Geometry<TLattice>::isCorner(int (*condition)(const int),const std::array<int8_t,TLattice::NDIM>& normal,int k) { // DOesnt
 
-    if (condition(k)==0) return false;
+    if (condition(k)==0||condition(k)==-1) return false;
 
     int normalsum = 0;
 

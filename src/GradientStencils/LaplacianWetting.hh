@@ -15,7 +15,7 @@ struct LaplacianCentralWetting : WettingGradient<One> {
 
 template<class TTraits, class TParameter>
 inline double LaplacianCentralWetting::compute(int direction, int k, int num){
-
+    /*
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
@@ -37,6 +37,38 @@ inline double LaplacianCentralWetting::compute(int direction, int k, int num){
         else {
 
             double csolid = TParameter::template get<Lattice>(k, num);//TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, idx), normalq), num);
+
+            laplaciansum +=  Stencil::Weights[idx] * 2 * ((csolid - 0.5 * this->mPrefactor * (csolid - pow(csolid, 2))) - TParameter::template get<Lattice>(k, num));
+
+        }
+
+    }
+    return 1.0 / (Stencil::Cs2 * Lattice::DT * Lattice::DT) * laplaciansum;
+    */
+
+    using Lattice = typename TTraits::Lattice;
+    using Stencil = typename TTraits::Stencil;
+
+    if (Geometry<Lattice>::getBoundaryType(k) == 4) return 0;
+
+    using DataType = Data_Base<Lattice, Stencil>;
+
+    DataType& data = DataType::getInstance();
+
+    double laplaciansum=0;
+
+    for (int idx = 1; idx <Stencil::Q; idx++) {
+
+        if(Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))!=1) {
+
+            laplaciansum +=  Stencil::Weights[idx] * 2 * (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num) - TParameter::template get<Lattice>(k, num));
+
+        }
+        else {
+
+            const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, idx)).NormalDirection)->second;
+
+            double csolid = TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, idx), normalq), num);
 
             laplaciansum +=  Stencil::Weights[idx] * 2 * ((csolid - 0.5 * this->mPrefactor * (csolid - pow(csolid, 2))) - TParameter::template get<Lattice>(k, num));
 
