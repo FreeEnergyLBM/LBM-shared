@@ -6,7 +6,7 @@ import sys
 import fileinput
 
 owd = os.getcwd() # Directory containing the python file
-datadir="data/test/pore" # All data directories start with the "data" folder
+datadir="data/inflow" # All data directories start with the "data" folder
 os.system("mkdir "+datadir) # Make the "data" folder (if it doesn't exist already)
 os.chdir(datadir) # Enter it
 

@@ -16,7 +16,7 @@ struct DefaultTrait : BaseTrait<DefaultTrait<TLattice,t_NumberOfComponents>> {
     
     using Stencil = std::conditional_t<TLattice::NDIM == 1, D1Q3, std::conditional_t<TLattice::NDIM == 2, D2Q9, D3Q19>>; //Here, D refers to the number of cartesian dimensions
 
-    using Boundaries = std::tuple<>;
+    using Boundaries = std::tuple<std::tuple<>>;
 
     using PreProcessors = std::tuple<>;
 
@@ -44,7 +44,7 @@ class ModelBase { //Inherit from base class to avoid repetition of common
     static_assert(CheckBaseTemplate<ForceBase, typename TTraits::Forces>::value, "ERROR: At least one TForce chosen is not a TForce class. The class must inherit from ForceBase.");
     static_assert(CheckBase<AddOnBase, typename TTraits::PreProcessors>::value, "ERROR: At least one TPreProcessor chosen is not an addon class. The class must inherit from AddOnBase.");
     static_assert(CheckBase<AddOnBase, typename TTraits::PostProcessors>::value, "ERROR: At least one TPostProcessor chosen is not an addon class.  The class must inherit from AddOnBase.");
-    static_assert(CheckBase<BoundaryBase, typename TTraits::Boundaries>::value, "ERROR: At least one boundary condition chosen is not a boundary class. The class must inherit from BoundaryBase.");
+    //static_assert(CheckBase<BoundaryBase, typename TTraits::Boundaries>::value, "ERROR: At least one boundary condition chosen is not a boundary class. The class must inherit from BoundaryBase.");
     public:
 
         ModelBase()
@@ -140,10 +140,10 @@ class ModelBase { //Inherit from base class to avoid repetition of common
 
         }
 
-        template<class boundary, int inst = 0>
+        template<class boundary, int tuplenum = 0, int inst = 0>
         inline boundary& getBoundary() {
 
-            auto boundaries = get_type<boundary>(mt_Boundaries);
+            auto boundaries = get_type<boundary>(std::get<tuplenum>(mt_Boundaries));
 
             return std::get<inst>(boundaries);
 
@@ -361,7 +361,9 @@ inline void ModelBase<TLattice,TTraits>::precompute() {
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //loop over k
 
-        precomputeTuple(mt_Boundaries,k);
+        std::apply([this,k](auto&... boundaryprocessor) {
+            (precomputeTuple(boundaryprocessor,k),...);
+        }, mt_Boundaries);
 
         computeTuple(mt_PreProcessors,k);
 
@@ -371,7 +373,9 @@ inline void ModelBase<TLattice,TTraits>::precompute() {
   
     communicateTuple(mt_PreProcessors);
     communicatePrecomputeTuple(mt_Forces);
-    communicatePrecomputeBoundaries(mt_Boundaries);
+    std::apply([this](auto&... boundaryprocessor) {
+            (communicatePrecomputeBoundaries(boundaryprocessor),...);
+        }, mt_Boundaries);
 
     TLattice::ResetParallelTracking();
 
@@ -405,7 +409,9 @@ inline void ModelBase<TLattice,TTraits>::stream() {
     }
 
     this -> mData.communicateDistribution();
-    communicateTuple(mt_Boundaries);
+    std::apply([this](auto&... boundaryprocessor) {
+            (communicateTuple(boundaryprocessor),...);
+        }, mt_Boundaries);
 
     TLattice::ResetParallelTracking();
     
@@ -517,7 +523,7 @@ template<class TLattice, class TTraits>
 template<class TTupleType>
 inline void ModelBase<TLattice,TTraits>::communicatePrecomputeBoundaries(TTupleType& tup) {
 
-    communicatePrecomputeTuple(mt_Boundaries);
+    //communicatePrecomputeTuple(mt_Boundaries);
 
     if constexpr(std::tuple_size<TTupleType>::value != 0){ //Check if there is at least one element
                                                                         //in F
@@ -536,7 +542,7 @@ template<class TLattice, class TTraits>
 template<class TTupleType>
 inline void ModelBase<TLattice,TTraits>::communicatePostprocessBoundaries(TTupleType& tup) {
 
-    communicatePostprocessTuple(mt_Boundaries);
+    //communicatePostprocessTuple(mt_Boundaries);
 
     if constexpr(std::tuple_size<TTupleType>::value != 0){ //Check if there is at least one element
                                                                         //in F
@@ -558,8 +564,10 @@ inline void ModelBase<TLattice,TTraits>::postprocess() {
 
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //loop over k
-
-        postprocessTuple(mt_Boundaries,k);
+        
+        std::apply([this,k](auto&... boundaryprocessor) {
+            (postprocessTuple(boundaryprocessor,k),...);
+        }, mt_Boundaries);
 
         computeTuple(mt_PostProcessors,k);
 
@@ -569,7 +577,9 @@ inline void ModelBase<TLattice,TTraits>::postprocess() {
   
     communicateTuple(mt_PostProcessors);
     communicatePostprocessTuple(mt_Forces);
-    communicatePrecomputeBoundaries(mt_Boundaries);
+    std::apply([this](auto&... boundaryprocessor) {
+            (communicatePostprocessBoundaries(boundaryprocessor),...);
+        }, mt_Boundaries);
 
     TLattice::ResetParallelTracking();
     
@@ -580,20 +590,22 @@ inline void ModelBase<TLattice,TTraits>::boundaries() {
 
     TLattice::ResetParallelTracking();
 
-    #pragma omp for schedule(guided)
-    for (int k = 0; k <TLattice::N; k++) { //loop over k
+    std::apply([this](auto&... boundaryprocessor) {
 
-        if constexpr(std::tuple_size<typename TTraits::Boundaries>::value != 0) { //Check if there are any boundary
-                                                                              //models
-            std::apply([this, k](auto&... boundaries) {
-                        
-                                (boundaries.template compute<TTraits>(this -> mDistribution, k) , ...); 
+        #pragma omp for schedule(guided)
+        for (int k = 0; k <TLattice::N; k++) { //loop over k
 
-                    }, mt_Boundaries);
-            
-        }
+            if constexpr(std::tuple_size<typename TTraits::Boundaries>::value != 0) { //Check if there are any boundary
+                                                                                //models
+                (std::apply([this, k](auto&... boundaries) {
+                            
+                                    (boundaries.template compute<TTraits>(this -> mDistribution, k) , ...); 
 
-    }
+                        }, boundaryprocessor), ...);
+                
+            }
+
+        } }, mt_Boundaries);
 
     //this -> mData.communicateDistribution();
 

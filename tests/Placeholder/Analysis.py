@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy import optimize
 
-datadir = "data/test/pore/lx_228/ly_200/postwidth_162/offsety_-17/theta_30/"
+datadir = "data/inflow/lx_228/ly_200/postwidth_162/offsety_-17/theta_30/"
 
 HeaderFile = open(datadir+"Header.mat", 'rb')
 
@@ -19,8 +19,7 @@ ndim=struct.unpack('=i', HeaderFile.read(4))[0]
 t_zero = 0
 tstart = 0
 
-tend = 300000#
-struct.unpack('=i', HeaderFile.read(4))[0]
+tend = struct.unpack('=i', HeaderFile.read(4))[0]
 tinc = struct.unpack('=i', HeaderFile.read(4))[0]
 
 slicepos=0
@@ -125,9 +124,9 @@ for t in range(tstart,tend+1,tinc):
 
     File2 = open(file_name, 'rb')
 
-    file_name = datadir+"GradientHumidity_t%li.mat"%t_file
+    #file_name = datadir+"GradientHumidity_t%li.mat"%t_file
 
-    File3 = open(file_name, 'rb')
+    #File3 = open(file_name, 'rb')
 
     file_name = datadir+"OrderParameter_t%li.mat"%t_file
 
@@ -169,21 +168,21 @@ for t in range(tstart,tend+1,tinc):
     liquid = np.array(rho)
     liquid[np.where(np.logical_or(solid==1,solid==-1))[0],np.where(np.logical_or(solid==1,solid==-1))[1]] = 0.5
 
-    mlnosolid = np.array(humidity)
+    mlnosolid = np.array(rho2)
     mlnosolid[np.where(np.logical_or(solid==1,solid==-1))[0],np.where(np.logical_or(solid==1,solid==-1))[1]] = 0.0
 
     dat=File2.read()
     v = np.ndarray((LX,LY,ndim),'=d',dat,0,(ndim*8*LY,ndim*8,8))
 
-    dat=File3.read()
-    gh = np.ndarray((LX,LY,ndim),'=d',dat,0,(ndim*8*LY,ndim*8,8))
+    #dat=File3.read()
+    #gh = np.ndarray((LX,LY,ndim),'=d',dat,0,(ndim*8*LY,ndim*8,8))
 
     dat=File4.read()
     c = np.ndarray((LX,LY),'=d',dat,0,(8*LY,8))
 
     File.close()
     File2.close()
-    File3.close()
+    #File3.close()
     File4.close()
     
     fig,ax=plt.subplots(1,1,figsize=(6,6))
@@ -207,7 +206,7 @@ for t in range(tstart,tend+1,tinc):
     print(h)
     
     im=ax.imshow(rgbv,interpolation='nearest',origin='upper')
-    #ax.contour(np.flip(liquid).T, levels=[0.5], colors="k", zorder=1, linewidths=0.75)
+    ax.contour(np.flip(liquid).T, levels=[0.5], colors="k", zorder=1, linewidths=0.75)
     #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2).take(indices=slicepos,axis=sliceaxis))**2+(gh.take(indices=1,axis=2).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
     #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2))**2+(gh.take(indices=1,axis=2))**2),interpolation='nearest',origin='upper')
     #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
@@ -236,7 +235,7 @@ for t in range(tstart,tend+1,tinc):
     #plt.plot(rho[:,int(LY/2),0])
     #plt.savefig("test_%012d.png"%(t), dpi=200, format='png')
     height = np.append(height, h)
-    print(gh[int(LX/2),51,1])
+    #print(gh[int(LX/2),51,1])
 
 
 plt.figure()

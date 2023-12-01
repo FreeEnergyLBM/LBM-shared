@@ -1,12 +1,12 @@
 lx=160
 ly=240
 theta=30
-saveInterval=50000
-timesteps=700000
+saveInterval=1000
+timesteps=50000
 offsety=-10
 inflowmomentum=-0.00002
-dens2=1
+dens2=0.1
 datadir="data/"
-equilibriumtimesteps=100000
-Hsat=0.6
+equilibriumtimesteps=700000
+Hsat=0.3
 postwidth=80

@@ -404,6 +404,10 @@ decltype(std::tuple_cat(
     std::declval<TInput>()...
 ));
 
+template <typename T> struct is_tuple : T {};
+
+template <typename ...T> struct is_tuple<std::tuple<T...>> : std::tuple<T...> {};
+
 template<class TTrait>
 struct BaseTrait{
 
@@ -558,11 +562,14 @@ struct BaseTrait{
   };
 
   template<class... TBoundary>
+  struct AddBoundary;
+
+  template<class... TBoundary>
   struct AddBoundary : BaseTrait<AddBoundary<TBoundary...>> {
 
     using Stencil = typename TTrait::Stencil;
 
-    using Boundaries = tuple_cat_t<typename TTrait::Boundaries, std::tuple<TBoundary...>>;
+    using Boundaries = std::tuple<tuple_cat_t<typename std::tuple_element<0, typename TTrait::Boundaries>::type, std::tuple<TBoundary...>>>;
 
     using PreProcessors = typename TTrait::PreProcessors;
 
@@ -583,11 +590,64 @@ struct BaseTrait{
   };
 
   template<class... TBoundary>
+  struct AddBoundary<std::tuple<TBoundary...>> : BaseTrait<AddBoundary<std::tuple<TBoundary...>>> {
+
+    using Stencil = typename TTrait::Stencil;
+
+    using Boundaries = std::tuple<typename std::tuple_element<0, typename TTrait::Boundaries>::type, std::tuple<TBoundary...>>;
+
+    using PreProcessors = typename TTrait::PreProcessors;
+
+    using PostProcessors = typename TTrait::PostProcessors;
+
+    using Forces = typename TTrait::Forces;
+    
+    template<class TStencil>
+    using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
+
+    using Lattice = typename TTrait::Lattice;
+
+    template<class TLattice, class TStencil>
+    using DataType = typename TTrait::template DataType<TLattice,TStencil>;
+
+    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
+
+  };
+
+  template<class... TBoundary>
+  struct SetBoundary;
+
+  template<class... TBoundary>
   struct SetBoundary : BaseTrait<SetBoundary<TBoundary...>> {
 
     using Stencil = typename TTrait::Stencil;
 
-    using Boundaries = std::tuple<TBoundary...>;
+    using Boundaries = std::tuple<std::tuple<TBoundary...>>;
+
+    using PreProcessors = typename TTrait::PreProcessors;
+
+    using PostProcessors = typename TTrait::PostProcessors;
+
+    using Forces = typename TTrait::Forces;
+
+    template<class TStencil>
+    using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
+
+    using Lattice = typename TTrait::Lattice;
+    
+    template<class TLattice, class TStencil>
+    using DataType = typename TTrait::template DataType<TLattice,TStencil>;
+
+    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
+
+  };
+
+  template<class TBoundary>
+  struct SetBoundary<TBoundary> : BaseTrait<SetBoundary<TBoundary>> {
+
+    using Stencil = typename TTrait::Stencil;
+
+    using Boundaries = is_tuple<TBoundary>;
 
     using PreProcessors = typename TTrait::PreProcessors;
 

@@ -50,15 +50,15 @@ int main(int argc, char **argv){
             
             saver.SaveBoundaries(timestep);
             saver.SaveParameter<Humidity<>>(timestep);
-            saver.SaveParameter<ChemicalPotential<>>(timestep);
-            saver.SaveParameter<Density<>>(timestep);
+            //saver.SaveParameter<ChemicalPotential<>>(timestep);
+            //saver.SaveParameter<Density<>>(timestep);
             saver.SaveParameter<Pressure<>>(timestep);
             saver.SaveParameter<OrderParameter<>>(timestep);
-            saver.SaveParameter<LaplacianOrderParameter<>>(timestep);
+            //saver.SaveParameter<LaplacianOrderParameter<>>(timestep);
             saver.SaveParameter<MassSink<>>(timestep);
             saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
-            saver.SaveParameter<VelocityOld<>,Lattice::NDIM>(timestep);
-            saver.SaveParameter<GradientHumidity<>,Lattice::NDIM>(timestep);
+            //saver.SaveParameter<VelocityOld<>,Lattice::NDIM>(timestep);
+            //saver.SaveParameter<GradientHumidity<>,Lattice::NDIM>(timestep);
             
         }
         AfterEquilibration(timestep,binary);
