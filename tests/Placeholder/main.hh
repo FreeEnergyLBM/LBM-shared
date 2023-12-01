@@ -231,7 +231,7 @@ using chempotgradients = GradientsMultiStencil<ChemicalPotential<>, CentralXYZMi
 template<class TLattice>
 using DefaultTraitPressureLeeHumidityInflow = typename DefaultTraitPressureLee<TLattice> :: template AddPreProcessor<Swapper<Velocity<>, VelocityOld<>, TLattice::NDIM>,chempotgradients>
                                                                                    :: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>
-                                                                                   :: template SetBoundary<FreeSlip,VelocityInflow,Convective,BounceBack>;
+                                                                                   :: template SetBoundary<FreeSlip,VelocityInflow,Convective> :: AddBoundary<std::tuple<BounceBack>>;
 
 //template<typename TTrait = typename traitpressure::SetDataType<DataOldNewEquilibrium>>
 template<typename TTrait = typename DefaultTraitPressureLeeHumidityInflow<Lattice>:: template SetDataType<DataOldNewEquilibrium>>
@@ -244,7 +244,7 @@ auto initPressure(){
     pressure.template getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setGasDensity(dens2);
     //pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setPressureCalculator(pressure.computePressure);
     //pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setForceTuple(pressure.mt_Forces);
-    pressure.template getBoundary<BounceBack>().setInterfaceID({1});
+    pressure.template getBoundary<BounceBack,1>().setInterfaceID({1});
     pressure.template getBoundary<FreeSlip>().setInterfaceID({2});
     pressure.template getBoundary<VelocityInflow>().setInterfaceID({3});
     pressure.template getBoundary<VelocityInflow>().setWallVelocity({inflowmomentum,0});

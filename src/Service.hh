@@ -404,9 +404,9 @@ decltype(std::tuple_cat(
     std::declval<TInput>()...
 ));
 
-template <typename T> struct is_tuple : T {};
+template <typename T> struct is_tuple : T { using type = std::tuple<std::tuple<T>>; };
 
-template <typename ...T> struct is_tuple<std::tuple<T...>> : std::tuple<T...> {};
+template <typename ...T> struct is_tuple<std::tuple<T...>> : std::tuple<T...> { using type = std::tuple<T...>; };
 
 template<class TTrait>
 struct BaseTrait{
@@ -594,7 +594,7 @@ struct BaseTrait{
 
     using Stencil = typename TTrait::Stencil;
 
-    using Boundaries = std::tuple<typename std::tuple_element<0, typename TTrait::Boundaries>::type, std::tuple<TBoundary...>>;
+    using Boundaries = tuple_cat_t<typename TTrait::Boundaries, std::tuple<std::tuple<TBoundary...>>>;
 
     using PreProcessors = typename TTrait::PreProcessors;
 
@@ -647,7 +647,7 @@ struct BaseTrait{
 
     using Stencil = typename TTrait::Stencil;
 
-    using Boundaries = is_tuple<TBoundary>;
+    using Boundaries = typename is_tuple<TBoundary>::type;
 
     using PreProcessors = typename TTrait::PreProcessors;
 

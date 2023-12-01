@@ -29,7 +29,7 @@ class Geometry {
         static inline bool isBoundary(int k);
 
         template<class TStencil>
-        static inline std::array<int8_t,TLattice::NDIM> findNormal(int (*condition)(const int),const std::vector<int>& neighbors,int k);
+        static inline std::array<int8_t,TLattice::NDIM> findNormal(int (*condition)(const int),const std::vector<int>& neighbors,const std::vector<int> fluidvals,int k);
 
         static inline bool isCorner(int (*condition)(const int),const std::array<int8_t,TLattice::NDIM>& normal,int k);
 
@@ -59,6 +59,13 @@ class Geometry {
             RefillNode = 6
         };
 
+        static inline bool apply(int k, int (*condition)(const int),std::vector<int> fluidvals) {
+            for (int i : fluidvals){
+                if(condition(k) == i) return false;
+            }
+            return true;
+        }
+
 };
 
 template<class TLattice>
@@ -79,7 +86,7 @@ inline bool Geometry<TLattice>::isBulkSolid(int k,int (*condition)(const int),co
 }
 
 template<class TLattice>
-inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int),std::vector<int> fluidvals) {
+inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int),const std::vector<int> fluidvals) {
 
     using Stencil = std::conditional_t<TLattice::NDIM == 1, D1Q3, std::conditional_t<TLattice::NDIM == 2, D2Q9, D3Q27>>;
 
@@ -98,7 +105,7 @@ inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int)
             solidval = condition(k);
         }
 
-        std::array<int8_t,TLattice::NDIM> normal=findNormal<Stencil>(condition,neighbors,k);
+        std::array<int8_t,TLattice::NDIM> normal=findNormal<Stencil>(condition,neighbors,fluidvals,k);
 
         Boundary<TLattice::NDIM> boundaryk = {solidval,isCorner(condition,normal,k),normal};
       
@@ -145,17 +152,17 @@ inline bool Geometry<TLattice>::isBulkSolid(int k) {
 
 template<class TLattice>
 template<class TStencil>
-inline std::array<int8_t,TLattice::NDIM> Geometry<TLattice>::findNormal(int (*condition)(const int), const std::vector<int>& neighbors,int k) {
+inline std::array<int8_t,TLattice::NDIM> Geometry<TLattice>::findNormal(int (*condition)(const int), const std::vector<int>& neighbors,const std::vector<int> fluidvals,int k) {
 
     std::array<int8_t,TLattice::NDIM> normal = {};
     
-    if (condition(k)==0||condition(k)==-1) return normal;
+    if (!apply(k,condition,fluidvals)) return normal;
 
     std::vector<int> sum(TLattice::NDIM,0);
 
     for (int idx = 0; idx < TStencil::Q; idx++){
         
-        if(condition(neighbors[k*TStencil::Q+idx])!=condition(k)) {
+        if(apply(neighbors[k*TStencil::Q+idx],condition,fluidvals)) {
             sum[0]+=TStencil::Ci_xyz(0)[idx];
             if constexpr (TLattice::NDIM>1) sum[1]+=TStencil::Ci_xyz(1)[idx];
             if constexpr (TLattice::NDIM>2) sum[2]+=TStencil::Ci_xyz(2)[idx];
