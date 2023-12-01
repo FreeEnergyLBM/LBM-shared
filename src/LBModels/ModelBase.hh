@@ -263,11 +263,10 @@ class ModelBase { //Inherit from base class to avoid repetition of common
         inline void setCollideID(const std::vector<int>& id) {mCollideIDs=id;};
 
         inline bool isCollisionNode(int k) {
-            bool apply = false;
             for (int i : mCollideIDs){
-                if(Geometry<TLattice>::getBoundaryType(k) == i) apply=true;
+                if(Geometry<TLattice>::getBoundaryType(k) == i) return true;
             }
-            return apply;
+            return false;
         }
         std::vector<int> mCollideIDs = {0};
         

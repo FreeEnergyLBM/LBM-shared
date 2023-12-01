@@ -31,12 +31,11 @@ class BoundaryBase{
 
         template<class TLattice>
         inline bool apply(int k) {
-            bool apply = false;
+            if (Geometry<TLattice>::getBoundaryType(k) == -1) return false;
             for (int i : mInterfaceID){
-                if(Geometry<TLattice>::getBoundaryType(k) == i) apply=true;
+                if(Geometry<TLattice>::getBoundaryType(k) == i) return true;
             }
-            if (Geometry<TLattice>::getBoundaryType(k) == -1) apply = false;
-            return apply;
+            return false;
         }
 
     private:
