@@ -30,7 +30,10 @@ inline void Convective::compute(TDistributionType& distribution, int k) { //CHAN
 
     const int& normalq = Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<Lattice>(k).NormalDirection)->second;
     const std::array<int8_t,TTraits::Lattice::NDIM>& normal = BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection;
-
+    //#pragma omp critical
+    //{
+    //std::cout<<normalq<<std::endl;
+    //}
     //std::cout<<normalq<<std::endl;
 
     for (int idx = 1; idx < Stencil::Q; idx++) {
@@ -41,7 +44,7 @@ inline void Convective::compute(TDistributionType& distribution, int k) { //CHAN
         double normalvelocity = 0;
         double magnormal = 0;
         for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
-            normalvelocity += normal[xyz]*Velocity<>::get<Lattice, Lattice::NDIM>(distribution.streamIndex(k, normalq),xyz);
+            normalvelocity += normal[xyz]*Velocity<>::get<Lattice, Lattice::NDIM>(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq),xyz);
             magnormal += pow(normal[xyz],2);
         }
 
@@ -49,15 +52,12 @@ inline void Convective::compute(TDistributionType& distribution, int k) { //CHAN
 
         normalvelocity *= 1./magnormal;
 
-        distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = (distribution.getDistributionOldPointer(distribution.streamIndex(k, normalq))[idx]+0.5*normalvelocity*distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx])/(1+0.5*normalvelocity);
+        distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = (distribution.getDistributionOldPointer(distribution.streamIndex(k, normalq))[idx]+normalvelocity*distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx])/(1+normalvelocity);
         //#pragma omp critical
         //{
         //std::cout<<k<<" "<<(distribution.getDistributionOldPointer(distribution.streamIndex(k, normalq))[idx])<<std::endl;
         //}
-        //#pragma omp critical
-        //{
-        //std::cout<<normalvelocity<<std::endl;
-        //}
+        
 
     }    
 

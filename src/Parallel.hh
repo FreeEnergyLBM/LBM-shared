@@ -130,23 +130,25 @@ inline void Parallel<TDerived,TNumNeighbors>::communicateParameter(TParameter& o
     {
     int nNeighbors = mNeighbors.size();
     MPI_Request commrequest[2*nNeighbors];
+    MPI_Status commstatus[2*nNeighbors];
 
     for (int iNeighbor=0; iNeighbor<nNeighbors; iNeighbor++) {
-        
+
         int tag = iNeighbor;
         MPI_Isend(&obj.getCommParameter()[mI0Send[iNeighbor]*obj.mNum],
                   TNumNeighbors * TLattice::Face[iNeighbor/2] * obj.mNum,
                   mpi_get_type<typename TParameter::ParamType,TLattice>(),
                   mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor]);
-        
+
         tag = (iNeighbor%2==0) ? iNeighbor+1 : iNeighbor-1;
         MPI_Irecv(&obj.getCommParameter()[mI0Recv[iNeighbor]*obj.mNum],
                   TNumNeighbors * TLattice::Face[iNeighbor/2] * obj.mNum,
                   mpi_get_type<typename TParameter::ParamType,TLattice>(),
                   mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor+1]);
+        
     }
 
-    MPI_Waitall(2*nNeighbors, commrequest, MPI_STATUSES_IGNORE);
+    MPI_Waitall(2*nNeighbors, commrequest, commstatus);
     }
     #endif
 }

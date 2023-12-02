@@ -41,8 +41,10 @@ int initBoundary(const int k) {
     double rr2 = (xx - (lx-1)/2. - offsetx) * (xx - (lx-1)/2. - offsetx) + (yy - (ly-1)/2. - offsety) * (yy - (ly-1)/2. - offsety);
     //return 0;
     //if(yy==ly/4-1&&xx==lx - 4) return 7;
+    
     if (yy <= 1) return 1;// && ( yy >= ly - 1 || xx <= 1 || xx >= lx - 2 )) return 1;
     if (yy >= ly - 4) return 2;
+    //if (yy==ly/4 && xx == lx-4) return 7;
     if (yy>=ly/4 && (xx <= 1)) return 3;
     if (yy>=ly/4 && (xx >= lx - 4)) return 4;
     if ((xx<postwidth/2||xx>lx-postwidth/2)&&yy<ly/4) return 1;
@@ -208,7 +210,7 @@ EvaporationHumidity<Lattice, TTrait> initHumidity(){
     humidity.template getBoundary<Dirichlet,0,1>().setInterfaceID({2,3});
     humidity.template getBoundary<Dirichlet,0,1>().setInterfaceVal(Hwall);
 
-    humidity.template getBoundary<ExtrapolationOutflow>().setInterfaceID({4});
+    humidity.template getBoundary<ExtrapolationOutflow>().setInterfaceID({4,7});
 
     humidity.setDiffusivity(diffusivity);
 
@@ -226,29 +228,36 @@ EvaporationHumidity<Lattice, TTrait> initHumidity(){
 
 }
 
-using chempotgradients = GradientsMultiStencil<ChemicalPotential<>, CentralXYZMirrorSolid, MixedXYZMirrorSolid>;
+using chempotgradients = GradientsMultiStencil<ChemicalPotential<>>;
 
 template<class TLattice>
-using DefaultTraitPressureLeeHumidityInflow = typename DefaultTraitPressureLee<TLattice> :: template AddPreProcessor<Swapper<Velocity<>, VelocityOld<>, TLattice::NDIM>,chempotgradients>
-                                                                                   :: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>
-                                                                                   :: template SetBoundary<FreeSlip,VelocityInflow,Convective> :: AddBoundary<std::tuple<BounceBack>>;
+using DefaultTraitPressureLee2 = typename DefaultTrait<TLattice,2> :: template SetBoundary<BounceBack>;
+
+template<class TLattice>
+using DefaultTraitPressureLeeHumidityInflow = typename DefaultTraitPressureLee2<TLattice> :: template AddPreProcessor<Swapper<Velocity<>, VelocityOld<>, TLattice::NDIM>,chempotgradients>
+                                                                                   //:: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>
+                                                                                   :: template SetBoundary<std::tuple<std::tuple<FreeSlip,BounceBack>,std::tuple<VelocityInflow,Convective>>>;//,std::tuple<Temp0Outflow>>>;
+                                                                                   //:: template SetBoundary<FreeSlip,BounceBack> :: AddBoundary<std::tuple<VelocityInflow,Convective>> :: AddBoundary<std::tuple<Temp0Outflow>>;
 
 //template<typename TTrait = typename traitpressure::SetDataType<DataOldNewEquilibrium>>
 template<typename TTrait = typename DefaultTraitPressureLeeHumidityInflow<Lattice>:: template SetDataType<DataOldNewEquilibrium>>
 auto initPressure(){
 
-    PressureLeeHumidity<Lattice,TTrait> pressure;
-    //PressureLee<Lattice, typename DefaultTraitPressureLee<Lattice>::template AddPreProcessor<chempotgradients>> pressure;
+    //PressureLeeHumidity<Lattice,TTrait> pressure;
+    PressureLee<Lattice, typename DefaultTraitPressureLee<Lattice>:: template SetDataType<DataOldNewEquilibrium>:: template SetBoundary<std::tuple<std::tuple<FreeSlip,BounceBack>,std::tuple<VelocityInflow,Convective>>>> pressure;
 
-    pressure.template getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
-    pressure.template getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setGasDensity(dens2);
+    pressure.setCollideID({0,5,6});
+
+    //pressure.template getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
+    //pressure.template getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setGasDensity(dens2);
     //pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setPressureCalculator(pressure.computePressure);
     //pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setForceTuple(pressure.mt_Forces);
-    pressure.template getBoundary<BounceBack,1>().setInterfaceID({1});
+    pressure.template getBoundary<BounceBack>().setInterfaceID({1});
     pressure.template getBoundary<FreeSlip>().setInterfaceID({2});
-    pressure.template getBoundary<VelocityInflow>().setInterfaceID({3});
-    pressure.template getBoundary<VelocityInflow>().setWallVelocity({inflowmomentum,0});
-    pressure.template getBoundary<Convective>().setInterfaceID({4});
+    pressure.template getBoundary<VelocityInflow,1>().setInterfaceID({3});
+    pressure.template getBoundary<VelocityInflow,1>().setWallVelocity({inflowmomentum,0});
+    pressure.template getBoundary<Convective,1>().setInterfaceID({4});
+    //pressure.template getBoundary<Temp0Outflow,2>().setInterfaceID({7});
     //pressure.template getPreProcessor<ConstantGradientBoundary<Pressure<>>>().setInterfaceID(100);
 
     return pressure;
@@ -295,7 +304,7 @@ auto initBinary(){
     binary.template getPreProcessor<MassLossCalculatorInterpolated>().setGasDensity(dens2);
 
     binary.template getBoundary<FreeSlip>().setInterfaceID({1,3});
-    binary.template getBoundary<Convective>().setInterfaceID({2,4});
+    binary.template getBoundary<Convective>().setInterfaceID({2,4,7});
     
     double wettingprefactor = - cos(theta*M_PI/180.0)*sqrt(2*A/kappa);
 

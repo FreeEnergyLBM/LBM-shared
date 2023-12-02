@@ -31,7 +31,7 @@ class Geometry {
         template<class TStencil>
         static inline std::array<int8_t,TLattice::NDIM> findNormal(int (*condition)(const int),const std::vector<int>& neighbors,const std::vector<int> fluidvals,int k);
 
-        static inline bool isCorner(int (*condition)(const int),const std::array<int8_t,TLattice::NDIM>& normal,int k);
+        static inline bool isCorner(int (*condition)(const int),const std::array<int8_t,TLattice::NDIM>& normal,const std::vector<int> fluidvals,int k);
 
         static inline bool isCorner(int k);
 
@@ -107,7 +107,7 @@ inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int)
 
         std::array<int8_t,TLattice::NDIM> normal=findNormal<Stencil>(condition,neighbors,fluidvals,k);
 
-        Boundary<TLattice::NDIM> boundaryk = {solidval,isCorner(condition,normal,k),normal};
+        Boundary<TLattice::NDIM> boundaryk = {solidval,isCorner(condition,normal,fluidvals,k),normal};
       
         BoundaryLabels<TLattice::NDIM>::template initialise<TLattice>(boundaryk,k);
 
@@ -162,7 +162,7 @@ inline std::array<int8_t,TLattice::NDIM> Geometry<TLattice>::findNormal(int (*co
 
     for (int idx = 0; idx < TStencil::Q; idx++){
         
-        if(apply(neighbors[k*TStencil::Q+idx],condition,fluidvals)) {
+        if(!apply(neighbors[k*TStencil::Q+idx],condition,fluidvals)) {
             sum[0]+=TStencil::Ci_xyz(0)[idx];
             if constexpr (TLattice::NDIM>1) sum[1]+=TStencil::Ci_xyz(1)[idx];
             if constexpr (TLattice::NDIM>2) sum[2]+=TStencil::Ci_xyz(2)[idx];
@@ -218,9 +218,9 @@ inline std::array<int8_t,TLattice::NDIM> Geometry<TLattice>::findNormal(int (*co
 }
 
 template<class TLattice>
-inline bool Geometry<TLattice>::isCorner(int (*condition)(const int),const std::array<int8_t,TLattice::NDIM>& normal,int k) { // DOesnt
+inline bool Geometry<TLattice>::isCorner(int (*condition)(const int),const std::array<int8_t,TLattice::NDIM>& normal,const std::vector<int> fluidvals,int k) { // DOesnt
 
-    if (condition(k)==0||condition(k)==-1) return false;
+    if (!apply(k,condition,fluidvals)) return false;
 
     int normalsum = 0;
 

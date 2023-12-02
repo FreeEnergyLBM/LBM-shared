@@ -186,6 +186,8 @@ struct LatticePropertiesRuntime {
     static std::unordered_map<std::pair<int,double*>,bool,pair_hash> alreadycommunicateddistribution;
 
     static void ResetParallelTracking() {
+        //alreadycommunicatedparameter.clear();
+        //alreadycommunicateddistribution.clear();
         #pragma omp master
         {
         for (auto& [_, value] : alreadycommunicatedparameter) value = false;
@@ -196,6 +198,7 @@ struct LatticePropertiesRuntime {
     //! This function communicates the halo regions of a parameter.
     template<class TParameter>
     static void communicate(TParameter& obj) {
+        
         #pragma omp master
         {
         if (!alreadycommunicatedparameter.count(typeid(obj))||!alreadycommunicatedparameter.at(typeid(obj))) {
@@ -205,11 +208,13 @@ struct LatticePropertiesRuntime {
         }
         alreadycommunicatedparameter[typeid(obj)] = true;
         }
+        
     }
 
     //! This function streams the distributions to the neighboring processor.
     template<class TDistribution>
     static void communicateDistribution(TDistribution& obj) { // currently along X only
+        
         #pragma omp master
         {
         //std::pair<int,Distribution_Base<D2Q9>> a = std::make_pair(0,obj);
@@ -220,10 +225,12 @@ struct LatticePropertiesRuntime {
         }
         alreadycommunicateddistribution[std::make_pair(0,obj.getDistributionPointer(0))] = true;
         }
+        
     }
 
     template<class TDistribution>
     static void communicateDistributionAll(TDistribution& obj) {
+        
         #pragma omp master
         {
         if (!alreadycommunicateddistribution.count(std::make_pair(1,obj.getDistributionPointer(0)))||!alreadycommunicateddistribution.at(std::make_pair(1,obj.getDistributionPointer(0)))) {
@@ -233,10 +240,12 @@ struct LatticePropertiesRuntime {
         }
         alreadycommunicateddistribution[std::make_pair(1,obj.getDistributionPointer(0))] = true;
         }
+        
     }
 
     template<class TDistribution>
     static void communicateDistributionAllEquilibrium(TDistribution& obj) {
+        
         #pragma omp master
         {
         if (!alreadycommunicateddistribution.count(std::make_pair(2,obj.getDistributionPointer(0)))||!alreadycommunicateddistribution.at(std::make_pair(2,obj.getDistributionPointer(0)))) {
@@ -246,10 +255,12 @@ struct LatticePropertiesRuntime {
         }
         alreadycommunicateddistribution[std::make_pair(2,obj.getDistributionPointer(0))] = true;
         }
+        
     }
 
     template<class TDistribution>
     static void communicateDistributionAllOld(TDistribution& obj) {
+        
         #pragma omp master
         {
         if (!alreadycommunicateddistribution.count(std::make_pair(3,obj.getDistributionPointer(0)))||!alreadycommunicateddistribution.at(std::make_pair(3,obj.getDistributionPointer(0)))) {
@@ -259,6 +270,7 @@ struct LatticePropertiesRuntime {
         }
         alreadycommunicateddistribution[std::make_pair(3,obj.getDistributionPointer(0))] = true;
         }
+        
     }
 };
 

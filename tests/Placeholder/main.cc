@@ -1,4 +1,4 @@
-#include "main.hh"
+#include "mainInflowSimple.hh"
 #include <cstdlib>
 
 int main(int argc, char **argv){
@@ -6,6 +6,21 @@ int main(int argc, char **argv){
     int seed;
     std::string seedstr;
     mpi.init();
+
+    MPI_Type_create_resized(MPI_INT, 0L, sizeof(Boundary<Lattice::NDIM>), &mMPIBoundary);
+    MPI_Type_commit(&mMPIBoundary);
+
+    int blocklengths[3] = {1,1,Lattice::NDIM};
+    MPI_Datatype types[3] = {MPI_INT,MPI_CXX_BOOL,MPI_INT8_T};
+    std::array<int8_t,Lattice::NDIM> a;
+    MPI_Aint offsets[3];
+    offsets[0] = offsetof(Boundary<Lattice::NDIM>, Id);
+    offsets[1] = offsetof(Boundary<Lattice::NDIM>, IsCorner);
+    offsets[2] = offsetof(Boundary<Lattice::NDIM>, NormalDirection) + (size_t)((((char *)(&a[0])-(char *)(&a))));// + offsetof(std::array<int8_t,TLattice::NDIM>, NormalDirection);
+    
+    MPI_Type_create_struct(3, blocklengths, offsets, types, &mMPIBoundary);
+    MPI_Type_commit(&mMPIBoundary);
+
     //exit(1);
     if (argc!=0){
         //std::cerr<<argv[1]<<std::endl;
@@ -28,14 +43,15 @@ int main(int argc, char **argv){
 
     auto binary = initBinary<>();
     auto pressure = initPressure<>();
-    auto humidity = initHumidity<>();
+    //auto humidity = initHumidity<>();
 
     Geometry<Lattice>::initialiseBoundaries(initBoundary,{0,5,6});
     OrderParameter<>::set<Lattice>(initFluid);
     OrderParameterOld<>::set<Lattice>(initFluid);
-    Humidity<>::set<Lattice>(initHumidity);
+    //Humidity<>::set<Lattice>(initHumidity);
 
-    Algorithm lbm(binary,pressure,humidity);//
+    Algorithm lbm(binary,pressure);//,humidity);//
+    //Algorithm lbm(pressure);
     //Algorithm lbm(humidity);//,pressure,binary);
     //Algorithm lbm(binary,pressure);//,humidity);
 

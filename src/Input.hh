@@ -16,7 +16,7 @@ class InputParameters{
         template<typename T>
         void addParameter(std::string name){
             mVarTypes[name]=typeid(T).name();
-            mVarKeys[name]=new T;
+            mVarKeys[name]=new T; //This should be freed at the end
         }
 
         template<typename T>

@@ -198,6 +198,8 @@ struct remove_const_and_reference{
  * \return  The MPI_Datatype belonging to the template C++ data type T
 */
 #ifdef MPIPARALLEL
+
+MPI_Datatype mMPIBoundary;
 template <typename T, class TLattice>
 [[nodiscard]] constexpr MPI_Datatype mpi_get_type() noexcept {
 
@@ -285,21 +287,6 @@ template <typename T, class TLattice>
     mpi_type = MPI_C_LONG_DOUBLE_COMPLEX;
   }
   else if constexpr (std::is_same_v<T, Boundary<TLattice::NDIM>>) {
-    MPI_Datatype mMPIBoundary;
-    MPI_Type_create_resized(MPI_INT, 0L, sizeof(T), &mMPIBoundary);
-    MPI_Type_commit(&mMPIBoundary);
-
-    int blocklengths[3] = {1,1,TLattice::NDIM};
-    MPI_Datatype types[3] = {MPI_INT,MPI_CXX_BOOL,MPI_INT8_T};
-    std::array<int8_t,TLattice::NDIM> a;
-    MPI_Aint offsets[3];
-    offsets[0] = offsetof(Boundary<TLattice::NDIM>, Id);
-    offsets[1] = offsetof(Boundary<TLattice::NDIM>, IsCorner);
-    offsets[2] = offsetof(Boundary<TLattice::NDIM>, NormalDirection) + (size_t)(((char *)(&a)) - ((char *)(&a[0])));// + offsetof(std::array<int8_t,TLattice::NDIM>, NormalDirection);
-
-    MPI_Type_create_struct(3, blocklengths, offsets, types, &mMPIBoundary);
-    MPI_Type_commit(&mMPIBoundary);
-
     mpi_type = mMPIBoundary;
   }
    

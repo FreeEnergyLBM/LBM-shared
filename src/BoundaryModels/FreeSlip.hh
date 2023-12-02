@@ -43,6 +43,8 @@ inline void FreeSlip::compute(TDistributionType& distribution, int k) {
 
             normalq = TTraits::Stencil::QMap.find(cinorm)->second;
 
+            //std::cout<<"test"<<std::endl;
+
         }
 
         std::array<int8_t,TTraits::Lattice::NDIM> newdir = {};

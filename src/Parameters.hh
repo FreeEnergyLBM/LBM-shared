@@ -246,10 +246,14 @@ inline void Parameter<TObj, TLattice, T, TNum>::Save(std::string filename, int t
 
     MPI_File_open(MPI_COMM_SELF, fdump, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh); //Open the file using mpi in write only mode
     
+    //MPI_File* fh2 = &fh;
+
     MPI_File_seek(fh, sizeof(typename TObj::ParamType) * mpi.rank * mNum * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size, MPI_SEEK_SET); //Skip to a certain location in the file, currently
     
     MPI_File_write(fh,&mv_Parameter[TLattice::HaloSize * mNum], mNum * (TLattice::N - 2 * TLattice::HaloSize), MPI_DOUBLE, MPI_STATUSES_IGNORE);
 
+    //MPI_File_seek(fh, -sizeof(typename TObj::ParamType) * mpi.rank * mNum * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size, MPI_SEEK_SET);
+    
     MPI_File_close(&fh);
          
 #else
