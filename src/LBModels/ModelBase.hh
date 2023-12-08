@@ -242,7 +242,7 @@ class ModelBase { //Inherit from base class to avoid repetition of common
 
         inline double computeDensity(const double* distribution, const int k); //Calculate density
 
-        inline double computeVelocity(const double* distribution, const double& density,
+        static inline double computeVelocity(const double* distribution, const typename TTraits::Forces& forcetuple, const double& density,
                                 const int xyz, const int k); //Calculate velocity
 
         TLattice latticeInit;
@@ -296,7 +296,7 @@ inline double ModelBase<TLattice, TTraits>::computeDensity(const double* distrib
 }
 
 template<class TLattice, class TTraits>
-inline double ModelBase<TLattice, TTraits>::computeVelocity(const double* distribution, const double& density,
+inline double ModelBase<TLattice, TTraits>::computeVelocity(const double* distribution, const typename TTraits::Forces& forcetuple, const double& density,
                                              const int xyz, const int k) { //Velocity calculation in direction xyz
     //Velocity in direction xyz is sum of distribution times the xyz component of the discrete velocity vector
     //in each direction plus any source/correction terms
@@ -307,7 +307,7 @@ inline double ModelBase<TLattice, TTraits>::computeVelocity(const double* distri
 
                 return (forces.template computeVelocitySource<TTraits>(xyz, k) + ...);
                 
-            }, mt_Forces);
+            }, forcetuple);
 
     }
     else return (1./(Density<>::get<TLattice>(k)))*CollisionBase<TLattice,typename TTraits::Stencil>::computeFirstMoment(distribution, xyz);

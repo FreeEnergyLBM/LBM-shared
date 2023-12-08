@@ -312,9 +312,23 @@ struct Density : public ParameterSingleton<Density<TInstances>, double, TInstanc
 }; //Density
 
 template<int TInstances=1>
+struct DensityOld : public ParameterSingleton<DensityOld<TInstances>, double, TInstances> {
+
+    static constexpr const char *mName = "DensityOld";
+
+}; //Density
+
+template<int TInstances=1>
 struct Pressure : public ParameterSingleton<Pressure<TInstances>, double, TInstances>{
 
     static constexpr const char *mName = "Pressure";
+
+}; //Presure
+
+template<int TInstances=1>
+struct PressureOld : public ParameterSingleton<PressureOld<TInstances>, double, TInstances>{
+
+    static constexpr const char *mName = "PressureOld";
 
 }; //Presure
 

@@ -41,7 +41,7 @@ inline void ConvectParameterBoundary<TParameter,TParameterOld>::compute(int k) {
 
     runloop:
 
-        const std::vector<int>& neighbors = DataType::getInstance().getNeighbors();
+        //const std::vector<int>& neighbors = DataType::getInstance().getNeighbors();
         const std::array<int8_t,TTraits::Lattice::NDIM>& normal = BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection;
         int normalq = Stencil::QMap.find(normal)->second;
         if(normalq>0){
@@ -49,7 +49,7 @@ inline void ConvectParameterBoundary<TParameter,TParameterOld>::compute(int k) {
             double normalvelocity = 0;
             double magnormal = 0;
             for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
-                normalvelocity += normal[xyz]*Velocity<>::get<Lattice, Lattice::m_NDIM>(k,xyz);
+                normalvelocity += normal[xyz]*Velocity<>::get<Lattice, Lattice::NDIM>(DataType::getInstance().getNeighbor(k,normalq),xyz);
                 magnormal += pow(normal[xyz],2);
             }
 
@@ -57,9 +57,9 @@ inline void ConvectParameterBoundary<TParameter,TParameterOld>::compute(int k) {
 
             normalvelocity *= 1./magnormal;
 
-            TParameter::template get<Lattice>(k) = (TParameterOld::template get<Lattice>(k)+0.5*normalvelocity*TParameter::template get<Lattice>(DataType::getInstance().getNeighbors(k,normalq)))/(1+0.5*normalvelocity);
+            TParameter::template get<Lattice>(k) = (TParameterOld::template get<Lattice>(k)+normalvelocity*TParameter::template get<Lattice>(DataType::getInstance().getNeighbor(k,normalq)))/(1+normalvelocity);
 
-            TParameter::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[normalq])) = (TParameterOld::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[normalq]))+0.5*normalvelocity*TParameter::template get<Lattice>(k))/(1+0.5*normalvelocity);
+            TParameter::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[normalq])) = (TParameterOld::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[normalq]))+normalvelocity*TParameter::template get<Lattice>(k))/(1+normalvelocity);
 
         }
     

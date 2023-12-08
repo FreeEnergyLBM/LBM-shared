@@ -83,7 +83,7 @@ inline void FlowField<TLattice, TTraits>::initialise() { //Initialise model
     TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this -> mt_Forces,mTau,mTau);
 
     #pragma omp parallel for schedule(guided)
-    for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { //loop over k
+    for (int k = 0; k < TLattice::N; k++) { //loop over k
 
         double* distribution = this -> mDistribution.getDistributionPointer(k);
         double* old_distribution = this -> mDistribution.getDistributionOldPointer(k);
@@ -116,10 +116,10 @@ inline void FlowField<TLattice, TTraits>::computeMomenta() { //Calculate Density
         if(this->isCollisionNode(k)){
 
             double* distribution = this -> mDistribution.getDistributionPointer(k);
-            velocity[k * Stencil::D + x] = this -> computeVelocity(distribution, density[k], x, k); //Calculate velocities
+            velocity[k * Stencil::D + x] = this -> computeVelocity(distribution,this->mt_Forces, density[k], x, k); //Calculate velocities
             
-            if constexpr (mNDIM >= 2) velocity[k * Stencil::D + y] = this -> computeVelocity(distribution,density[k], y, k);
-            if constexpr (mNDIM == 3) velocity[k * Stencil::D + z] = this -> computeVelocity(distribution ,density[k], z, k);
+            if constexpr (mNDIM >= 2) velocity[k * Stencil::D + y] = this -> computeVelocity(distribution,this->mt_Forces,density[k], y, k);
+            if constexpr (mNDIM == 3) velocity[k * Stencil::D + z] = this -> computeVelocity(distribution ,this->mt_Forces,density[k], z, k);
             density[k] = this -> computeDensity(distribution, k); //Calculate density
             
             
@@ -285,9 +285,9 @@ inline void FlowFieldPressure<TLattice, TTraits>::computeMomenta() { //Calculate
 
             pressure[k] = this -> computeDensity(distribution, k); //Calculate density
             
-            velocity[k * TTraits::Stencil::D + x] = 1./(TTraits::Stencil::Cs2)*this->computeVelocity(distribution, density[k], x, k); //Calculate velocities
-            velocity[k * TTraits::Stencil::D + y] = 1./(TTraits::Stencil::Cs2)*this->computeVelocity(distribution,density[k], y, k);
-            if constexpr (TLattice::NDIM == 3) velocity[k * TTraits::Stencil::D + z] = 1./(TTraits::Stencil::Cs2)*this->computeVelocity(distribution ,density[k], z, k);
+            velocity[k * TTraits::Stencil::D + x] = 1./(TTraits::Stencil::Cs2)*this->computeVelocity(distribution,this->mt_Forces, density[k], x, k); //Calculate velocities
+            velocity[k * TTraits::Stencil::D + y] = 1./(TTraits::Stencil::Cs2)*this->computeVelocity(distribution,this->mt_Forces,density[k], y, k);
+            if constexpr (TLattice::NDIM == 3) velocity[k * TTraits::Stencil::D + z] = 1./(TTraits::Stencil::Cs2)*this->computeVelocity(distribution ,this->mt_Forces,density[k], z, k);
 
         }
 

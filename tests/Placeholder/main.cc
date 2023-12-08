@@ -1,4 +1,4 @@
-#include "mainInflowSimple.hh"
+#include "mainInflow.hh"
 #include <cstdlib>
 
 int main(int argc, char **argv){
@@ -16,7 +16,7 @@ int main(int argc, char **argv){
     MPI_Aint offsets[3];
     offsets[0] = offsetof(Boundary<Lattice::NDIM>, Id);
     offsets[1] = offsetof(Boundary<Lattice::NDIM>, IsCorner);
-    offsets[2] = offsetof(Boundary<Lattice::NDIM>, NormalDirection) + (size_t)((((char *)(&a[0])-(char *)(&a))));// + offsetof(std::array<int8_t,TLattice::NDIM>, NormalDirection);
+    offsets[2] = offsetof(Boundary<Lattice::NDIM>, NormalDirection) + (size_t)((((char *)(&a)-(char *)(&a[0]))));// + offsetof(std::array<int8_t,TLattice::NDIM>, NormalDirection);
     
     MPI_Type_create_struct(3, blocklengths, offsets, types, &mMPIBoundary);
     MPI_Type_commit(&mMPIBoundary);
@@ -41,16 +41,21 @@ int main(int argc, char **argv){
         ret = std::system(array);
     }
 
-    auto binary = initBinary<>();
-    auto pressure = initPressure<>();
+    //auto binary = initBinary<>();
+    //auto pressure = initPressure<>();
+    auto flowfield = initFlowField<>();
     //auto humidity = initHumidity<>();
 
     Geometry<Lattice>::initialiseBoundaries(initBoundary,{0,5,6});
     OrderParameter<>::set<Lattice>(initFluid);
     OrderParameterOld<>::set<Lattice>(initFluid);
+    //Velocity<>::set<Lattice,Lattice::NDIM,0>(initVelocity);
+    //Velocity<>::set<Lattice,Lattice::NDIM,1>(initVelocityY);
+    //VelocityOld<>::set<Lattice,Lattice::NDIM,0>(initVelocity);
+    //VelocityOld<>::set<Lattice,Lattice::NDIM,1>(initVelocityY);
     //Humidity<>::set<Lattice>(initHumidity);
-
-    Algorithm lbm(binary,pressure);//,humidity);//
+    Algorithm lbm(flowfield);
+    //Algorithm lbm(binary,pressure);//,humidity);//
     //Algorithm lbm(pressure);
     //Algorithm lbm(humidity);//,pressure,binary);
     //Algorithm lbm(binary,pressure);//,humidity);
@@ -59,7 +64,7 @@ int main(int argc, char **argv){
     saver.SaveHeader(timesteps, saveInterval);
     
     for (int timestep=0; timestep<=timesteps; timestep++) {
-
+        TIME=timestep;
         // Save the desired parameters, producing a binary file for each.
         if (timestep%saveInterval==0) {
             if(mpi.rank==0)std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
@@ -67,7 +72,7 @@ int main(int argc, char **argv){
             saver.SaveBoundaries(timestep);
             saver.SaveParameter<Humidity<>>(timestep);
             //saver.SaveParameter<ChemicalPotential<>>(timestep);
-            //saver.SaveParameter<Density<>>(timestep);
+            saver.SaveParameter<Density<>>(timestep);
             saver.SaveParameter<Pressure<>>(timestep);
             saver.SaveParameter<OrderParameter<>>(timestep);
             //saver.SaveParameter<LaplacianOrderParameter<>>(timestep);
@@ -77,7 +82,7 @@ int main(int argc, char **argv){
             //saver.SaveParameter<GradientHumidity<>,Lattice::NDIM>(timestep);
             
         }
-        AfterEquilibration(timestep,binary);
+        //AfterEquilibration(timestep,binary);
         // Evolve by one timestep
         lbm.evolve();
         

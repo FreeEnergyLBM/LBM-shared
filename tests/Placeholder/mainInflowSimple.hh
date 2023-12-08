@@ -236,7 +236,7 @@ using DefaultTraitPressureLee2 = typename DefaultTrait<TLattice,2> :: template S
 template<class TLattice>
 using DefaultTraitPressureLeeHumidityInflow = typename DefaultTraitPressureLee2<TLattice> :: template AddPreProcessor<Swapper<Velocity<>, VelocityOld<>, TLattice::NDIM>,chempotgradients>
                                                                                    //:: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>
-                                                                                   :: template SetBoundary<std::tuple<std::tuple<FreeSlip,BounceBack>,std::tuple<VelocityInflow,Convective>>>;//,std::tuple<Temp0Outflow>>>;
+                                                                                   :: template SetBoundary<std::tuple<std::tuple<FreeSlip,BounceBack>,std::tuple<VelocityInflow>>>;//,std::tuple<Temp0Outflow>>>;
                                                                                    //:: template SetBoundary<FreeSlip,BounceBack> :: AddBoundary<std::tuple<VelocityInflow,Convective>> :: AddBoundary<std::tuple<Temp0Outflow>>;
 
 //template<typename TTrait = typename traitpressure::SetDataType<DataOldNewEquilibrium>>
@@ -254,9 +254,9 @@ auto initPressure(){
     //pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setForceTuple(pressure.mt_Forces);
     pressure.template getBoundary<BounceBack>().setInterfaceID({1});
     pressure.template getBoundary<FreeSlip>().setInterfaceID({2});
-    pressure.template getBoundary<VelocityInflow,1>().setInterfaceID({3});
+    pressure.template getBoundary<VelocityInflow,1>().setInterfaceID({3,4});
     pressure.template getBoundary<VelocityInflow,1>().setWallVelocity({inflowmomentum,0});
-    pressure.template getBoundary<Convective,1>().setInterfaceID({4});
+    //pressure.template getBoundary<Convective,1>().setInterfaceID({4});
     //pressure.template getBoundary<Temp0Outflow,2>().setInterfaceID({7});
     //pressure.template getPreProcessor<ConstantGradientBoundary<Pressure<>>>().setInterfaceID(100);
 

@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy import optimize
 
-datadir = "data/inflow/lx_228/ly_200/postwidth_162/offsety_-17/theta_30/"
+datadir = "data/test/inflow/lx_228/ly_200/postwidth_162/offsety_-17/theta_30/"
 
 HeaderFile = open(datadir+"Header.mat", 'rb')
 
@@ -82,9 +82,9 @@ for t in range(tstart,tend+1,tinc):
 
     #file_name = "data/"+"OrderParameter_t%li.mat"%t_file
     #file_name = datadir+"Pressure_t%li.mat"%t_file
-    #file_name = "data/"+"Density_t%li.mat"%t_file
+    file_name = datadir+"Density_t%li.mat"%t_file
     #file_name = "data/"+"Humidity_t%li.mat"%t_file
-    file_name = datadir+"OrderParameter_t%li.mat"%t_file
+    #file_name = datadir+"OrderParameter_t%li.mat"%t_file
     #file_name = datadir+"ChemicalPotential_t%li.mat"%t_file
     #file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
 
@@ -166,7 +166,7 @@ for t in range(tstart,tend+1,tinc):
     solid = np.ndarray((LX,LY),'=i',dat,0,(4*LY,4))
 
     liquid = np.array(rho)
-    liquid[np.where(np.logical_or(solid==1,solid==-1))[0],np.where(np.logical_or(solid==1,solid==-1))[1]] = 0.5
+    liquid[np.where(np.logical_or(solid==1,solid==-1))[0],np.where(np.logical_or(solid==1,solid==-1))[1]] = 1
 
     mlnosolid = np.array(rho2)
     mlnosolid[np.where(np.logical_or(solid==1,solid==-1))[0],np.where(np.logical_or(solid==1,solid==-1))[1]] = 0.0
@@ -206,7 +206,7 @@ for t in range(tstart,tend+1,tinc):
     print(h)
     
     im=ax.imshow(rgbv,interpolation='nearest',origin='upper')
-    ax.contour(np.flip(liquid).T, levels=[0.5], colors="k", zorder=1, linewidths=0.75)
+    #ax.contour(np.flip(liquid).T, levels=[0.5], colors="k", zorder=1, linewidths=0.75)
     #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2).take(indices=slicepos,axis=sliceaxis))**2+(gh.take(indices=1,axis=2).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
     #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2))**2+(gh.take(indices=1,axis=2))**2),interpolation='nearest',origin='upper')
     #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')

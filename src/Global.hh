@@ -7,5 +7,6 @@
 
 char* MPIBUFFER; //!<Pointer to the MPI buffer.
 int MPIBUFFERSIZE; //!<Size of the MPI buffer.
+int TIME=0;
 
 enum{x = 0, y = 1, z = 2};

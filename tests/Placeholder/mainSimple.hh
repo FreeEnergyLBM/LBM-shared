@@ -273,8 +273,8 @@ using DefaultTraitBinaryLeeHumidityInflow = typename DefaultTraitBinaryLee<TLatt
 template<typename TTrait = typename DefaultTraitBinaryLeeHumidityInflow<Lattice>:: template SetDataType<DataOldNewEquilibrium>>
 auto initBinary(){
 
-    //BinaryLeeHumidity<Lattice, TTrait> binary;
-    BinaryLee<Lattice, TTrait> binary;
+    BinaryLeeHumidity<Lattice, TTrait> binary;
+    //BinaryLee<Lattice, TTrait> binary;
 
     binary.setDensity1(dens1);
     binary.setDensity2(dens2);
