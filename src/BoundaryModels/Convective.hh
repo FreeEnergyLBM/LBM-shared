@@ -114,7 +114,7 @@ class Convective2 : public BoundaryBase {
 template<class TForceTuple>
 template<class TTraits>
 inline void Convective2<TForceTuple>::precompute(int k) { //CHANGE THIS SO YOU DONT NEED TO COMMUNICATE
-    
+    /*
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
@@ -146,7 +146,7 @@ inline void Convective2<TForceTuple>::precompute(int k) { //CHANGE THIS SO YOU D
     }
     //std::cout<<"HERE "<<mVelocity/((double)mCount)<<std::endl;
     if (fabs(normalvelocity)>fabs(mVelocity)) mVelocity=-normalvelocity;
-    
+    */
 }
 
 template<class TForceTuple>
@@ -213,12 +213,12 @@ inline void Convective2<TForceTuple>::communicate(TDistributionType& distributio
 template<class TForceTuple>
 template<class TTraits>
 inline void Convective2<TForceTuple>::communicatePostProcess() {
-    #pragma omp single
-    {
+    //#pragma omp single
+    //{
         //if(TIME%10000==0)std::cout<<"HERE "<<mVelocity<<std::endl;
     
     
-    mVelocity=0;
-    mCount=0;
-    }
+    //mVelocity=0;
+    //mCount=0;
+    //}
 }
