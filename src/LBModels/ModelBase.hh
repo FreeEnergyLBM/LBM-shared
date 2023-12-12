@@ -96,6 +96,9 @@ class ModelBase { //Inherit from base class to avoid repetition of common
 
         inline virtual void boundaries(); //Boundary calculation
 
+        template<class TBoundaryType>
+        inline void runboundaries(TBoundaryType& boundary); //Boundary calculation
+
         inline virtual void initialise() = 0; //Initialisation step
 
         inline virtual void computeMomenta() = 0; //Momenta (density, velocity) calculation
@@ -221,7 +224,7 @@ class ModelBase { //Inherit from base class to avoid repetition of common
                 //"computeCollisionQ"
                 
                     double collision=TTraits::template CollisionModel<typename TTraits::Stencil>::template collide<typename TTraits::Lattice>(olddistributions,equilibriums,inversetau,idx);
-
+                    
                     mDistribution.getPostCollisionDistribution(k,idx) = collision;
 
                 }
@@ -242,7 +245,7 @@ class ModelBase { //Inherit from base class to avoid repetition of common
 
         inline double computeDensity(const double* distribution, const int k); //Calculate density
 
-        static inline double computeVelocity(const double* distribution, const typename TTraits::Forces& forcetuple, const double& density,
+        static inline double computeVelocity(const double* distribution, typename TTraits::Forces& forcetuple, const double& density,
                                 const int xyz, const int k); //Calculate velocity
 
         TLattice latticeInit;
@@ -296,7 +299,7 @@ inline double ModelBase<TLattice, TTraits>::computeDensity(const double* distrib
 }
 
 template<class TLattice, class TTraits>
-inline double ModelBase<TLattice, TTraits>::computeVelocity(const double* distribution, const typename TTraits::Forces& forcetuple, const double& density,
+inline double ModelBase<TLattice, TTraits>::computeVelocity(const double* distribution, typename TTraits::Forces& forcetuple, const double& density,
                                              const int xyz, const int k) { //Velocity calculation in direction xyz
     //Velocity in direction xyz is sum of distribution times the xyz component of the discrete velocity vector
     //in each direction plus any source/correction terms
@@ -592,23 +595,32 @@ inline void ModelBase<TLattice,TTraits>::boundaries() {
 
     std::apply([this](auto&... boundaryprocessor) {
 
-        #pragma omp for schedule(guided)
-        for (int k = 0; k <TLattice::N; k++) { //loop over k
-
-            if constexpr(std::tuple_size<typename TTraits::Boundaries>::value != 0) { //Check if there are any boundary
-                                                                                //models
-                (std::apply([this, k](auto&... boundaries) {
-                            
-                                    (boundaries.template compute<TTraits>(this -> mDistribution, k) , ...); 
-
-                        }, boundaryprocessor), ...);
+        (runboundaries(boundaryprocessor), ...);
                 
-            }
-
-        } }, mt_Boundaries);
+        }, mt_Boundaries);
 
     //this -> mData.communicateDistribution();
 
     TLattice::ResetParallelTracking();
     
+}
+
+template<class TLattice, class TTraits>
+template<class TBoundaryType>
+inline void ModelBase<TLattice,TTraits>::runboundaries(TBoundaryType& boundaryprocessor) {
+
+    #pragma omp for schedule(guided)
+    for (int k = 0; k <TLattice::N; k++) { //loop over k
+
+        if constexpr(std::tuple_size<typename TTraits::Boundaries>::value != 0) { //Check if there are any boundary
+                                                                            //models
+            std::apply([this, k](auto&... boundaries) {
+                        
+                                (boundaries.template compute<TTraits>(this -> mDistribution, k) , ...); 
+
+                    }, boundaryprocessor);
+            
+        }
+
+    }
 }
