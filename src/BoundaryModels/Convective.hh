@@ -44,7 +44,7 @@ inline void Convective::compute(TDistributionType& distribution, int k) { //CHAN
         double normalvelocity = 0;
         double magnormal = 0;
         for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
-            normalvelocity += normal[xyz]*Velocity<>::get<Lattice, Lattice::NDIM>(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq),xyz);
+            normalvelocity += -normal[xyz]*Velocity<>::get<Lattice, Lattice::NDIM>(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq),xyz);
             magnormal += pow(normal[xyz],2);
         }
 
@@ -95,15 +95,15 @@ class Convective2 : public BoundaryBase {
         template<class TTraits>
         inline void precompute(int k);
 
-        inline void setVelocityCalculator(double (*v)(const double* distribution, const TForceTuple& forcetuple,  const double& density, int xyz, int k)) {mVelocityCalculator=v;}
+        inline void setVelocityCalculator(double (*v)(const double* distribution, TForceTuple& forcetuple,  const double& density, int xyz, int k)) {mVelocityCalculator=v;}
 
     private:
 
         TForceTuple mt_Forces;
 
-        static double defaultVelocityCalculator(const double* distribution, const TForceTuple& forcetuple, const double& density, int xyz, int k) { return 0; }
+        static double defaultVelocityCalculator(const double* distribution, TForceTuple& forcetuple, const double& density, int xyz, int k) { return 0; }
 
-        double (*mVelocityCalculator)(const double* distribution, const TForceTuple& forcetuple, const double& density, int xyz, int k) = &defaultVelocityCalculator;
+        double (*mVelocityCalculator)(const double* distribution, TForceTuple& forcetuple, const double& density, int xyz, int k) = &defaultVelocityCalculator;
 
         double mVelocity = 0;
         int mCount = 0;
