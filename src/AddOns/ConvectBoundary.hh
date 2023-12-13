@@ -49,7 +49,7 @@ inline void ConvectParameterBoundary<TParameter,TParameterOld>::compute(int k) {
             double normalvelocity = 0;
             double magnormal = 0;
             for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
-                normalvelocity += normal[xyz]*Velocity<>::get<Lattice, Lattice::NDIM>(DataType::getInstance().getNeighbor(k,normalq),xyz);
+                normalvelocity += -normal[xyz]*Velocity<>::get<Lattice, Lattice::NDIM>(DataType::getInstance().getNeighbor(k,normalq),xyz);
                 magnormal += pow(normal[xyz],2);
             }
 

@@ -7,16 +7,16 @@ DEPS    =
 OBJ     =	main.cc
 
 
-all: run.exe 
+all: run2.exe 
 
 %.o: %.cc $(DEPS)
 	$(COMP) -c -o $@ $< $(DEFS) $(LIBS)
 
-run.exe: $(OBJ)
-	$(COMP) -o run.exe $(OBJ) $(INCS) $(DEFS) $(LIBS)
+run2.exe: $(OBJ)
+	$(COMP) -o run2.exe $(OBJ) $(INCS) $(DEFS) $(LIBS)
 
 clean:
-	rm -f *.o run.exe
+	rm -f *.o run2.exe
 	
 
 #rm -r data

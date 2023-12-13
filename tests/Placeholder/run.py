@@ -6,12 +6,12 @@ import sys
 import fileinput
 
 owd = os.getcwd() # Directory containing the python file
-datadir="data/test/inflow" # All data directories start with the "data" folder
+datadir="data/inflow" # All data directories start with the "data" folder
 os.system("mkdir "+datadir) # Make the "data" folder (if it doesn't exist already)
 os.chdir(datadir) # Enter it
 
-#params3={"lx":np.array([228,228,228,228,228]),"ly":np.array([200,200,200,200,200]),"postwidth":np.array([162,162,162,162,162]),"offsety":np.array([-17,-17,-17,-17,-17]),"theta":np.array([15,30,90,150,165])}
-params3={"lx":np.array([228]),"ly":np.array([200]),"postwidth":np.array([162]),"offsety":np.array([-17]),"theta":np.array([30])}
+params3={"inflowmomentum":np.array([-0.0008,-0.0008,-0.0008,-0.0008,-0.0008]),"lx":np.array([228,228,228,228,228]),"ly":np.array([200,200,200,200,200]),"postwidth":np.array([162,162,162,162,162]),"offsety":np.array([-17,-17,-17,-17,-17]),"theta":np.array([30,60,90,120,150])}
+#params3={"lx":np.array([228]),"ly":np.array([200]),"postwidth":np.array([162]),"offsety":np.array([-17]),"theta":np.array([30])}
 #params3={"lx":np.array([228,228]),"ly":np.array([200,200]),"postwidth":np.array([162,162]),"offsety":np.array([-17,-17]),"theta":np.array([30,90])}
 
 

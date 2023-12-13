@@ -41,10 +41,10 @@ int main(int argc, char **argv){
         ret = std::system(array);
     }
 
-    //auto binary = initBinary<>();
-    //auto pressure = initPressure<>();
-    auto flowfield = initFlowField<>();
-    //auto humidity = initHumidity<>();
+    auto binary = initBinary<>();
+    auto pressure = initPressure<>();
+    //auto flowfield = initFlowField<>();
+    auto humidity = initHumidity<>();
 
     Geometry<Lattice>::initialiseBoundaries(initBoundary,{0,5,6});
     OrderParameter<>::set<Lattice>(initFluid);
@@ -53,11 +53,11 @@ int main(int argc, char **argv){
     //Velocity<>::set<Lattice,Lattice::NDIM,1>(initVelocityY);
     //VelocityOld<>::set<Lattice,Lattice::NDIM,0>(initVelocity);
     //VelocityOld<>::set<Lattice,Lattice::NDIM,1>(initVelocityY);
-    //Humidity<>::set<Lattice>(initHumidity);
-    Algorithm lbm(flowfield);
-    //Algorithm lbm(binary,pressure);//,humidity);//
+    Humidity<>::set<Lattice>(initHumidity);
+    //Algorithm lbm(flowfield);
+    Algorithm lbm(binary,pressure,humidity);//
     //Algorithm lbm(pressure);
-    //Algorithm lbm(humidity);//,pressure,binary);
+    //Algorithm lbm(humidity,binary);
     //Algorithm lbm(binary,pressure);//,humidity);
 
     ParameterSave<Lattice> saver(datadir);
@@ -82,7 +82,7 @@ int main(int argc, char **argv){
             //saver.SaveParameter<GradientHumidity<>,Lattice::NDIM>(timestep);
             
         }
-        //AfterEquilibration(timestep,binary);
+        AfterEquilibration(timestep,binary);
         // Evolve by one timestep
         lbm.evolve();
         

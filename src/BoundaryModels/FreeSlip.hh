@@ -29,7 +29,7 @@ inline void FreeSlip::compute(TDistributionType& distribution, int k) {
     const std::array<int8_t,TTraits::Lattice::NDIM>& normal = BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection;
     int normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection)->second;
 
-    for (int idx = 0; idx < TTraits::Stencil::Q; idx++) {
+    for (int idx = 1; idx < TTraits::Stencil::Q; idx++) {
 
         if (this->apply<Lattice>(distribution.streamIndex(k, idx))) continue;
 

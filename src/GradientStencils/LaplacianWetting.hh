@@ -70,7 +70,7 @@ inline double LaplacianCentralWetting::compute(int direction, int k, int num){
 
             double csolid = TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, idx), normalq), num);
 
-            laplaciansum +=  Stencil::Weights[idx] * 2 * ((csolid - 0.5 * this->mPrefactor * (csolid - pow(csolid, 2))) - TParameter::template get<Lattice>(k, num));
+            laplaciansum +=  Stencil::Weights[idx] * 2 * ((csolid - 2* 0.5 * this->mPrefactor * (csolid - pow(csolid, 2))) - TParameter::template get<Lattice>(k, num));
 
         }
 

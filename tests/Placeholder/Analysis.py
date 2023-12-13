@@ -3,6 +3,7 @@ import struct
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy import optimize
+import matplotlib
 
 datadir = "data/test/inflow/lx_228/ly_200/postwidth_162/offsety_-17/theta_30/"
 
@@ -81,8 +82,8 @@ for t in range(tstart,tend+1,tinc):
     t_file =t+t_zero
 
     #file_name = "data/"+"OrderParameter_t%li.mat"%t_file
-    #file_name = datadir+"Pressure_t%li.mat"%t_file
-    file_name = datadir+"Density_t%li.mat"%t_file
+    file_name = datadir+"Pressure_t%li.mat"%t_file
+    #file_name = datadir+"Density_t%li.mat"%t_file
     #file_name = "data/"+"Humidity_t%li.mat"%t_file
     #file_name = datadir+"OrderParameter_t%li.mat"%t_file
     #file_name = datadir+"ChemicalPotential_t%li.mat"%t_file
@@ -168,7 +169,7 @@ for t in range(tstart,tend+1,tinc):
     liquid = np.array(rho)
     liquid[np.where(np.logical_or(solid==1,solid==-1))[0],np.where(np.logical_or(solid==1,solid==-1))[1]] = 1
 
-    mlnosolid = np.array(rho2)
+    mlnosolid = np.array(humidity)
     mlnosolid[np.where(np.logical_or(solid==1,solid==-1))[0],np.where(np.logical_or(solid==1,solid==-1))[1]] = 0.0
 
     dat=File2.read()
@@ -190,7 +191,7 @@ for t in range(tstart,tend+1,tinc):
     output = "%s/component_plot_%012d.png"%(outDirName,t)
     #rho3=2*0.01*(rho2-0.2)*(rho2-1)*(2*rho2-0.2-1)-0.0128*rho4
     rgbv = np.zeros((LY,LX))
-    rgbv[:,:] = np.flip(solid).transpose()
+    rgbv[:,:] = np.flip(mlnosolid).transpose()
     #rgbv[:,:] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
     #rgbv[:,:,1] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
     #rgbv[:,:,2] = np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()
@@ -204,9 +205,9 @@ for t in range(tstart,tend+1,tinc):
     c1_2 = c[0,i2]
     h = i1 + (c1_1 - 0.5) / (c1_1 - c1_2) + 1
     print(h)
-    
+    print(v[228-5,195,0])
     im=ax.imshow(rgbv,interpolation='nearest',origin='upper')
-    #ax.contour(np.flip(liquid).T, levels=[0.5], colors="k", zorder=1, linewidths=0.75)
+    ax.contour(np.flip(liquid).T, levels=[0.5], colors="k", zorder=1, linewidths=0.75)
     #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2).take(indices=slicepos,axis=sliceaxis))**2+(gh.take(indices=1,axis=2).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
     #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2))**2+(gh.take(indices=1,axis=2))**2),interpolation='nearest',origin='upper')
     #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')

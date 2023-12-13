@@ -52,7 +52,7 @@ class FlowField : public CollisionBase<TLattice,typename TTraits::Stencil>, publ
 
 template<class TLattice, class TTraits>
 inline void FlowField<TLattice, TTraits>::collide() { //Collision step
-
+    
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { //loop over k
 
@@ -85,13 +85,21 @@ inline void FlowField<TLattice, TTraits>::initialise() { //Initialise model
     #pragma omp parallel for schedule(guided)
     for (int k = 0; k < TLattice::N; k++) { //loop over k
 
-        double* distribution = this -> mDistribution.getDistributionPointer(k);
-        double* old_distribution = this -> mDistribution.getDistributionOldPointer(k);
-
         Density<>::initialise<TLattice>(1.0 ,k); //Set density to 1 initially (This will change)
         Velocity<>::initialise<TLattice, mNDIM>(0.0, k, x);
         if constexpr (mNDIM >= 2) Velocity<>::initialise<TLattice, mNDIM>(0.0, k, y);
         if constexpr (mNDIM == 3) Velocity<>::initialise<TLattice, mNDIM>(0.0, k, z);
+        
+    }
+
+    ModelBase<TLattice, TTraits>::mData.communicate(Density<>::getInstance<TLattice>());
+    ModelBase<TLattice, TTraits>::mData.communicate(Velocity<>::getInstance<TLattice,TTraits::Lattice::NDIM>());
+
+    #pragma omp parallel for schedule(guided)
+    for (int k = 0; k < TLattice::N; k++) { //loop over k
+        
+        double* distribution = this -> mDistribution.getDistributionPointer(k);
+        double* old_distribution = this -> mDistribution.getDistributionOldPointer(k);
 
         for (int idx = 0; idx <Stencil::Q; idx++) {
 
@@ -109,7 +117,7 @@ inline void FlowField<TLattice, TTraits>::initialise() { //Initialise model
 
 template<class TLattice, class TTraits>
 inline void FlowField<TLattice, TTraits>::computeMomenta() { //Calculate Density<> and Velocity
-
+    
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //Loop over k
 
@@ -122,11 +130,11 @@ inline void FlowField<TLattice, TTraits>::computeMomenta() { //Calculate Density
             if constexpr (mNDIM == 3) velocity[k * Stencil::D + z] = this -> computeVelocity(distribution ,this->mt_Forces,density[k], z, k);
             density[k] = this -> computeDensity(distribution, k); //Calculate density
             
-            
         }
 
     }
 
+    
     //this -> mData.communicate(Density<>::getInstance<TLattice>());
 
 }

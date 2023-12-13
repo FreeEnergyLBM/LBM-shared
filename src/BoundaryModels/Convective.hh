@@ -159,12 +159,6 @@ inline void Convective2<TForceTuple>::compute(TDistributionType& distribution, i
 
     const int& normalq = Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<Lattice>(k).NormalDirection)->second;
     const std::array<int8_t,TTraits::Lattice::NDIM>& normal = BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection;
-    //#pragma omp critical
-    //{
-    //std::cout<<normalq<<std::endl;
-    //}
-    //std::cout<<normalq<<std::endl;
-    //if(TIME==1000)std::cout<<mVelocity/((double)mCount)<<std::endl;
     
     for (int idx = 1; idx < Stencil::Q; idx++) {
         
@@ -188,15 +182,8 @@ inline void Convective2<TForceTuple>::compute(TDistributionType& distribution, i
         normalvelocity *= 1./magnormal;
         
         distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = (distribution.getDistributionOldPointer(distribution.streamIndex(k, normalq))[idx]+normalvelocity*distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx])/(1+normalvelocity);
-        
-        //distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = (distribution.getDistributionOldPointer(distribution.streamIndex(k, normalq))[idx]+mVelocity*distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx])/(1+mVelocity);
-        //#pragma omp critical
-        //{
-        //std::cout<<k<<" "<<(distribution.getDistributionOldPointer(distribution.streamIndex(k, normalq))[idx])<<std::endl;
-        //}
-        
 
-    }    
+    }  
 
 }
 
@@ -213,12 +200,14 @@ inline void Convective2<TForceTuple>::communicate(TDistributionType& distributio
 template<class TForceTuple>
 template<class TTraits>
 inline void Convective2<TForceTuple>::communicatePostProcess() {
-    //#pragma omp single
-    //{
+    /*
+    #pragma omp single
+    {
         //if(TIME%10000==0)std::cout<<"HERE "<<mVelocity<<std::endl;
     
     
-    //mVelocity=0;
-    //mCount=0;
-    //}
+    mVelocity=0;
+    mCount=0;
+    }
+    */
 }
