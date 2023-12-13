@@ -71,16 +71,16 @@ int main(int argc, char **argv){
     Algorithm lbm(flowFieldModel, componentSeparationModel);
 
     // Set up the handler object for saving data
-    ParameterSave<Lattice> saver("data/");
-    saver.SaveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)
+    SaveHandler<Lattice> saver("data/");
+    saver.saveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)
 
     // Perform the main LBM loop
     for (int timestep=0; timestep<=timesteps; timestep++) {
         if (timestep%saveInterval==0) {
             std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
-            saver.SaveParameter<BoundaryLabels<>>(timestep);
-            saver.SaveParameter<OrderParameter<>>(timestep);
-            saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
+            saver.saveParameter<BoundaryLabels<>>(timestep);
+            saver.saveParameter<OrderParameter<>>(timestep);
+            saver.saveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }
         lbm.evolve();
     }

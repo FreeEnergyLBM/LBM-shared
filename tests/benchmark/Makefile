@@ -6,7 +6,7 @@ SHELL = /bin/bash -O globstar
 CXX = mpicxx
 CXXFLAGS = -std=c++17 -Wall -DMPIPARALLEL -fopenmp
 
-BENCHMARKS = SingleComponent/Poiseuille Binary/GalileanInvariance Binary/LaplacePressure Binary/LayeredPoiseuille
+BENCHMARKS = SingleComponent/PoiseuilleForce SingleComponent/PoiseuillePressure Binary/GalileanInvariance Binary/LaplacePressure Binary/LayeredPoiseuille
 
 .PHONY: all clean cleantests gtest $(BENCHMARKS)
 

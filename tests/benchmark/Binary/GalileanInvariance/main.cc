@@ -42,8 +42,8 @@ int main(int argc, char **argv) {
     Velocity<>::set<Lattice,2,1>([](const int k){ return 0.001; });
 
     // Create save handler
-    ParameterSave<Lattice> saver("data/");
-    saver.SaveHeader(timesteps, saveInterval);
+    SaveHandler<Lattice> saver("data/");
+    saver.saveHeader(timesteps, saveInterval);
 
     // Initialise
     Algorithm lbm(model1, model2);
@@ -51,9 +51,9 @@ int main(int argc, char **argv) {
     // Main loop
     for (int timestep=0; timestep<=timesteps; timestep++) {
         if (timestep%saveInterval==0) {
-          saver.SaveParameter<Density<>>(timestep);
-          saver.SaveParameter<OrderParameter<>>(timestep);
-          saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
+          saver.saveParameter<Density<>>(timestep);
+          saver.saveParameter<OrderParameter<>>(timestep);
+          saver.saveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }
         lbm.evolve();
     }

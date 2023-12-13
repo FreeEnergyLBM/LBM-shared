@@ -68,8 +68,9 @@ int main(int argc, char **argv){
     Geometry<Lattice>::initialiseBoundaries(initSolid);
     OrderParameter<>::set<Lattice>(initFluid);
 
-    ParameterSave<Lattice> saver("data/");
-    saver.SaveHeader(timesteps, saveInterval);
+    SaveHandler<Lattice> saver("data/");
+    saver.saveHeader(timesteps, saveInterval);
+    saver.maskSolid();
 
     // Main loop
     Algorithm lbm(binary);
@@ -78,8 +79,7 @@ int main(int argc, char **argv){
             print("Saving at timestep:", timestep);
             saver.saveVTK(timestep,
                           OrderParameter<>::template getInstance<Lattice>(),
-                          MassSink<>::template getInstance<Lattice>(),
-                          BoundaryLabels<Lattice::NDIM>::template getInstance<Lattice>());
+                          MassSink<>::template getInstance<Lattice>());
         }
         lbm.evolve();
     }

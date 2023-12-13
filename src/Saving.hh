@@ -13,43 +13,38 @@
 
 
 template<class TLattice>
-class ParameterSave {
-
+class SaveHandler {
     public:
+        SaveHandler(std::string datadir);
+        SaveHandler(SaveHandler& other);
 
-        ParameterSave(std::string datadir);
-        ParameterSave(ParameterSave& other);
+        template<typename... TParameter> void saveVTK(int timestep, TParameter&... params);
 
-        template<typename... TParameter>
-        void saveVTK(int timestep, TParameter&... params);
+        inline void saveHeader(int timestep, int saveinterval);
 
-        inline void SaveHeader(int timestep, int saveinterval);
+        void saveBoundaries(int timestep);
 
-        void SaveBoundaries(int timestep);
+        template<class TParameter, int TNumDir=1> void saveParameter(int timestep);
+        template<class... TParameter> void saveParameter(int timestep, TParameter&... params);
 
-        template<class TParameter, int TNumDir=1>
-        void SaveParameter(int timestep) {
-            TParameter::template getInstance<TLattice,TNumDir>().Save(TParameter::mName,timestep,mDataDir);
-        }
-
-        template<class... TParameter>
-        void SaveParameter(int timestep, TParameter&... params) {
-            (params.Save(TParameter::mName,timestep,mDataDir),...);
-        }
+        void maskSolid(bool status=true);
+        void maskSolid(double value);
 
     private:
-
+        static bool mMaskSolid;
+        static double mMaskValue;
         std::string mDataDir;
-
-    #ifdef MPIPARALLEL
+        #ifdef MPIPARALLEL
         MPI_Datatype mMPIBoundary;
-    #endif
-        
+        #endif
 };
+
+template<class TLattice> bool SaveHandler<TLattice>::mMaskSolid = false;
+template<class TLattice> double SaveHandler<TLattice>::mMaskValue = 0;
 
 
 template<class TLattice>
-ParameterSave<TLattice>::ParameterSave(std::string datadir) : mDataDir(datadir) {
+SaveHandler<TLattice>::SaveHandler(std::string datadir) : mDataDir(datadir) {
     int status = system(((std::string)"mkdir -p " + mDataDir).c_str());
     if (status) print("Error creating output directory");
 #ifdef MPIPARALLEL
@@ -59,13 +54,28 @@ ParameterSave<TLattice>::ParameterSave(std::string datadir) : mDataDir(datadir) 
 }
 
 template<class TLattice>
-ParameterSave<TLattice>::ParameterSave(ParameterSave& other) : mDataDir(other.datadir) {
+SaveHandler<TLattice>::SaveHandler(SaveHandler& other) : mDataDir(other.datadir) {
     int status = system(((std::string)"mkdir -p " + mDataDir).c_str());
     if (status) print("Error creating output directory");
 #ifdef MPIPARALLEL
     MPI_Type_create_resized(MPI_INT, 0L, sizeof(Boundary<TLattice::NDIM>), &mMPIBoundary);
     MPI_Type_commit(&mMPIBoundary);
 #endif
+}
+
+
+template<class TLattice, typename T>
+void applyMask(std::vector<T>& data, int directions, double maskValue) {
+    int nLattice = data.size() / directions;
+    for (int k=0; k<nLattice; k++) {
+        int nodeType = Geometry<TLattice>::getBoundaryType(k);
+        if (nodeType==1 || nodeType==-1) {
+            for (int iDir=0; iDir<directions; iDir++) {
+                int iData = k*directions + iDir;
+                data[iData] = maskValue;
+            }
+        }
+    }
 }
 
 
@@ -184,7 +194,7 @@ void writeArrayTxt(std::ofstream& file, std::vector<T> data, std::string fmt, st
 
 template<class TLattice>
 template<typename... TParameter>
-void ParameterSave<TLattice>::saveVTK(int timestep, TParameter&... params) {
+void SaveHandler<TLattice>::saveVTK(int timestep, TParameter&... params) {
 
     char filename[512];
     sprintf(filename, "%s/data_%d.vtk", mDataDir.c_str(), timestep);
@@ -226,6 +236,8 @@ void ParameterSave<TLattice>::saveVTK(int timestep, TParameter&... params) {
         #else
         file << dataHeader;
         #endif
+        // Apply the solid mask, if using
+        if (mMaskSolid) applyMask<TLattice>(data, directions, mMaskValue);
         // If 2D vectors, fill the z-component with zeros
         if (directions == 2) {
             directions = 3;
@@ -243,8 +255,8 @@ void ParameterSave<TLattice>::saveVTK(int timestep, TParameter&... params) {
 
 
 template<class TLattice>
-inline void ParameterSave<TLattice>::SaveHeader(int timestep, int saveinterval) { //Function to save parameter stored in this class
-    
+inline void SaveHandler<TLattice>::saveHeader(int timestep, int saveinterval) { //Function to save parameter stored in this class
+
     if(mpi.rank==0){
         print("SAVING HEADER");
         char fdump[256];
@@ -267,7 +279,7 @@ inline void ParameterSave<TLattice>::SaveHeader(int timestep, int saveinterval) 
 
 
 template<class TLattice>
-void ParameterSave<TLattice>::SaveBoundaries(int timestep){
+void SaveHandler<TLattice>::saveBoundaries(int timestep){
     char fdump[512];
     sprintf(fdump, "%s/%s_t%i.mat", mDataDir.c_str(), BoundaryLabels<TLattice::NDIM>::mName, timestep); //Buffer containing file name and location.
 
@@ -278,16 +290,71 @@ void ParameterSave<TLattice>::SaveBoundaries(int timestep){
     MPI_File_seek(fh, sizeof(int) * mpi.rank * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size, MPI_SEEK_SET); //Skip to a certain location in the file, currently
     MPI_File_write(fh,&BoundaryLabels<TLattice::NDIM>::template get<TLattice>()[TLattice::HaloSize], (TLattice::N - 2 * TLattice::HaloSize), mMPIBoundary, MPI_STATUSES_IGNORE);
     MPI_File_close(&fh);
-        
+
 #else
 
     std::ofstream fs(fdump, std::ios::out | std::ios::binary);
     fs.seekp(sizeof(int) * mpi.rank * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size);
-    for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { 
+    for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) {
         fs.write((char *)(&BoundaryLabels<TLattice::NDIM>::template get<TLattice>()[k].Id), sizeof(int));
     };
     fs.close();
 
 #endif
 
+}
+
+template<class TLattice>
+template<class TParameter, int TNumDir>
+void SaveHandler<TLattice>::saveParameter(int timestep) {
+    // Setup array for saving
+    std::vector<typename TParameter::ParamType> param = TParameter::template get<TLattice>();
+    if (mMaskSolid) applyMask<TLattice>(param, TNumDir, mMaskValue);
+
+    // File
+    char fdump[512];
+    sprintf(fdump, "%s/%s_t%i.mat", mDataDir.c_str(), TParameter::mName, timestep);
+    int fileOffset = sizeof(typename TParameter::ParamType) * mpi.rank * TNumDir * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size;
+
+    #ifdef MPIPARALLEL
+    // Parallel saving with MPI
+    MPI_File fh;
+    MPI_File_open(MPI_COMM_SELF, fdump, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
+    MPI_File_seek(fh, fileOffset, MPI_SEEK_SET);
+    MPI_File_write(fh,&param[TLattice::HaloSize*TNumDir], TNumDir*(TLattice::N-2*TLattice::HaloSize), MPI_DOUBLE, MPI_STATUSES_IGNORE);
+    MPI_File_close(&fh);
+
+    #else
+    // Saving without MPI
+    std::ofstream fs(fdump, std::ios::out | std::ios::binary);
+    fs.seekp(fileOffset);
+    for (int k = TLattice::HaloSize; k < TLattice::N-TLattice::HaloSize; k++) {
+        for(int idx = 0; idx < TNumDir; idx++) {
+            fs.write((char *)(&param[k*TNumDir+idx]), sizeof(typename TParameter::ParamType));
+        }
+    };
+    fs.close();
+    #endif
+
+}
+
+
+template<class TLattice>
+template<class... TParameter>
+void SaveHandler<TLattice>::saveParameter(int timestep, TParameter&... params) {
+    (saveParameter<TParameter>(timestep),...);
+}
+
+
+
+template<class TLattice>
+void SaveHandler<TLattice>::maskSolid(bool status) {
+    mMaskSolid = status;
+}
+
+
+template<class TLattice>
+void SaveHandler<TLattice>::maskSolid(double value) {
+    mMaskSolid = true;
+    mMaskValue = value;
 }

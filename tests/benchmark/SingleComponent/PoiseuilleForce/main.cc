@@ -34,15 +34,15 @@ int main(int argc, char **argv) {
     Geometry<Lattice>::initialiseBoundaries(initSolid);
 
     // Create save handler
-    ParameterSave<Lattice> saver("data/");
-    saver.SaveHeader(timesteps, saveInterval);
+    SaveHandler<Lattice> saver("data/");
+    saver.saveHeader(timesteps, saveInterval);
 
     // Initialise
     Algorithm lbm(model);
 
     // Main loop
     for (int timestep=0; timestep<=timesteps; timestep++) {
-        if (timestep%saveInterval==0) saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
+        if (timestep%saveInterval==0) saver.saveParameter<Velocity<>,Lattice::NDIM>(timestep);
         lbm.evolve();
     }
 

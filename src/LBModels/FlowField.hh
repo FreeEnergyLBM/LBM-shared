@@ -2,11 +2,8 @@
 #include "../Collide.hh"
 #include "../Parameters.hh"
 #include "../Data.hh"
-#include "../BoundaryModels/Boundaries.hh"
-#include "../AddOns/AddOns.hh"
-#include "../Forces/Forces.hh"
-#include "../GradientStencils/GradientStencils.hh"
-#include "../Parallel.hh"
+#include "../BoundaryModels/BounceBack.hh"
+#include "../Forces/ChemicalForce.hh"
 #include "ModelBase.hh"
 #include <utility>
 
@@ -31,14 +28,12 @@ class FlowField : public CollisionBase<TLattice,typename TTraits::Stencil>, publ
 
         inline void computeMomenta() override; //Momenta (density, velocity) calculation
 
+        inline double computeEquilibrium(int k, int idx) override; //Calculate equilibrium in direction idx
+
         template<class,class>
         friend class FlowFieldBinary;
 
     private:
-
-        inline double computeEquilibrium(const double& density, const double* velocity,
-                                  int idx, int k); //Calculate equilibrium in direction idx with a given
-                                                        //density and velocity
 
         static constexpr double mTau = 1.0; //TEMPORARY relaxation time
         static constexpr double mInverseTau = 1.0 / mTau; //TEMPORARY inverse relaxation time
@@ -63,9 +58,7 @@ inline void FlowField<TLattice, TTraits>::collide() { //Collision step
             double equilibriums[Stencil::Q];
 
             for (int idx = 0; idx < Stencil::Q; idx++) {
-
-                equilibriums[idx] = computeEquilibrium(density[k], &velocity[k * mNDIM], idx, k);
-
+                equilibriums[idx] = computeEquilibrium(k, idx);
             }
             
             this -> collisionQ(equilibriums, old_distribution, mInverseTau,k); // CHANGE NEEDED If no forces, don't require them to be passed
@@ -103,8 +96,7 @@ inline void FlowField<TLattice, TTraits>::initialise() { //Initialise model
 
         for (int idx = 0; idx <Stencil::Q; idx++) {
 
-            double equilibrium = computeEquilibrium(density[k], &velocity[k * Stencil::D], idx, k);
-
+            double equilibrium = computeEquilibrium(k, idx);
             distribution[idx] = equilibrium; //Set distributions to equillibrium
             old_distribution[idx] = equilibrium;        
 
@@ -112,6 +104,7 @@ inline void FlowField<TLattice, TTraits>::initialise() { //Initialise model
         
     }
     
+    this->initialiseBoundaries();
 }
 
 
@@ -141,11 +134,10 @@ inline void FlowField<TLattice, TTraits>::computeMomenta() { //Calculate Density
 
 
 template<class TLattice, class TTraits>
-inline double FlowField<TLattice, TTraits>::computeEquilibrium(const double& density, const double* velocity, int idx, int k) {
+inline double FlowField<TLattice, TTraits>::computeEquilibrium(int k, int idx) {
 
-    return density * CollisionBase<TLattice,Stencil>::computeGamma(velocity, idx); //Equilibrium is density
-                                                                                        //times gamma in this
-                                                                                        //case
+    double gamma = CollisionBase<TLattice,Stencil>::computeGamma(&velocity[k*mNDIM], idx);
+    return density[k] * gamma;
 
 }
 
@@ -199,9 +191,7 @@ class FlowFieldPressure : public CollisionBase<TLattice,typename TTraits::Stenci
 
         virtual inline void computeMomenta() override; //Momenta (density, velocity) calculation
 
-        inline double computeEquilibrium(const double& density, const double& pressure, const double* velocity,
-                                  const int idx, const int k) const; //Calculate equilibrium in direction idx with a given
-                                                        //density and velocitys
+        inline double computeEquilibrium(int k, int idx) override; //Calculate equilibrium in direction idx
 
         std::vector<double>& pressure = Pressure<>::get<TLattice>(); //Reference to vector of TDensities
         std::vector<double>& density = Density<>::get<TLattice>(); //Reference to vector of TDensities
@@ -231,9 +221,7 @@ inline void FlowFieldPressure<TLattice, TTraits>::collide() { //Collision step
             double equilibriums[Stencil::Q];
 
             for (int idx = 0; idx < Stencil::Q; idx++) {
-
-                equilibriums[idx] = computeEquilibrium(density[k], pressure[k], &velocity[k * mNDIM], idx, k);
-
+                equilibriums[idx] = computeEquilibrium(k, idx);
             }
             
             this -> collisionQ(equilibriums, old_distribution, InverseTau<>::get<TLattice>(k),k); // CHANGE NEEDED If no forces, don't require them to be passed
@@ -266,8 +254,7 @@ inline void FlowFieldPressure<TLattice, TTraits>::initialise() { //Initialise mo
 
         for (int idx = 0; idx <TTraits::Stencil::Q; idx++) {
 
-            double equilibrium = computeEquilibrium(density[k], pressure[k], &velocity[k * TTraits::Stencil::D], idx, k);
-
+            double equilibrium = computeEquilibrium(k, idx);
             distribution[idx] = equilibrium; //Set distributions to equillibrium
             old_distribution[idx] = equilibrium;        
 
@@ -277,7 +264,8 @@ inline void FlowFieldPressure<TLattice, TTraits>::initialise() { //Initialise mo
 
     ModelBase<TLattice, TTraits>::mData.communicate(Pressure<>::getInstance<TLattice>());
     ModelBase<TLattice, TTraits>::mData.communicate(Velocity<>::getInstance<TLattice,TLattice::NDIM>());
-    
+
+    this->initialiseBoundaries();
 }
 
 
@@ -307,10 +295,9 @@ inline void FlowFieldPressure<TLattice, TTraits>::computeMomenta() { //Calculate
 }
 
 template<class TLattice, class TTraits>
-inline double FlowFieldPressure<TLattice, TTraits>::computeEquilibrium(const double& density, const double& pressure, const double* velocity, const int idx, const int k) const {
-    
-    return TTraits::Stencil::Weights[idx]*(pressure + density * TTraits::Stencil::Cs2 * CollisionBase<TLattice,typename TTraits::Stencil>::computeVelocityFactor(velocity, idx)); //Equilibrium is density //Equilibrium is density
-                                                                                        //times gamma in this
-                                                                                        //case
+inline double FlowFieldPressure<TLattice, TTraits>::computeEquilibrium(int k, int idx) {
+
+    double velocityFactor = CollisionBase<TLattice,Stencil>::computeVelocityFactor(&velocity[k*mNDIM], idx);
+    return Stencil::Weights[idx] * (pressure[k] + density[k]*Stencil::Cs2*velocityFactor);
 
 }

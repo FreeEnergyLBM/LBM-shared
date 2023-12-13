@@ -60,8 +60,8 @@ int main(int argc, char **argv){
     //Algorithm lbm(humidity,binary);
     //Algorithm lbm(binary,pressure);//,humidity);
 
-    ParameterSave<Lattice> saver(datadir);
-    saver.SaveHeader(timesteps, saveInterval);
+    SaveHandler<Lattice> saver(datadir);
+    saver.saveHeader(timesteps, saveInterval);
     
     for (int timestep=0; timestep<=timesteps; timestep++) {
         TIME=timestep;
@@ -69,15 +69,15 @@ int main(int argc, char **argv){
         if (timestep%saveInterval==0) {
             if(mpi.rank==0)std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
             
-            saver.SaveBoundaries(timestep);
-            saver.SaveParameter<Humidity<>>(timestep);
+            saver.saveBoundaries(timestep);
+            saver.saveParameter<Humidity<>>(timestep);
             //saver.SaveParameter<ChemicalPotential<>>(timestep);
-            saver.SaveParameter<Density<>>(timestep);
-            saver.SaveParameter<Pressure<>>(timestep);
-            saver.SaveParameter<OrderParameter<>>(timestep);
+            saver.saveParameter<Density<>>(timestep);
+            saver.saveParameter<Pressure<>>(timestep);
+            saver.saveParameter<OrderParameter<>>(timestep);
             //saver.SaveParameter<LaplacianOrderParameter<>>(timestep);
-            saver.SaveParameter<MassSink<>>(timestep);
-            saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
+            saver.saveParameter<MassSink<>>(timestep);
+            saver.saveParameter<Velocity<>,Lattice::NDIM>(timestep);
             //saver.SaveParameter<VelocityOld<>,Lattice::NDIM>(timestep);
             //saver.SaveParameter<GradientHumidity<>,Lattice::NDIM>(timestep);
             

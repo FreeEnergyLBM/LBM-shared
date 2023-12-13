@@ -23,7 +23,7 @@ The models each have a default trait, e.g. `DefaultTraitFlowField` for `FlowFiel
 
 Values that vary across the lattice such as velocity and density are stored as `Parameter` objects.
 Several functions are provided to set these values and to read them out.
-They can also be passed as templates to the `ParameterSave` class in order to write them to a file during the simulation.
+They can also be passed to methods in the `SaveHandler` class in order to write them to a file during the simulation.
 A list of the various parameters can be found in `src/Parameters.hh`.
 
 ## Running the Examples

@@ -36,9 +36,12 @@ struct DefaultTrait : BaseTrait<DefaultTrait<TLattice,t_NumberOfComponents>> {
 
 };
 
+
+class Model {}; // Used to store the model without template parameters
+
+
 template<class TLattice, class TTraits = DefaultTrait<TLattice>>
-class ModelBase { //Inherit from base class to avoid repetition of common
-                                                      //calculations
+class ModelBase : public Model {
     static_assert(std::is_base_of<StencilBase, typename TTraits::Stencil>(), "ERROR: invalid TStencil specified in TTraits class.");
     static_assert(TTraits::Stencil::D == TLattice::NDIM, "ERROR: The chosen TStencil must match the number of TLattice dimensions in the TLattice properties.");
     static_assert(CheckBaseTemplate<ForceBase, typename TTraits::Forces>::value, "ERROR: At least one TForce chosen is not a TForce class. The class must inherit from ForceBase.");
@@ -103,9 +106,15 @@ class ModelBase { //Inherit from base class to avoid repetition of common
 
         inline virtual void computeMomenta() = 0; //Momenta (density, velocity) calculation
 
+        inline virtual double computeEquilibrium(int k, int idx) = 0; //Calculate equilibrium in direction idx
+
+        inline virtual double computePressure(int k); //Pressure calculation
+
         inline double computeForces(int xyz, int k) const; //Calculate other forces in direction xyz
 
         inline const std::vector<double>& getDistribution() const; //Return vector of distribution
+
+        inline void initialiseBoundaries();
 
         template<class TTupleType>
         inline auto getForceCalculator(TTupleType& TForceTuple, int k);
@@ -277,6 +286,13 @@ class ModelBase { //Inherit from base class to avoid repetition of common
         
 };
 
+
+template<class TLattice, class TTraits>
+inline void ModelBase<TLattice, TTraits>::initialiseBoundaries() {
+    std::apply([this](auto&... boundarytuple){(std::apply([this](auto&... boundary){(boundary.initialise(this), ...);}, boundarytuple),...);}, mt_Boundaries);
+}
+
+
 template<class TLattice, class TTraits>
 inline double ModelBase<TLattice, TTraits>::computeDensity(const double* distribution, const int k) { //Density<> calculation
     //Density<> is the sum of distributions plus any source/correction terms
@@ -316,6 +332,14 @@ inline double ModelBase<TLattice, TTraits>::computeVelocity(const double* distri
     else return (1./(Density<>::get<TLattice>(k)))*CollisionBase<TLattice,typename TTraits::Stencil>::computeFirstMoment(distribution, xyz);
 
 }
+
+
+template<class TLattice, class TTraits>
+inline double ModelBase<TLattice, TTraits>::computePressure(int k) {
+    double density = computeDensity(this->mDistribution.getDistributionPointer(k), k);
+    return density * TTraits::Stencil::Cs2;
+}
+
 
 template<class TLattice, class TTraits>
 inline const std::vector<double>& ModelBase<TLattice,TTraits>::getDistribution() const {

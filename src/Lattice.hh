@@ -25,15 +25,15 @@ struct LatticeProperties{
     static constexpr int LX = lx; // Global length x
     static constexpr int LY = ly; // Global length y
     static constexpr int LZ = lz; // Global length z
-    inline static int N = lx * ly * lz; // Total size of the simulation
+    inline static int N = lx * ly * lz; // Total size of local region (including halo)
     inline static int LXdiv = lx, LYdiv = ly, LZdiv = lz; // Local lengths (including halo)
     inline static int LXMPIOffset = 0, LYMPIOffset = 0, LZMPIOffset = 0; // Coordinates for the start of local regions (excluding halo)
     inline static int HaloXWidth = 0, HaloYWidth = 0, HaloZWidth = 0; // Widths of the halo regions
     inline static int HaloSize = 0; // Size of each halo region (in each direction)
     inline static int subArray[3] = {lx, ly, lz}; // Local lengths (excluding halo)
     inline static double DT = 1;
-    inline static int Face[6] = {0, 0, 0, 0, 0, 0}; // FaceX=0, FaceY=0, FaceZ=0, EdgeX=0, EdgeY=0, EdgeZ=0;
-    inline static int Neighbors = 0; // FaceX=0, FaceY=0, FaceZ=0, EdgeX=0, EdgeY=0, EdgeZ=0;
+    inline static int Face[6] = {0, 0, 0, 0, 0, 0};
+    inline static int Width = 0;
     static TParallel Parallel;
 
     constexpr LatticeProperties(double DT=1.0) {
@@ -52,6 +52,8 @@ struct LatticeProperties{
     static std::unordered_map<std::pair<int,double*>,bool,pair_hash> alreadycommunicateddistribution;
 
     static void ResetParallelTracking() {
+        //alreadycommunicatedparameter.clear();
+        //alreadycommunicateddistribution.clear();
         #pragma omp master
         {
         for (auto& [_, value] : alreadycommunicatedparameter) value = false;
@@ -62,6 +64,7 @@ struct LatticeProperties{
     //! This function communicates the halo regions of a parameter.
     template<class TParameter>
     static void communicate(TParameter& obj) {
+        
         #pragma omp master
         {
         if (!alreadycommunicatedparameter.count(typeid(obj))||!alreadycommunicatedparameter.at(typeid(obj))) {
@@ -71,60 +74,69 @@ struct LatticeProperties{
         }
         alreadycommunicatedparameter[typeid(obj)] = true;
         }
+        
     }
 
     //! This function streams the distributions to the neighboring processor.
     template<class TDistribution>
     static void communicateDistribution(TDistribution& obj) { // currently along X only
+        
         #pragma omp master
         {
         //std::pair<int,Distribution_Base<D2Q9>> a = std::make_pair(0,obj);
-        if (!alreadycommunicateddistribution.count(std::make_pair(0,obj))||!alreadycommunicateddistribution.at(std::make_pair(0,obj))) {
+        if (!alreadycommunicateddistribution.count(std::make_pair(0,obj.getDistributionPointer(0)))||!alreadycommunicateddistribution.at(std::make_pair(0,obj.getDistributionPointer(0)))) {
             Parallel.template updateDistributionBeforeCommunication<TLattice>(obj);
             Parallel.template communicateDistribution<TLattice>(obj);
             Parallel.template updateDistributionAfterCommunication<TLattice>(obj);
         }
         alreadycommunicateddistribution[std::make_pair(0,obj.getDistributionPointer(0))] = true;
         }
+        
     }
 
     template<class TDistribution>
     static void communicateDistributionAll(TDistribution& obj) {
+        
         #pragma omp master
         {
-        if (!alreadycommunicateddistribution.count(std::make_pair(1,obj))||!alreadycommunicateddistribution.at(std::make_pair(1,obj))) {
+        if (!alreadycommunicateddistribution.count(std::make_pair(1,obj.getDistributionPointer(0)))||!alreadycommunicateddistribution.at(std::make_pair(1,obj.getDistributionPointer(0)))) {
             Parallel.template updateDistributionBeforeCommunicationAll<TLattice>(obj);
             Parallel.template communicateDistributionAll<TLattice>(obj);
             Parallel.template updateDistributionAfterCommunicationAll<TLattice>(obj);
         }
         alreadycommunicateddistribution[std::make_pair(1,obj.getDistributionPointer(0))] = true;
         }
+        
     }
 
     template<class TDistribution>
     static void communicateDistributionAllEquilibrium(TDistribution& obj) {
+        
         #pragma omp master
         {
-        if (!alreadycommunicateddistribution.count(std::make_pair(2,obj))||!alreadycommunicateddistribution.at(std::make_pair(2,obj))) {
+        if (!alreadycommunicateddistribution.count(std::make_pair(2,obj.getDistributionPointer(0)))||!alreadycommunicateddistribution.at(std::make_pair(2,obj.getDistributionPointer(0)))) {
             Parallel.template updateDistributionBeforeCommunicationAllEquilibrium<TLattice>(obj);
             Parallel.template communicateDistributionAll<TLattice>(obj);
             Parallel.template updateDistributionAfterCommunicationAllEquilibrium<TLattice>(obj);
         }
         alreadycommunicateddistribution[std::make_pair(2,obj.getDistributionPointer(0))] = true;
         }
+        
     }
 
     template<class TDistribution>
     static void communicateDistributionAllOld(TDistribution& obj) {
+        
         #pragma omp master
         {
-        if (!alreadycommunicateddistribution.count(std::make_pair(3,obj))||!alreadycommunicateddistribution.at(std::make_pair(3,obj))) {
+        if (!alreadycommunicateddistribution.count(std::make_pair(3,obj.getDistributionPointer(0)))||!alreadycommunicateddistribution.at(std::make_pair(3,obj.getDistributionPointer(0)))) {
             Parallel.template updateDistributionBeforeCommunicationAllOld<TLattice>(obj);
             Parallel.template communicateDistributionAll<TLattice>(obj);
             Parallel.template updateDistributionAfterCommunicationAllOld<TLattice>(obj);
         }
         alreadycommunicateddistribution[std::make_pair(3,obj.getDistributionPointer(0))] = true;
         }
+        
     }
 };
 
@@ -175,8 +187,8 @@ struct LatticePropertiesRuntime {
     inline static int HaloSize = 0, HaloXWidth = 0, HaloYWidth = 0, HaloZWidth = 0;
     inline static int subArray[3] = {};
     inline static double DT = 1.0;
-    inline static int Face[6] = {}; // FaceX=0, FaceY=0, FaceZ=0, EdgeX=0, EdgeY=0, EdgeZ=0;
-    inline static int Neighbors = 0; // FaceX=0, FaceY=0, FaceZ=0, EdgeX=0, EdgeY=0, EdgeZ=0;
+    inline static int Face[6] = {};
+    inline static int Width = 0;
     static TParallel Parallel;
 
     static std::map<std::type_index,bool> alreadycommunicatedparameter;

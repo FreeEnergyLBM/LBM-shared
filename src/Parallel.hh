@@ -16,7 +16,7 @@
  * MaxNeighbors is updated depending on the chosen number of neighbors. LXdiv (LX for each parallel block of
  * lattice points) is set based on the number of processors and number of neighbors chosen.
  */
-template<class TDerived, int TNumNeighbors=1>
+template<class TDerived, int TWidth=1>
 class Parallel {
     public:
 
@@ -95,10 +95,10 @@ class Parallel {
         //template<class TLattice, class TDistribution>
         //inline void communicateDistributionAllOld(TDistribution& obj);
 
-        static constexpr int NumNeighbors = TNumNeighbors;
+        static constexpr int Width = TWidth;
 
     protected:
-        int mMaxNeighbors = 0;
+        int mMaxWidth = 0;
         // int mNumDirections = 0; //!<Number of communication channels. Must be redefined in child classes.
         std::vector<int> mNeighbors; //!<IDs of the neighboring processes.
         std::vector<int> mI0Send; //!<Lattice index to begin sending to each processor.
@@ -108,9 +108,9 @@ class Parallel {
 };
 
 
-template<class TDerived, int TNumNeighbors>
-Parallel<TDerived,TNumNeighbors>::Parallel() {
-    if(mMaxNeighbors < TNumNeighbors) mMaxNeighbors = TNumNeighbors;
+template<class TDerived, int TWidth>
+Parallel<TDerived,TWidth>::Parallel() {
+    if(mMaxWidth < TWidth) mMaxWidth = TWidth;
 }
 
 
@@ -119,9 +119,9 @@ Parallel<TDerived,TNumNeighbors>::Parallel() {
  *          communication. This means that each process does not need to wait for the other processes to communicate. At
  *          the end of this function, we have a MPI_Waitall call, to ensure all processes are synced.
  */
-template<class TDerived, int TNumNeighbors>
+template<class TDerived, int TWidth>
 template<class TLattice, class TParameter>
-inline void Parallel<TDerived,TNumNeighbors>::communicateParameter(TParameter& obj) {
+inline void Parallel<TDerived,TWidth>::communicateParameter(TParameter& obj) {
     #ifdef MPIPARALLEL
     if (mpi.size == 1) return;
     //std::cout<<TParameter::mName<<" "<<obj.getCommParameter()[0]<<std::endl;
@@ -136,13 +136,13 @@ inline void Parallel<TDerived,TNumNeighbors>::communicateParameter(TParameter& o
 
         int tag = iNeighbor;
         MPI_Isend(&obj.getCommParameter()[mI0Send[iNeighbor]*obj.mNum],
-                  TNumNeighbors * TLattice::Face[iNeighbor/2] * obj.mNum,
+                  TWidth * TLattice::Face[iNeighbor/2] * obj.mNum,
                   mpi_get_type<typename TParameter::ParamType,TLattice>(),
                   mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor]);
 
         tag = (iNeighbor%2==0) ? iNeighbor+1 : iNeighbor-1;
         MPI_Irecv(&obj.getCommParameter()[mI0Recv[iNeighbor]*obj.mNum],
-                  TNumNeighbors * TLattice::Face[iNeighbor/2] * obj.mNum,
+                  TWidth * TLattice::Face[iNeighbor/2] * obj.mNum,
                   mpi_get_type<typename TParameter::ParamType,TLattice>(),
                   mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor+1]);
         
@@ -154,9 +154,9 @@ inline void Parallel<TDerived,TNumNeighbors>::communicateParameter(TParameter& o
 }
 
 /*
-template<class TDerived, int TNumNeighbors>
+template<class TDerived, int TWidth>
 template<class TLattice, class TParameter>
-inline void Parallel<TDerived,TNumNeighbors>::updateParameterBeforeCommunication(TParameter& obj) {
+inline void Parallel<TDerived,TWidth>::updateParameterBeforeCommunication(TParameter& obj) {
 #pragma omp master
 {
     int lz = TLattice::LZdiv;
@@ -407,9 +407,9 @@ inline void Parallel<TDerived,TWidth>::updateParameterAfterCommunication(TParame
 }
 }
 
-template<class TDerived, int TNumNeighbors>
+template<class TDerived, int TWidth>
 template<class TLattice, class TDistribution>
-inline void Parallel<TDerived,TNumNeighbors>::communicateDistribution(TDistribution& obj) {
+inline void Parallel<TDerived,TWidth>::communicateDistribution(TDistribution& obj) {
 
     #ifdef MPIPARALLEL
     if (mpi.size == 1) return;
@@ -458,9 +458,9 @@ inline void Parallel<TDerived,TNumNeighbors>::communicateDistribution(TDistribut
     #endif
 }
 
-template<class TDerived, int TNumNeighbors>
+template<class TDerived, int TWidth>
 template<class TLattice, class TDistribution>
-inline void Parallel<TDerived,TNumNeighbors>::communicateDistributionAll(TDistribution& obj) {
+inline void Parallel<TDerived,TWidth>::communicateDistributionAll(TDistribution& obj) {
 
     #ifdef MPIPARALLEL
     if (mpi.size == 1) return;
@@ -475,13 +475,13 @@ inline void Parallel<TDerived,TNumNeighbors>::communicateDistributionAll(TDistri
     for (int iNeighbor=0; iNeighbor<nNeighbors; iNeighbor++) {
         int tag = iNeighbor;
         MPI_Isend(&obj.getCommDistribution()[mI0Send[iNeighbor]*TStencil::Q],
-                  TNumNeighbors * TLattice::LY * TLattice::LZ * TStencil::Q,
+                  TWidth * TLattice::LY * TLattice::LZ * TStencil::Q,
                   mpi_get_type<double,TLattice>(),
                   mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor]);
 
         tag = (iNeighbor%2==0) ? iNeighbor+1 : iNeighbor-1;
         MPI_Irecv(&obj.getCommDistribution()[mI0Recv[iNeighbor]*TStencil::Q],
-                  TNumNeighbors * TLattice::LY * TLattice::LZ * TStencil::Q,
+                  TWidth * TLattice::LY * TLattice::LZ * TStencil::Q,
                   mpi_get_type<double,TLattice>(),
                   mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2*iNeighbor+1]);
     }
@@ -492,9 +492,9 @@ inline void Parallel<TDerived,TNumNeighbors>::communicateDistributionAll(TDistri
 
 }
 
-template<class TDerived, int TNumNeighbors>
+template<class TDerived, int TWidth>
 template<class TLattice, class TDistribution>
-inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunication(TDistribution& obj) {
+inline void Parallel<TDerived,TWidth>::updateDistributionBeforeCommunication(TDistribution& obj) {
 #pragma omp master
 {
     using TStencil = typename TDistribution::Stencil;
@@ -550,9 +550,9 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicat
 }
 }
 
-template<class TDerived, int TNumNeighbors>
+template<class TDerived, int TWidth>
 template<class TLattice, class TDistribution>
-inline void Parallel<TDerived,TNumNeighbors>::updateDistributionAfterCommunication(TDistribution& obj) {
+inline void Parallel<TDerived,TWidth>::updateDistributionAfterCommunication(TDistribution& obj) {
 #pragma omp master
 {
     using TStencil = typename TDistribution::Stencil;
@@ -613,9 +613,9 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionAfterCommunicati
 }
 }
 
-template<class TDerived, int TNumNeighbors>
+template<class TDerived, int TWidth>
 template<class TLattice, class TDistribution>
-inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicationAll(TDistribution& obj) {
+inline void Parallel<TDerived,TWidth>::updateDistributionBeforeCommunicationAll(TDistribution& obj) {
 
     #pragma omp master
     {
@@ -672,9 +672,9 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicat
     
 }
 
-template<class TDerived, int TNumNeighbors>
+template<class TDerived, int TWidth>
 template<class TLattice, class TDistribution>
-inline void Parallel<TDerived,TNumNeighbors>::updateDistributionAfterCommunicationAll(TDistribution& obj) {
+inline void Parallel<TDerived,TWidth>::updateDistributionAfterCommunicationAll(TDistribution& obj) {
     #pragma omp master
     {
     using TStencil = typename TDistribution::Stencil;
@@ -729,9 +729,9 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionAfterCommunicati
 }
 
 
-template<class TDerived, int TNumNeighbors>
+template<class TDerived, int TWidth>
 template<class TLattice, class TDistribution>
-inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicationAllOld(TDistribution& obj) {
+inline void Parallel<TDerived,TWidth>::updateDistributionBeforeCommunicationAllOld(TDistribution& obj) {
 
     #pragma omp master
     {
@@ -788,9 +788,9 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicat
     
 }
 
-template<class TDerived, int TNumNeighbors>
+template<class TDerived, int TWidth>
 template<class TLattice, class TDistribution>
-inline void Parallel<TDerived,TNumNeighbors>::updateDistributionAfterCommunicationAllOld(TDistribution& obj) {
+inline void Parallel<TDerived,TWidth>::updateDistributionAfterCommunicationAllOld(TDistribution& obj) {
     #pragma omp master
     {
     using TStencil = typename TDistribution::Stencil;
@@ -845,9 +845,9 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionAfterCommunicati
 }
 
 
-template<class TDerived, int TNumNeighbors>
+template<class TDerived, int TWidth>
 template<class TLattice, class TDistribution>
-inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicationAllEquilibrium(TDistribution& obj) {
+inline void Parallel<TDerived,TWidth>::updateDistributionBeforeCommunicationAllEquilibrium(TDistribution& obj) {
 
     #pragma omp master
     {
@@ -904,9 +904,9 @@ inline void Parallel<TDerived,TNumNeighbors>::updateDistributionBeforeCommunicat
     
 }
 
-template<class TDerived, int TNumNeighbors>
+template<class TDerived, int TWidth>
 template<class TLattice, class TDistribution>
-inline void Parallel<TDerived,TNumNeighbors>::updateDistributionAfterCommunicationAllEquilibrium(TDistribution& obj) {
+inline void Parallel<TDerived,TWidth>::updateDistributionAfterCommunicationAllEquilibrium(TDistribution& obj) {
     #pragma omp master
     {
     using TStencil = typename TDistribution::Stencil;
@@ -985,8 +985,8 @@ class NoParallel : public Parallel<NoParallel,0> {
  * This class contains functions to communicate parameters for gradient calculations and to communicate
  * distributions for streaming.
  */
-template<int TNumNeighbors=1>
-class ParallelX : public Parallel<ParallelX<TNumNeighbors>,TNumNeighbors> {
+template<int TWidth=1>
+class ParallelX : public Parallel<ParallelX<TWidth>,TWidth> {
     public:
         
         static constexpr int mNumDirections = 1; // number of communication directions in 1D parallelisation
@@ -1005,20 +1005,20 @@ class ParallelX : public Parallel<ParallelX<TNumNeighbors>,TNumNeighbors> {
 };
 
 
-template<int TNumNeighbors>
+template<int TWidth>
 template<class TLattice>
-void ParallelX<TNumNeighbors>::init() {
+void ParallelX<TWidth>::init() {
     if (mpi.size <= 1) return;
 
     const int faceSize = TLattice::Face[0] = TLattice::LY * TLattice::LZ;
 
     // Split lattice
-    TLattice::HaloXWidth = TLattice::Neighbors = this->mMaxNeighbors;
-    TLattice::HaloSize = faceSize * this->mMaxNeighbors;
-    //std::cout<<this->mMaxNeighbors<<std::endl;
+    TLattice::HaloXWidth = TLattice::Width = this->mMaxWidth;
+    TLattice::HaloSize = faceSize * this->mMaxWidth;
+    //std::cout<<this->mMaxWidth<<std::endl;
     if (TLattice::LX % mpi.size == 0) {
-        TLattice::LXdiv = (TLattice::LX/mpi.size + 2*TNumNeighbors);
-        TLattice::LXMPIOffset = (TLattice::LXdiv - 2*TNumNeighbors) * mpi.rank;
+        TLattice::LXdiv = (TLattice::LX/mpi.size + 2*TWidth);
+        TLattice::LXMPIOffset = (TLattice::LXdiv - 2*TWidth) * mpi.rank;
         TLattice::subArray[0] = TLattice::LX / mpi.size;
     }
     else{
@@ -1036,11 +1036,11 @@ void ParallelX<TNumNeighbors>::init() {
 
     // Create communication objects
     this->mI0Send = std::vector<int>(2);
-    this->mI0Send[0] = TNumNeighbors*faceSize;//TNumNeighbors*faceSize;
-    this->mI0Send[1] = 2*TNumNeighbors*faceSize;//2*TNumNeighbors*faceSize;
+    this->mI0Send[0] = TWidth*faceSize;
+    this->mI0Send[1] = 2*TWidth*faceSize;
     this->mI0Recv = std::vector<int>(2);
     this->mI0Recv[0] = 0;
-    this->mI0Recv[1] = 3*TNumNeighbors*faceSize;
+    this->mI0Recv[1] = 3*TWidth*faceSize;
 
     this->mI0SendDistr = std::vector<int>(2);
     this->mI0SendDistr[0] = 0;
@@ -1051,7 +1051,7 @@ void ParallelX<TNumNeighbors>::init() {
 
     // Create MPI buffer
     #ifdef MPIPARALLEL
-    const int bufSize = (faceSize * TNumNeighbors * (5 + 2) * 2 * 2 + 1000) * sizeof(double);
+    const int bufSize = (faceSize * TWidth * (5 + 2) * 2 * 2 + 1000) * sizeof(double);
 
     if(bufSize > MPIBUFFERSIZE) {
         if(MPIBUFFERSIZE != 0) MPI_Buffer_detach(MPIBUFFER, &MPIBUFFERSIZE);
@@ -1065,9 +1065,9 @@ void ParallelX<TNumNeighbors>::init() {
 
 
 #ifdef MPIPARALLEL
-template<int TNumNeighbors>
+template<int TWidth>
 template<class TLattice, class TStencil>
-MPI_Datatype ParallelX<TNumNeighbors>::createDistributionType() {
+MPI_Datatype ParallelX<TWidth>::createDistributionType() {
     const int faceSize = TLattice::LY*TLattice::LZ;
     MPI_Datatype distributionType;
     MPI_Type_vector(faceSize, 1, TStencil::Q, mpi_get_type<double,TLattice>(), &distributionType);
@@ -1082,8 +1082,8 @@ MPI_Datatype ParallelX<TNumNeighbors>::createDistributionType() {
  * This class contains functions to communicate parameters for gradient calculations and to communicate
  * distributions for streaming.
  */
-template<int TNumNeighbors=1>
-class ParallelY : public Parallel<ParallelY<TNumNeighbors>,TNumNeighbors> {
+template<int TWidth=1>
+class ParallelY : public Parallel<ParallelY<TWidth>,TWidth> {
     public:
 
         static constexpr int mNumDirections = 1; // number of communication directions in 1D parallelisation
@@ -1102,20 +1102,20 @@ class ParallelY : public Parallel<ParallelY<TNumNeighbors>,TNumNeighbors> {
 };
 
 
-template<int TNumNeighbors>
+template<int TWidth>
 template<class TLattice>
-void ParallelY<TNumNeighbors>::init() {
+void ParallelY<TWidth>::init() {
     if (mpi.size <= 1) return;
 
     const int faceSize = TLattice::Face[0] = TLattice::LX * TLattice::LZ;
 
     // Split lattice
-    TLattice::HaloYWidth = TLattice::Neighbors = this->mMaxNeighbors;
-    TLattice::HaloSize = faceSize * this->mMaxNeighbors;
+    TLattice::HaloYWidth = TLattice::Width = this->mMaxWidth;
+    TLattice::HaloSize = faceSize * this->mMaxWidth;
 
     if (TLattice::LY % mpi.size == 0) {
-        TLattice::LYdiv = (TLattice::LY/mpi.size + 2*TNumNeighbors);
-        TLattice::LYMPIOffset = (TLattice::LYdiv - 2*TNumNeighbors) * mpi.rank;
+        TLattice::LYdiv = (TLattice::LY/mpi.size + 2*TWidth);
+        TLattice::LYMPIOffset = (TLattice::LYdiv - 2*TWidth) * mpi.rank;
         TLattice::subArray[1] = TLattice::LY / mpi.size;
     }
     else{
@@ -1133,11 +1133,11 @@ void ParallelY<TNumNeighbors>::init() {
 
     // Create communication objects
     this->mI0Send = std::vector<int>(2);
-    this->mI0Send[0] = TNumNeighbors*faceSize;//TNumNeighbors*faceSize;
-    this->mI0Send[1] = 2*TNumNeighbors*faceSize;//2*TNumNeighbors*faceSize;
+    this->mI0Send[0] = TWidth*faceSize;
+    this->mI0Send[1] = 2*TWidth*faceSize;
     this->mI0Recv = std::vector<int>(2);
     this->mI0Recv[0] = 0;
-    this->mI0Recv[1] = 3*TNumNeighbors*faceSize;
+    this->mI0Recv[1] = 3*TWidth*faceSize;
 
     this->mI0SendDistr = std::vector<int>(2);
     this->mI0SendDistr[0] = 0;
@@ -1148,7 +1148,7 @@ void ParallelY<TNumNeighbors>::init() {
 
     // Create MPI buffer
     #ifdef MPIPARALLEL
-    const int bufSize = (faceSize * TNumNeighbors * (5 + 2) * 2 * 2 + 1000) * sizeof(double);
+    const int bufSize = (faceSize * TWidth * (5 + 2) * 2 * 2 + 1000) * sizeof(double);
 
     if(bufSize > MPIBUFFERSIZE) {
         if(MPIBUFFERSIZE != 0) MPI_Buffer_detach(MPIBUFFER, &MPIBUFFERSIZE);
@@ -1162,9 +1162,9 @@ void ParallelY<TNumNeighbors>::init() {
 
 
 #ifdef MPIPARALLEL
-template<int TNumNeighbors>
+template<int TWidth>
 template<class TLattice, class TStencil>
-MPI_Datatype ParallelY<TNumNeighbors>::createDistributionType() {
+MPI_Datatype ParallelY<TWidth>::createDistributionType() {
     const int faceSize = TLattice::LX*TLattice::LZ;
     MPI_Datatype distributionType;
     MPI_Type_vector(faceSize, 1, TStencil::Q, mpi_get_type<double,TLattice>(), &distributionType);
@@ -1179,8 +1179,8 @@ MPI_Datatype ParallelY<TNumNeighbors>::createDistributionType() {
  * This class contains functions to communicate parameters for gradient calculations and to communicate
  * distributions for streaming.
  */
-template<int TNumNeighbors=1>
-class ParallelZ : public Parallel<ParallelZ<TNumNeighbors>,TNumNeighbors> {
+template<int TWidth=1>
+class ParallelZ : public Parallel<ParallelZ<TWidth>,TWidth> {
     public:
 
         static constexpr int mNumDirections = 1; // number of communication directions in 1D parallelisation
@@ -1199,20 +1199,20 @@ class ParallelZ : public Parallel<ParallelZ<TNumNeighbors>,TNumNeighbors> {
 };
 
 
-template<int TNumNeighbors>
+template<int TWidth>
 template<class TLattice>
-void ParallelZ<TNumNeighbors>::init() {
+void ParallelZ<TWidth>::init() {
     if (mpi.size <= 1) return;
 
     const int faceSize = TLattice::Face[0] = TLattice::LX * TLattice::LY;
 
     // Split lattice
-    TLattice::HaloZWidth = TLattice::Neighbors = this->mMaxNeighbors;
-    TLattice::HaloSize = faceSize * this->mMaxNeighbors;
+    TLattice::HaloZWidth = TLattice::Width = this->mMaxWidth;
+    TLattice::HaloSize = faceSize * this->mMaxWidth;
 
     if (TLattice::LZ % mpi.size == 0) {
-        TLattice::LZdiv = (TLattice::LZ/mpi.size + 2*TNumNeighbors);
-        TLattice::LZMPIOffset = (TLattice::LZdiv - 2*TNumNeighbors) * mpi.rank;
+        TLattice::LZdiv = (TLattice::LZ/mpi.size + 2*TWidth);
+        TLattice::LZMPIOffset = (TLattice::LZdiv - 2*TWidth) * mpi.rank;
         TLattice::subArray[2] = TLattice::LZ / mpi.size;
     }
     else{
@@ -1230,11 +1230,11 @@ void ParallelZ<TNumNeighbors>::init() {
 
     // Create communication objects
     this->mI0Send = std::vector<int>(2);
-    this->mI0Send[0] = TNumNeighbors*faceSize;//TNumNeighbors*faceSize;
-    this->mI0Send[1] = 2*TNumNeighbors*faceSize;//2*TNumNeighbors*faceSize;
+    this->mI0Send[0] = TWidth*faceSize;
+    this->mI0Send[1] = 2*TWidth*faceSize;
     this->mI0Recv = std::vector<int>(2);
     this->mI0Recv[0] = 0;
-    this->mI0Recv[1] = 3*TNumNeighbors*faceSize;
+    this->mI0Recv[1] = 3*TWidth*faceSize;
 
     this->mI0SendDistr = std::vector<int>(2);
     this->mI0SendDistr[0] = 0;
@@ -1245,7 +1245,7 @@ void ParallelZ<TNumNeighbors>::init() {
 
     // Create MPI buffer
     #ifdef MPIPARALLEL
-    const int bufSize = (faceSize * TNumNeighbors * (5 + 2) * 2 * 2 + 1000) * sizeof(double);
+    const int bufSize = (faceSize * TWidth * (5 + 2) * 2 * 2 + 1000) * sizeof(double);
 
     if(bufSize > MPIBUFFERSIZE) {
         if(MPIBUFFERSIZE != 0) MPI_Buffer_detach(MPIBUFFER, &MPIBUFFERSIZE);
@@ -1259,9 +1259,9 @@ void ParallelZ<TNumNeighbors>::init() {
 
 
 #ifdef MPIPARALLEL
-template<int TNumNeighbors>
+template<int TWidth>
 template<class TLattice, class TStencil>
-MPI_Datatype ParallelZ<TNumNeighbors>::createDistributionType() {
+MPI_Datatype ParallelZ<TWidth>::createDistributionType() {
     const int faceSize = TLattice::LX*TLattice::LY;
     MPI_Datatype distributionType;
     MPI_Type_vector(faceSize, 1, TStencil::Q, mpi_get_type<double,TLattice>(), &distributionType);

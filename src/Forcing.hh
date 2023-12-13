@@ -85,6 +85,7 @@ struct WellBalancedForce : ForcingBase<Cartesian> {
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k) {
         mGuo.precompute<TTraits>(f,k);
+        mForceDotVelocity = 0;
         for (int xyz=0;xyz<TTraits::Lattice::NDIM;xyz++) mForceDotVelocity+=GradientDensity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)*Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz);
     }
     
@@ -124,6 +125,7 @@ struct AllenCahnSourceMethod : ForcingBase<Cartesian> {
 
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k){
+        ma_Force = {};
         ma_Force.push_back(f.template computeXYZ<TTraits>(0,k));
         ma_Force.push_back(f.template computeXYZ<TTraits>(1,k));
         if constexpr (TTraits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<TTraits>(2,k));
@@ -156,6 +158,7 @@ struct EvaporationSourceMethod : ForcingBase<Cartesian,One> {
 
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k){
+        ma_Source = {};
         m_Source0D = f.template compute<TTraits>(k);
         ma_Source.push_back(f.template computeXYZ<TTraits>(0,k));
         ma_Source.push_back(f.template computeXYZ<TTraits>(1,k));
@@ -190,14 +193,14 @@ struct He : ForcingBase<Cartesian> {
 
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k){
+        ma_Force = {};
         ma_Force.push_back(f.template computeXYZ<TTraits>(0,k));
         ma_Force.push_back(f.template computeXYZ<TTraits>(1,k));
         if constexpr (TTraits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<TTraits>(2,k));
 
+        velocity_dot_force = 0;
         for (int xyz=0;xyz<TTraits::Stencil::D;xyz++){
-
-            velocity_dot_force += (ma_Force[xyz] * Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector
-                                                                        //with velocity
+            velocity_dot_force += (ma_Force[xyz] * Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector with velocity
         }
     }
     
@@ -250,6 +253,7 @@ struct NCompForce : ForcingBase<Cartesian> {
 
 struct Lee : ForcingBase<Cartesian,AllDirections> {
 
+    int kPrecompute;
     std::vector<double> ma_Force;
     std::vector<double> ma_ForceQ;
     
@@ -257,22 +261,25 @@ struct Lee : ForcingBase<Cartesian,AllDirections> {
 
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k){
-        
+        kPrecompute = k;
+
+        ma_Force = {};
+        ma_ForceQ = {};
         ma_Force.push_back(f.template computeXYZ<TTraits>(0,k));
         ma_Force.push_back(f.template computeXYZ<TTraits>(1,k));
         if constexpr (TTraits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<TTraits>(2,k));
         for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
         
+        velocity_dot_force = 0;
         for (int xyz=0;xyz<TTraits::Stencil::D;xyz++){
-
-            velocity_dot_force += (ma_Force[xyz] * Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector
-                                                                        //with velocity
+            velocity_dot_force += (ma_Force[xyz] * Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector with velocity
         }
         
     }
     
     template<class TTraits>
     inline double compute(int idx, int k) { //Guo forcing
+        if (k != kPrecompute) throw std::runtime_error("The forcing scheme has been called for a different position ("+std::to_string(k)+") to the one that was precomputed ("+std::to_string(kPrecompute)+")");
         
         double prefactor = TTraits::Lattice::DT * CollisionBase<typename TTraits::Lattice,typename TTraits::Stencil>::computeGamma(&Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,0),idx); //Prefactor for Guo forcing
 
@@ -291,15 +298,16 @@ struct LeeGamma0 : ForcingBase<Cartesian,AllDirections> {
 
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k){
+        ma_Force = {};
+        ma_ForceQ = {};
         ma_Force.push_back(f.template computeXYZ<TTraits>(0,k));
         ma_Force.push_back(f.template computeXYZ<TTraits>(1,k));
         if constexpr (TTraits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<TTraits>(2,k));
         for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
 
+        velocity_dot_force = 0;
         for (int xyz=0;xyz<TTraits::Stencil::D;xyz++){
-
-            velocity_dot_force += (ma_Force[xyz] * Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector
-                                                                        //with velocity
+            velocity_dot_force += (ma_Force[xyz] * Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector with velocity
         }
     }
     
@@ -321,6 +329,7 @@ struct LeeMuLocal : ForcingBase<AllDirections> {
     template<class TTraits, class TForce>
     const inline void precompute(TForce& f, int k){
 
+        ma_ForceQ = {};
         for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
 
     }
@@ -350,6 +359,7 @@ struct LeeMuNonLocal : ForcingBase<AllDirections> {
     template<class TTraits, class TForce>
     const inline void precompute(TForce& f, int k){
 
+        ma_ForceQ = {};
         for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
 
     }

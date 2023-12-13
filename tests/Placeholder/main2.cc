@@ -75,8 +75,8 @@ int main(int argc, char **argv){
     binary.getPostProcessor<GradientsWettingMultiStencil<OrderParameter<>, CentralXYZWetting, CentralQWetting, MixedXYZWetting, MixedQWetting, LaplacianCentralWetting>>().setPrefactor(wettingprefactor);
 
     pressure.getForce<BodyForce<>>().setMagnitudeX(0.000000);//1);
-    ParameterSave<Lattice> saver("data/");
-    saver.SaveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)
+    SaveHandler<Lattice> saver("data/");
+    saver.saveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)
 
     // Define the solid and fluid using the functions above
     Geometry<Lattice>::initialiseBoundaries(initBoundary);
@@ -94,13 +94,13 @@ int main(int argc, char **argv){
         // Save the desired parameters, producing a binary file for each.
         if (timestep%saveInterval==0) {
             if(mpi.rank==0)std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
-            //saver.SaveParameter<BoundaryLabels<>>(timestep);
-            saver.SaveBoundaries(timestep);
-            saver.SaveParameter<ChemicalPotential<>>(timestep);
-            saver.SaveParameter<Density<>>(timestep);
-            saver.SaveParameter<Pressure<>>(timestep);
-            saver.SaveParameter<OrderParameter<>>(timestep);
-            saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
+            //saver.saveParameter<BoundaryLabels<>>(timestep);
+            saver.saveBoundaries(timestep);
+            saver.saveParameter<ChemicalPotential<>>(timestep);
+            saver.saveParameter<Density<>>(timestep);
+            saver.saveParameter<Pressure<>>(timestep);
+            saver.saveParameter<OrderParameter<>>(timestep);
+            saver.saveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }
         
         // Evolve by one timestep

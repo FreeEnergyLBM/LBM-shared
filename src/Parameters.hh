@@ -34,7 +34,7 @@ class Parameter {
 
         using ParamType = T;
 
-        inline void Save(std::string filename, int t, std::string datadir);
+        inline void save(int t);
 
         std::vector<T> mv_Parameter; //Static vector (Does not change between objects of the class)
         std::vector<T> mv_CommParameter; //Parameter vector reordered for convenience of communication
@@ -234,47 +234,12 @@ class ParameterSingleton {
 //template<class TObj, class TLattice, typename T, int TNum>
 //std::map<int,bool> Parameter<TObj, TLattice, T, TNum>::mmInitialised;
 
+template<class TLattice>
+class SaveHandler;
+
 template<class TObj,class TLattice,  typename T, int TNum>
-inline void Parameter<TObj, TLattice, T, TNum>::Save(std::string filename, int t, std::string datadir) { //Function to save parameter stored in this class
-
-    char fdump[512];
-    sprintf(fdump, "%s/%s_t%i.mat", datadir.c_str(), filename.c_str(), t); //Buffer containing file name and location.
-
-#ifdef MPIPARALLEL //When MPI is used we need a different approach for saving as all nodes are trying to write to the file
-
-    MPI_File fh;
-
-    MPI_File_open(MPI_COMM_SELF, fdump, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh); //Open the file using mpi in write only mode
-    
-    //MPI_File* fh2 = &fh;
-
-    MPI_File_seek(fh, sizeof(typename TObj::ParamType) * mpi.rank * mNum * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size, MPI_SEEK_SET); //Skip to a certain location in the file, currently
-    
-    MPI_File_write(fh,&mv_Parameter[TLattice::HaloSize * mNum], mNum * (TLattice::N - 2 * TLattice::HaloSize), MPI_DOUBLE, MPI_STATUSES_IGNORE);
-
-    //MPI_File_seek(fh, -sizeof(typename TObj::ParamType) * mpi.rank * mNum * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size, MPI_SEEK_SET);
-    
-    MPI_File_close(&fh);
-         
-#else
-
-    std::ofstream fs(fdump, std::ios::out | std::ios::binary);
-    
-    fs.seekp(sizeof(typename TObj::ParamType) * mpi.rank * mNum * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size);
-
-    for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { 
-
-        for(int idx = 0; idx < mNum; idx++) {
-            //std::cout<<*(char *)(&mv_Parameter[k * mNum + idx])<<std::endl;
-            fs.write((char *)(&mv_Parameter[k * mNum + idx]), sizeof(typename TObj::ParamType));
-        }
-        
-    };
-
-    fs.close();
-
-#endif
-
+inline void Parameter<TObj, TLattice, T, TNum>::save(int t) { //Function to save parameter stored in this class
+    SaveHandler<TLattice>::template saveParameter<TObj,TNum>(t);
 }
 
 template <int TNDIM>

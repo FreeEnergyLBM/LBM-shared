@@ -1,8 +1,14 @@
 #pragma once
 #include "../Geometry.hh"
 
+class Model;
+
+
 class BoundaryBase{
     public:
+
+        template<class TTraits, class TDistributionType>
+        inline void compute(TDistributionType& mDistribution, int k);
 
         template<class TTraits>
         inline void precompute(int k){};
@@ -38,9 +44,12 @@ class BoundaryBase{
             return false;
         }
 
+        inline void initialise(Model* model) {mModel = model;};
+
     private:
 
         std::vector<int> mInterfaceID = {1};
 
-
+    protected:
+        Model *mModel;
 };

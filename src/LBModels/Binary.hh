@@ -2,11 +2,9 @@
 #include "../Collide.hh"
 #include "../Parameters.hh"
 #include "../Data.hh"
-#include "../Parallel.hh"
+#include "../Geometry.hh"
 #include "ModelBase.hh"
-#include "../BoundaryModels/Boundaries.hh"
-#include "../AddOns/AddOns.hh"
-#include "../Forces/Forces.hh"
+#include "../BoundaryModels/BounceBack.hh"
 #include "../GradientStencils/GradientStencils.hh"
 #include <utility>
 #include <array>
@@ -40,9 +38,9 @@ class Binary: public CollisionBase<TLattice, typename TTraits::Stencil>, public 
 
         inline void computeMomenta() override; //Momenta (density, velocity) calculation
 
-    private:
+        inline double computeEquilibrium(int k, int idx) override; //Calculate equilibrium in direction idx
 
-        inline double computeEquilibrium(const double& orderparam, const double* velocity, int idx, int k); //Calculate equilibrium in direction idx with a given density and velocity
+    private:
 
         inline double computeModelForce(int xyz, int k); //Calculate forces specific to the model in direction xyz
 
@@ -79,7 +77,7 @@ inline void Binary<TLattice, TTraits>::collide() {
 
             for (int idx = 1; idx < Stencil::Q; idx++) {
 
-                equilibriums[idx] = computeEquilibrium(orderparameter[k], &velocity[k * Stencil::D], idx, k);
+                equilibriums[idx] = computeEquilibrium(k, idx);
                 sum += equilibriums[idx];
 
             }
@@ -120,7 +118,7 @@ inline void Binary<TLattice, TTraits>::initialise() { //Initialise model
 
             double equilibrium;
 
-            if (idx> 0) equilibrium = computeEquilibrium(orderparameter[k], &velocity[k * Stencil::D], idx, k);
+            if (idx> 0) equilibrium = computeEquilibrium(k, idx);
             else equilibrium = orderparameter[k] - equilibriumsum;
 
             distribution[idx] = equilibrium; //Set distributions to equillibrium
@@ -134,6 +132,7 @@ inline void Binary<TLattice, TTraits>::initialise() { //Initialise model
 
     this -> mData.communicate(BoundaryLabels<TTraits::Lattice::NDIM>::template getInstance<TLattice>());
 
+    this->initialiseBoundaries();
 }
 
 
@@ -159,9 +158,10 @@ inline void Binary<TLattice, TTraits>::computeMomenta() { //Calculate order para
 }
 
 template<class TLattice, class TTraits>
-inline double Binary<TLattice, TTraits>::computeEquilibrium(const double& orderparam, const double* velocity, int idx, int k) {
+inline double Binary<TLattice, TTraits>::computeEquilibrium(int k, int idx) {
 
-    return Stencil::Weights[idx] * (ChemicalPotential<>::get<TLattice>(k) * mGamma / Stencil::Cs2 + orderparam * CollisionBase<TLattice, Stencil>::computeVelocityFactor(velocity, idx));
+    double velocityFactor = CollisionBase<TLattice, Stencil>::computeVelocityFactor(&velocity[k * Stencil::D], idx);
+    return Stencil::Weights[idx] * (ChemicalPotential<>::get<TLattice>(k) * mGamma / Stencil::Cs2 + orderparameter[k] * velocityFactor);
 
 }
 
@@ -188,10 +188,9 @@ class FlowFieldBinary : public FlowField<TLattice, TTraits>{ //Inherit from base
 
         inline virtual void initialise() override; //Initialisation step
 
-    private:
+        inline double computeEquilibrium(int k, int idx) override; //Calculate equilibrium in direction idx
 
-        inline double computeEquilibrium(const double& density, const double* velocity, const double& order_parameter, const double& chemical_potential, int idx, int k); //Calculate equilibrium in direction idx with a given//density and velocity
-                                                                     //at index idx
+    private:
 
         double mTau1 = 1;
         double mTau2 = 1;
@@ -201,9 +200,13 @@ class FlowFieldBinary : public FlowField<TLattice, TTraits>{ //Inherit from base
 };
 
 template<class TLattice, class TTraits>
-inline double FlowFieldBinary<TLattice, TTraits>::computeEquilibrium(const double& density, const double* velocity, const double& order_parameter, const double& chemical_potential, int idx, int k) {
+inline double FlowFieldBinary<TLattice, TTraits>::computeEquilibrium(int k, int idx) {
 
-    return density * CollisionBase<TLattice, Stencil>::computeGamma(velocity, idx) + Stencil::Weights[idx] * order_parameter * chemical_potential / Stencil::Cs2; //Equilibrium is density times gamma in this case
+    double density = this->density[k];
+    double order_parameter = OrderParameter<>::get<TLattice>(k);
+    double chemical_potential = ChemicalPotential<>::get<TLattice>(k);
+    double gamma = CollisionBase<TLattice, Stencil>::computeGamma(&(this->velocity[k * Stencil::D]), idx);
+    return density * gamma + Stencil::Weights[idx] * order_parameter * chemical_potential / Stencil::Cs2; //Equilibrium is density times gamma in this case
 
 }
 
@@ -222,7 +225,7 @@ inline void FlowFieldBinary<TLattice, TTraits>::collide() { //Collision step
 
             for (int idx = 1; idx < Stencil::Q; idx++) {
 
-                equilibriums[idx] = computeEquilibrium(this -> density[k], &(this -> velocity[k * Stencil::D]), OrderParameter<>::get<TLattice>(k), ChemicalPotential<>::get<TLattice>(k), idx, k);
+                equilibriums[idx] = computeEquilibrium(k, idx);
                 equilibriumsum += equilibriums[idx];
 
             }
@@ -262,7 +265,7 @@ inline void FlowFieldBinary<TLattice, TTraits>::initialise() { //Initialise mode
 
             double equilibrium;
 
-            if (idx>0) equilibrium = computeEquilibrium(this -> density[k], &(this -> velocity[k * Stencil::D]), OrderParameter<>::get<TLattice>(k), ChemicalPotential<>::get<TLattice>(k), idx, k);
+            if (idx>0) equilibrium = computeEquilibrium(k, idx);
 
             else equilibrium = FlowField<TLattice, TTraits>::density[k] - equilibriumsum;
 
@@ -274,4 +277,5 @@ inline void FlowFieldBinary<TLattice, TTraits>::initialise() { //Initialise mode
         
     }
     
+    this->initialiseBoundaries();
 }

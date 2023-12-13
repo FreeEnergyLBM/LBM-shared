@@ -232,7 +232,7 @@ EvaporationHumidity<Lattice, TTrait> initHumidity(){
 template<class TLattice>
 using DefaultTraitPressureLeeHumidityInflow = typename DefaultTraitPressureLee<TLattice> :: template AddPreProcessor<Swapper<Velocity<>, VelocityOld<>, TLattice::NDIM>>
                                                                                    :: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>
-                                                                                    :: template SetBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>:: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>::Forces>,BounceBack>;
+                                                                                    :: template SetBoundary<PressureOutflow,BounceBack>;
                                                                                    //:: template SetBoundary<FreeSlip,VelocityInflow,BounceBack>;
 
 //template<typename TTrait = typename traitpressure::SetDataType<DataOldNewEquilibrium>>
@@ -245,10 +245,8 @@ auto initPressure(){
     pressure.setCollideID({0,5,6});
     pressure.template getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
     pressure.template getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setGasDensity(dens2);
-    pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>:: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>::Forces>>().setPressureCalculator(pressure.computePressure);
-    pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>:: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>::Forces>>().setForceTuple(pressure.mt_Forces);
     pressure.template getBoundary<BounceBack>().setInterfaceID({1});
-    pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>:: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>::Forces>>().setInterfaceID({4});
+    pressure.template getBoundary<PressureOutflow>().setInterfaceID({4});
     //pressure.template getBoundary<FreeSlip>().setInterfaceID({2});
     //pressure.template getBoundary<VelocityInflow>().setInterfaceID({3,4});
     //pressure.template getBoundary<VelocityInflow>().setWallVelocity({inflowmomentum,0});

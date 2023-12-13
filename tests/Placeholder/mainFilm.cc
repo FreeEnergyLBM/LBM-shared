@@ -121,7 +121,7 @@ double initFluid3(int k) {
 */
 
 using traithumid = DefaultTraitHumidity<Lattice>::SetStencil<D2Q5>;
-using traitpressure = typename DefaultTraitPressureLeeHumidity<Lattice> :: template SetBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>,BounceBack>;
+using traitpressure = typename DefaultTraitPressureLeeHumidity<Lattice> :: template SetBoundary<PressureOutflow,BounceBack>;
 //using traitpressure = typename DefaultTraitPressureLee<Lattice> :: AddForce<BodyForce<>>;
 
 double distancefunc(int k, int idx){
@@ -219,11 +219,9 @@ int main(int argc, char **argv){
     humidity.getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
 
     pressure.getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
-    pressure.getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setPressureCalculator(pressure.computePressure);
-    pressure.getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setForceTuple(pressure.mt_Forces);
     //pressure.getForce<BodyForce<>>().setMagnitudeX(0.0000001);
-    ParameterSave<Lattice> saver("data/");
-    saver.SaveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)
+    SaveHandler<Lattice> saver("data/");
+    saver.saveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)
 
     // Define the solid and fluid using the functions above
     Geometry<Lattice>::initialiseBoundaries(initBoundary);
@@ -243,24 +241,24 @@ int main(int argc, char **argv){
     //Algorithm lbm(pressure,binary);
 
     // Perform the main LBM loop
-    saver.SaveBoundaries(0);
+    saver.saveBoundaries(0);
     for (int timestep=0; timestep<=timesteps; timestep++) {
 
         // Save the desired parameters, producing a binary file for each.
         if (timestep%saveInterval==0) {
             if(mpi.rank==0)std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
-            //saver.SaveParameter<BoundaryLabels<>>(timestep);
+            //saver.saveParameter<BoundaryLabels<>>(timestep);
             
-            //saver.SaveBoundaries(timestep);
-            saver.SaveParameter<Humidity<>>(timestep);
-            saver.SaveParameter<ChemicalPotential<>>(timestep);
-            saver.SaveParameter<Density<>>(timestep);
-            saver.SaveParameter<Pressure<>>(timestep);
-            saver.SaveParameter<OrderParameter<>>(timestep);
-            saver.SaveParameter<MassSink<>>(timestep);
-            saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
-            saver.SaveParameter<VelocityOld<>,Lattice::NDIM>(timestep);
-            saver.SaveParameter<GradientHumidity<>,Lattice::NDIM>(timestep);
+            //saver.saveBoundaries(timestep);
+            saver.saveParameter<Humidity<>>(timestep);
+            saver.saveParameter<ChemicalPotential<>>(timestep);
+            saver.saveParameter<Density<>>(timestep);
+            saver.saveParameter<Pressure<>>(timestep);
+            saver.saveParameter<OrderParameter<>>(timestep);
+            saver.saveParameter<MassSink<>>(timestep);
+            saver.saveParameter<Velocity<>,Lattice::NDIM>(timestep);
+            saver.saveParameter<VelocityOld<>,Lattice::NDIM>(timestep);
+            saver.saveParameter<GradientHumidity<>,Lattice::NDIM>(timestep);
             
         }
         

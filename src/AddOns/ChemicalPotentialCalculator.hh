@@ -2,6 +2,7 @@
 #include "../Parameters.hh"
 #include "../Lattice.hh"
 #include "../Service.hh"
+#include "../Geometry.hh"
 #include "AddOnBase.hh"
 #include<iostream>
 #include<utility>

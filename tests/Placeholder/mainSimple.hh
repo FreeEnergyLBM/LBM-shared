@@ -131,7 +131,7 @@ double initFluid3(int k) {
 */
 
 using traithumid = DefaultTraitHumidity<Lattice>::SetStencil<D2Q9>:: template SetBoundary<InterpolatedDirichlet,Dirichlet,Refill<Humidity<>>,FreeSlip>;
-using traitpressure = typename DefaultTraitPressureLeeHumidity<Lattice> :: template SetBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>,BounceBack>;
+using traitpressure = typename DefaultTraitPressureLeeHumidity<Lattice> :: template SetBoundary<PressureOutflow,BounceBack>;
 //using traitpressure = typename DefaultTraitPressureLee<Lattice> :: AddForce<BodyForce<>>;
 
 double distancefunc(int k, int idx){
@@ -233,7 +233,7 @@ using chempotgradients = GradientsMultiStencil<ChemicalPotential<>, CentralXYZMi
 template<class TLattice>
 using DefaultTraitPressureLeeHumidityInflow = typename DefaultTraitPressureLee<TLattice> :: template AddPreProcessor<Swapper<Velocity<>, VelocityOld<>, TLattice::NDIM>,chempotgradients,ConstantGradientBoundary<Pressure<>>>
                                                                                    :: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>
-                                                                                   :: template SetBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>,BounceBack>;
+                                                                                   :: template SetBoundary<PressureOutflow,BounceBack>;
                                                                                    //:: template SetBoundary<FreeSlip,VelocityInflow,BounceBack>;
 
 //template<typename TTrait = typename traitpressure::SetDataType<DataOldNewEquilibrium>>
@@ -245,10 +245,8 @@ auto initPressure(){
 
     pressure.template getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
     pressure.template getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setGasDensity(dens2);
-    pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setPressureCalculator(pressure.computePressure);
-    pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setForceTuple(pressure.mt_Forces);
     pressure.template getBoundary<BounceBack>().setInterfaceID({1});
-    pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setInterfaceID({4});
+    pressure.template getBoundary<PressureOutflow>().setInterfaceID({4});
     //pressure.template getPreProcessor<NoFluxSolid<Pressure<>>>().setInterfaceID({4});
     //pressure.template getBoundary<FreeSlip>().setInterfaceID({2});
     //pressure.template getBoundary<VelocityInflow>().setInterfaceID({3,4});

@@ -169,7 +169,7 @@ double initFluid3(int k) {
 */
 
 using traithumid = DefaultTraitHumidity<Lattice>::SetStencil<D2Q9>:: template SetBoundary<InterpolatedDirichlet,Dirichlet,ExtrapolationOutflow,Refill<Humidity<>>,FreeSlip>;
-using traitpressure = typename DefaultTraitPressureLeeHumidity<Lattice> :: template SetBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>,BounceBack>;
+using traitpressure = typename DefaultTraitPressureLeeHumidity<Lattice> :: template SetBoundary<PressureOutflow,BounceBack>;
 //using traitpressure = typename DefaultTraitPressureLee<Lattice> :: AddForce<BodyForce<>>;
 
 double distancefunc(int k, int idx){

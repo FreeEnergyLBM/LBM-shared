@@ -20,7 +20,7 @@ export OMP_AFFINITY=balanced
 # mpiexec ./wetP
 seed="745735"
 
-mpirun ./run2.exe $seed
+mpirun ./run.exe $seed
 
 #mpirun valgrind --tool=massif ./run2.exe 1
 #

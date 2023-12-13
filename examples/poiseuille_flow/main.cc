@@ -38,8 +38,8 @@ int main(int argc, char **argv){
     Geometry<Lattice>::initialiseBoundaries(initSolid);
 
     // Set up the handler object for saving data
-    ParameterSave<Lattice> saver("data/");
-    saver.SaveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)
+    SaveHandler<Lattice> saver("data/");
+    saver.saveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)
 
     // Algorithm creates an object that can run our chosen LBM model
     Algorithm lbm(model);
@@ -48,8 +48,8 @@ int main(int argc, char **argv){
     for (int timestep=0; timestep<=timesteps; timestep++) {
         if (timestep%saveInterval==0) {
             // Use the save handler to save the solid and the velocity
-            saver.SaveParameter<BoundaryLabels<>>(timestep);
-            saver.SaveParameter<Velocity<>,Lattice::NDIM>(timestep);
+            saver.saveParameter<BoundaryLabels<>>(timestep);
+            saver.saveParameter<Velocity<>,Lattice::NDIM>(timestep);
             std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
         }
         lbm.evolve();

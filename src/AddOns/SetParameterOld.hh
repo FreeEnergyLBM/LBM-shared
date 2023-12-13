@@ -21,7 +21,6 @@ template<class TTraits>
 inline void SetParameterOld<TParameter,TParameterOld>::compute(int k) {
 
     using Lattice = typename TTraits::Lattice;
-    using Stencil = typename TTraits::Stencil;
 
     TParameterOld::template get<Lattice>(k) = TParameter::template get<Lattice>(k);
     

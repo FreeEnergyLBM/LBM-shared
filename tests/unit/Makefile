@@ -46,10 +46,11 @@ GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
 # https://github.com/LLNL/gtest-mpi-listener
 GTEST_MPI_DIR = gtest-mpi-listener
 INC += -I$(GTEST_MPI_DIR)/include
+CUR_DIR = $(shell git rev-parse --show-prefix)
 
 gtest:
-	git submodule update --init $(dir $(GTEST_DIR))
-	git submodule update --init $(GTEST_MPI_DIR)
+	cd $(ROOT_DIR); git submodule update --init $(CUR_DIR)$(dir $(GTEST_DIR))
+	cd $(ROOT_DIR); git submodule update --init $(CUR_DIR)$(GTEST_MPI_DIR)
 
 gtest-all.o: $(GTEST_SRCS_)
 	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c $(GTEST_DIR)/src/gtest-all.cc
