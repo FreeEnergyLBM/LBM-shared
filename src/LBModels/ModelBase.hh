@@ -616,7 +616,7 @@ template<class TLattice, class TTraits>
 inline void ModelBase<TLattice,TTraits>::boundaries() {
 
     TLattice::ResetParallelTracking();
-
+    
     std::apply([this](auto&... boundaryprocessor) {
 
         (runboundaries(boundaryprocessor), ...);
@@ -624,7 +624,7 @@ inline void ModelBase<TLattice,TTraits>::boundaries() {
         }, mt_Boundaries);
 
     //this -> mData.communicateDistribution();
-
+    
     TLattice::ResetParallelTracking();
     
 }
