@@ -25,7 +25,7 @@ class Bouzidi : public BoundaryBase {
 
     private:
 
-        static double defaultDistanceFunction(int idx, int k) { return true; }
+        static double defaultDistanceFunction(int idx, int k) { return 0.5; }
 
         double (*evalDistanceFunction)(int idx, int k) = &defaultDistanceFunction;
 
@@ -45,7 +45,7 @@ inline void Bouzidi::compute(TDistributionType& distribution, int k) {
         double dist = evalDistanceFunction(distribution.streamIndex(k, idx),distribution.getOpposite(idx));
         
         if (dist <= 0.5) distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = 2 * (dist) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) - (2 * dist - 1) * distribution.getPostCollisionDistribution(distribution.streamIndex(distribution.streamIndex(k, idx), idx),distribution.getOpposite(idx));
-        else distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = 1.0 / (2.0*dist) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) - (1-1.0 / (2.0 * dist)) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),idx);
+        else distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = 1.0 / (2.0*dist) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) + (1-1.0 / (2.0 * dist)) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),idx);
 
 }    
 
