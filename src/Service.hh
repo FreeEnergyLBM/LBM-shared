@@ -729,6 +729,31 @@ struct BaseTrait{
 
   };
 
+  template<int TNumberOfComponents>
+  struct SetNumberOfComponents : BaseTrait<SetNumberOfComponents<TNumberOfComponents>> {
+
+    using Stencil = typename TTrait::Stencil;
+
+    using Boundaries = typename TTrait::Boundaries;
+
+    using PreProcessors = typename TTrait::PreProcessors;
+
+    using PostProcessors = typename TTrait::PostProcessors;
+
+    using Forces = typename TTrait::Forces;
+
+    template<class TStencil>
+    using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
+
+    using Lattice = typename TTrait::Lattice;
+
+    template<class TLattice, class TStencil>
+    using DataType = typename TTrait::template DataType<TLattice,TStencil>;
+
+    static constexpr int NumberOfComponents = TNumberOfComponents;
+
+  };
+
 };
 
 template<std::size_t i, class TTuple, std::size_t... is>

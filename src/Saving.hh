@@ -308,7 +308,7 @@ template<class TLattice>
 template<class TParameter, int TNumDir>
 void SaveHandler<TLattice>::saveParameter(int timestep) {
     // Setup array for saving
-    std::vector<typename TParameter::ParamType> param = TParameter::template get<TLattice>();
+    std::vector<typename TParameter::ParamType> param = TParameter::template get<TLattice,TNumDir>();
     if (mMaskSolid) applyMask<TLattice>(param, TNumDir, mMaskValue);
 
     // File
@@ -321,7 +321,7 @@ void SaveHandler<TLattice>::saveParameter(int timestep) {
     MPI_File fh;
     MPI_File_open(MPI_COMM_SELF, fdump, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
     MPI_File_seek(fh, fileOffset, MPI_SEEK_SET);
-    MPI_File_write(fh,&param[TLattice::HaloSize*TNumDir], TNumDir*(TLattice::N-2*TLattice::HaloSize), MPI_DOUBLE, MPI_STATUSES_IGNORE);
+    MPI_File_write(fh,&param[TLattice::HaloSize*TNumDir*TParameter::instances], TNumDir*(TLattice::N-2*TLattice::HaloSize)*TParameter::instances, MPI_DOUBLE, MPI_STATUSES_IGNORE);
     MPI_File_close(&fh);
 
     #else
@@ -329,8 +329,10 @@ void SaveHandler<TLattice>::saveParameter(int timestep) {
     std::ofstream fs(fdump, std::ios::out | std::ios::binary);
     fs.seekp(fileOffset);
     for (int k = TLattice::HaloSize; k < TLattice::N-TLattice::HaloSize; k++) {
-        for(int idx = 0; idx < TNumDir; idx++) {
-            fs.write((char *)(&param[k*TNumDir+idx]), sizeof(typename TParameter::ParamType));
+        for(int idx = 0; idx < TParameter::instances; idx++) {
+            for(int idx2 = 0; idx2 < TNumDir; idx2++) {
+                fs.write((char *)(&param[k*TNumDir*TParameter::instances+idx*TNumDir+idx2]), sizeof(typename TParameter::ParamType));
+            }
         }
     };
     fs.close();

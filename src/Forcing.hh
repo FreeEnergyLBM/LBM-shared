@@ -262,7 +262,7 @@ struct Lee : ForcingBase<Cartesian,AllDirections> {
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k){
         kPrecompute = k;
-
+        
         ma_Force = {};
         ma_ForceQ = {};
         ma_Force.push_back(f.template computeXYZ<TTraits>(0,k));

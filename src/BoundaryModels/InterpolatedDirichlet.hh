@@ -36,7 +36,7 @@ class InterpolatedDirichlet : public BoundaryBase {
 };
 
 template<class TTraits, class TDistributionType>
-inline void InterpolatedDirichlet::compute(TDistributionType& distribution, int k) {
+inline void InterpolatedDirichlet::compute(TDistributionType& distribution, int k) { //Modify to include wall velocity
 
     using Lattice = typename TTraits::Lattice;
 

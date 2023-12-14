@@ -60,6 +60,7 @@ class Geometry {
         };
 
         static inline bool apply(int k, int (*condition)(const int),std::vector<int> fluidvals) {
+            
             for (int i : fluidvals){
                 if(condition(k) == i) return false;
             }
@@ -162,7 +163,7 @@ inline std::array<int8_t,TLattice::NDIM> Geometry<TLattice>::findNormal(int (*co
 
     for (int idx = 0; idx < TStencil::Q; idx++){
         
-        if(!apply(neighbors[k*TStencil::Q+idx],condition,fluidvals)) {
+        if(!apply(neighbors[k*TStencil::Q+idx],condition,fluidvals)&&condition(k)!=condition(neighbors[k*TStencil::Q+idx])) {
             sum[0]+=TStencil::Ci_xyz(0)[idx];
             if constexpr (TLattice::NDIM>1) sum[1]+=TStencil::Ci_xyz(1)[idx];
             if constexpr (TLattice::NDIM>2) sum[2]+=TStencil::Ci_xyz(2)[idx];
