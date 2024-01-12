@@ -174,8 +174,8 @@ class ChemicalPotentialCalculatorTernaryLee : public AddOnBase {
         std::array<double,3> mGamma={};
         double mGammaT = 0;
 
-        double mOmega = 0;
-        double mLambda = 0;
+        double mOmega = 0.0001;
+        double mLambda = 0.0000;
         double mInterfaceWidth = 4;
     
 };

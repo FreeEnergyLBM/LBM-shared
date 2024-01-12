@@ -279,7 +279,6 @@ struct Lee : ForcingBase<Cartesian,AllDirections> {
     
     template<class TTraits>
     inline double compute(int idx, int k) { //Guo forcing
-        if (k != kPrecompute) throw std::runtime_error("The forcing scheme has been called for a different position ("+std::to_string(k)+") to the one that was precomputed ("+std::to_string(kPrecompute)+")");
         
         double prefactor = TTraits::Lattice::DT * CollisionBase<typename TTraits::Lattice,typename TTraits::Stencil>::computeGamma(&Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,0),idx); //Prefactor for Guo forcing
 

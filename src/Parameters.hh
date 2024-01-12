@@ -312,6 +312,13 @@ struct ChemicalPotential : public ParameterSingleton<ChemicalPotential<TInstance
 }; //Chemical potential for the multicomponent model
 
 template<int TInstances=1>
+struct ChemicalPotentialOld : public ParameterSingleton<ChemicalPotentialOld<TInstances>, double, TInstances> {
+
+    static constexpr const char *mName = "ChemicalPotentialOld";
+
+}; //Chemical potential for the multicomponent model
+
+template<int TInstances=1>
 struct OrderParameterOld : public ParameterSingleton<OrderParameterOld<TInstances>, double, TInstances> {
 
     static constexpr const char *mName = "OrderParameterOld";
