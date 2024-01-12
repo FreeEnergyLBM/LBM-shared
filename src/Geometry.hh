@@ -45,6 +45,8 @@ class Geometry {
 
         static inline int& getBoundaryType(int k);
 
+        static std::vector<int> mFluidVals;
+
     private:
 
         enum
@@ -70,7 +72,12 @@ class Geometry {
 };
 
 template<class TLattice>
+std::vector<int> Geometry<TLattice>::mFluidVals;
+
+template<class TLattice>
 inline bool Geometry<TLattice>::isBulkSolid(int k,int (*condition)(const int),const std::vector<int>& neighbors,std::vector<int> fluidvals) {
+
+    mFluidVals=fluidvals;
 
     using Stencil = std::conditional_t<TLattice::NDIM == 1, D1Q3, std::conditional_t<TLattice::NDIM == 2, D2Q9, D3Q27>>;
 
