@@ -4,7 +4,7 @@
 # SBATCH -N 1
 # SBATCH -n 1
 # SBATCH -c 1
-#SBATCH -n 6
+#SBATCH -n 12
 #SBATCH -c 10
 #SBATCH -t 06:00:00
 # SBATCH --ntasks-per-socket=2
@@ -18,7 +18,7 @@ export OMP_NUM_THREADS=10
 export OMP_AFFINITY=balanced
 # export I_MPI_GTOOL="vtune -c hpc-performance -r HPC:all" 
 # mpiexec ./wetP
-seed="745735"
+seed="968252"
 
 mpirun ./run.exe $seed
 

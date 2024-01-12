@@ -71,7 +71,7 @@ int main(int argc, char **argv){
             
             saver.saveBoundaries(timestep);
             saver.saveParameter<Humidity<>>(timestep);
-            //saver.SaveParameter<ChemicalPotential<>>(timestep);
+            saver.saveParameter<ChemicalPotential<>>(timestep);
             saver.saveParameter<Density<>>(timestep);
             saver.saveParameter<Pressure<>>(timestep);
             saver.saveParameter<OrderParameter<>>(timestep);
