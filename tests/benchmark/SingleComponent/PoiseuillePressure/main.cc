@@ -39,13 +39,13 @@ int main(int argc, char **argv){
     FlowField<Lattice,Trait> model;
     model.template getBoundary<BounceBack>().setInterfaceID({1});
     model.template getBoundary<ZouHeDensity>().setInterfaceID({2});
+    model.setCollideID({0, 2});
 
     // Initialise
     Geometry<Lattice>::initialiseBoundaries(initBoundaries);
     Density<>::set<Lattice>(initDensity);
 
     SaveHandler<Lattice> saver("data/");
-    saver.saveHeader(timesteps, saveInterval);
     saver.maskSolid();
 
     // Main loop

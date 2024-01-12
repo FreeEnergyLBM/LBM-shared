@@ -10,7 +10,7 @@ STRIP_TEMPLATES = -fdiagnostics-color=always 2>&1 | sed 's/ \[with [^]]*\]//g'
 endif
 
 run.exe: main.cc
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(INC) $^ -lpthread -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(INC) $^ -lpthread -o $@ $(STRIP_TEMPLATES)
 
 clean:
 	rm -f run.exe

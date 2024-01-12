@@ -128,7 +128,7 @@ inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int)
 template<class TLattice>
 inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int), int fluidval) {
 
-    initialiseBoundaries(condition,{fluidval});
+    initialiseBoundaries(condition,std::vector<int>{fluidval});
 
 }
 

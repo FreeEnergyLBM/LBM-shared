@@ -6,13 +6,17 @@
 #include <algorithm>
 
 
+//ZouHe.hh: Contains the Zou-He boundary condition for setting a constant density or velocity (https://doi.org/10.1063/1.869307).
+//Use ZouHeDensity for constant density boundaries and ZouHeVelocity for constant velocity.
+
+
 class ZouHe : public BoundaryBase {
     public:
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);
 
-        inline void setInterfaceID(int id) {mInterfaceID={id};};
-        inline void setInterfaceID(const std::vector<int>& id) {mInterfaceID=id;};
+        // Used to set a non-perpendicular velocity for constant density boundaries
+        void setAngledVelocity(std::vector<double> velocityDirection);
 
         enum BoundaryTypes { DENSITY=0, VELOCITY=1 };
         int boundaryType;
@@ -22,7 +26,10 @@ class ZouHe : public BoundaryBase {
         inline void initialiseBoundaryValue(int k);
         std::map<int,double> mBoundaryValues;
 
-        std::vector<int> mInterfaceID = {1};
+        template<class TLattice>
+        inline void angleVelocity(int k, int normalDim);
+        bool mUseAngledVelocity = false;
+        std::vector<double> mVelocityDirection;
 };
 
 
@@ -38,14 +45,6 @@ class ZouHeVelocity : public ZouHe {
 };
 
 
-inline bool isIn(int value, std::vector<int> array) {
-    for (int iTest: array) {
-        if (value == iTest) return true;
-    }
-    return false;
-}
-
-
 template<class TLattice>
 inline void getNormal(int k, int& normalDim, int& normalDir) {
     auto normalVec = BoundaryLabels<TLattice::NDIM>::template get<TLattice>(k).NormalDirection;
@@ -57,11 +56,13 @@ inline void getNormal(int k, int& normalDim, int& normalDir) {
 template<class TLattice>
 inline void ZouHe::initialiseBoundaryValue(int k) {
     if (boundaryType == DENSITY) {
+        #pragma omp critical
         mBoundaryValues.insert({k, Density<>::template get<TLattice>(k)});
     } else {
         int normalDim, normalDir;
         getNormal<TLattice>(k, normalDim, normalDir);
         double velOut = normalDir * Velocity<>::template get<TLattice,TLattice::NDIM>(k, normalDim);
+        #pragma omp critical
         mBoundaryValues.insert({k, velOut});
     }
 }
@@ -70,7 +71,7 @@ inline void ZouHe::initialiseBoundaryValue(int k) {
 template<class TTraits, class TDistributionType>
 inline void ZouHe::compute(TDistributionType& distribution, int k) {
     using Lattice = typename TTraits::Lattice;
-    if (!isIn(Geometry<Lattice>::getBoundaryType(k), mInterfaceID)) return;
+    if (!apply<Lattice>(k)) return;
     if (mBoundaryValues.count(k) == 0) initialiseBoundaryValue<Lattice>(k); // Initialise the fixed value if it is not already
 
     // Get necessary values
@@ -101,6 +102,7 @@ inline void ZouHe::compute(TDistributionType& distribution, int k) {
     if (boundaryType == DENSITY) {
         *density = mBoundaryValues[k];
         *velocity = normalDir * (1 - (distNeutral + 2*distOut) / *density);
+        if (mUseAngledVelocity) angleVelocity<Lattice>(k, normalDim);
     } else {
         double velOut = mBoundaryValues[k];
         *velocity = normalDir * velOut;
@@ -115,6 +117,23 @@ inline void ZouHe::compute(TDistributionType& distribution, int k) {
         distrK[iQ] = distrK[iQOpp] + (distrEq - distrEqOpp);
     }
 
-    // TODO: Add parallel velocities, sort out how equilibrium gets calculated
-    // Is special treatment needed at the corners?
+    // TODO: Pressure models
+}
+
+
+void ZouHe::setAngledVelocity(std::vector<double> velocityDirection) {
+    mUseAngledVelocity = true;
+    mVelocityDirection = velocityDirection;
+}
+
+
+template<class TLattice>
+inline void ZouHe::angleVelocity(int k, int normalDim) {
+    double *velocity = Velocity<>::template getAddress<TLattice,TLattice::NDIM>(k, 0);
+    double vPerp = velocity[normalDim];
+    // (De)project the perpendicular velocity onto the velocity direction
+    double projectionFactor = 1 / mVelocityDirection[normalDim];
+    for (int iDim=0; iDim<TLattice::NDIM; iDim++) {
+        velocity[iDim] = vPerp * mVelocityDirection[iDim] * projectionFactor;
+    }
 }
