@@ -1,6 +1,7 @@
 #include "BounceBack.hh"
 #include "FreeSlip.hh"
 #include "Dirichlet.hh"
+#include "DirichletVariable.hh"
 #include "VelocityInflow.hh"
 #include "VelocityInflowVariable.hh"
 #include "InterpolatedDirichlet.hh"

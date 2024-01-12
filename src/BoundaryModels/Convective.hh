@@ -114,7 +114,7 @@ class Convective2 : public BoundaryBase {
 template<class TForceTuple>
 template<class TTraits>
 inline void Convective2<TForceTuple>::precompute(int k) { //CHANGE THIS SO YOU DONT NEED TO COMMUNICATE
-    /*
+    
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
@@ -146,7 +146,7 @@ inline void Convective2<TForceTuple>::precompute(int k) { //CHANGE THIS SO YOU D
     }
     //std::cout<<"HERE "<<mVelocity/((double)mCount)<<std::endl;
     if (fabs(normalvelocity)>fabs(mVelocity)) mVelocity=-normalvelocity;
-    */
+    
 }
 
 template<class TForceTuple>
@@ -169,7 +169,7 @@ inline void Convective2<TForceTuple>::compute(TDistributionType& distribution, i
         }
         if (normdotci<=0) continue;
         //std::cout<<idx<<std::endl;
-        
+        /*
         double normalvelocity = 0;
         double magnormal = 0;
         for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
@@ -182,6 +182,8 @@ inline void Convective2<TForceTuple>::compute(TDistributionType& distribution, i
         normalvelocity *= 1./magnormal;
         
         distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = (distribution.getDistributionOldPointer(distribution.streamIndex(k, normalq))[idx]+normalvelocity*distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx])/(1+normalvelocity);
+        */
+        distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = (distribution.getDistributionOldPointer(distribution.streamIndex(k, normalq))[idx]+mVelocity*distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx])/(1+mVelocity);
 
     }  
 
@@ -200,7 +202,7 @@ inline void Convective2<TForceTuple>::communicate(TDistributionType& distributio
 template<class TForceTuple>
 template<class TTraits>
 inline void Convective2<TForceTuple>::communicatePostProcess() {
-    /*
+    
     #pragma omp single
     {
         //if(TIME%10000==0)std::cout<<"HERE "<<mVelocity<<std::endl;
@@ -209,5 +211,5 @@ inline void Convective2<TForceTuple>::communicatePostProcess() {
     mVelocity=0;
     mCount=0;
     }
-    */
+    
 }
