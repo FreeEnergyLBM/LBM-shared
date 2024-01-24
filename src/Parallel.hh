@@ -302,8 +302,8 @@ inline void Parallel<TDerived,TWidth>::updateParameterBeforeCommunication(TParam
                     int kGlobal = z + y*lz + (x+xOffset)*ly*lz;
                     for(int instance = 0; instance < TParameter::mInstances; instance++)
                         for(int direction = 0; direction < TParameter::mDirections; direction++)
-                            obj.getCommParameter()[kComm*TParameter::mInstances*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mNum + (TParameter::mNum>1)*direction] =
-                                obj.getParameter()[kGlobal*TParameter::mInstances*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mNum + (TParameter::mNum>1)*direction];
+                            obj.getCommParameter()[kComm*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mDirections + (TParameter::mNum>1)*direction] =
+                                obj.getParameter()[kGlobal*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mDirections+ (TParameter::mNum>1)*direction];
                 }
         ln += 4*lw*ly*lz;
     }
@@ -319,8 +319,8 @@ inline void Parallel<TDerived,TWidth>::updateParameterBeforeCommunication(TParam
                     int kGlobal = z + (y+yOffset)*lz + x*ly*lz;
                     for(int instance = 0; instance < TParameter::mInstances; instance++)
                         for(int direction = 0; direction < TParameter::mDirections; direction++)
-                            obj.getCommParameter()[kComm*TParameter::mInstances*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mNum + (TParameter::mNum>1)*direction] =
-                                obj.getParameter()[kGlobal*TParameter::mInstances*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mNum + (TParameter::mNum>1)*direction];
+                            obj.getCommParameter()[kComm*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mDirections + (TParameter::mNum>1)*direction] =
+                                obj.getParameter()[kGlobal*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mDirections + (TParameter::mNum>1)*direction];
                 }
         ln += 4*lw*lx*lz;
     }
@@ -336,8 +336,8 @@ inline void Parallel<TDerived,TWidth>::updateParameterBeforeCommunication(TParam
                     int kGlobal = (z+zOffset) + y*lz + x*ly*lz;
                     for(int instance = 0; instance < TParameter::mInstances; instance++)
                         for(int direction = 0; direction < TParameter::mDirections; direction++)
-                            obj.getCommParameter()[kComm*TParameter::mInstances*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mNum + (TParameter::mNum>1)*direction] =
-                                obj.getParameter()[kGlobal*TParameter::mInstances*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mNum + (TParameter::mNum>1)*direction];
+                            obj.getCommParameter()[kComm*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mDirections + (TParameter::mNum>1)*direction] =
+                                obj.getParameter()[kGlobal*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mDirections + (TParameter::mNum>1)*direction];
                 }
         ln += 4*lw*lx*ly;
     }
@@ -365,8 +365,8 @@ inline void Parallel<TDerived,TWidth>::updateParameterAfterCommunication(TParame
                     int kGlobal = z + y*lz + (x+xOffset)*ly*lz;
                     for(int instance = 0; instance < TParameter::mInstances; instance++)
                         for(int direction = 0; direction < TParameter::mDirections; direction++)
-                            obj.getParameter()[kGlobal*TParameter::mInstances*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mNum + (TParameter::mNum>1)*direction] =
-                                obj.getCommParameter()[kComm*TParameter::mInstances*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mNum + (TParameter::mNum>1)*direction];
+                            obj.getParameter()[kGlobal*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mDirections + (TParameter::mNum>1)*direction] =
+                                obj.getCommParameter()[kComm*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mDirections + (TParameter::mNum>1)*direction];
                 }
         ln += 4*lw*ly*lz;
     }
@@ -382,8 +382,8 @@ inline void Parallel<TDerived,TWidth>::updateParameterAfterCommunication(TParame
                     int kGlobal = z + (y+yOffset)*lz + x*ly*lz;
                     for(int instance = 0; instance < TParameter::mInstances; instance++)
                         for(int direction = 0; direction < TParameter::mDirections; direction++)
-                            obj.getParameter()[kGlobal*TParameter::mInstances*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mNum + (TParameter::mNum>1)*direction] =
-                                obj.getCommParameter()[kComm*TParameter::mInstances*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mNum + (TParameter::mNum>1)*direction];
+                            obj.getParameter()[kGlobal*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mDirections + (TParameter::mNum>1)*direction] =
+                                obj.getCommParameter()[kComm*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mDirections + (TParameter::mNum>1)*direction];
                 }
         ln += 4*lw*lx*lz;
     }
@@ -399,8 +399,8 @@ inline void Parallel<TDerived,TWidth>::updateParameterAfterCommunication(TParame
                     int kGlobal = (z+zOffset) + y*lz + x*ly*lz;
                     for(int instance = 0; instance < TParameter::mInstances; instance++)
                         for(int direction = 0; direction < TParameter::mDirections; direction++)
-                            obj.getParameter()[kGlobal*TParameter::mInstances*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mNum + (TParameter::mNum>1)*direction] =
-                                obj.getCommParameter()[kComm*TParameter::mInstances*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mNum + (TParameter::mNum>1)*direction];
+                            obj.getParameter()[kGlobal*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mDirections + (TParameter::mNum>1)*direction] =
+                                obj.getCommParameter()[kComm*TParameter::mNum + (TParameter::mInstances>1)*instance*TParameter::mDirections + (TParameter::mNum>1)*direction];
                 }
         ln += 4*lw*lx*ly;
     }
