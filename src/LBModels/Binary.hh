@@ -16,8 +16,8 @@
 
 template<class TLattice>
 using DefaultTraitBinary = typename DefaultTrait<TLattice,2> :: template SetBoundary<BounceBack> 
-                                                          :: template SetPreProcessor<ChemicalPotentialCalculatorBinary,CubicWetting> 
-                                                          :: template SetPostProcessor<GradientsMultiStencil<OrderParameter<>,CentralXYZ,LaplacianCentral>>;
+                                                          :: template SetProcessor<std::tuple<GradientsMultiStencil<OrderParameter<>,CentralXYZ,LaplacianCentral>>>
+                                                          :: template AddProcessor<std::tuple<ChemicalPotentialCalculatorBinary,CubicWetting>>;
 
 
 template<class TLattice, class TTraits = DefaultTraitBinary<TLattice>>

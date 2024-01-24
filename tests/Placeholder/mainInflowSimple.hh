@@ -12,7 +12,7 @@ int timesteps = 5000; // Number of iterations to perform
 int saveInterval = 1000; // Interval to save global data
 double radius = 25.0;
 double theta = 90.0;
-double A = 0.0005;
+double A = 0.003;
 double kappa = A*9/8;
 double Hsat = 0.3;
 double Hwall = 0.0;
@@ -46,13 +46,13 @@ int initBoundary(const int k) {
     if (yy >= ly - 4) return 2;
     //if (yy==ly/4 && xx == lx-4) return 7;
 
-    if (yy>=ly/4 && (xx <= 1)) return 3;
-    if (yy>=ly/4 && (xx >= lx - 4)) return 4;
+    if (yy>=ly/3 && (xx <= 1)) return 3;
+    if (yy>=ly/3 && (xx >= lx - 4)) return 4;
 
     //if ((xx <= 1)) return 3;
     //if ((xx >= lx - 4)) return 7;
 
-    if ((xx<postwidth/2||xx>lx-postwidth/2)&&yy<ly/4) return 1;
+    if ((xx<postwidth/2||xx>lx-postwidth/2)&&yy<ly/3) return 1;
     //if (yy <= 5) return 1;
     //if (yy == 1 || yy == ly - 2 || xx == 1 || xx == lx - 2) return 4;
     //if (xx <= 1) return 1;
@@ -60,7 +60,7 @@ int initBoundary(const int k) {
     //else if (xx >= lx - 1) return 1;
     //if(sqrt(rr2)<radius) return 5;
     //if(sqrt(rr2)<radius) return 5;
-    if (yy<ly/4+offsety) return 5;
+    if (yy<ly/3+offsety) return 5;
     //else if (xx < lx/2.+offset) return 5;
     return 0;
 }
@@ -74,7 +74,7 @@ double initFluid(const int k) {
     //if (yy <= 1) return 0;
     //return 0.5-0.5*tanh(2*(sqrt(rr2)-radius)/(sqrt(8*kappa/A)));
     //return 0.5-0.5*tanh(2*((xx - lx/2.-offset))/(sqrt(8*kappa/A)));
-    return 0.5-0.5*tanh(2*((yy - ly/4.-offsety))/(sqrt(8*kappa/A)));
+    return 0.5-0.5*tanh(2*((yy - ly/3.-offsety))/(sqrt(8*kappa/A)));
     //if(sqrt(rr2)<radius) return 1;
     //else return 0;
 }
@@ -91,7 +91,8 @@ double initVelocity(const int k) {
     //int k = computeK<Lattice>(xx,yy,0);
         //std::cout<<k<<std::endl;
     //return inflowmomentum*pow(yy-ly/4-((double)(ly-4-ly/4))/2.0,2)/pow((double)(ly-4-ly/4)/2.0,2)-inflowmomentum;
-    return 3*inflowmomentum*(yy-ly+4)/((double)(-ly+4+ly/4))-3*inflowmomentum;
+    if (yy<ly/3) return 0;
+    return 3*inflowmomentum*(yy-ly+4)/((double)(-ly+4+ly/3))/dens2-3*inflowmomentum/dens2;
     //return -inflowmomentum;
 }
 
@@ -107,23 +108,6 @@ double initVelocityY(const int k) {
     //int k = computeK<Lattice>(xx,yy,0);
         //std::cout<<k<<std::endl;
     return 0;
-}
-
-double initHumidity(int k) {
-    int xx = computeXGlobal<Lattice>(k);
-    int yy = computeY(ly, 1, k);
-    double rr2 = (xx - (lx-1)/2. - offsetx) * (xx - (lx-1)/2. - offsetx) + (yy - (ly-1)/2. - offsety) * (yy - (ly-1)/2. - offsety);
-    //return 0.25*((double)rand()/(double)RAND_MAX);
-    //if(sqrt(rr2)<radius&&yy > 1) return Hsat;
-    if (yy<ly/4+offsety) return Hsat;
-    else return 0;
-    //if (xx <= lx/2.) return 0.5;
-    //if (xx <= 0 || xx >= lx - 1) return 0;
-    //return 0.5 - 0.5*(xx - (lx/2.+offset))/(lx-lx/2.-offset-1.5);
-    
-    //else return 0;
-    //int yy = computeY(ly, 1, k);
-    //return 0.5*tanh(2*(yy-3*ly/4)/(D))-0*0.5*tanh(2*(yy-ly)/(D))+0.5-0*0.5*tanh(2*(yy)/(D));
 }
 
 bool interfaceCondition(const double& val, int k){
@@ -159,7 +143,7 @@ double distancefunc(int k, int idx){
         magci += Stencil::Ci_xyz(xyz)[idx] * Stencil::Ci_xyz(xyz)[idx];
     }
     //return 0.5; //!!!!!!!!!!!!!!!!
-    double dist = fabs(normaldist / normdotci*sqrt(magci));
+    double dist = fabs(normaldist / normdotci);//*sqrt(magci));
 
     if (idx == 0 || std::isnan(dist) || std::isinf(dist)) {
 
@@ -200,46 +184,12 @@ void initParams(std::string inputfile) {
 
 }
 
-template<typename TTrait = typename traithumid::SetDataType<DataOldNewEquilibrium>>
-EvaporationHumidity<Lattice, TTrait> initHumidity(){
-
-    EvaporationHumidity<Lattice,TTrait> humidity;
-
-    using dbtype = InterpolatedDirichlet;
-
-    humidity.setCollideID({0,6});
-
-    humidity.template getBoundary<InterpolatedDirichlet>().setInterfaceDistanceFunction(distancefunc);
-    humidity.template getBoundary<dbtype>().setInterfaceID(5);
-    humidity.template getBoundary<dbtype>().setInterfaceVal(Hsat);
-
-    humidity.template getBoundary<Dirichlet>().setInterfaceID({2,3});
-    humidity.template getBoundary<Dirichlet>().setInterfaceVal(Hwall);
-
-    humidity.template getBoundary<ExtrapolationOutflow>().setInterfaceID({4,7});
-
-    humidity.setDiffusivity(diffusivity);
-
-    humidity.template getPreProcessor<HumidityBoundaryLabels>().setInterfaceCondition(interfaceCondition);
-    humidity.template getPreProcessor<SetHumidityLiquid>().setInterfaceVal(Hsat);
-
-    humidity.template getPostProcessor<Gradients<Humidity<>, CentralXYZInterfaceMirrorSolid>>().setInterfaceDistance(distancefunc);
-    //humidity.getPostProcessor<GradientsInterface<Humidity<>, CentralXYZInterfaceBounceBack>>().setInterfaceCondition(interfaceConditionK);
-    humidity.template getPostProcessor<Gradients<Humidity<>, CentralXYZInterfaceMirrorSolid>>().setInterfaceVal(Hsat);
-
-    humidity.template getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
-    humidity.template getForce<EvaporationHumiditySource<EvaporationSourceMethod>>().setGasDensity(dens2);
-
-    return humidity;
-
-}
-
 template<class TLattice>
 using DefaultTraitPressureLee2 = typename DefaultTrait<TLattice,2> :: template SetBoundary<BounceBack>;
 
 template<class TLattice>
 using DefaultTraitPressureLeeHumidityInflow = typename DefaultTraitPressureLee<TLattice>
-                                                                                    :: template AddPostProcessor<Swapper<Velocity<>, VelocityOld<>, TLattice::NDIM>,SetParameterOld<Pressure<>,PressureOld<>>,SetParameterOld<Density<>,DensityOld<>>,SetParameterOld<OrderParameter<>,OrderParameterOld<>>>
+                                                                                    :: template AddPostProcessor<Swapper<Velocity<>, VelocityOld<>, TLattice::NDIM>,SetParameterOld<Pressure<>,PressureOld<>>,SetParameterOld<Density<>,DensityOld<>>,SetParameterOld<OrderParameter<>,OrderParameterOld<>>,SetParameterOld<ChemicalPotential<>,ChemicalPotentialOld<>>>
                                                                                    :: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>
                                                                                    :: template SetBoundary<std::tuple<std::tuple<FreeSlip>,std::tuple<VelocityInflowVariable,Convective2<typename DefaultTraitPressureLee<Lattice>:: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>::Forces>>,std::tuple<BounceBack>>>;//,std::tuple<Temp0Outflow>>>;,ExtrapolationOutflow
                                                                                    //:: template SetBoundary<FreeSlip,BounceBack> :: AddBoundary<std::tuple<VelocityInflow,Convective>> :: AddBoundary<std::tuple<Temp0Outflow>>;
@@ -260,26 +210,26 @@ auto initPressure(){
     //pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setForceTuple(pressure.mt_Forces);
     pressure.template getBoundary<BounceBack,2>().setInterfaceID({1});
     pressure.template getBoundary<FreeSlip,0>().setInterfaceID({2});
-    pressure.template getBoundary<VelocityInflowVariable,1>().setInterfaceID({3,4});
+    pressure.template getBoundary<VelocityInflowVariable,1>().setInterfaceID({3});
     //pressure.template getBoundary<Temp0Outflow,1>().setInterfaceID({7});
     std::unordered_map<int,std::vector<double>> momentumvector;
     int xx = 1;
-    for (int yy = ly/4; yy < ly-4; yy++) {
+    for (int yy = ly/3; yy < ly-4; yy++) {
         int k = computeK<Lattice>(xx,yy,0);
         //std::cout<<k<<std::endl;
         //momentumvector[k] = {-inflowmomentum*pow(yy-ly/4-((double)(ly-4-ly/4))/2.0,2)/pow((double)(ly-4-ly/4)/2.0,2)+inflowmomentum,0};
-        momentumvector[k] = {-inflowmomentum*(yy-ly+4)/((double)(-ly+4+ly/4))+inflowmomentum,0};
+        momentumvector[k] = {-inflowmomentum*(yy-ly+4)/((double)(-ly+4+ly/3))+inflowmomentum,0};
     }
-    xx = lx-4;
-    for (int yy = ly/4; yy < ly-4; yy++) {
+    xx = Lattice::LXdiv-6-4;
+    for (int yy = ly/3; yy < ly-4; yy++) {
         int k = computeK<Lattice>(xx,yy,0);
         //std::cout<<k<<std::endl;
         //momentumvector[k] = {-inflowmomentum*pow(yy-ly/4-((double)(ly-4-ly/4))/2.0,2)/pow((double)(ly-4-ly/4)/2.0,2)+inflowmomentum,0};
-        momentumvector[k] = {-inflowmomentum*(yy-ly+4)/((double)(-ly+4+ly/4))+inflowmomentum,0};
+        momentumvector[k] = {-inflowmomentum*(yy-ly+4)/((double)(-ly+4+ly/3))+inflowmomentum,0};
     }
     pressure.template getBoundary<VelocityInflowVariable,1>().setWallVelocity(momentumvector);
     //pressure.template getBoundary<VelocityInflow,1>().setWallVelocity({inflowmomentum,0});
-    pressure.template getBoundary<Convective2<typename DefaultTraitPressureLee<Lattice>:: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>::Forces>,1>().setInterfaceID({44});
+    pressure.template getBoundary<Convective2<typename DefaultTraitPressureLee<Lattice>:: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>::Forces>,1>().setInterfaceID({4});
     //pressure.template getBoundary<Convective2<typename DefaultTraitPressureLee<Lattice>:: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>::Forces>,1>().setVelocityCalculator(pressure.computeVelocity);
     //pressure.template getBoundary<Convective2<typename DefaultTraitPressureLee<Lattice>:: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>::Forces>,1>().setForceTuple(pressure.mt_Forces);
     //pressure.template getBoundary<Temp0Outflow,2>().setInterfaceID({7});
@@ -306,11 +256,11 @@ auto initFlowField(){
     pressure.template getBoundary<VelocityInflowVariable,1>().setInterfaceID({3,4});
     std::unordered_map<int,std::vector<double>> momentumvector;
     int xx = 1;
-    for (int yy = ly/4; yy < ly-4; yy++) {
+    for (int yy = ly/3; yy < ly-4; yy++) {
         int k = computeK<Lattice>(xx,yy,0);
         //std::cout<<k<<std::endl;
         //momentumvector[k] = {-inflowmomentum*pow(yy-ly/4-((double)(ly-4-ly/4))/2.0,2)/pow((double)(ly-4-ly/4)/2.0,2)+inflowmomentum,0};
-        momentumvector[k] = {-inflowmomentum*(yy-ly+4)/((double)(-ly+4+ly/4))+inflowmomentum,0};
+        momentumvector[k] = {-inflowmomentum*(yy-ly+4)/((double)(-ly+4+ly/3))+inflowmomentum,0};
         //momentumvector[k] = {inflowmomentum,0};
     }
     pressure.template getBoundary<VelocityInflowVariable,1>().setWallVelocity(momentumvector);
@@ -329,10 +279,14 @@ using orderparamgradients = GradientsMultiStencil<OrderParameter<>, CentralXYZMi
 //using orderparamgradients = GradientsMultiStencil<OrderParameter<>, CentralXYZBounceBack, CentralQBounceBack,MixedXYZBounceBack, MixedQBounceBack,LaplacianCentralBounceBack>;
 
 template<class TLattice>
-using DefaultTraitBinaryLeeHumidityInflow = typename DefaultTraitBinaryLee<TLattice> :: template SetPostProcessor<orderparamgradients,ChemicalPotentialCalculatorBinaryLee>//NoFluxSolid<OrderParameter<>>,NoFluxSolid<Pressure<>>,NoFluxSolid<Density<>>>
-                                                                               :: template AddPreProcessor<SimpleMassLossCalculator>
+using DefaultTraitBinaryLeeHumidityInflow = typename DefaultTraitBinaryLee<TLattice> :: template SetPostProcessor<ConvectParameterBoundary<OrderParameter<>,OrderParameterOld<>>,ConvectParameterBoundary<Density<>,DensityOld<>>,ConvectParameterBoundary<ChemicalPotential<>,ChemicalPotentialOld<>>,orderparamgradients,ChemicalPotentialCalculatorBinaryLee>//NoFluxSolid<OrderParameter<>>,NoFluxSolid<Pressure<>>,NoFluxSolid<Density<>>>
+                                                                               :: template AddPreProcessor<GradientsMultiStencil<Pressure<>, CentralXYZBounceBack, CentralQBounceBack,
+                                                                                                                                MixedXYZBounceBack, MixedQBounceBack>,
+                                                                                                                                SimpleMassLossCalculator>
                                                                                :: template AddForce<EvaporationPhaseSource<EvaporationSourceMethod>>
-                                                                               :: template SetBoundary<std::tuple<std::tuple<Dirichlet>,std::tuple<FreeSlip>>>;
+                                                                               //:: template SetBoundary<std::tuple<std::tuple<Dirichlet>,std::tuple<BounceBack>>>;
+                                                                               //:: template SetBoundary<std::tuple<std::tuple<Convective2<typename DefaultTraitBinaryLee<Lattice>:: template AddForce<EvaporationPhaseSource<EvaporationSourceMethod>>::Forces>>,std::tuple<BounceBack>>>;
+                                                                               :: template SetBoundary<std::tuple<std::tuple<Convective>,std::tuple<BounceBack>>>;
 
 //template<typename TTrait = typename DefaultTraitBinaryLeeHumidity<Lattice>:: template SetDataType<DataOldNewEquilibrium>>
 template<typename TTrait = typename DefaultTraitBinaryLeeHumidityInflow<Lattice>:: template SetDataType<DataOldNewEquilibrium>>
@@ -357,20 +311,14 @@ auto initBinary(){
     //binary.template getPostProcessor<NoFluxSolid<OrderParameter<>>>().setInterfaceID({2,3,4});
     //binary.template getPostProcessor<NoFluxSolid<Pressure<>>>().setInterfaceID({2,3,4});
     
-    //binary.template getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceHumidity(Hsat);
-    //binary.template getPreProcessor<MassLossCalculatorInterpolated>().setDiffusivity(0);
-    //binary.template getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceWidth(sqrt(8*kappa/A));
-    //binary.template getPreProcessor<MassLossCalculatorInterpolated>().setPhiGasLiquid(0,1);
-    //binary.template getPreProcessor<MassLossCalculatorInterpolated>().setGasDensity(dens2);
-
     binary.template getPreProcessor<SimpleMassLossCalculator>().setEvaporationRate(0);
 
-    binary.template getBoundary<FreeSlip,1>().setInterfaceID({1,2,3});
-    binary.template getBoundary<Dirichlet>().setInterfaceID({4});
-    binary.template getBoundary<Dirichlet>().setInterfaceVal(0);
-    //binary.template getBoundary<Convective2<typename DefaultTraitBinaryLee<Lattice>:: template AddForce<EvaporationPhaseSource<EvaporationSourceMethod>>::Forces>,1>().setInterfaceID({4});
-    //binary.template getBoundary<Convective2<typename DefaultTraitBinaryLee<Lattice>:: template AddForce<EvaporationPhaseSource<EvaporationSourceMethod>>::Forces>,1>().setVelocityCalculator(binary.computeVelocity);
-    //binary.template getBoundary<Convective2<typename DefaultTraitBinaryLee<Lattice>:: template AddForce<EvaporationPhaseSource<EvaporationSourceMethod>>::Forces>,1>().setForceTuple(binary.mt_Forces);
+    binary.template getBoundary<BounceBack,1>().setInterfaceID({1,2,3});
+    //binary.template getBoundary<Dirichlet>().setInterfaceID({44});
+    //binary.template getBoundary<Dirichlet>().setInterfaceVal(0);
+    binary.template getBoundary<Convective>().setInterfaceID({4});
+    //binary.template getBoundary<Convective2<typename DefaultTraitBinaryLee<Lattice>:: template AddForce<EvaporationPhaseSource<EvaporationSourceMethod>>::Forces>>().setVelocityCalculator(binary.computeVelocity);
+    //binary.template getBoundary<Convective2<typename DefaultTraitBinaryLee<Lattice>:: template AddForce<EvaporationPhaseSource<EvaporationSourceMethod>>::Forces>>().setForceTuple(binary.mt_Forces);
     
     double wettingprefactor = - cos(theta*M_PI/180.0)*sqrt(2*A/kappa);
 

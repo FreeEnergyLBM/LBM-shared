@@ -119,7 +119,7 @@ class Data_Base{
 template<class TLattice, class TStencil>
 template<class TParameter>
 inline void Data_Base<TLattice,TStencil>::communicate(TParameter& obj) { //Not used in this data type
-
+    
     //static_assert(is_base_of_template<Parameter,TParameter>::value,"ERROR: The object passed to this function cannot be communicated.");
     TLattice::communicate(obj);
 

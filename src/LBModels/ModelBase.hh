@@ -18,9 +18,7 @@ struct DefaultTrait : BaseTrait<DefaultTrait<TLattice,t_NumberOfComponents>> {
 
     using Boundaries = std::tuple<std::tuple<>>;
 
-    using PreProcessors = std::tuple<>;
-
-    using PostProcessors = std::tuple<>;
+    using Processors = std::tuple<>;
 
     using Forces = std::tuple<>;
 
@@ -45,8 +43,8 @@ class ModelBase : public Model {
     static_assert(std::is_base_of<StencilBase, typename TTraits::Stencil>(), "ERROR: invalid TStencil specified in TTraits class.");
     static_assert(TTraits::Stencil::D == TLattice::NDIM, "ERROR: The chosen TStencil must match the number of TLattice dimensions in the TLattice properties.");
     static_assert(CheckBaseTemplate<ForceBase, typename TTraits::Forces>::value, "ERROR: At least one TForce chosen is not a TForce class. The class must inherit from ForceBase.");
-    static_assert(CheckBase<AddOnBase, typename TTraits::PreProcessors>::value, "ERROR: At least one TPreProcessor chosen is not an addon class. The class must inherit from AddOnBase.");
-    static_assert(CheckBase<AddOnBase, typename TTraits::PostProcessors>::value, "ERROR: At least one TPostProcessor chosen is not an addon class.  The class must inherit from AddOnBase.");
+    //static_assert(CheckBase<AddOnBase, typename TTraits::Processors>::value, "ERROR: At least one TPreProcessor chosen is not an addon class. The class must inherit from AddOnBase.");
+    //static_assert(CheckBase<AddOnBase, typename TTraits::PostProcessors>::value, "ERROR: At least one TPostProcessor chosen is not an addon class.  The class must inherit from AddOnBase.");
     //static_assert(CheckBase<BoundaryBase, typename TTraits::Boundaries>::value, "ERROR: At least one boundary condition chosen is not a boundary class. The class must inherit from BoundaryBase.");
     public:
 
@@ -64,23 +62,26 @@ class ModelBase : public Model {
               mData(other.mData),
               mDistribution(other.mDistribution)
         {}
-
+        /*
         inline virtual void precompute(); //Perform any necessary computations before collision
-
+        */
         template<class TTupleType>
         inline void computeTuple(TTupleType& tup,int k); //Perform any necessary computations before collision
-
+        /*
         template<class TTupleType>
         inline void precomputeTuple(TTupleType& tup,int k); //Perform any necessary computations before collision
-
-        inline virtual void postprocess(); //Perform any necessary computations before collision
+        */
+        inline virtual void computeProcessors(); //Perform any necessary computations before collision
 
         template<class TTupleType>
-        inline void postprocessTuple(TTupleType& tup,int k);
+        inline void processorTuple(TTupleType& tup,int k);
 
         template<class TTupleType>
         inline void communicateTuple(TTupleType& tup);
 
+        template<class TTupleType>
+        inline void communicateProcessorBoundaries(TTupleType& tup);
+        /*
         template<class TTupleType>
         inline void communicatePrecomputeTuple(TTupleType& tup);
 
@@ -92,7 +93,7 @@ class ModelBase : public Model {
 
         template<class TTupleType>
         inline void communicatePostprocessBoundaries(TTupleType& tup);
-
+        */
         inline virtual void collide() = 0; //Collision step
 
         inline virtual void stream(); //Collision step
@@ -100,7 +101,10 @@ class ModelBase : public Model {
         inline virtual void boundaries(); //Boundary calculation
 
         template<class TBoundaryType>
-        inline void runboundaries(TBoundaryType& boundary); //Boundary calculation
+        inline void runBoundaries(TBoundaryType& boundary); //Boundary calculation
+
+        template<class TProcessorType>
+        inline void runProcessors(TProcessorType& processor); //Boundary calculation
 
         inline virtual void initialise() = 0; //Initialisation step
 
@@ -125,21 +129,12 @@ class ModelBase : public Model {
         template<class TForce, typename TForceTuple>
         void precomputeForces(TForce& f,TForceTuple& forcemethods,int k);
 
-        template<class TPreProcessor, int inst = 0>
-        inline TPreProcessor& getPreProcessor() {
+        template<class TProcessor, int tuplenum = 0, int inst = 0>
+        inline TProcessor& getProcessor() {
 
-            auto preprocessors = get_type<TPreProcessor>(mt_PreProcessors);
+            auto processors = get_type<TProcessor>(std::get<tuplenum>(mt_Processors));
 
-            return std::get<inst>(preprocessors);
-
-        }
-
-        template<class TPostProcessor, int inst = 0>
-        inline TPostProcessor& getPostProcessor() {
-
-            auto postprocessors = get_type<TPostProcessor>(mt_PostProcessors);
-
-            return std::get<inst>(postprocessors);
+            return std::get<inst>(processors);
 
         }
 
@@ -264,8 +259,7 @@ class ModelBase : public Model {
 
         enum{ x = 0, y = 1, z = 2 }; //Indices corresponding to x, y, z directions
 
-        typename TTraits:: PreProcessors mt_PreProcessors;
-        typename TTraits:: PostProcessors mt_PostProcessors;
+        typename TTraits:: Processors mt_Processors;
         typename TTraits:: Forces mt_Forces;
         typename TTraits:: Boundaries mt_Boundaries;
         Geometry<TLattice> mGeometry;
@@ -349,12 +343,6 @@ inline const std::vector<double>& ModelBase<TLattice,TTraits>::getDistribution()
 }
 
 template<class TLattice, class TTraits>
-template<class TForce, typename TForceTuple>
-void ModelBase<TLattice,TTraits>::precomputeForces(TForce& f,TForceTuple& forcemethods,int k){
-    std::get<decltype(getMethod(f))>(forcemethods).template precompute<TTraits>(f,k);
-}
-
-template<class TLattice, class TTraits>
 template<class TTupleType>
 inline auto ModelBase<TLattice,TTraits>::getForceCalculator(TTupleType& TForceTuple, int k){
 
@@ -379,41 +367,6 @@ inline auto ModelBase<TLattice,TTraits>::getForceCalculator(TTupleType& TForceTu
     else return std::make_unique<std::tuple<>>();
 
 }
-
-template<class TLattice, class TTraits>
-inline void ModelBase<TLattice,TTraits>::precompute() {
-
-    TLattice::ResetParallelTracking();
-
-    #pragma omp for schedule(guided)
-    for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //loop over k
-
-        std::apply([this,k](auto&... boundaryprocessor) {
-            (precomputeTuple(boundaryprocessor,k),...);
-        }, mt_Boundaries);
-
-        computeTuple(mt_PreProcessors,k);
-
-        precomputeTuple(mt_Forces,k);
-        
-    }
-  
-    communicateTuple(mt_PreProcessors);
-    communicatePrecomputeTuple(mt_Forces);
-    std::apply([this](auto&... boundaryprocessor) {
-            (communicatePrecomputeBoundaries(boundaryprocessor),...);
-        }, mt_Boundaries);
-
-    TLattice::ResetParallelTracking();
-
-    #pragma omp master
-    {
-    mDistribution.getDistribution().swap(mDistribution.getDistributionOld()); //swap old and new distributions
-                                                                                //before collision
-    }
-    
-}
-
 
 template<class TLattice, class TTraits>
 inline void ModelBase<TLattice,TTraits>::stream() {
@@ -463,40 +416,6 @@ inline void ModelBase<TLattice,TTraits>::computeTuple(TTupleType& tup, int k) {
 
 template<class TLattice, class TTraits>
 template<class TTupleType>
-inline void ModelBase<TLattice,TTraits>::precomputeTuple(TTupleType& tup, int k) {
-
-    if constexpr(std::tuple_size<TTupleType>::value != 0){ //Check if there is at least one element
-                                                                        //in F
-
-        std::apply([k](auto&... obj){//See Algorithm.hh for explanation of std::apply
-
-            (obj.template precompute<TTraits>(k),...);
-
-        }, tup);
-
-    }
-    
-}
-
-template<class TLattice, class TTraits>
-template<class TTupleType>
-inline void ModelBase<TLattice,TTraits>::postprocessTuple(TTupleType& tup, int k) {
-
-    if constexpr(std::tuple_size<TTupleType>::value != 0){ //Check if there is at least one element
-                                                                        //in F
-
-        std::apply([k](auto&... obj){//See Algorithm.hh for explanation of std::apply
-
-            (obj.template postprocess<TTraits>(k),...);
-
-        }, tup);
-
-    }
-    
-}
-
-template<class TLattice, class TTraits>
-template<class TTupleType>
 inline void ModelBase<TLattice,TTraits>::communicateTuple(TTupleType& tup) {
 
     if constexpr(std::tuple_size<TTupleType>::value != 0){ //Check if there is at least one element
@@ -512,6 +431,23 @@ inline void ModelBase<TLattice,TTraits>::communicateTuple(TTupleType& tup) {
     
 }
 
+template<class TLattice, class TTraits>
+template<class TTupleType>
+inline void ModelBase<TLattice,TTraits>::communicateProcessorBoundaries(TTupleType& tup) {
+
+    if constexpr(std::tuple_size<TTupleType>::value != 0){ //Check if there is at least one element
+                                                                        //in F
+
+        std::apply([](auto&... obj){//See Algorithm.hh for explanation of std::apply
+
+            (obj.template communicateProcessor<TTraits>(),...);
+
+        }, tup);
+
+    }
+    
+}
+/*
 template<class TLattice, class TTraits>
 template<class TTupleType>
 inline void ModelBase<TLattice,TTraits>::communicatePrecomputeTuple(TTupleType& tup) {
@@ -583,7 +519,13 @@ inline void ModelBase<TLattice,TTraits>::communicatePostprocessBoundaries(TTuple
     }
     
 }
-
+*/
+template<class TLattice, class TTraits>
+template<class TForce, typename TForceTuple>
+void ModelBase<TLattice,TTraits>::precomputeForces(TForce& f,TForceTuple& forcemethods,int k){
+    std::get<decltype(getMethod(f))>(forcemethods).template precompute<TTraits>(f,k);
+}
+/*
 template<class TLattice, class TTraits>
 inline void ModelBase<TLattice,TTraits>::postprocess() {
 
@@ -611,7 +553,98 @@ inline void ModelBase<TLattice,TTraits>::postprocess() {
     TLattice::ResetParallelTracking();
     
 }
+*/
 
+template<class TLattice, class TTraits>
+template<class TTupleType>
+inline void ModelBase<TLattice,TTraits>::processorTuple(TTupleType& tup, int k) {
+
+    if constexpr(std::tuple_size<TTupleType>::value != 0){ //Check if there is at least one element
+                                                                        //in F
+
+        std::apply([k](auto&... obj){//See Algorithm.hh for explanation of std::apply
+
+            (obj.template runProcessor<TTraits>(k),...);
+
+        }, tup);
+
+    }
+    
+}
+
+template<class TLattice, class TTraits>
+inline void ModelBase<TLattice,TTraits>::computeProcessors() {
+
+    TLattice::ResetParallelTracking();
+
+    std::apply([this](auto&... processor) {
+
+        (runProcessors(processor), ...);
+        (communicateTuple(processor), ...);
+                
+    }, mt_Processors);
+
+    #pragma omp for schedule(guided)
+    for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //loop over k
+
+        std::apply([this,k](auto&... boundaryprocessor) {
+            (processorTuple(boundaryprocessor,k),...);
+        }, mt_Boundaries);
+
+        processorTuple(mt_Forces,k);
+        
+    }
+
+    communicateTuple(mt_Forces);
+    std::apply([this](auto&... boundaryprocessor) {
+            (communicateProcessorBoundaries(boundaryprocessor),...);
+        }, mt_Boundaries);
+
+    TLattice::ResetParallelTracking();
+
+    #pragma omp master
+    {
+    mDistribution.getDistribution().swap(mDistribution.getDistributionOld()); //swap old and new distributions
+                                                                                //before collision
+    }
+    
+}
+
+/*
+template<class TLattice, class TTraits>
+template<class TTupleType>
+inline void ModelBase<TLattice,TTraits>::processorTuple(TTupleType& tup, int k) {
+
+    if constexpr(std::tuple_size<TTupleType>::value != 0){ //Check if there is at least one element
+                                                                        //in F
+
+        std::apply([k](auto&... obj){//See Algorithm.hh for explanation of std::apply
+
+            (obj.template runProcessor<TTraits>(k),...);
+
+        }, tup);
+
+    }
+    
+}*/
+/*
+template<class TLattice, class TTraits>
+template<class TTupleType>
+inline void ModelBase<TLattice,TTraits>::postprocessTuple(TTupleType& tup, int k) {
+
+    if constexpr(std::tuple_size<TTupleType>::value != 0){ //Check if there is at least one element
+                                                                        //in F
+
+        std::apply([k](auto&... obj){//See Algorithm.hh for explanation of std::apply
+
+            (obj.template postprocess<TTraits>(k),...);
+
+        }, tup);
+
+    }
+    
+}
+*/
 template<class TLattice, class TTraits>
 inline void ModelBase<TLattice,TTraits>::boundaries() {
 
@@ -619,7 +652,7 @@ inline void ModelBase<TLattice,TTraits>::boundaries() {
     
     std::apply([this](auto&... boundaryprocessor) {
 
-        (runboundaries(boundaryprocessor), ...);
+        (runBoundaries(boundaryprocessor), ...);
                 
         }, mt_Boundaries);
 
@@ -631,19 +664,40 @@ inline void ModelBase<TLattice,TTraits>::boundaries() {
 
 template<class TLattice, class TTraits>
 template<class TBoundaryType>
-inline void ModelBase<TLattice,TTraits>::runboundaries(TBoundaryType& boundaryprocessor) {
+inline void ModelBase<TLattice,TTraits>::runBoundaries(TBoundaryType& boundaryprocessor) {
 
-    #pragma omp for schedule(guided)
-    for (int k = 0; k <TLattice::N; k++) { //loop over k
+    if constexpr(std::tuple_size<typename TTraits::Boundaries>::value != 0) {
 
-        if constexpr(std::tuple_size<typename TTraits::Boundaries>::value != 0) { //Check if there are any boundary
-                                                                            //models
+        #pragma omp for schedule(guided)
+        for (int k = 0; k <TLattice::N; k++) { //loop over k
+            //Check if there are any boundary
+                                                                                //models
             std::apply([this, k](auto&... boundaries) {
                         
                                 (boundaries.template compute<TTraits>(this -> mDistribution, k) , ...); 
 
                     }, boundaryprocessor);
+
+        }
+
+    }
+}
+
+template<class TLattice, class TTraits>
+template<class TProcessorType>
+inline void ModelBase<TLattice,TTraits>::runProcessors(TProcessorType& processortuple) {
+
+    if constexpr(std::tuple_size<typename TTraits::Processors>::value != 0) {
+
+        #pragma omp for schedule(guided)
+        for (int k = 0; k <TLattice::N; k++) { //loop over k
             
+            std::apply([this, k](auto&... processor) {
+                        
+                        (processor.template compute<TTraits>(k) , ...); 
+
+                    }, processortuple);
+
         }
 
     }

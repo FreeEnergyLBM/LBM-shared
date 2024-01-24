@@ -83,6 +83,7 @@ int main(int argc, char **argv){
             
         }
         AfterEquilibration(timestep,binary);
+        //AfterEquilibrationPressure(timestep,pressure);
         // Evolve by one timestep
         lbm.evolve();
         

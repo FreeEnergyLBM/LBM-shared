@@ -5,8 +5,9 @@ from matplotlib import pyplot as plt
 from scipy import optimize
 import matplotlib
 
-#datadir = "data/inflowsimple2/inflowmomentum_-4e-05/lx_228/ly_200/postwidth_162/offsety_-17/theta_30/"
-datadir = "data/inflow2/inflowmomentum_-0.0002/lx_228/ly_200/postwidth_162/offsety_-17/theta_150/"
+#datadir = "data/inflow4/diffusivity_0.0008/inflowmomentum_-0.0002/lx_228/ly_200/postwidth_162/offsety_-17/theta_150/"
+datadir = "data/inflow2/inflowmomentum_0/lx_228/ly_200/postwidth_162/offsety_-17/theta_30/"
+#datadir = "data/inflow3/inflowmomentum_-0.002/lx_228/ly_300/postwidth_162/offsety_-17/theta_30/"
 
 HeaderFile = open(datadir+"Header.mat", 'rb')
 
@@ -19,9 +20,10 @@ LZ=struct.unpack('=i', HeaderFile.read(4))[0]
 ndim=struct.unpack('=i', HeaderFile.read(4))[0]
 
 t_zero = 0
-tstart = 0
+tstart = 750000
 
-tend = struct.unpack('=i', HeaderFile.read(4))[0]
+tend = 1500000
+struct.unpack('=i', HeaderFile.read(4))[0]
 tinc = struct.unpack('=i', HeaderFile.read(4))[0]
 
 slicepos=0
@@ -81,37 +83,38 @@ print(tend)
 outDirName = "figures"
 os.system("mkdir -p %s"%outDirName)
 v = np.zeros((LX,LY,LZ,ndim))
-#thetas = [150,120,90,60,30]
+#thetas = [120,90,60,30]
 thetas = [30]
 
 dml = {}
 dheightavg = {}
 dvol = {}
-
+#a=["a","aa","aaa","b","bb","bbb","c","cc","ccc","d","dd","ddd","e","ee","eee","f","ff","fff","g","gg","ggg","h","hh","hhh","i","ii","iii","j","jj","jjj","k","kk","kkk","l","ll","lll","m","mm","mmm","n","nn","nnn","o","oo","ooo","p","pp","ppp","q","qq","qqq","r","rr","rrr","s","ss","sss","t","tt","ttt","u","uu","uuu","v","vv","vvv","w","ww","www","x","xx","xxx","y","yy","yyy","z","zz""zzz"]
 for th in thetas:
     heightavg = np.array([])
     ml = np.array([])
     vol = np.array([])
     #datadir = "data/inflowsimple/inflowmomentum_-0.0002/lx_228/ly_200/postwidth_162/offsety_-17/theta_"+str(th)+"/"
-    #datadir = "data/inflow2/inflowmomentum_0.0002/lx_228/ly_200/postwidth_162/offsety_-17/theta_"+str(th)+"/"
-    datadir = "data/inflow2/inflowmomentum_-0.0002/lx_228/ly_200/postwidth_162/offsety_-17/theta_"+str(th)+"/"
+    #datadir = "data/inflow5/diffusivity_0.0008/inflowmomentum_-0.0002/lx_228/ly_200/postwidth_162/offsety_-17/theta_"+str(th)+"/"
+    datadir = "data/inflow2/inflowmomentum_0/lx_228/ly_200/postwidth_162/offsety_-17/theta_"+str(th)+"/"
+    #datadir = "data/inflow3/inflowmomentum_-0.002/lx_228/ly_300/postwidth_162/offsety_-17/theta_"+str(th)+"/"
     for t in range(tstart,tend+1,tinc):
         print("t=%s"%t)
         t_file =t+t_zero
 
         #file_name = "data/"+"OrderParameter_t%li.mat"%t_file
         #file_name = datadir+"Pressure_t%li.mat"%t_file
-        #file_name = datadir+"Density_t%li.mat"%t_file
+        file_name = datadir+"Density_t%li.mat"%t_file
         #file_name = "data/"+"Humidity_t%li.mat"%t_file
-        file_name = datadir+"OrderParameter_t%li.mat"%t_file
+        #file_name = datadir+"OrderParameter_t%li.mat"%t_file
         #file_name = datadir+"ChemicalPotential_t%li.mat"%t_file
         #file_name = "data/"+"BoundaryLabels_t%li.mat"%t_file
 
         File = open(file_name, 'rb')
 
         #file_name = datadir+"MassSink_t%li.mat"%t_file
-        #file_name = "data/"+"Pressure_t%li.mat"%t_file
-        #file_name = "data/"+"Density_t%li.mat"%t_file
+        #file_name = datadir+"Pressure_t%li.mat"%t_file
+        #file_name = datadir+"Density_t%li.mat"%t_file
         file_name = datadir+"Humidity_t%li.mat"%t_file
         #file_name = "data/"+"LaplacianOrderParameter_t%li.mat"%t_file
         #file_name = "data/"+"ChemicalPotential_t%li.mat"%t_file
@@ -119,7 +122,7 @@ for th in thetas:
 
         File0 = open(file_name, 'rb')
 
-        file_name = datadir+"Humidity_t%li.mat"%t_file
+        file_name = datadir+"MassSink_t%li.mat"%t_file
         #file_name = "data/"+"Pressure_t%li.mat"%t_file
         #file_name = "data/"+"Density_t%li.mat"%t_file
         #file_name = "data/"+"Humidity_t%li.mat"%t_file
@@ -204,8 +207,9 @@ for th in thetas:
         #File3.close()
         File4.close()
         
-        fig,ax=plt.subplots(1,1,figsize=(6,6))
+        
 
+        #output = "%s/"%(outDirName)+str(a[t//25000])+"component_plot_%012d.png"%(t)
         output = "%s/component_plot_%012d.png"%(outDirName,t)
         #rho3=2*0.01*(rho2-0.2)*(rho2-1)*(2*rho2-0.2-1)-0.0128*rho4
         rgbv = np.zeros((LY,LX))
@@ -224,32 +228,40 @@ for th in thetas:
         h = i1 + (c1_1 - 0.5) / (c1_1 - c1_2) + 1
         print(h)
         print(v[228-5,195,0])
+
         
-        im=ax.imshow(rgbv,interpolation='nearest',origin='upper')
-        ax.contour(np.flip(liquid).T, levels=[0.5], colors="k", zorder=1, linewidths=0.75)
         #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2).take(indices=slicepos,axis=sliceaxis))**2+(gh.take(indices=1,axis=2).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
         #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2))**2+(gh.take(indices=1,axis=2))**2),interpolation='nearest',origin='upper')
         #im=ax.imshow(np.sqrt((gh.take(indices=0,axis=2).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
         #im=ax.imshow(np.sqrt((v.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis))**2+(v.take(indices=1,axis=3).take(indices=slicepos,axis=sliceaxis))**2),interpolation='nearest',origin='upper')
         #print(np.flip(rho.take(indices=slicepos,axis=sliceaxis)).transpose()[70,70])
         #ax.scatter(70,70)
+        
+        fig,ax=plt.subplots(1,1,figsize=(6,6))
+        im=ax.imshow(rgbv,interpolation='nearest',origin='upper')
+        ax.contour(np.flip(liquid).T, levels=[0.5], colors="k", zorder=1, linewidths=0.75)
         stepx=4
         stepy=4
         X,Y=np.meshgrid(np.linspace(0,LX-1,int((LX)/stepx)),np.linspace(0,LY-1,int((LY)/stepy)))
+        #ax.quiver(X.T,Y.T,np.flip(-v[0:LX:stepx,0:LY:stepy,0]),np.flip(v[0:LX:stepx,0:LY:stepy,1]),width=0.0008,headwidth=7.5,headlength=7.5)
+        fig.colorbar(im)
+        plt.savefig(output, dpi=400, format='png')
+        plt.close(fig)
+        
         #print(np.sum(np.sqrt((gh.take(indices=0,axis=3).take(indices=slicepos,axis=sliceaxis))**2+(gh.take(indices=1,axis=3).take(indices=slicepos,axis=sliceaxis))**2)))
         #ax.quiver(X.T,Y.T,np.flip(v[:,:,0].take(indices=slicepos,axis=sliceaxis)),np.flip(-v[:,:,1].take(indices=slicepos,axis=sliceaxis)),width=0.001,headwidth=2.5,headlength=1.5)
         #ax.quiver(X.T,Y.T,np.flip(-v[0:-1:stepx,0:-1:stepy,0]),np.flip(v[0:-1:stepx,0:-1:stepy,1]),width=0.0002,headwidth=7.5,headlength=7.5)
-        ax.quiver(X.T,Y.T,np.flip(-v[0:LX:stepx,0:LY:stepy,0]),np.flip(v[0:LX:stepx,0:LY:stepy,1]),width=0.0008,headwidth=7.5,headlength=7.5)
+        
         #print(np.sum(rho[int(LX/2),:])/(0.002/(100-h)*np.log(1/(1-0.1))))
         #print("V ",np.amax(v))
         #print("HERE ",np.sum(rho))
         #print("HERE ",np.sum(rho>0.5))
         #print("HERE ",rho[LX//8,LY//2])
         #print("HERE ",rho[LX//2,LY//6])
-        fig.colorbar(im)
+        
         #ax.scatter(49,49)
-        plt.savefig(output, dpi=400, format='png')
-        plt.close(fig)
+
+        print("V",np.amax(v))
         
         pw=80
         ym=35
@@ -270,13 +282,15 @@ for th in thetas:
         heightavg = np.append(heightavg,np.average(np.where(np.logical_and((liquid[:,:] <= 0.8),(liquid[:,:] > 0.2)))[1]))
 
         #ml=np.append(ml,surfacearea)
-        if (th==90):
-            ml=np.append(ml,np.sum(mlnosolid)*1*(1.03))
+        if (th<90):
+            ml=np.append(ml,np.sum(mlnosolid[:LX//2,:])*6)
         else:
-            ml=np.append(ml,np.sum(mlnosolid))
-
+            ml=np.append(ml,np.sum(mlnosolid[:LX//2,:])*6)
+        
+    print(ml)
     #fit=optimize.curve_fit(fitfunc, np.linspace(tstart,tend,int((tend-tstart)/tinc)+1), vol, p0=[10000,-10,0.5],maxfev=100000)[0]
-    fit=optimize.curve_fit(derivfunc, np.linspace(tstart,tend,int((tend-tstart)/tinc)+1), ml, p0=[-10,0.5],maxfev=100000)[0]
+    fit=optimize.curve_fit(derivfunc, np.linspace(tstart,tend,int((tend-tstart)/tinc)+1), ml, p0=[0.01949235,0.79008422],maxfev=500000)[0]
+    print(fit)
     dheightavg[th] = heightavg
     dml[th] = derivfunc(np.linspace(tstart,tend,int((tend-tstart)/tinc)+1),fit[0],fit[1])#/ml#derivfunc(np.linspace(tstart,tend,int((tend-tstart)/tinc)+1),fit[0],fit[1])#ml#-derivfunc(np.linspace(tstart,tend,int((tend-tstart)/tinc)+1),fit[0],fit[1],fit[2])#ml
     dvol[th] = vol
@@ -294,7 +308,7 @@ plt.tight_layout()
 plt.savefig("0.0002.PNG",dpi=200,format='png')
 
 plt.figure()
-plt.plot(v[int(LX/2),:,0])
+plt.plot(rho2[5*int(LX/6),LY//3+5:LY-10])
 plt.savefig("test.png", dpi=200, format='png')
 
 

@@ -6,11 +6,19 @@ import sys
 import fileinput
 
 owd = os.getcwd() # Directory containing the python file
-datadir="data/inflow2" # All data directories start with the "data" folder
+datadir="data/inflowsimple7" # All data directories start with the "data" folder
 os.system("mkdir "+datadir) # Make the "data" folder (if it doesn't exist already)
 os.chdir(datadir) # Enter it
 
-params3={"inflowmomentum":np.array([-0.0002,-0.0002,-0.0002,-0.0002,-0.0002,-0.00004,-0.00004,-0.00004,-0.00004,-0.00004]),"lx":np.array([228,228,228,228,228,228,228,228,228,228]),"ly":np.array([200,200,200,200,200,200,200,200,200,200]),"postwidth":np.array([162,162,162,162,162,162,162,162,162,162]),"offsety":np.array([-17,-17,-17,-17,-17,-17,-17,-17,-17,-17]),"theta":np.array([30,60,90,120,150,30,60,90,120,150])}
+#params3={"inflowmomentum":np.array([-0.0002,-0.0002,-0.0002,-0.0002,-0.0002,-0.00004,-0.00004,-0.00004,-0.00004,-0.00004]),"lx":np.array([228,228,228,228,228,228,228,228,228,228]),"ly":np.array([200,200,200,200,200,200,200,200,200,200]),"postwidth":np.array([162,162,162,162,162,162,162,162,162,162]),"offsety":np.array([-17,-17,-17,-17,-17,-17,-17,-17,-17,-17]),"theta":np.array([30,60,90,120,150,30,60,90,120,150])}
+#params3={"inflowmomentum":np.array([-0.0002,-0.0002,-0.0002,-0.0002,-0.0002]),"lx":np.array([228,228,228,228,228]),"ly":np.array([200,200,200,200,200]),"postwidth":np.array([162,162,162,162,162]),"offsety":np.array([-17,-17,-17,-17,-17]),"theta":np.array([30,60,90,120,150])}
+
+
+#params3={"diffusivity":np.array([0.0008,0.0008,0.0008,0.0008,0.0008,0.0008,0.0008,0.0008,0.0008,0.0008]),"inflowmomentum":np.array([-0.0002,-0.00002,-0.0002,-0.00002,-0.0002,-0.00002,-0.0002,-0.00002,-0.0002,-0.00002]),"lx":np.array([228,228,228,228,228,228,228,228,228,228]),"ly":np.array([200,200,200,200,200,200,200,200,200,200]),"postwidth":np.array([162,162,162,162,162,162,162,162,162,162]),"offsety":np.array([-17,-17,-17,-17,-17,-17,-17,-17,-17,-17]),"theta":np.array([30,30,60,60,90,90,120,120,150,150])}
+#params3={"diffusivity":np.array([0.0008,0.0008,0.0008,0.0008,0.0008]),"inflowmomentum":np.array([-0.0002,-0.0002,-0.0002,-0.0002,-0.0002,]),"lx":np.array([228,228,228,228,228]),"ly":np.array([200,200,200,200,200]),"postwidth":np.array([162,162,162,162,162]),"offsety":np.array([-12,-12,-12,-12,-12]),"theta":np.array([30,90,150,60,120])}
+params3={"diffusivity":np.array([0.0008]),"inflowmomentum":np.array([-0.0002]),"lx":np.array([228,228,228,228,228,228,228,228,228,228]),"ly":np.array([200]),"postwidth":np.array([162]),"offsety":np.array([-17]),"theta":np.array([30])}
+
+#params3={"inflowmomentum":np.array([0,0,0,0,0]),"lx":np.array([228,228,228,228,228]),"ly":np.array([200,200,200,200,200]),"postwidth":np.array([162,162,162,162,162]),"offsety":np.array([-17,-17,-17,-17,-17]),"theta":np.array([30,60,90,120,150])}
 #params3={"inflowmomentum":np.array([-0.0002]),"lx":np.array([228]),"ly":np.array([200]),"postwidth":np.array([162]),"offsety":np.array([-17]),"theta":np.array([150])}
 #params3={"lx":np.array([228,228]),"ly":np.array([200,200]),"postwidth":np.array([162,162]),"offsety":np.array([-17,-17]),"theta":np.array([30,90])}
 

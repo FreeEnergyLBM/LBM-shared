@@ -28,7 +28,7 @@ class ForceBase{
         inline double compute(int k);
 
         template<class TTraits>
-        inline void precompute(int k); //Perform any neccessary computations before force is computed
+        inline void runProcessor(int k); //Perform any neccessary computations before force is computed
 
         template<class TTraits>
         inline double computeDensitySource(int k); //Calculate any possible source/correction term for density
@@ -41,13 +41,7 @@ class ForceBase{
                                                            //velocity
 
         template<class TTraits>
-        inline void postprocess(int k); //Perform any necessary postprocessing
-
-        template<class TTraits>
-        inline void communicatePostProcess(); //Perform any necessary postprocessing
-
-        template<class TTraits>
-        inline void communicatePrecompute(); //Perform any necessary postprocessing
+        inline void communicate(); //Perform any necessary postprocessing
 
     private:
 
@@ -79,13 +73,7 @@ inline double ForceBase<TMethod>::compute(int k) {
 
 template<class TMethod>
 template<class TTraits>
-inline void ForceBase<TMethod>::precompute(int k) { //Not necessary
-    
-}
-
-template<class TMethod>
-template<class TTraits>
-inline void ForceBase<TMethod>::postprocess(int k) { //Not necessary
+inline void ForceBase<TMethod>::runProcessor(int k) { //Not necessary
     
 }
 
@@ -115,12 +103,6 @@ inline double ForceBase<TMethod>::computeVelocitySource(int xyz, int k) { //Need
 
 template<class TMethod>
 template<class TTraits>
-inline void ForceBase<TMethod>::communicatePrecompute() { //Not necessary
-    
-}
-
-template<class TMethod>
-template<class TTraits>
-inline void ForceBase<TMethod>::communicatePostProcess() { //Not necessary
+inline void ForceBase<TMethod>::communicate() { //Not necessary
     
 }

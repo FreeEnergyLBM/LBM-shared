@@ -64,10 +64,11 @@ struct LatticeProperties{
     //! This function communicates the halo regions of a parameter.
     template<class TParameter>
     static void communicate(TParameter& obj) {
-        
+
         #pragma omp master
         {
         if (!alreadycommunicatedparameter.count(typeid(obj))||!alreadycommunicatedparameter.at(typeid(obj))) {
+            
             Parallel.template updateParameterBeforeCommunication<TLattice>(obj);
             Parallel.template communicateParameter<TLattice>(obj);
             Parallel.template updateParameterAfterCommunication<TLattice>(obj);

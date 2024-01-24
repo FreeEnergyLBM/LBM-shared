@@ -101,7 +101,7 @@ class ChemicalForceBinaryMu : public ForceBase<TMethod> {
         inline double computeChemicalForce(int idx, int k);
 
         template<class TTraits>
-        inline void communicatePostProcess();
+        inline void communicate();
 
 };
 
@@ -160,7 +160,7 @@ inline double ChemicalForceBinaryMu<TMethod, TGradientType>::computeVelocitySour
 
 template<class TMethod, template<class,int> class TGradientType>
 template<class TTraits>
-inline void ChemicalForceBinaryMu<TMethod, TGradientType>::communicatePostProcess() { //Not necessary
+inline void ChemicalForceBinaryMu<TMethod, TGradientType>::communicate() { //Not necessary
 
     using Lattice = typename TTraits::Lattice;
     Lattice::communicate(ChemicalPotential<>::getInstance<Lattice>());

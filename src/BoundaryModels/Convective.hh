@@ -90,7 +90,7 @@ class Convective2 : public BoundaryBase {
         inline void communicate(TDistributionType& mDistribution);
 
         template<class TTraits>
-        inline void communicatePostProcess();
+        inline void communicateProcessor();
 
         template<class TTraits>
         inline void precompute(int k);
@@ -201,7 +201,7 @@ inline void Convective2<TForceTuple>::communicate(TDistributionType& distributio
 
 template<class TForceTuple>
 template<class TTraits>
-inline void Convective2<TForceTuple>::communicatePostProcess() {
+inline void Convective2<TForceTuple>::communicateProcessor() {
     
     #pragma omp single
     {

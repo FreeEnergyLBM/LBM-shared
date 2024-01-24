@@ -56,10 +56,11 @@ inline void ConvectParameterBoundary<TParameter,TParameterOld>::compute(int k) {
             magnormal = sqrt(magnormal);
 
             normalvelocity *= 1./magnormal;
+            for (int component = 0 ; component < TParameter::instances; component++){
+                TParameter::template get<Lattice>(k,component) = (TParameterOld::template get<Lattice>(k,component)+normalvelocity*TParameter::template get<Lattice>(DataType::getInstance().getNeighbor(k,normalq),component))/(1+normalvelocity);
 
-            TParameter::template get<Lattice>(k) = (TParameterOld::template get<Lattice>(k)+normalvelocity*TParameter::template get<Lattice>(DataType::getInstance().getNeighbor(k,normalq)))/(1+normalvelocity);
-
-            TParameter::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[normalq])) = (TParameterOld::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[normalq]))+normalvelocity*TParameter::template get<Lattice>(k))/(1+normalvelocity);
+                TParameter::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[normalq]),component) = (TParameterOld::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[normalq]),component)+normalvelocity*TParameter::template get<Lattice>(k,component))/(1+normalvelocity);
+            }
 
         }
     

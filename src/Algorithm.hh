@@ -71,7 +71,7 @@ class Algorithm {
         /**
          * \brief Perform any necessary calculations before collision can take place at each timestep.
          */
-        inline void precomputeStep(); 
+        inline void processorStep(); 
         
         /**
          * \brief Calculate collision (and streaming currently) for each model over the entire lattice.
@@ -92,8 +92,8 @@ class Algorithm {
 
         /**
          * \brief Postprocess.
-         */
-        inline void postprocessStep();
+         *//*
+        inline void postprocessStep();*/
 
         /*
          * Tuple containing references to objects of each TModel... passed through the constructor.
@@ -114,7 +114,6 @@ inline void Algorithm<TModel...>::evolve() {
     
     #pragma omp parallel
     {   
-    precomputeStep();
     
     calculateCollisionStep();
 
@@ -124,7 +123,7 @@ inline void Algorithm<TModel...>::evolve() {
     
     calculateMomentaStep();
     
-    postprocessStep();
+    processorStep();
     
     }
 }
@@ -150,7 +149,7 @@ inline void Algorithm<TModel...>::initialise() { //...
 
     }
     
-    postprocessStep();
+    processorStep();
 
 }
 
@@ -162,13 +161,13 @@ inline void Algorithm<TModel...>::initialise() { //...
  *          calculations needed in the forcing terms, for instance.
  */
 template<class ...TModel>
-inline void Algorithm<TModel...>::precomputeStep() {
+inline void Algorithm<TModel...>::processorStep() {
 
     if constexpr (sizeof...(TModel) != 0) {
 
         std::apply([](TModel&... models) {
             
-            (models.precompute(), ...);
+            (models.computeProcessors(), ...);
 
         }, mt_Models);
 
@@ -182,7 +181,7 @@ inline void Algorithm<TModel...>::precomputeStep() {
  *          tuple "mt_Models". In this case, the lambda function applies "(models.postprocess(),...);", which will 
  *          run the "postprocess()" function for every model in the tuple. This function might perform some gradient
  *          calculations needed in the forcing terms, for instance.
- */
+ *//*
 template<class ...TModel>
 inline void Algorithm<TModel...>::postprocessStep() {
 
@@ -197,7 +196,7 @@ inline void Algorithm<TModel...>::postprocessStep() {
     }
 
 }
-
+*/
 /**
  * \details This function first checks if the algoritm has any models in the template arguments. Then, the 
  *          std::apply() function is used to apply a lambda function, taking arguments as the models stored in the

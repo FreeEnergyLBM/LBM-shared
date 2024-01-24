@@ -11,25 +11,16 @@ class BoundaryBase{
         inline void compute(TDistributionType& mDistribution, int k);
 
         template<class TTraits>
-        inline void precompute(int k){};
-
-        template<class TTraits>
-        inline void communicatePrecompute(){};
-
-        template<class TTraits>
         inline void communicate(){};
 
         template<class TTraits>
-        inline void communicatePostProcess(){};
+        inline void communicateProcessor(){};
 
         template<class TTraits, class TDistributionType>
-        inline void communicatePrecompute(){};
-
-        template<class TTraits, class TDistributionType>
-        inline void communicatePostProcess(){};
+        inline void communicateProcessor(){};
 
         template<class TTraits>
-        inline void postprocess(int k){};
+        inline void runProcessor(int k){};
 
         inline void setInterfaceID(int id) {mInterfaceID[0]=id;};
 

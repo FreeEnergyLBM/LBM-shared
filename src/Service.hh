@@ -398,19 +398,20 @@ template <typename ...T> struct is_tuple<std::tuple<T...>> : std::tuple<T...> { 
 template<class TTrait>
 struct BaseTrait{
 
-  template<class... TPreProcessor>
-  struct AddPreProcessor : BaseTrait<AddPreProcessor<TPreProcessor...>>  {
+  template<class... TProcessor>
+  struct AddProcessor;
+
+  template<class... TProcessor>
+  struct AddProcessor : BaseTrait<AddProcessor<TProcessor...>> {
 
     using Stencil = typename TTrait::Stencil;
 
     using Boundaries = typename TTrait::Boundaries;
 
-    using PreProcessors = tuple_cat_t<typename TTrait::PreProcessors, std::tuple<TPreProcessor...>>;
-
-    using PostProcessors = typename TTrait::PostProcessors;
+    using Processors = std::tuple<tuple_cat_t<typename std::tuple_element<0, typename TTrait::Processors>::type, std::tuple<TProcessor...>>>;
 
     using Forces = typename TTrait::Forces;
-
+    
     template<class TStencil>
     using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
 
@@ -423,19 +424,17 @@ struct BaseTrait{
 
   };
 
-  template<class... TPreProcessor>
-  struct SetPreProcessor : BaseTrait<SetPreProcessor<TPreProcessor...>> {
+  template<class... TProcessor>
+  struct AddProcessor<std::tuple<TProcessor...>> : BaseTrait<AddProcessor<std::tuple<TProcessor...>>> {
 
     using Stencil = typename TTrait::Stencil;
 
     using Boundaries = typename TTrait::Boundaries;
 
-    using PreProcessors = std::tuple<TPreProcessor...>;
-
-    using PostProcessors = typename TTrait::PostProcessors;
+    using Processors = tuple_cat_t<typename TTrait::Processors, std::tuple<std::tuple<TProcessor...>>>;
 
     using Forces = typename TTrait::Forces;
-
+    
     template<class TStencil>
     using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
 
@@ -448,16 +447,17 @@ struct BaseTrait{
 
   };
 
-  template<class... TPostProcessor>
-  struct AddPostProcessor : BaseTrait<AddPostProcessor<TPostProcessor...>>  {
+  template<class... TProcessor>
+  struct SetProcessor;
+
+  template<class... TProcessor>
+  struct SetProcessor : BaseTrait<SetProcessor<TProcessor...>> {
 
     using Stencil = typename TTrait::Stencil;
 
     using Boundaries = typename TTrait::Boundaries;
 
-    using PreProcessors = typename TTrait::PreProcessors;
-
-    using PostProcessors = tuple_cat_t<typename TTrait::PostProcessors, std::tuple<TPostProcessor...>>;
+    using Processors = std::tuple<std::tuple<TProcessor...>>;
 
     using Forces = typename TTrait::Forces;
 
@@ -465,7 +465,7 @@ struct BaseTrait{
     using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
 
     using Lattice = typename TTrait::Lattice;
-
+    
     template<class TLattice, class TStencil>
     using DataType = typename TTrait::template DataType<TLattice,TStencil>;
 
@@ -473,16 +473,14 @@ struct BaseTrait{
 
   };
 
-  template<class... TPostProcessor>
-  struct SetPostProcessor : BaseTrait<SetPostProcessor<TPostProcessor...>> {
+  template<class TProcessor>
+  struct SetProcessor<TProcessor> : BaseTrait<SetProcessor<TProcessor>> {
 
     using Stencil = typename TTrait::Stencil;
 
     using Boundaries = typename TTrait::Boundaries;
 
-    using PreProcessors = typename TTrait::PreProcessors;
-
-    using PostProcessors = std::tuple<TPostProcessor...>;
+    using Processors = typename is_tuple<TProcessor>::type;
 
     using Forces = typename TTrait::Forces;
 
@@ -490,14 +488,14 @@ struct BaseTrait{
     using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
 
     using Lattice = typename TTrait::Lattice;
-
+    
     template<class TLattice, class TStencil>
     using DataType = typename TTrait::template DataType<TLattice,TStencil>;
 
     static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
 
   };
-  
+
   template<class... TForce>
   struct AddForce : BaseTrait<AddForce<TForce...>>  {
 
@@ -505,9 +503,7 @@ struct BaseTrait{
 
     using Boundaries = typename TTrait::Boundaries;
 
-    using PreProcessors = typename TTrait::PreProcessors;
-
-    using PostProcessors = typename TTrait::PostProcessors;
+    using Processors = typename TTrait::Processors;
 
     using Forces = tuple_cat_t<typename TTrait::Forces, std::tuple<TForce...>>;
 
@@ -530,9 +526,7 @@ struct BaseTrait{
 
     using Boundaries = typename TTrait::Boundaries;
 
-    using PreProcessors = typename TTrait::PreProcessors;
-
-    using PostProcessors = typename TTrait::PostProcessors;
+    using Processors = typename TTrait::Processors;
 
     using Forces = std::tuple<TForce...>;
 
@@ -558,9 +552,7 @@ struct BaseTrait{
 
     using Boundaries = std::tuple<tuple_cat_t<typename std::tuple_element<0, typename TTrait::Boundaries>::type, std::tuple<TBoundary...>>>;
 
-    using PreProcessors = typename TTrait::PreProcessors;
-
-    using PostProcessors = typename TTrait::PostProcessors;
+    using Processors = typename TTrait::Processors;
 
     using Forces = typename TTrait::Forces;
     
@@ -583,9 +575,7 @@ struct BaseTrait{
 
     using Boundaries = tuple_cat_t<typename TTrait::Boundaries, std::tuple<std::tuple<TBoundary...>>>;
 
-    using PreProcessors = typename TTrait::PreProcessors;
-
-    using PostProcessors = typename TTrait::PostProcessors;
+    using Processors = typename TTrait::Processors;
 
     using Forces = typename TTrait::Forces;
     
@@ -611,9 +601,7 @@ struct BaseTrait{
 
     using Boundaries = std::tuple<std::tuple<TBoundary...>>;
 
-    using PreProcessors = typename TTrait::PreProcessors;
-
-    using PostProcessors = typename TTrait::PostProcessors;
+    using Processors = typename TTrait::Processors;
 
     using Forces = typename TTrait::Forces;
 
@@ -636,9 +624,7 @@ struct BaseTrait{
 
     using Boundaries = typename is_tuple<TBoundary>::type;
 
-    using PreProcessors = typename TTrait::PreProcessors;
-
-    using PostProcessors = typename TTrait::PostProcessors;
+    using Processors = typename TTrait::Processors;
 
     using Forces = typename TTrait::Forces;
 
@@ -661,9 +647,7 @@ struct BaseTrait{
 
     using Boundaries = typename TTrait::Boundaries;
 
-    using PreProcessors = typename TTrait::PreProcessors;
-
-    using PostProcessors = typename TTrait::PostProcessors;
+    using Processors = typename TTrait::Processors;
 
     using Forces = typename TTrait::Forces;
 
@@ -686,9 +670,7 @@ struct BaseTrait{
 
     using Boundaries = typename TTrait::Boundaries;
 
-    using PreProcessors = typename TTrait::PreProcessors;
-
-    using PostProcessors = typename TTrait::PostProcessors;
+    using Processors = typename TTrait::Processors;
 
     using Forces = typename TTrait::Forces;
 
@@ -711,9 +693,7 @@ struct BaseTrait{
 
     using Boundaries = typename TTrait::Boundaries;
 
-    using PreProcessors = typename TTrait::PreProcessors;
-
-    using PostProcessors = typename TTrait::PostProcessors;
+    using Processors = typename TTrait::Processors;
 
     using Forces = typename TTrait::Forces;
 
@@ -736,9 +716,7 @@ struct BaseTrait{
 
     using Boundaries = typename TTrait::Boundaries;
 
-    using PreProcessors = typename TTrait::PreProcessors;
-
-    using PostProcessors = typename TTrait::PostProcessors;
+    using Processors = typename TTrait::Processors;
 
     using Forces = typename TTrait::Forces;
 
