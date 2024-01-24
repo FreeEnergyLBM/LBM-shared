@@ -401,7 +401,7 @@ void SaveHandler<TLattice>::saveParameter(int timestep) {
     // File
     char fdump[512];
     sprintf(fdump, "%s/%s_t%i.mat", mDataDir.c_str(), TParameter::mName, timestep);
-    int fileOffset = sizeof(typename TParameter::ParamType) * mpi.rank * TNumDir * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size;
+    int fileOffset = sizeof(typename TParameter::ParamType) * mpi.rank * TNumDir * TParameter::instances * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size;
 
     #ifdef MPIPARALLEL
     // Parallel saving with MPI
