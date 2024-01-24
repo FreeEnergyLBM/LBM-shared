@@ -3,10 +3,10 @@
 #include "BoundaryBase.hh"
 #include<iostream>
 
-class Bouzidi : public BoundaryBase {
+class Bouzidi2 : public BoundaryBase {
     public:
 
-        Bouzidi() { this->setInterfaceID(5); }
+        Bouzidi2() { this->setInterfaceID(5); }
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);
@@ -32,7 +32,7 @@ class Bouzidi : public BoundaryBase {
 };
 
 template<class TTraits, class TDistributionType>
-inline void Bouzidi::compute(TDistributionType& distribution, int k) {
+inline void Bouzidi2::compute(TDistributionType& distribution, int k) {
 
     using Lattice = typename TTraits::Lattice;
 
@@ -44,15 +44,15 @@ inline void Bouzidi::compute(TDistributionType& distribution, int k) {
 
         double dist = evalDistanceFunction(distribution.streamIndex(k, idx),distribution.getOpposite(idx));
         
-        if (dist <= 0.5) distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = 2 * (dist) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) - (2 * dist - 1) * distribution.getPostCollisionDistribution(distribution.streamIndex(distribution.streamIndex(k, idx), idx),distribution.getOpposite(idx));
-        else distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = 1.0 / (2.0*dist) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) + (1-1.0 / (2.0 * dist)) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),idx);
+        if (dist <= 0.5) distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = dist * (2 * dist + 1) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) + (1 + 2 * dist) * (1 - 2 * dist) * distribution.getPostCollisionDistribution(distribution.streamIndex(distribution.streamIndex(k, idx), idx),distribution.getOpposite(idx)) - (dist) * (1 - 2 * dist) * distribution.getPostCollisionDistribution(distribution.streamIndex(distribution.streamIndex(distribution.streamIndex(k, idx), idx), idx),distribution.getOpposite(idx));
+        else distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = 1.0 / (dist * (2 * dist + 1)) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) + (2 * dist - 1) / dist * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),idx) + (1 - 2 * dist) / (1 + 2 * dist) * distribution.getPostCollisionDistribution(distribution.streamIndex(distribution.streamIndex(k, idx), idx),idx);
 
 }    
 
 }
 
 template<class TTraits, class TDistributionType>
-inline void Bouzidi::communicate(TDistributionType& distribution) {
+inline void Bouzidi2::communicate(TDistributionType& distribution) {
 
     using Lattice = typename TTraits::Lattice;
     Lattice::communicateDistributionAll(distribution);
