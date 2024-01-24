@@ -29,6 +29,10 @@ class SaveHandler {
         template<class TParameter, int TNumDir=1> void saveParameter(int timestep);
         template<class... TParameter> void saveParameter(int timestep, TParameter&... params);
 
+        template<class TParameter, int TNumDir=1> void loadParameter(std::string filename, std::string filetype="bin", int instance=-1);
+        template<class TParameter, int TNumDir=1> void loadParameter(int timestep, std::string filetype="bin", int instance=-1);
+        template<class... TParameter> void loadParameter(int timestep, TParameter&... params);
+
         void maskSolid(bool status=true);
         void maskSolid(double value);
 
@@ -391,6 +395,7 @@ void SaveHandler<TLattice>::saveBoundaries(int timestep){
 
 }
 
+
 template<class TLattice>
 template<class TParameter, int TNumDir>
 void SaveHandler<TLattice>::saveParameter(int timestep) {
@@ -405,6 +410,7 @@ void SaveHandler<TLattice>::saveParameter(int timestep) {
 
     #ifdef MPIPARALLEL
     // Parallel saving with MPI
+    // TODO: Fix for other parallelisations
     MPI_File fh;
     MPI_File_open(MPI_COMM_SELF, fdump, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
     MPI_File_seek(fh, fileOffset, MPI_SEEK_SET);
@@ -415,7 +421,7 @@ void SaveHandler<TLattice>::saveParameter(int timestep) {
     // Saving without MPI
     std::ofstream fs(fdump, std::ios::out | std::ios::binary);
     fs.seekp(fileOffset);
-    for (int k = TLattice::HaloSize; k < TLattice::N-TLattice::HaloSize; k++) {
+    for (int k = TLattice::HaloSize; k < TLattice::N-TLattice::HaloSize; k++) { // TODO: Fix for other parallelisations
         for(int idx = 0; idx < TParameter::instances; idx++) {
             for(int idx2 = 0; idx2 < TNumDir; idx2++) {
                 fs.write((char *)(&param[k*TNumDir*TParameter::instances+idx*TNumDir+idx2]), sizeof(typename TParameter::ParamType));
@@ -446,4 +452,91 @@ template<class TLattice>
 void SaveHandler<TLattice>::maskSolid(double value) {
     mMaskSolid = true;
     mMaskValue = value;
+}
+
+
+//==== Loading ====//
+
+template<class TLattice>
+template<class TParameter, int TNumDir>
+void SaveHandler<TLattice>::loadParameter(std::string filename, std::string filetype, int instance) {
+    std::vector<typename TParameter::ParamType> &param = TParameter::template get<TLattice,TNumDir>();
+
+    if (filetype == "bin") {
+        int fileOffset = sizeof(typename TParameter::ParamType) * mpi.rank * TNumDir * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size;
+
+        #ifdef MPIPARALLEL
+        // Parallel loading with MPI
+        MPI_File fh;
+        MPI_File_open(MPI_COMM_SELF, filename.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+        MPI_File_seek(fh, fileOffset, MPI_SEEK_SET);
+        MPI_File_read(fh, &param[TLattice::HaloSize*TNumDir*TParameter::instances], TNumDir*(TLattice::N-2*TLattice::HaloSize)*TParameter::instances, MPI_DOUBLE, MPI_STATUSES_IGNORE);
+        MPI_File_close(&fh);
+
+        #else
+        // Load without MPI
+        std::ifstream fs(filename.c_str(), std::ios::binary);
+        fs.seekg(fileOffset);
+        for (int k = TLattice::HaloSize; k < TLattice::N-TLattice::HaloSize; k++) {
+            for(int idx = 0; idx < TParameter::instances; idx++) {
+                for(int idx2 = 0; idx2 < TNumDir; idx2++) {
+                    fs.read((char *)(&param[k*TNumDir*TParameter::instances+idx*TNumDir+idx2]), sizeof(typename TParameter::ParamType));
+                }
+            }
+        };
+        fs.close();
+        #endif
+
+    } else if (filetype == "txt") {
+        std::ifstream fs(filename.c_str());
+        int xStart = TLattice::LXMPIOffset - TLattice::HaloXWidth;
+        int yStart = TLattice::LYMPIOffset - TLattice::HaloYWidth;
+        int zStart = TLattice::LZMPIOffset - TLattice::HaloZWidth;
+        int xStop = std::min(xStart + TLattice::LXdiv, TLattice::LX);
+        int yStop = std::min(yStart + TLattice::LYdiv, TLattice::LY);
+        int zStop = std::min(zStart + TLattice::LZdiv, TLattice::LZ);
+        int nI = (instance==-1) ? TNumDir : TParameter::instances*TNumDir;
+        int dI = (instance==-1) ? TParameter::instances : 1;
+        double dummy;
+        for (int xg=0; xg<xStop; xg++) {
+            for (int yg=0; yg<yStop; yg++) {
+                for (int zg=0; zg<zStop; zg++) {
+                    int k = computeKFromGlobal<TLattice>(xg%TLattice::LX, yg%TLattice::LY, zg%TLattice::LZ);
+                    for (int i=0; i<nI; i+=dI) {
+                        if (k == -1) {
+                            fs >> dummy;
+                        } else {
+                            fs >> param[k*TParameter::instances*TNumDir + i];
+                        }
+                    }
+                }
+            }
+        }
+        fs.close();
+    }
+
+    // Ensure the parameter is set to initialised
+    std::map<int,bool> &initialised = TParameter::template getInstance<TLattice,TNumDir>().mmInitialised;
+    for (size_t i=0; i<param.size(); i++) {
+        initialised[i] = true;
+    }
+}
+
+
+template<class TLattice>
+template<class TParameter, int TNumDir>
+void SaveHandler<TLattice>::loadParameter(int timestep, std::string filetype, int instance) {
+    char filename[512];
+    if (filetype == "bin") {
+        sprintf(filename, "%s/%s_t%i.mat", mDataDir.c_str(), TParameter::mName, timestep);
+    } else if (filetype="txt") {
+        sprintf(filename, "%s/%s_t%i.txt", mDataDir.c_str(), TParameter::mName, timestep);
+    }
+    loadParameter(filename, filetype, instance);
+}
+
+template<class TLattice>
+template<class... TParameter>
+void SaveHandler<TLattice>::loadParameter(int timestep, TParameter&... params) {
+    (loadParameter<TParameter>(timestep),...);
 }

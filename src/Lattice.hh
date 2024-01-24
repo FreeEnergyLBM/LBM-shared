@@ -37,7 +37,7 @@ struct LatticeProperties{
     static TParallel Parallel;
 
     constexpr LatticeProperties(double DT=1.0) {
-        DT = DT;
+        TLattice::DT = DT;
         Parallel.template init<TLattice>(); // Initialise the parallelisation
     }
 
@@ -76,6 +76,18 @@ struct LatticeProperties{
         alreadycommunicatedparameter[typeid(obj)] = true;
         }
         
+    }
+
+    //! This function creates datatype for streaming distributions on its lattice.
+    template<class TStencil>
+    static void createDistributionType() {
+        Parallel.template createDistributionType<TLattice,TStencil>();
+    }
+
+    //! This function destroys datatype for streaming distributions on its lattice.
+    template<class TStencil>
+    static void destroyDistributionType() {
+        Parallel.template destroyDistributionType<TLattice>();
     }
 
     //! This function streams the distributions to the neighboring processor.
@@ -222,6 +234,18 @@ struct LatticePropertiesRuntime {
         alreadycommunicatedparameter[typeid(obj)] = true;
         }
         
+    }
+
+    //! This function creates datatype for streaming distributions on its lattice.
+    template<class TStencil>
+    static void createDistributionType() {
+        Parallel.template createDistributionType<TLattice,TStencil>();
+    }
+
+    //! This function destroys datatype for streaming distributions on its lattice.
+    template<class TStencil>
+    static void destroyDistributionType() {
+        Parallel.template destroyDistributionType<TLattice>();
     }
 
     //! This function streams the distributions to the neighboring processor.

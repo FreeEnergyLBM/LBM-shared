@@ -13,14 +13,28 @@ See the 'examples/' directory for scripts showing the library in use.
 
 This library makes heavy use of templates to specify methods to use and to pass information about the lattice (stored within the `LatticeProperties` class).
 
+### Models
 The library is centered around various models which contain the functions to solve a given lattice Boltzmann equation (e.g. the collision, equilibrium distributions, etc.).
 These are stored in the 'src/LBModels/' directory.
 
-Currently the code has a single component and a two component model (Section 9.2.2 The Lattice Boltzmann Method: Principles and Practice, T. Kruger et al. (2016)).
+| Name | Description | Reference |
+|:---:|:-------|:----|
+|`FlowField`      | Standard LBM. Solves Navier--Stokes equations. | |
+|`Binary`         | Two-component model. Solves Cahn--Hilliard equation. | doi:10.1007/978-3-319-44649-3 Section 9.2.2 |
+|`BinaryFlowField`| Two-component model. Solves Navier--Stokes equations. | doi:10.1007/978-3-319-44649-3 Section 9.2.2 |
+
+Currently the code has a single component and a two component model ).
 
 Each model is given a traits template parameter that contains the stencil, boundary methods, collision method, any `PreProcessors` and `PostProcessors` such as gradient caclulation, and any number of forces/source terms.
 The models each have a default trait, e.g. `DefaultTraitFlowField` for `FlowField`, but these can be modified if desired.
 
+### Boundary Conditions
+| Name | Description | Reference |
+|:---:|:-------|:----|
+|`BounceBack`| No-slip solid | |
+|`ZouHe`| Constant density or velocity | doi:10.1063/1.869307 |
+
+### Parameters
 Values that vary across the lattice such as velocity and density are stored as `Parameter` objects.
 Several functions are provided to set these values and to read them out.
 They can also be passed to methods in the `SaveHandler` class in order to write them to a file during the simulation.

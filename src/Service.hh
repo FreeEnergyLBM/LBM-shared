@@ -98,13 +98,30 @@ inline std::array<int,3> computeXYZ(int k) {
 
 /// Compute the local index from the local x,y,z coordinates
 template<class TLattice>
-inline int computeK(int x, int y, int z) {
-  int xlocal = x + TLattice::HaloXWidth;
-  int ylocal = y + TLattice::HaloYWidth;
-  int zlocal = z + TLattice::HaloZWidth;
-  int lylocal = TLattice::LYdiv;
-  int lzlocal = TLattice::LZdiv;
-  return xlocal*lylocal*lzlocal + ylocal*lzlocal + zlocal;
+inline int computeK(int xLocal, int yLocal, int zLocal) {
+  int xProc = xLocal + TLattice::HaloXWidth;
+  int yProc = yLocal + TLattice::HaloYWidth;
+  int zProc = zLocal + TLattice::HaloZWidth;
+  int lyProc = TLattice::LYdiv;
+  int lzProc = TLattice::LZdiv;
+  return xProc*lyProc*lzProc + yProc*lzProc + zProc;
+}
+
+/// Compute the local index from the global x,y,z coordinates (-1 if not local)
+template<class TLattice>
+inline int computeKFromGlobal(int x, int y, int z) {
+  int lxProc = TLattice::LXdiv;
+  int lyProc = TLattice::LYdiv;
+  int lzProc = TLattice::LZdiv;
+  int xProc = x - TLattice::LXMPIOffset + TLattice::HaloXWidth;
+  int yProc = y - TLattice::LYMPIOffset + TLattice::HaloYWidth;
+  int zProc = z - TLattice::LZMPIOffset + TLattice::HaloZWidth;
+  // Ensure periodic boundaries are correct and check if not local
+  if (xProc<0) xProc += TLattice::LX;
+  if (yProc<0) yProc += TLattice::LY;
+  if (zProc<0) zProc += TLattice::LZ;
+  if (xProc>=lxProc || yProc>=lyProc || zProc>=lzProc) return -1;
+  return xProc*lyProc*lzProc + yProc*lzProc + zProc;
 }
 
 

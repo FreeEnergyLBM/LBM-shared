@@ -272,6 +272,8 @@ class DataOldNew : public Data_Base<TLattice, TStencil> {
 
     public:
 
+        // using Stencil = TStencil; //!<Typedef so type info can be accessed from outside the class.
+
         static constexpr bool IsStreamingSeperate = TSeperateStream;
 
     private:
@@ -355,11 +357,15 @@ class DataOldNew : public Data_Base<TLattice, TStencil> {
          * \brief This constructor calls the constructor of the base disribution using the neighbor information.
          */
         DataOldNew() : mDistribution(Data_Base<TLattice,TStencil>::getInstance().mv_Neighbors) { //Construct distribution
-
+            TLattice::template createDistributionType<TStencil>();
         }
 
         DataOldNew(DataOldNew<TLattice,TStencil>& other) : mDistribution(other.mDistribution) { //Construct distribution
+            TLattice::template createDistributionType<TStencil>();
+        }
 
+        ~DataOldNew() { //Destruct distribution
+            TLattice::template destroyDistributionType<TStencil>();
         }
 
         using DistributionData = Distribution_Derived; //!<Typedef so that the distribution class is available outside of this class.
@@ -488,11 +494,15 @@ class DataOldNewEquilibrium : public Data_Base<TLattice, TStencil> {
          * \brief This constructor calls the constructor of the base disribution using the neighbor information.
          */
         DataOldNewEquilibrium() : mDistribution(Data_Base<TLattice,TStencil>::getInstance().mv_Neighbors) { //Construct distribution
-
+            TLattice::template createDistributionType<TStencil>();
         }
 
         DataOldNewEquilibrium(DataOldNewEquilibrium<TLattice,TStencil>& other) : mDistribution(other.mDistribution) { //Construct distribution
+            TLattice::template createDistributionType<TStencil>();
+        }
 
+        ~DataOldNewEquilibrium() { //Destruct distribution
+            TLattice::template destroyDistributionType<TStencil>();
         }
 
         using DistributionData = Distribution_Derived; //!<Typedef so that the distribution class is available outside of this class.
