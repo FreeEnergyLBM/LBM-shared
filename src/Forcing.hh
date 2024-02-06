@@ -19,6 +19,8 @@ struct ForcingBase{
 
     using Prefactor = NoTauDependence;
 
+    inline void reset() {}
+
     template<class TTraits,class TStencil>
     inline static constexpr int StencilToInt(){
         if constexpr (std::is_same_v<TStencil,Cartesian>) return TTraits::Lattice::NDIM; 
@@ -47,10 +49,10 @@ struct Guo : ForcingBase<Cartesian> {
     
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k){
-        if (ma_Force.size()<TTraits::Lattice::NDIM) ma_Force.resize(TTraits::Lattice::NDIM);
-        ma_Force[0]=f.template computeXYZ<TTraits>(0,k);
-        if constexpr (TTraits::Lattice::NDIM>=2) ma_Force[1]=f.template computeXYZ<TTraits>(1,k);
-        if constexpr (TTraits::Lattice::NDIM==3) ma_Force[2]=f.template computeXYZ<TTraits>(2,k);
+        if (ma_Force.size()<TTraits::Lattice::NDIM) ma_Force.resize(TTraits::Lattice::NDIM,0);
+        ma_Force[0]+=f.template computeXYZ<TTraits>(0,k);
+        if constexpr (TTraits::Lattice::NDIM>=2) ma_Force[1]+=f.template computeXYZ<TTraits>(1,k);
+        if constexpr (TTraits::Lattice::NDIM==3) ma_Force[2]+=f.template computeXYZ<TTraits>(2,k);
     }
     
     template<class TTraits>
@@ -125,10 +127,10 @@ struct AllenCahnSourceMethod : ForcingBase<Cartesian> {
 
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k){
-        ma_Force = {};
-        ma_Force.push_back(f.template computeXYZ<TTraits>(0,k));
-        ma_Force.push_back(f.template computeXYZ<TTraits>(1,k));
-        if constexpr (TTraits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<TTraits>(2,k));
+        if (ma_Force.size()<TTraits::Lattice::NDIM) ma_Force.resize(TTraits::Lattice::NDIM,0);
+        ma_Force[0]+=f.template computeXYZ<TTraits>(0,k);
+        if constexpr (TTraits::Lattice::NDIM>=2) ma_Force[1]+=f.template computeXYZ<TTraits>(1,k);
+        if constexpr (TTraits::Lattice::NDIM==3) ma_Force[2]+=f.template computeXYZ<TTraits>(2,k);
     }
     
     template<class TTraits>
@@ -158,11 +160,11 @@ struct EvaporationSourceMethod : ForcingBase<Cartesian,One> {
 
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k){
-        ma_Source = {};
-        m_Source0D = f.template compute<TTraits>(k);
-        ma_Source.push_back(f.template computeXYZ<TTraits>(0,k));
-        ma_Source.push_back(f.template computeXYZ<TTraits>(1,k));
-        if constexpr (TTraits::Lattice::NDIM==3) ma_Source.push_back(f.template computeXYZ<TTraits>(2,k));
+        m_Source0D += f.template compute<TTraits>(k);
+        if (ma_Source.size()<TTraits::Lattice::NDIM) ma_Source.resize(TTraits::Lattice::NDIM,0);
+        ma_Source[0]+=f.template computeXYZ<TTraits>(0,k);
+        if constexpr (TTraits::Lattice::NDIM>=2) ma_Source[1]+=f.template computeXYZ<TTraits>(1,k);
+        if constexpr (TTraits::Lattice::NDIM==3) ma_Source[2]+=f.template computeXYZ<TTraits>(2,k);
     }
     
     template<class TTraits>
@@ -193,10 +195,10 @@ struct He : ForcingBase<Cartesian> {
 
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k){
-        ma_Force = {};
-        ma_Force.push_back(f.template computeXYZ<TTraits>(0,k));
-        ma_Force.push_back(f.template computeXYZ<TTraits>(1,k));
-        if constexpr (TTraits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<TTraits>(2,k));
+        if (ma_Force.size()<TTraits::Lattice::NDIM) ma_Force.resize(TTraits::Lattice::NDIM,0);
+        ma_Force[0]+=f.template computeXYZ<TTraits>(0,k);
+        if constexpr (TTraits::Lattice::NDIM>=2) ma_Force[1]+=f.template computeXYZ<TTraits>(1,k);
+        if constexpr (TTraits::Lattice::NDIM==3) ma_Force[2]+=f.template computeXYZ<TTraits>(2,k);
 
         velocity_dot_force = 0;
         for (int xyz=0;xyz<TTraits::Stencil::D;xyz++){
@@ -259,16 +261,19 @@ struct Lee : ForcingBase<Cartesian,AllDirections> {
     
     double velocity_dot_force = 0;
 
+    inline void reset() {
+        std::fill(ma_Force.begin(), ma_Force.end(), 0);
+        std::fill(ma_ForceQ.begin(), ma_ForceQ.end(), 0);
+    }
+
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k){
-        kPrecompute = k;
-        
-        ma_Force = {};
-        ma_ForceQ = {};
-        ma_Force.push_back(f.template computeXYZ<TTraits>(0,k));
-        ma_Force.push_back(f.template computeXYZ<TTraits>(1,k));
-        if constexpr (TTraits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<TTraits>(2,k));
-        for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
+        if (ma_Force.size()<TTraits::Lattice::NDIM) ma_Force.resize(TTraits::Lattice::NDIM,0);
+        if (ma_ForceQ.size()<TTraits::Stencil::Q) ma_ForceQ.resize(TTraits::Stencil::Q,0);
+        ma_Force[0]+=f.template computeXYZ<TTraits>(0,k);
+        if constexpr (TTraits::Lattice::NDIM>=2) ma_Force[1]+=f.template computeXYZ<TTraits>(1,k);
+        if constexpr (TTraits::Lattice::NDIM==3) ma_Force[2]+=f.template computeXYZ<TTraits>(2,k);
+        for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ[q] += f.template computeQ<TTraits>(q,k);
         
         velocity_dot_force = 0;
         for (int xyz=0;xyz<TTraits::Stencil::D;xyz++){
@@ -295,14 +300,19 @@ struct LeeGamma0 : ForcingBase<Cartesian,AllDirections> {
     
     double velocity_dot_force = 0;
 
+    inline void reset() {
+        std::fill(ma_Force.begin(), ma_Force.end(), 0);
+        std::fill(ma_ForceQ.begin(), ma_ForceQ.end(), 0);
+    }
+
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int k){
-        ma_Force = {};
-        ma_ForceQ = {};
-        ma_Force.push_back(f.template computeXYZ<TTraits>(0,k));
-        ma_Force.push_back(f.template computeXYZ<TTraits>(1,k));
-        if constexpr (TTraits::Lattice::NDIM==3) ma_Force.push_back(f.template computeXYZ<TTraits>(2,k));
-        for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
+        if (ma_Force.size()<TTraits::Lattice::NDIM) ma_Force.resize(TTraits::Lattice::NDIM,0);
+        if (ma_ForceQ.size()<TTraits::Stencil::Q) ma_ForceQ.resize(TTraits::Stencil::Q,0);
+        ma_Force[0]+=f.template computeXYZ<TTraits>(0,k);
+        if constexpr (TTraits::Lattice::NDIM>=2) ma_Force[1]+=f.template computeXYZ<TTraits>(1,k);
+        if constexpr (TTraits::Lattice::NDIM==3) ma_Force[2]+=f.template computeXYZ<TTraits>(2,k);
+        for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ[q] += f.template computeQ<TTraits>(q,k);
 
         velocity_dot_force = 0;
         for (int xyz=0;xyz<TTraits::Stencil::D;xyz++){
@@ -328,8 +338,8 @@ struct LeeMuLocal : ForcingBase<AllDirections> {
     template<class TTraits, class TForce>
     const inline void precompute(TForce& f, int k){
 
-        ma_ForceQ = {};
-        for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
+        if (ma_ForceQ.size()<TTraits::Stencil::Q) ma_ForceQ.resize(TTraits::Stencil::Q,0);
+        for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ[q] += f.template computeQ<TTraits>(q,k);
 
     }
 
@@ -358,15 +368,16 @@ struct LeeMuNonLocal : ForcingBase<AllDirections> {
     template<class TTraits, class TForce>
     const inline void precompute(TForce& f, int k){
 
-        ma_ForceQ = {};
-        for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
+        if (ma_ForceQ.size()<TTraits::Stencil::Q) ma_ForceQ.resize(TTraits::Stencil::Q,0);
+        for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ[q] += f.template computeQ<TTraits>(q,k);
 
     }
 
     template<class TTraits, class TForce>
     const inline void precompute(TForce& f, int q, int k){
 
-        ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
+        if (ma_ForceQ.size()<TTraits::Stencil::Q) ma_ForceQ.resize(TTraits::Stencil::Q,0);
+        ma_ForceQ[q] += f.template computeQ<TTraits>(q,k);
 
     }
     
