@@ -131,6 +131,7 @@ class ModelBase : public Model {
 
         template<class TProcessor, int tuplenum, int inst=0>
         inline TProcessor& getProcessor() {
+            static_assert(has_type<TProcessor,std::tuple_element_t<tuplenum,typename TTraits::Processors>>::value, "Desired processor is not included in the model.");
 
             auto processors = get_type<TProcessor>(std::get<tuplenum>(mt_Processors));
 
@@ -152,6 +153,7 @@ class ModelBase : public Model {
 
         template<class TForce, int inst = 0>
         inline TForce& getForce() {
+            static_assert(has_type<TForce,typename TTraits::Forces>::value, "Desired force is not included in the model.");
 
             auto forces = get_type<TForce>(mt_Forces);
 
@@ -159,19 +161,20 @@ class ModelBase : public Model {
 
         }
 
-        template<class boundary, int tuplenum, int inst=0>
-        inline boundary& getBoundary() {
+        template<class TBoundary, int tuplenum, int inst=0>
+        inline TBoundary& getBoundary() {
+            static_assert(has_type<TBoundary,std::tuple_element_t<tuplenum,typename TTraits::Boundaries>>::value, "Desired boundary is not included in the model.");
 
-            auto boundaries = get_type<boundary>(std::get<tuplenum>(mt_Boundaries));
+            auto boundaries = get_type<TBoundary>(std::get<tuplenum>(mt_Boundaries));
 
             return std::get<inst>(boundaries);
 
         }
 
-        template<class boundary>
-        inline boundary& getBoundary() {
+        template<class TBoundary>
+        inline TBoundary& getBoundary() {
 
-            using indices = typename tuple_tuple_index_of<typename TTraits::Boundaries,boundary>::idx;
+            using indices = typename tuple_tuple_index_of<typename TTraits::Boundaries,TBoundary>::idx;
             
             static constexpr int idx1 = std::tuple_element<0,indices>::type::value;
             static constexpr int idx2 = std::tuple_element<1,indices>::type::value;
