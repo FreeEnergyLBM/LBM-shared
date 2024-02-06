@@ -479,23 +479,23 @@ template <typename ...T> struct is_tuple { using type = std::tuple<std::tuple<T.
 
 template <typename ...T1, typename ...T2> struct is_tuple<std::tuple<T1...>,T2...> { using type = std::tuple<std::tuple<T1...>,T2...>; };
 
-template <typename procs, int idx, bool intuple, typename ...T> struct add_processor_idx;
+template <typename tups, int idx, bool intuple, typename ...T> struct add_tuple_idx;
 
-template <typename procs, int idx, typename ...T> struct insert_processor_idx;
+template <typename tups, int idx, typename ...T> struct insert_tuple_idx;
 
-template <typename procs, int idx, typename ...T> 
-struct add_processor_idx<procs, idx,true,T...> { 
-  using type = typename tuple_replace<std::tuple_size<procs>::value, idx,tuple_cat_t<typename std::tuple_element<idx, procs>::type, std::tuple<T...>>, procs, std::tuple<>>::type;
+template <typename tups, int idx, typename ...T> 
+struct add_tuple_idx<tups, idx,true,T...> { 
+  using type = typename tuple_replace<std::tuple_size<tups>::value, idx,tuple_cat_t<typename std::tuple_element<idx, tups>::type, std::tuple<T...>>, tups, std::tuple<>>::type;
 };
 
-template <typename procs, int idx, typename ...T>
-struct add_processor_idx<procs, idx,false,T...> {
-  using type = tuple_cat_t<procs, std::tuple<std::tuple<T...>>>;
+template <typename tups, int idx, typename ...T>
+struct add_tuple_idx<tups, idx,false,T...> {
+  using type = tuple_cat_t<tups, std::tuple<std::tuple<T...>>>;
 };
 
-template <typename procs, int idx, typename ...T>
-struct insert_processor_idx<procs, idx, std::tuple<T...>> {
-  using type = typename tuple_insert<std::tuple_size<procs>::value,idx,std::tuple<T...>,procs,std::tuple<>>::type;
+template <typename tups, int idx, typename ...T>
+struct insert_tuple_idx<tups, idx, std::tuple<T...>> {
+  using type = typename tuple_insert<std::tuple_size<tups>::value,idx,std::tuple<T...>,tups,std::tuple<>>::type;
 };
 
 template<class TTrait>
@@ -563,7 +563,7 @@ struct BaseTrait{
 
     using Boundaries = typename TTrait::Boundaries;
 
-    using Processors = typename add_processor_idx<typename TTrait::Processors,idx,(std::tuple_size<typename TTrait::Processors>::value>idx),TProcessor...>::type;
+    using Processors = typename add_tuple_idx<typename TTrait::Processors,idx,(std::tuple_size<typename TTrait::Processors>::value>idx),TProcessor...>::type;
 
     using Forces = typename TTrait::Forces;
     
@@ -589,7 +589,7 @@ struct BaseTrait{
 
     using Boundaries = typename TTrait::Boundaries;
 
-    using Processors = typename insert_processor_idx<typename TTrait::Processors,idx,std::tuple<TProcessor...>>::type;
+    using Processors = typename insert_tuple_idx<typename TTrait::Processors,idx,std::tuple<TProcessor...>>::type;
 
     using Forces = typename TTrait::Forces;
     
@@ -677,6 +677,9 @@ struct BaseTrait{
   template<class... TBoundary>
   struct AddBoundary;
 
+  template<int idx, class... TBoundary>
+  struct AddBoundaryIdx;
+
   template<class... TBoundary>
   struct AddBoundary : BaseTrait<AddBoundary<TBoundary...>> {
 
@@ -723,25 +726,25 @@ struct BaseTrait{
 
   };
 
-  template<class... TBoundary>
-  struct SetBoundary;
+  template<int idx, class... TBoundary>
+  struct AddBoundaryIdx : BaseTrait<AddBoundaryIdx<idx,TBoundary...>> {
 
-  template<class... TBoundary>
-  struct SetBoundary : BaseTrait<SetBoundary<TBoundary...>> {
+    static_assert(idx>=0, "ERROR: idx must be positive");
+    static_assert(idx<=std::tuple_size<typename TTrait::Boundaries>::value, "ERROR: idx must less than or equal to the tuple size");
 
     using Stencil = typename TTrait::Stencil;
 
-    using Boundaries = std::tuple<std::tuple<TBoundary...>>;
+    using Boundaries = typename add_tuple_idx<typename TTrait::Boundaries,idx,(std::tuple_size<typename TTrait::Boundaries>::value>idx),TBoundary...>::type;
 
     using Processors = typename TTrait::Processors;
 
     using Forces = typename TTrait::Forces;
-
+    
     template<class TStencil>
     using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
 
     using Lattice = typename TTrait::Lattice;
-    
+
     template<class TLattice, class TStencil>
     using DataType = typename TTrait::template DataType<TLattice,TStencil>;
 
@@ -749,12 +752,38 @@ struct BaseTrait{
 
   };
 
-  template<class TBoundary>
-  struct SetBoundary<TBoundary> : BaseTrait<SetBoundary<TBoundary>> {
+  template<int idx, class... TBoundary>
+  struct AddBoundaryIdx<idx,std::tuple<TBoundary...>> : BaseTrait<AddBoundaryIdx<idx,TBoundary...>> {
+
+    static_assert(idx>=0, "ERROR: idx must be positive");
+    static_assert(idx<=std::tuple_size<typename TTrait::Boundaries>::value, "ERROR: idx must less than or equal to the tuple size");
 
     using Stencil = typename TTrait::Stencil;
 
-    using Boundaries = typename is_tuple<TBoundary>::type;
+    using Boundaries = typename insert_tuple_idx<typename TTrait::Boundaries,idx,std::tuple<TBoundary...>>::type;
+
+    using Processors = typename TTrait::Processors;
+
+    using Forces = typename TTrait::Forces;
+    
+    template<class TStencil>
+    using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
+
+    using Lattice = typename TTrait::Lattice;
+
+    template<class TLattice, class TStencil>
+    using DataType = typename TTrait::template DataType<TLattice,TStencil>;
+
+    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
+
+  };
+
+  template<class... TBoundary>
+  struct SetBoundary : BaseTrait<SetBoundary<TBoundary...>> {
+
+    using Stencil = typename TTrait::Stencil;
+
+    using Boundaries = typename is_tuple<TBoundary...>::type;
 
     using Processors = typename TTrait::Processors;
 
@@ -1108,8 +1137,9 @@ struct tuple_tuple_index_r;
 template<typename H, typename ...R, typename C, int I>
 struct tuple_tuple_index_r<std::tuple<H, R...>, C, I>
 {
-  using idx = typename std::conditional<(tuple_index_of<H,C>::value>=0),
-          std::tuple<std::integral_constant<int, I>,std::integral_constant<int, tuple_index_of<H,C>::value>>,
+  static constexpr int outeridx = tuple_index_of<H,C>::value;
+  using idx = typename std::conditional<(outeridx>=0),
+          std::tuple<std::integral_constant<int, I>,std::integral_constant<int, outeridx>>,
           typename tuple_tuple_index_r<std::tuple<R...>, C, I+1>::idx>::type;
 };
 
