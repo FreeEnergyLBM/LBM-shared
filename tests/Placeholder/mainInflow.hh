@@ -14,6 +14,8 @@ double radius = 25.0;
 double theta = 90.0;
 double A = 0.003;
 double kappa = A*9/8;
+double surfacetension = sqrt(2*A*kappa)/6;
+double interfacewidth = sqrt(8*kappa/A);
 double Hsat = 0.3;
 double Hwall = 0.0;
 double offsetx = 0.0;
@@ -183,6 +185,8 @@ void initParams(std::string inputfile) {
     params.addParameter<double>(theta,"theta");
     params.addParameter<double>(A,"A");
     params.addParameter<double>(kappa,"kappa");
+    params.addParameter<double>(surfacetension,"surfacetension");
+    params.addParameter<double>(interfacewidth,"interfacewidth");
     params.addParameter<double>(Hsat,"Hsat");
     params.addParameter<double>(Hwall,"Hwall");
     params.addParameter<double>(offsetx,"offsetx");
@@ -196,6 +200,9 @@ void initParams(std::string inputfile) {
     params.addParameter<int>(postwidth,"postwidth");
 
     params.readInput(inputfile);
+
+    A = 12*surfacetension/interfacewidth;
+    kappa = pow(interfacewidth,2)/8.0*A;
 
     Lattice::init(lx,ly,1);
 
