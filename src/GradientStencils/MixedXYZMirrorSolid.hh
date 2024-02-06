@@ -22,7 +22,7 @@ inline double MixedXYZMirrorSolid::compute(const int direction, const int k, int
     
     using DataType = Data_Base<Lattice, Stencil>;
 
-    DataType& data = DataType::getInstance();
+    static DataType& data = DataType::getInstance();
     const static auto& param = TParameter::template get<Lattice>();
     double gradientsum=0;
     /*
@@ -168,7 +168,7 @@ inline double MixedXYZMirrorSolid::compute(const int direction, const int k, int
 
                 const std::array<int8_t,TTraits::Lattice::NDIM>& normal = BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, idx)).NormalDirection;
                 const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, idx)).NormalDirection)->second;
-                const int& normalqbackward = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, Stencil::Opposites[direction])).NormalDirection)->second;
+                const int& normalqbackward = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, Stencil::Opposites[idx])).NormalDirection)->second;
 
                 std::array<int8_t,TTraits::Lattice::NDIM> newdir = {};
 
@@ -180,7 +180,7 @@ inline double MixedXYZMirrorSolid::compute(const int direction, const int k, int
 
                 double csolid = param[data.getNeighbor(data.getNeighbor(k, idx), normalq)*TParameter::instances + num];
                 double csolid2 = param[data.getNeighbor(data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[normalq]), newidx), newidx)*TParameter::instances + num];
-                double csolid3 = param[data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[direction]), normalqbackward)*TParameter::instances + num];
+                double csolid3 = param[data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[idx]), normalqbackward)*TParameter::instances + num];
                 //const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, idx)).NormalDirection)->second;
                 //double csolid = param[data.getNeighbor(data.getNeighbor(k, idx), normalq)*TParameter::instances + num];
                 

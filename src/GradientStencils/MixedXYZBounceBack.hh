@@ -20,7 +20,7 @@ inline double MixedXYZBounceBack::compute(const int direction, const int k, int 
 
     using DataType = Data_Base<Lattice, Stencil>;
 
-    DataType& data = DataType::getInstance();
+    static DataType& data = DataType::getInstance();
 
     double gradientsum=0;
     const static auto& param = TParameter::template get<Lattice>();
