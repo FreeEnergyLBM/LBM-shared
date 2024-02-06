@@ -27,8 +27,10 @@ inline void SimpleMassLossCalculator::compute(int k){
 
     // Get the local gradient of the order parameter
     double gradOP = 0;
-    for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
-        gradOP += pow(GradientOrderParameter<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k, xyz), 2);
+    for (int component = 0 ; component < TParam::instances; component++){
+        for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
+            gradOP += pow(GradientOrderParameter<TTrait::NumberOfComponents-1>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k, component, xyz), 2);
+        }
     }
     gradOP = sqrt(gradOP);
 
