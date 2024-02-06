@@ -29,7 +29,8 @@ inline double MixedQBounceBack::compute(const int direction, const int k, int nu
                    - TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
     */
     
-
+    const static auto& param = TParameter::template get<Lattice>();
+    /*
     if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + direction])==1)) {
 
         if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)){
@@ -68,4 +69,45 @@ inline double MixedQBounceBack::compute(const int direction, const int k, int nu
                        - TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
 
     }
+    */
+    if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + direction])!=1)
+                && (Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])!=1)) {
+
+        return 0.25 * (- param[data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q+direction]*TParameter::instances + num]
+                       + 5 * param[data.getNeighbors()[k * Stencil::Q + direction]*TParameter::instances + num]
+                       - 3 * param[k*TParameter::instances + num]
+                       - param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]*TParameter::instances + num]);
+
+    }
+    else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + direction])==1)) {
+
+        if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)){
+            return 0;
+        }
+
+        return 0.25 * (2 *  param[k*TParameter::instances + num]
+                       - 2 * param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]*TParameter::instances + num]);
+
+    }
+    else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction])==1)) {
+
+        if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)){
+            return 0.25 * (4 * param[data.getNeighbors()[k * Stencil::Q+  direction]*TParameter::instances + num] 
+                       - 4 * param[k*TParameter::instances + num]);
+        }
+
+        return 0.25 * (4 * param[data.getNeighbors()[k * Stencil::Q+  direction]*TParameter::instances + num] 
+                       - 3 * param[k*TParameter::instances + num]
+                       - param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]*TParameter::instances + num]);
+
+    }
+    
+    else {
+
+        return 0.25 * (- param[data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction]*TParameter::instances + num]
+                       + 5 * param[data.getNeighbors()[k * Stencil::Q + direction]*TParameter::instances + num]
+                       - 4 * param[k*TParameter::instances + num]);
+
+    }
+    
 }

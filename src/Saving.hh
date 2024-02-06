@@ -400,7 +400,7 @@ template<class TLattice>
 template<class TParameter, int TNumDir>
 void SaveHandler<TLattice>::saveParameter(int timestep) {
     // Setup array for saving
-    std::vector<typename TParameter::ParamType> param = TParameter::template get<TLattice,TNumDir>();
+    std::vector<typename TParameter::ParamType>& param = TParameter::template get<TLattice,TNumDir>();
     if (mMaskSolid) applyMask<TLattice>(param, TNumDir, mMaskValue);
 
     // File
@@ -463,7 +463,7 @@ void SaveHandler<TLattice>::loadParameter(std::string filename, std::string file
     std::vector<typename TParameter::ParamType> &param = TParameter::template get<TLattice,TNumDir>();
 
     if (filetype == "bin") {
-        int fileOffset = sizeof(typename TParameter::ParamType) * mpi.rank * TNumDir * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size;
+        int fileOffset = sizeof(typename TParameter::ParamType) * mpi.rank * TNumDir * TParameter::instances * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size;
 
         #ifdef MPIPARALLEL
         // Parallel loading with MPI
@@ -486,6 +486,7 @@ void SaveHandler<TLattice>::loadParameter(std::string filename, std::string file
         };
         fs.close();
         #endif
+
 
     } else if (filetype == "txt") {
         std::ifstream fs(filename.c_str());

@@ -80,6 +80,7 @@ class ParameterSingleton {
         template<class TLattice, int TNum=1>
         static inline std::vector<T>& get() { //Returns vector containing the parameter
 
+            //static Parameter<TObj,TLattice,T,TNumPrefactor*TNum>& instance = getInstance<TLattice,TNum>();
             return getInstance<TLattice,TNum>().mv_Parameter;
 
         }
@@ -87,6 +88,7 @@ class ParameterSingleton {
         template<class TLattice, int TNum=1>
         static inline T* getAddress(const int idx) { //Returns pointer to parameter at lattice point k and
                                              //direction 0
+            //static Parameter<TObj,TLattice,T,TNumPrefactor*TNum>& instance = getInstance<TLattice,TNum>();
             return &getInstance<TLattice,TNum>().mv_Parameter[idx];
 
         }
@@ -94,6 +96,7 @@ class ParameterSingleton {
         template<class TLattice, int TNum=1>
         static inline T* getAddress(int idx1, int idx2) { //Returns pointer to parameter at lattice point k and
                                              //direction 0
+            //static Parameter<TObj,TLattice,T,TNumPrefactor*TNum>& instance = getInstance<TLattice,TNum>();
             return &getInstance<TLattice,TNum>().mv_Parameter[idx1*instances*TNum + idxlambda<TNum>(idx2)];
 
         }
@@ -101,13 +104,15 @@ class ParameterSingleton {
         template<class TLattice, int TNum=1>
         static inline T* getAddress(int idx1, int idx2, int idx3) { //Returns pointer to parameter at lattice point k and
                                              //direction 0
-            return &getInstance<TLattice,TNum>().mv_Parameter[idx1*instances*TNum + (instances>1)*idx2*TNum + (TNum>1)*idx3];
+            static Parameter<TObj,TLattice,T,TNumPrefactor*TNum>& instance = getInstance<TLattice,TNum>();
+            return &instance.mv_Parameter[idx1*instances*TNum + (instances>1)*idx2*TNum + (TNum>1)*idx3];
 
         }
 
         template<class TLattice, int TNum=1>
         static inline T& get(const int idx) { //Returns const parameter at index idx
 
+            //static Parameter<TObj,TLattice,T,TNumPrefactor*TNum>& instance = getInstance<TLattice,TNum>();
             return getInstance<TLattice,TNum>().mv_Parameter[idx];
             
         }
@@ -116,6 +121,7 @@ class ParameterSingleton {
         static inline T& get(int idx1, int idx2) { //Returns const parameter at index idx
  //MAKE MORE EFFICIENT!!!
  
+            //static Parameter<TObj,TLattice,T,TNumPrefactor*TNum>& instance = getInstance<TLattice,TNum>();
             return getInstance<TLattice,TNum>().mv_Parameter[idx1*instances*TNum + idxlambda<TNum>(idx2)];
             
         }
@@ -123,6 +129,7 @@ class ParameterSingleton {
         template<class TLattice, int TNum=1>
         static inline T& get(int idx1, int idx2, int idx3) { //Returns const parameter at index idx
  //MAKE MORE EFFICIENT!!!
+            //static Parameter<TObj,TLattice,T,TNumPrefactor*TNum>& instance = getInstance<TLattice,TNum>();
             return getInstance<TLattice,TNum>().mv_Parameter[idx1*instances*TNum + (instances>1)*idx2*TNum + (TNum>1)*idx3];
             
         }

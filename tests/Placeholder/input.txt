@@ -1,8 +1,8 @@
 lx=228
 ly=200
 theta=30
-saveInterval=50000
-timesteps=6000000
+saveInterval=50
+timesteps=1000
 offsety=-10
 inflowmomentum=-0.000
 dens1=1

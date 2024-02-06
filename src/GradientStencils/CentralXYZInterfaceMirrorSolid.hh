@@ -49,7 +49,8 @@ inline double CentralXYZInterfaceMirrorSolid::compute(int direction, int k, int 
     DataType& data = DataType::getInstance();
 
     double gradientsum = 0;
-
+    const static auto& param = TParameter::template get<Lattice>();
+    /*
     if (Geometry<Lattice>::getBoundaryType(k)==0||Geometry<Lattice>::getBoundaryType(k)==6) {
 
         for (int idx = 1; idx <Stencil::Q; idx++) {
@@ -95,6 +96,66 @@ inline double CentralXYZInterfaceMirrorSolid::compute(int direction, int k, int 
 
                     double interfacedistance = evalInterfaceDistance(k,Stencil::Opposites[idx]);
                     gradientsum += 2 * Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num)) / (1 + interfacedistance);
+                
+                }                
+                else if (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx)) == mInterfaceID && Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx]))==1){
+
+                    double interfacedistance = evalInterfaceDistance(k,idx);
+                    gradientsum += 2 * Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (mInterfaceVal) / (1 + interfacedistance);
+                
+                }             
+
+            }
+            
+        }
+
+    }
+    */
+    if (Geometry<Lattice>::getBoundaryType(k)==0||Geometry<Lattice>::getBoundaryType(k)==6) {
+
+        for (int idx = 1; idx <Stencil::Q; idx++) {
+
+            if ((Geometry<Lattice>::getBoundaryType(data.getNeighbor(k,idx))==1)) {
+                
+                if (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx]))==0||Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx]))==4) {
+                
+                    const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, idx)).NormalDirection)->second;
+
+                    double csolid = param[data.getNeighbor(data.getNeighbor(k, idx), normalq)*TParameter::instances + num];
+
+                    gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * csolid;
+                
+                }
+                else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbor(k,Stencil::Opposites[idx]))==1));
+                else {
+
+                    const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, idx)).NormalDirection)->second;
+
+                    double csolid = param[data.getNeighbor(data.getNeighbor(k, idx), normalq)*TParameter::instances + num];
+
+                    double interfacedistance = evalInterfaceDistance(k,Stencil::Opposites[idx]);
+                    gradientsum += 2 * Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (csolid) / (1 + interfacedistance);
+
+                }
+
+            }
+            else {
+
+                if ((Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))==0 || Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))==6 || Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))==4) && (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx]))!= mInterfaceID)) {
+
+                    gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (param[data.getNeighbor(k, idx)*TParameter::instances + num]);
+                    
+                }
+                else if (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx)) == mInterfaceID && (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx]))==0 || Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx]))==6)) {
+
+                    double interfacedistance = evalInterfaceDistance(k,idx);
+                    gradientsum += 2 * Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (mInterfaceVal) / (1 + interfacedistance);
+
+                }
+                else if (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx)) != mInterfaceID && Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx]))==mInterfaceID){
+
+                    double interfacedistance = evalInterfaceDistance(k,Stencil::Opposites[idx]);
+                    gradientsum += 2 * Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (param[data.getNeighbor(k, idx)*TParameter::instances + num]) / (1 + interfacedistance);
                 
                 }                
                 else if (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx)) == mInterfaceID && Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx]))==1){

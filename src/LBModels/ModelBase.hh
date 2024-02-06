@@ -193,7 +193,7 @@ class ModelBase : public Model {
                     return temptup2;
 
                 }, mt_Forces);
-
+                #pragma omp simd
                 for (int idx = 0; idx < TTraits::Stencil::Q; idx++) {
                     std::apply([this,idx, k, &tempTuple](auto&... forces) mutable{
                         (this->setForceSums<ForcingMap>(tempTuple,forces, idx, k) , ...);
@@ -208,7 +208,7 @@ class ModelBase : public Model {
                     return std::make_unique<decltype(make_tuple_unique(std::make_tuple(getForcePrefactor(methods))...))>();
 
                 }, *forcemethods);
-
+                #pragma omp simd
                 for (int idx = 0; idx <TTraits::Stencil::Q; idx++) { //loop over discrete velocity directions
                 //Set distribution at location "mDistribution.streamIndex" equal to the value returned by
                 //"computeCollisionQ"
@@ -223,6 +223,7 @@ class ModelBase : public Model {
                 }
             }
             else{
+                
                 for (int idx = 0; idx <TTraits::Stencil::Q; idx++) { //loop over discrete velocity directions
                 //Set distribution at location "mDistribution.streamIndex" equal to the value returned by
                 //"computeCollisionQ"

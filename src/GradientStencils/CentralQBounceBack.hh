@@ -21,7 +21,8 @@ inline double CentralQBounceBack::compute(const int direction, const int k, int 
     using DataType = Data_Base<Lattice, Stencil>;
 
     DataType& data = DataType::getInstance();
-
+    const static auto& param = TParameter::template get<Lattice>();
+    /*
     if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + direction])==1)) {
 
         if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)) return 0;
@@ -38,5 +39,21 @@ inline double CentralQBounceBack::compute(const int direction, const int k, int 
         return 0.5 * (TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction], num)-TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
 
     }
-        
+    */ 
+    if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + direction])==1)) {
+
+        if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)) return 0;
+        return 0.5 * (param[k*TParameter::instances + num] - param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]*TParameter::instances + num]);
+
+    }
+    else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)) {
+
+        return 0.5 * (param[data.getNeighbors()[k * Stencil::Q+direction]*TParameter::instances + num]-param[k*TParameter::instances + num]);
+
+    }
+    else {
+
+        return 0.5 * (param[data.getNeighbors()[k * Stencil::Q + direction]*TParameter::instances + num]-param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]*TParameter::instances + num]);
+
+    }
 }

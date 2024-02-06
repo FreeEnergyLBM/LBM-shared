@@ -242,7 +242,8 @@ inline bool Geometry<TLattice>::isCorner(int (*condition)(const int),const std::
 
 template<class TLattice>
 inline int& Geometry<TLattice>::getBoundaryType(int k) {
-
+    //static auto& test = BoundaryLabels<TLattice::NDIM>::template get<TLattice>();
     return BoundaryLabels<TLattice::NDIM>::template get<TLattice>(k).Id;
 
 }
+

@@ -7,7 +7,7 @@ class Swapper : public AddOnBase {
     public:
 
         template<class TTraits>
-        inline void compute(int k);
+        inline void communicate();
 
     private:
 
@@ -15,7 +15,7 @@ class Swapper : public AddOnBase {
 
 template<class TParam1, class TParam2, int numdir>
 template<class TTraits>
-inline void Swapper<TParam1, TParam2, numdir>::compute(int k){
+inline void Swapper<TParam1, TParam2, numdir>::communicate(){
 
     TParam1::template get<typename TTraits::Lattice, numdir>().swap(TParam2::template get<typename TTraits::Lattice, numdir>());
 

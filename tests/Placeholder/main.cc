@@ -1,10 +1,12 @@
 #include "mainInflow.hh"
 #include <cstdlib>
+#include <chrono>
 
 int main(int argc, char **argv){
 
     int seed;
     std::string seedstr;
+    #ifdef MPIPARALLEL
     mpi.init();
 
     MPI_Type_create_resized(MPI_INT, 0L, sizeof(Boundary<Lattice::NDIM>), &mMPIBoundary);
@@ -20,9 +22,9 @@ int main(int argc, char **argv){
     
     MPI_Type_create_struct(3, blocklengths, offsets, types, &mMPIBoundary);
     MPI_Type_commit(&mMPIBoundary);
-
+    #endif
     //exit(1);
-    if (argc!=0){
+    if (argc>1){
         //std::cerr<<argv[1]<<std::endl;
         seed=std::atoi(argv[1]);
         //std::cerr<<seed<<std::endl;
@@ -55,14 +57,20 @@ int main(int argc, char **argv){
     //VelocityOld<>::set<Lattice,Lattice::NDIM,1>(initVelocityY);
     Humidity<>::set<Lattice>(initHumidity);
     //Algorithm lbm(flowfield);
+    //auto& test = Density<>::getInstance<Lattice>();
     Algorithm lbm(binary,pressure,humidity);//
     //Algorithm lbm(pressure);
     //Algorithm lbm(humidity,binary);
     //Algorithm lbm(binary,pressure);//,humidity);
+    
+    using std::chrono::high_resolution_clock;
+    using std::chrono::duration_cast;
+    using std::chrono::duration;
+    using std::chrono::milliseconds;
 
     SaveHandler<Lattice> saver(datadir);
     saver.saveHeader(timesteps, saveInterval);
-    
+    auto t1 = std::chrono::high_resolution_clock::now();
     for (int timestep=0; timestep<=timesteps; timestep++) {
         TIME=timestep;
         // Save the desired parameters, producing a binary file for each.
@@ -88,5 +96,14 @@ int main(int argc, char **argv){
         lbm.evolve();
         
     }
+    auto t2 = std::chrono::high_resolution_clock::now();
 
+    /* Getting number of milliseconds as an integer. */
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    /* Getting number of milliseconds as a double. */
+    duration<double, std::milli> ms_double = t2 - t1;
+
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
 }
