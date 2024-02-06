@@ -20,10 +20,18 @@ These are stored in the 'src/LBModels/' directory.
 | Name | Description | Reference |
 |:---:|:-------|:----|
 |`FlowField`      | Standard LBM. Solves Navier--Stokes equations. | |
+|`FlowFieldPressure`      | Standard LBM with pressure as the zeroth moment. Solves Navier--Stokes equations. | |
 |`Binary`         | Two-component model. Solves Cahn--Hilliard equation. | doi:10.1007/978-3-319-44649-3 Section 9.2.2 |
 |`BinaryFlowField`| Two-component model. Solves Navier--Stokes equations. | doi:10.1007/978-3-319-44649-3 Section 9.2.2 |
-
-Currently the code has a single component and a two component model ).
+|`PressureLee`      | Modified two-component LBM with pressure as the zeroth moment. Extra forcing terms are included to improve stability at high density ratios and reduce spurious currents. | doi:10.1016/j.jcp.2010.07.007 |
+|`BinaryLee`| Modified two-component model. Extra forcing terms are included to improve stability at high density ratios and reduce spurious currents. Solves Cahn--Hilliard equation. | doi:10.1016/j.jcp.2010.07.007 |
+|`EvaporationHumidity`| Solves an advection-diffusion equation for the evolution of vapour within a gas phase. | doi:10.1103/PhysRevE.103.053307 |
+|`PressureLeeHumidity`      | Modified PressureLee model with different pressure calculation for use with EvaporationHumidity | doi:10.1016/j.jcp.2010.07.007 doi:10.1103/PhysRevE.103.053307 |
+|`BinaryLeeHumidity`| Modified BinaryLee for use with EvaporationHumidity | doi:10.1016/j.jcp.2010.07.007 doi:10.1103/PhysRevE.103.053307 |
+|`PressureTernaryLee`      | Modified three-component LBM with pressure as the zeroth moment. Extra forcing terms are included to improve stability at high density ratios and reduce spurious currents. | doi:10.1103/PhysRevE.97.033312 |
+|`BinaryTernaryLee`| Modified three-component model. Extra forcing terms are included to improve stability at high density ratios and reduce spurious currents. Solves Cahn--Hilliard equation. | doi:10.1103/PhysRevE.97.033312 |
+|`PressureTernaryLeeHumidity`      | Modified PressureTernaryLee model with different pressure calculation for use with EvaporationHumidity | doi:10.1103/PhysRevE.97.033312 doi:10.1103/PhysRevE.103.053307 |
+|`WellBalanced`      | Two-phase model with low spurious velocity. Solves Navier--Stokes equations. | doi:10.1063/5.0041446 |
 
 Each model is given a traits template parameter that contains the stencil, boundary methods, collision method, any `PreProcessors` and `PostProcessors` such as gradient caclulation, and any number of forces/source terms.
 The models each have a default trait, e.g. `DefaultTraitFlowField` for `FlowField`, but these can be modified if desired.
@@ -31,7 +39,20 @@ The models each have a default trait, e.g. `DefaultTraitFlowField` for `FlowFiel
 ### Boundary Conditions
 | Name | Description | Reference |
 |:---:|:-------|:----|
-|`BounceBack`| No-slip solid | |
+|`BounceBack`| No-slip solid (halfway) | |
+|`Bouzidi`| No-slip solid (arbitrary solid distance) | doi:10.1063/1.1399290 |
+|`Bouzidi2`| Higher order no-slip solid (variable solid distance) | doi:10.1063/1.1399290 |
+|`Convective`| Outflow condition assuming macroscopic variables are convcted out of the domain | doi:10.1103/PhysRevE.87.063301 |
+|`Dirichlet`| Constant 0th moment on the wall (halfway) | doi:10.1007/978-3-319-44649-3 Section 8.5.2.1 |
+|`DirichletVariable`| Constant 0th moment on the wall, can vary along the boundary (halfway) | doi:10.1007/978-3-319-44649-3 Section 8.5.2.1 |
+|`ExtrapolationOutflow`| 0 gradient boundary condition | doi:10.1103/PhysRevE.87.063301 |
+|`FreeSlip`| Slip solid/mirror boundary | doi:10.1007/978-3-319-44649-3 Section 5.3.7 |
+|`InterpolatedDirichlet`| Constant 0th moment on the wall (variable solid distance) | doi:10.1016/j.jcp.2012.11.027 |
+|`Neumann`| Constant gradient boundary condition | doi:10.1007/978-3-319-44649-3 Section 8.5.3.1 |
+|`PressureOutflow`| Constant gradient boundary condition specific to pressure in the humidity model | doi:10.1103/PhysRevE.88.013304 |
+|`Refill`| Refill condition for moving boundaries | doi:10.1103/PhysRevE.103.053307 |
+|`VelocityInflow`| Constant 1st moment on the wall (halfway) | doi:10.1007/978-3-319-44649-3 Section 5.3.5.1 |
+|`VelocityInflowVariable`| Constant 1th moment on the wall, can vary along the boundary (halfway) | doi:10.1007/978-3-319-44649-3 Section 5.3.5.1 |
 |`ZouHe`| Constant density or velocity | doi:10.1063/1.869307 |
 
 ### Parameters
