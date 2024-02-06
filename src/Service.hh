@@ -408,9 +408,9 @@ decltype(std::tuple_cat(
     std::declval<TInput>()...
 ));
 
-template <typename T> struct is_tuple : T { using type = std::tuple<std::tuple<T>>; };
+template <typename ...T> struct is_tuple { using type = std::tuple<std::tuple<T...>>; };
 
-template <typename ...T> struct is_tuple<std::tuple<T...>> : std::tuple<T...> { using type = std::tuple<T...>; };
+template <typename ...T1, typename ...T2> struct is_tuple<std::tuple<T1...>,T2...> { using type = std::tuple<std::tuple<T1...>,T2...>; };
 
 template<class TTrait>
 struct BaseTrait{
@@ -465,39 +465,13 @@ struct BaseTrait{
   };
 
   template<class... TProcessor>
-  struct SetProcessor;
-
-  template<class... TProcessor>
   struct SetProcessor : BaseTrait<SetProcessor<TProcessor...>> {
 
     using Stencil = typename TTrait::Stencil;
 
     using Boundaries = typename TTrait::Boundaries;
 
-    using Processors = std::tuple<std::tuple<TProcessor...>>;
-
-    using Forces = typename TTrait::Forces;
-
-    template<class TStencil>
-    using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
-
-    using Lattice = typename TTrait::Lattice;
-    
-    template<class TLattice, class TStencil>
-    using DataType = typename TTrait::template DataType<TLattice,TStencil>;
-
-    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
-
-  };
-
-  template<class TProcessor>
-  struct SetProcessor<TProcessor> : BaseTrait<SetProcessor<TProcessor>> {
-
-    using Stencil = typename TTrait::Stencil;
-
-    using Boundaries = typename TTrait::Boundaries;
-
-    using Processors = typename is_tuple<TProcessor>::type;
+    using Processors = typename is_tuple<TProcessor...>::type;
 
     using Forces = typename TTrait::Forces;
 
