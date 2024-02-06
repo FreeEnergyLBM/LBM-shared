@@ -408,15 +408,104 @@ decltype(std::tuple_cat(
     std::declval<TInput>()...
 ));
 
+template <int N, int idx, class element, class origtuple, class tuplebeforeelement> 
+struct tuple_replace { 
+  using type = typename tuple_replace<N-1,N,element,origtuple,tuple_cat_t<std::tuple<typename std::tuple_element<N, origtuple>::type>,tuplebeforeelement>>::type; 
+};
+
+template <int N, int idx, class element, class origtuple>
+struct tuple_replace<N,idx,element,origtuple,std::tuple<>> { 
+  using type = typename std::conditional<(N-1==idx),
+                                typename tuple_replace<N-2,idx,element,origtuple,std::tuple<element>>::type,
+                                typename tuple_replace<N-2,idx,element,origtuple,std::tuple<typename std::tuple_element<N-1, origtuple>::type>>::type>::type; 
+};
+
+template <int idx, class element, class origtuple, class tuplebeforeelement>
+struct tuple_replace<idx,idx,element,origtuple,tuplebeforeelement> { 
+  using type = typename tuple_replace<idx-1,-999,element,origtuple,tuple_cat_t<std::tuple<element>,tuplebeforeelement>>::type; 
+};
+
+template <class element, class origtuple, class tuplebeforeelement>
+struct tuple_replace<-1,-999,element,origtuple,tuplebeforeelement> { 
+  using type = tuplebeforeelement; 
+};
+
+template <class element, class origtuple, class tuplebeforeelement>
+struct tuple_replace<-1,0,element,origtuple,tuplebeforeelement> { 
+  using type = tuplebeforeelement; 
+};
+
+template <class element, class origtuple, class tuplebeforeelement>
+struct tuple_replace<0,-999,element,origtuple,tuplebeforeelement> { 
+  using type = tuple_cat_t<std::tuple<typename std::tuple_element<0, origtuple>::type>,tuplebeforeelement>; 
+};
+
+template <int N, int idx, class element, class origtuple, class tuplebeforeelement> 
+struct tuple_insert { 
+  using type = typename tuple_insert<N-1,N,element,origtuple,tuple_cat_t<std::tuple<typename std::tuple_element<N, origtuple>::type>,tuplebeforeelement>>::type; 
+};
+
+template <int N, int idx, class element, class origtuple>
+struct tuple_insert<N,idx,element,origtuple,std::tuple<>> { 
+  using type = typename std::conditional<(idx>=N),
+                                typename tuple_insert<N-2,idx,element,origtuple,tuple_cat_t<std::tuple<typename std::tuple_element<N-1, origtuple>::type>,std::tuple<element>>>::type,
+                                typename std::conditional<(N-1==idx),
+                                                  typename tuple_insert<N-2,idx,element,origtuple,tuple_cat_t<std::tuple<element>,std::tuple<typename std::tuple_element<N-1, origtuple>::type>>>::type,
+                                                  typename tuple_insert<N-2,idx,element,origtuple,std::tuple<typename std::tuple_element<N-1, origtuple>::type>>::type>::type>::type; 
+};
+
+template <int idx, class element, class origtuple, class tuplebeforeelement>
+struct tuple_insert<idx,idx,element,origtuple,tuplebeforeelement> { 
+  using type = typename tuple_insert<idx-1,-999,element,origtuple,tuple_cat_t<tuple_cat_t<std::tuple<element>,std::tuple<typename std::tuple_element<idx, origtuple>::type>>,tuplebeforeelement>>::type; 
+};
+
+template <class element, class origtuple, class tuplebeforeelement>
+struct tuple_insert<0,-999,element,origtuple,tuplebeforeelement> { 
+  using type = tuple_cat_t<std::tuple<typename std::tuple_element<0, origtuple>::type>,tuplebeforeelement>; 
+};
+
+template <class element, class origtuple, class tuplebeforeelement>
+struct tuple_insert<-1,-999,element,origtuple,tuplebeforeelement> { 
+  using type = tuplebeforeelement; 
+};
+
+template <class element, class origtuple, class tuplebeforeelement>
+struct tuple_insert<-1,0,element,origtuple,tuplebeforeelement> { 
+  using type = tuplebeforeelement; 
+};
+
+
 template <typename ...T> struct is_tuple { using type = std::tuple<std::tuple<T...>>; };
 
 template <typename ...T1, typename ...T2> struct is_tuple<std::tuple<T1...>,T2...> { using type = std::tuple<std::tuple<T1...>,T2...>; };
+
+template <typename procs, int idx, bool intuple, typename ...T> struct add_processor_idx;
+
+template <typename procs, int idx, typename ...T> struct insert_processor_idx;
+
+template <typename procs, int idx, typename ...T> 
+struct add_processor_idx<procs, idx,true,T...> { 
+  using type = typename tuple_replace<std::tuple_size<procs>::value, idx,tuple_cat_t<typename std::tuple_element<idx, procs>::type, std::tuple<T...>>, procs, std::tuple<>>::type;
+};
+
+template <typename procs, int idx, typename ...T>
+struct add_processor_idx<procs, idx,false,T...> {
+  using type = tuple_cat_t<procs, std::tuple<std::tuple<T...>>>;
+};
+
+template <typename procs, int idx, typename ...T>
+struct insert_processor_idx<procs, idx, std::tuple<T...>> {
+  using type = typename tuple_insert<std::tuple_size<procs>::value,idx,std::tuple<T...>,procs,std::tuple<>>::type;
+};
 
 template<class TTrait>
 struct BaseTrait{
 
   template<class... TProcessor>
   struct AddProcessor;
+
+  template<int idx, class... TProcessor>
+  struct AddProcessorIdx;
 
   template<class... TProcessor>
   struct AddProcessor : BaseTrait<AddProcessor<TProcessor...>> {
@@ -449,6 +538,52 @@ struct BaseTrait{
     using Boundaries = typename TTrait::Boundaries;
 
     using Processors = tuple_cat_t<typename TTrait::Processors, std::tuple<std::tuple<TProcessor...>>>;
+
+    using Forces = typename TTrait::Forces;
+    
+    template<class TStencil>
+    using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
+
+    using Lattice = typename TTrait::Lattice;
+
+    template<class TLattice, class TStencil>
+    using DataType = typename TTrait::template DataType<TLattice,TStencil>;
+
+    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
+
+  };
+
+  template<int idx, class... TProcessor>
+  struct AddProcessorIdx : BaseTrait<AddProcessorIdx<idx,TProcessor...>> {
+
+    using Stencil = typename TTrait::Stencil;
+
+    using Boundaries = typename TTrait::Boundaries;
+
+    using Processors = typename add_processor_idx<typename TTrait::Processors,idx,(std::tuple_size<typename TTrait::Processors>::value>idx),TProcessor...>::type;
+
+    using Forces = typename TTrait::Forces;
+    
+    template<class TStencil>
+    using CollisionModel = typename TTrait::template CollisionModel<TStencil>;
+
+    using Lattice = typename TTrait::Lattice;
+
+    template<class TLattice, class TStencil>
+    using DataType = typename TTrait::template DataType<TLattice,TStencil>;
+
+    static constexpr int NumberOfComponents = TTrait::NumberOfComponents;
+
+  };
+
+  template<int idx, class... TProcessor>
+  struct AddProcessorIdx<idx,std::tuple<TProcessor...>> : BaseTrait<AddProcessorIdx<idx,TProcessor...>> {
+
+    using Stencil = typename TTrait::Stencil;
+
+    using Boundaries = typename TTrait::Boundaries;
+
+    using Processors = typename insert_processor_idx<typename TTrait::Processors,idx,std::tuple<TProcessor...>>::type;
 
     using Forces = typename TTrait::Forces;
     
