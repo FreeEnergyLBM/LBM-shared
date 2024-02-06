@@ -556,6 +556,9 @@ struct BaseTrait{
   template<int idx, class... TProcessor>
   struct AddProcessorIdx : BaseTrait<AddProcessorIdx<idx,TProcessor...>> {
 
+    static_assert(idx>=0, "ERROR: idx must be positive");
+    static_assert(idx<=std::tuple_size<typename TTrait::Processors>::value, "ERROR: idx must less than or equal to the tuple size");
+
     using Stencil = typename TTrait::Stencil;
 
     using Boundaries = typename TTrait::Boundaries;
@@ -578,6 +581,9 @@ struct BaseTrait{
 
   template<int idx, class... TProcessor>
   struct AddProcessorIdx<idx,std::tuple<TProcessor...>> : BaseTrait<AddProcessorIdx<idx,TProcessor...>> {
+
+    static_assert(idx>=0, "ERROR: idx must be positive");
+    static_assert(idx<=std::tuple_size<typename TTrait::Processors>::value, "ERROR: idx must less than or equal to the tuple size");
 
     using Stencil = typename TTrait::Stencil;
 
@@ -1078,6 +1084,40 @@ struct pair_hash {
     }
 };
 
+template<typename T, typename C, int I>
+struct tuple_index_r;
+
+template<typename H, typename ...R, typename C, int I>
+struct tuple_index_r<std::tuple<H, R...>, C, I>
+    : public std::conditional<std::is_same<C, typename std::remove_reference<H>::type>::value,
+          std::integral_constant<int, I>,
+          tuple_index_r<std::tuple<R...>, C, I+1>>::type
+{};
+
+template<typename C, int I>
+struct tuple_index_r<std::tuple<>, C, I> : std::integral_constant<int, -1>
+{};
+
+template<typename T, typename C>
+struct tuple_index_of
+    : public std::integral_constant<int, tuple_index_r<T, C, 0>::value> {};
+
+template<typename T, typename C, int I>
+struct tuple_tuple_index_r;
+
+template<typename H, typename ...R, typename C, int I>
+struct tuple_tuple_index_r<std::tuple<H, R...>, C, I>
+{
+  using idx = typename std::conditional<(tuple_index_of<H,C>::value>=0),
+          std::tuple<std::integral_constant<int, I>,std::integral_constant<int, tuple_index_of<H,C>::value>>,
+          typename tuple_tuple_index_r<std::tuple<R...>, C, I+1>::idx>::type;
+};
+
+template<typename C, int I>
+struct tuple_tuple_index_r<std::tuple<>, C, I> {using idx = int;};
+
+template<typename T, typename C>
+struct tuple_tuple_index_of : public tuple_tuple_index_r<T, typename std::remove_reference<C>::type, 0> {};
 
 /*
 template<typename ... input_t>

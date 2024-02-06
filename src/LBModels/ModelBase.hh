@@ -129,12 +129,24 @@ class ModelBase : public Model {
         template<class TForce, typename TForceTuple>
         void precomputeForces(TForce& f,TForceTuple& forcemethods,int k);
 
-        template<class TProcessor, int tuplenum = 0, int inst = 0>
+        template<class TProcessor, int tuplenum, int inst=0>
         inline TProcessor& getProcessor() {
 
             auto processors = get_type<TProcessor>(std::get<tuplenum>(mt_Processors));
 
             return std::get<inst>(processors);
+
+        }
+
+        template<class TProcessor>
+        inline TProcessor& getProcessor() {
+
+            using indices = typename tuple_tuple_index_of<typename TTraits::Processors,TProcessor>::idx;
+
+            static constexpr int idx1 = std::tuple_element<0,indices>::type::value;
+            static constexpr int idx2 = std::tuple_element<1,indices>::type::value;
+
+            return std::get<idx2>(std::get<idx1>(mt_Processors));
 
         }
 
@@ -147,12 +159,24 @@ class ModelBase : public Model {
 
         }
 
-        template<class boundary, int tuplenum = 0, int inst = 0>
+        template<class boundary, int tuplenum, int inst=0>
         inline boundary& getBoundary() {
 
             auto boundaries = get_type<boundary>(std::get<tuplenum>(mt_Boundaries));
 
             return std::get<inst>(boundaries);
+
+        }
+
+        template<class boundary>
+        inline boundary& getBoundary() {
+
+            using indices = typename tuple_tuple_index_of<typename TTraits::Boundaries,boundary>::idx;
+            
+            static constexpr int idx1 = std::tuple_element<0,indices>::type::value;
+            static constexpr int idx2 = std::tuple_element<1,indices>::type::value;
+
+            return std::get<idx2>(std::get<idx1>(mt_Boundaries));
 
         }
 
