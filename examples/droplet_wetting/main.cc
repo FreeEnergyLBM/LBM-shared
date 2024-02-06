@@ -53,12 +53,12 @@ int main(int argc, char **argv){
     FlowFieldBinary<Lattice,TraitFlowField> flowFieldModel; //Flowfield (navier stokes solver) that can be used with the binary model
     Binary<Lattice> componentSeparationModel; //Binary model with hybrid equilibrium and forcing term
 
-    componentSeparationModel.getPreProcessor<ChemicalPotentialCalculatorBinary>().setA(0.015);
-    componentSeparationModel.getPreProcessor<ChemicalPotentialCalculatorBinary>().setKappa(0.03);
+    componentSeparationModel.getProcessor<ChemicalPotentialCalculatorBinary>().setA(0.015);
+    componentSeparationModel.getProcessor<ChemicalPotentialCalculatorBinary>().setKappa(0.03);
 
     // Define the contact angle on the solid
-    componentSeparationModel.getPreProcessor<CubicWetting>().setThetaDegrees(contactAngle);
-    componentSeparationModel.getPreProcessor<CubicWetting>().setAlpha(sqrt(2));
+    componentSeparationModel.getProcessor<CubicWetting>().setThetaDegrees(contactAngle);
+    componentSeparationModel.getProcessor<CubicWetting>().setAlpha(sqrt(2));
     componentSeparationModel.setTau2(0.51);
 
     // Define the solid using the function above
@@ -78,7 +78,6 @@ int main(int argc, char **argv){
     for (int timestep=0; timestep<=timesteps; timestep++) {
         if (timestep%saveInterval==0) {
             std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
-            saver.saveParameter<BoundaryLabels<>>(timestep);
             saver.saveParameter<OrderParameter<>>(timestep);
             saver.saveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }

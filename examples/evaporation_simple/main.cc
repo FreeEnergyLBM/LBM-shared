@@ -43,12 +43,11 @@ using OrderParameterGradients = GradientsMultiStencil<
         LaplacianCentralWetting
     >;
 using TraitBinary = DefaultTraitBinaryLeeHumidity<Lattice>
-    ::SetPreProcessor<
+    ::SetProcessor<
         Gradients<ChemicalPotential<>,LaplacianCentralMirrorSolid>,
         OrderParameterGradients,
-        SimpleMassLossCalculator
-    >
-    ::AddPostProcessor<
+        ChemicalPotentialCalculatorBinaryLee,
+        SimpleMassLossCalculator,
         NoFluxSolid<OrderParameter<>>
     >;
 
@@ -58,11 +57,11 @@ int main(int argc, char **argv){
 
     // Define the model
     BinaryLeeHumidity<Lattice,TraitBinary> binary;
-    binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setA(binaryA);
-    binary.getPostProcessor<ChemicalPotentialCalculatorBinaryLee>().setKappa(binaryKappa);
+    binary.getProcessor<ChemicalPotentialCalculatorBinaryLee>().setA(binaryA);
+    binary.getProcessor<ChemicalPotentialCalculatorBinaryLee>().setKappa(binaryKappa);
 
     double wettingPrefactor = -cos(contactAngle*M_PI/180.0)*sqrt(2*binaryA/binaryKappa);
-    binary.getPreProcessor<OrderParameterGradients>().setWettingPrefactor(wettingPrefactor);
+    binary.getProcessor<OrderParameterGradients>().setWettingPrefactor(wettingPrefactor);
 
     // Initialise
     Geometry<Lattice>::initialiseBoundaries(initSolid);
@@ -77,6 +76,7 @@ int main(int argc, char **argv){
     for (int timestep=0; timestep<=timesteps; timestep++) {
         if (timestep%saveInterval==0) {
             print("Saving at timestep:", timestep);
+            // saver.saveDAT(timestep, OrderParameter<>::template getInstance<Lattice>());
             saver.saveVTK(timestep,
                           OrderParameter<>::template getInstance<Lattice>(),
                           MassSink<>::template getInstance<Lattice>());

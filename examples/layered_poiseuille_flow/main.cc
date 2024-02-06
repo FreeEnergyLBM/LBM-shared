@@ -60,8 +60,8 @@ int main(int argc, char **argv){
     componentSeparationModel.setTau2(tau2);
 
     //Pass the surface tension/interface width parameters to the relevant preprocessor
-    componentSeparationModel.getPreProcessor<ChemicalPotentialCalculatorBinary>().setA(A);
-    componentSeparationModel.getPreProcessor<ChemicalPotentialCalculatorBinary>().setKappa(kappa);
+    componentSeparationModel.getProcessor<ChemicalPotentialCalculatorBinary>().setA(A);
+    componentSeparationModel.getProcessor<ChemicalPotentialCalculatorBinary>().setKappa(kappa);
 
     // Define the magnitude of the body force
     flowFieldModel.getForce<BodyForce<>>().setMagnitudeX(force);
@@ -83,7 +83,6 @@ int main(int argc, char **argv){
         // Save the desired parameters, producing a binary file for each.
         if (timestep%saveInterval==0) {
             std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
-            saver.saveParameter<BoundaryLabels<>>(timestep);
             saver.saveParameter<OrderParameter<>>(timestep);
             saver.saveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }

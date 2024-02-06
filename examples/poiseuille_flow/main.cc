@@ -48,7 +48,6 @@ int main(int argc, char **argv){
     for (int timestep=0; timestep<=timesteps; timestep++) {
         if (timestep%saveInterval==0) {
             // Use the save handler to save the solid and the velocity
-            saver.saveParameter<BoundaryLabels<>>(timestep);
             saver.saveParameter<Velocity<>,Lattice::NDIM>(timestep);
             std::cout<<"Saving at timestep "<<timestep<<"."<<std::endl;
         }
