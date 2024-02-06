@@ -133,16 +133,16 @@ inline int computeKFromGlobal(int x, int y, int z) {
 template<class TLattice>
 inline bool isPeriodic(int k) {
     
-    int yAtCurrentk = computeY(TLattice::LY, TLattice::LZ, k);
-    int zAtCurrentk = computeZ(TLattice::LY, TLattice::LZ, k);
-    int xAtCurrentk = computeX(TLattice::LY, TLattice::LZ, k);
+    int yAtCurrentk = computeY(TLattice::LYdiv, TLattice::LZdiv, k);
+    int zAtCurrentk = computeZ(TLattice::LYdiv, TLattice::LZdiv, k);
+    int xAtCurrentk = computeX(TLattice::LYdiv, TLattice::LZdiv, k);
 
-    if(TLattice::LZ <= 1 || TLattice::LY <= 1 || TLattice::LXdiv <= 1) return true; //If simulation is 2D
+    if(TLattice::LZdiv <= 1 || TLattice::LYdiv <= 1 || TLattice::LXdiv <= 1) return true; //If simulation is 2D
     else if (zAtCurrentk == 0 ||
-         zAtCurrentk == TLattice::LZ-1) return true; //Edges in Z direction
+         zAtCurrentk == TLattice::LZdiv-1) return true; //Edges in Z direction
 
     else if (yAtCurrentk == 0 ||
-         yAtCurrentk == TLattice::LY-1) return true; //Edges in Y direction
+         yAtCurrentk == TLattice::LYdiv-1) return true; //Edges in Y direction
         
     else if (xAtCurrentk == 0 ||
          xAtCurrentk == TLattice::LXdiv-1) return true; //Edges in X direction

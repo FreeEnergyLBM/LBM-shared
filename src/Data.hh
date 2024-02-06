@@ -71,7 +71,7 @@ class Data_Base{
 
             for(int idx = 0; idx <TStencil::Q; idx++) {
 
-                OppositeOffset[idx] = TStencil::Ci_xyz(x)[idx] * TLattice::LZ * TLattice::LY + TStencil::Ci_xyz(y)[idx] * TLattice::LZ + TStencil::Ci_xyz(z)[idx];
+                OppositeOffset[idx] = TStencil::Ci_xyz(x)[idx] * TLattice::LZdiv * TLattice::LYdiv + TStencil::Ci_xyz(y)[idx] * TLattice::LZdiv + TStencil::Ci_xyz(z)[idx];
 
             }
 
@@ -164,21 +164,21 @@ inline int Data_Base<TLattice,TStencil>::getOneNeighborPeriodic(const int k, con
 
     int neighbor = 0;
 
-    if(TLattice::LZ> 1) {
-        int localz=computeZ(TLattice::LY,TLattice::LZ,k);
-        if (localz==(TLattice::LZ - 1) && TStencil::Ci_xyz(z)[Q]> 0) { //(note that the z direction goes from 0 to TLattice::LZ-1)
+    if(TLattice::LZdiv> 1) {
+        int localz=computeZ(TLattice::LYdiv,TLattice::LZdiv,k);
+        if (localz==(TLattice::LZdiv - 1) && TStencil::Ci_xyz(z)[Q]> 0) { //(note that the z direction goes from 0 to TLattice::LZ-1)
                                                      //if the next lattice point in the z direction is divisible
                                                      //by TLattice::LZ (so we are at z=TLattice::LZ-1) and we are pointing in the +z
                                                      //direction
 
-            neighbor += -(TLattice::LZ - 1); //reduce k by TLattice::LZ-1 so we are now at z=0
+            neighbor += -(TLattice::LZdiv - 1); //reduce k by TLattice::LZ-1 so we are now at z=0
 
         }
         else if (localz==(0) && TStencil::Ci_xyz(z)[Q] <0) { //if the current lattice point in the z direction is
                                                         //divisible by TLattice::LZ (so we are at z=0) and we are pointing
                                                         //in the -z direction
 
-            neighbor += (TLattice::LZ - 1); //increase k by TLattice::LZ-1 so we are now at z=TLattice::LZ-1
+            neighbor += (TLattice::LZdiv - 1); //increase k by TLattice::LZ-1 so we are now at z=TLattice::LZ-1
 
         }
         else if (TStencil::Ci_xyz(z)[Q] != 0) { //Else calculate neighbors normally
@@ -187,42 +187,42 @@ inline int Data_Base<TLattice,TStencil>::getOneNeighborPeriodic(const int k, con
 
         }
     }
-    if(TLattice::LY> 1) {
-        int localY=computeY(TLattice::LY,TLattice::LZ,k);
-        if (localY == (TLattice::LY - 1) && TStencil::Ci_xyz(y)[Q]> 0) { //(note that the y direction goes from 0 to TLattice::LY-1)
+    if(TLattice::LYdiv> 1) {
+        int localY=computeY(TLattice::LYdiv,TLattice::LZdiv,k);
+        if (localY == (TLattice::LYdiv - 1) && TStencil::Ci_xyz(y)[Q]> 0) { //(note that the y direction goes from 0 to TLattice::LY-1)
                                                             //if the next lattice point in the y direction is
                                                             //divisible by TLattice::LY (so we are at z=TLattice::LY-1) and we are
                                                             //pointing in the +y direction
 
-            neighbor += -(TLattice::LZ) * (TLattice::LY - 1);
+            neighbor += -(TLattice::LZdiv) * (TLattice::LYdiv - 1);
 
         }
         else if (localY == 0 && TStencil::Ci_xyz(y)[Q] <0) { //...
 
-            neighbor += (TLattice::LZ) * (TLattice::LY - 1);
+            neighbor += (TLattice::LZdiv) * (TLattice::LYdiv - 1);
 
         }
         else if (TStencil::Ci_xyz(y)[Q] != 0) {
 
-            neighbor += TStencil::Ci_xyz(y)[Q] * TLattice::LZ;
+            neighbor += TStencil::Ci_xyz(y)[Q] * TLattice::LZdiv;
 
         }
     }
     if(TLattice::LXdiv> 1) {
-        int localX=computeX(TLattice::LY,TLattice::LZ,k);
+        int localX=computeX(TLattice::LYdiv,TLattice::LZdiv,k);
         if (localX == (TLattice::LXdiv - 1) && TStencil::Ci_xyz(x)[Q]> 0) { //...
 
-            neighbor += -(TLattice::LZ) * TLattice::LY * (TLattice::LXdiv - 1);
+            neighbor += -(TLattice::LZdiv) * TLattice::LYdiv * (TLattice::LXdiv - 1);
 
         }
         else if (localX == 0 && TStencil::Ci_xyz(x)[Q] <0) {
 
-            neighbor += (TLattice::LZ) * TLattice::LY * (TLattice::LXdiv - 1);
+            neighbor += (TLattice::LZdiv) * TLattice::LYdiv * (TLattice::LXdiv - 1);
 
         }
         else if (TStencil::Ci_xyz(x)[Q] != 0) {
 
-            neighbor += TStencil::Ci_xyz(x)[Q] * TLattice::LZ * TLattice::LY;
+            neighbor += TStencil::Ci_xyz(x)[Q] * TLattice::LZdiv * TLattice::LYdiv;
             
         }
     }

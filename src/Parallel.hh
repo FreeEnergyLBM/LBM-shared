@@ -101,6 +101,8 @@ class Parallel {
             #endif
         }
 
+        static constexpr int Width = TWidth;
+
     protected:
         int mMaxWidth = 0;
         // int mNumDirections = 0; //!<Number of communication channels. Must be redefined in child classes.
