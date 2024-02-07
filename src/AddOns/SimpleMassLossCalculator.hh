@@ -16,8 +16,11 @@ class SimpleMassLossCalculator : public AddOnBase {
         /// Set the constant evaporation rate per unit area
         inline void setEvaporationRate(double rate);
 
+        inline void setFluidPhase(int phase) {mFluidPhase=phase;}
+
     private:
         double mEvaporationRate = 1e-4;
+        int mFluidPhase=0;
 };
 
 
@@ -27,10 +30,8 @@ inline void SimpleMassLossCalculator::compute(int k){
 
     // Get the local gradient of the order parameter
     double gradOP = 0;
-    for (int component = 0 ; component < TTraits::NumberOfComponents-1; component++){
-        for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
-            gradOP += pow(GradientOrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k, component, xyz), 2);
-        }
+    for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
+        gradOP += pow(GradientOrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k, mFluidPhase, xyz), 2);
     }
     gradOP = sqrt(gradOP);
 
