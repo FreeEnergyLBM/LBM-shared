@@ -410,7 +410,7 @@ decltype(std::tuple_cat(
 
 template <int N, int idx, class element, class origtuple, class tuplebeforeelement> 
 struct tuple_replace { 
-  using type = typename tuple_replace<N-1,N,element,origtuple,tuple_cat_t<std::tuple<typename std::tuple_element<N, origtuple>::type>,tuplebeforeelement>>::type; 
+  using type = typename tuple_replace<N-1,idx,element,origtuple,tuple_cat_t<std::tuple<typename std::tuple_element<N, origtuple>::type>,tuplebeforeelement>>::type; 
 };
 
 template <int N, int idx, class element, class origtuple>
@@ -442,7 +442,7 @@ struct tuple_replace<0,-999,element,origtuple,tuplebeforeelement> {
 
 template <int N, int idx, class element, class origtuple, class tuplebeforeelement> 
 struct tuple_insert { 
-  using type = typename tuple_insert<N-1,N,element,origtuple,tuple_cat_t<std::tuple<typename std::tuple_element<N, origtuple>::type>,tuplebeforeelement>>::type; 
+  using type = typename tuple_insert<N-1,idx,element,origtuple,tuple_cat_t<std::tuple<typename std::tuple_element<N, origtuple>::type>,tuplebeforeelement>>::type; 
 };
 
 template <int N, int idx, class element, class origtuple>
