@@ -612,6 +612,10 @@ inline void ModelBase<TLattice,TTraits>::computeProcessors() {
                 
     }, mt_Processors);
 
+    std::apply([this](auto&... boundaryprocessor) {
+            (communicateProcessorBoundaries(boundaryprocessor),...);
+        }, mt_Boundaries);
+
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //loop over k
 
@@ -624,9 +628,7 @@ inline void ModelBase<TLattice,TTraits>::computeProcessors() {
     }
 
     communicateTuple(mt_Forces);
-    std::apply([this](auto&... boundaryprocessor) {
-            (communicateProcessorBoundaries(boundaryprocessor),...);
-        }, mt_Boundaries);
+    
 
     TLattice::ResetParallelTracking();
 

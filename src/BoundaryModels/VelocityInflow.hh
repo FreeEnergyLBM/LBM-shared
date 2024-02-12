@@ -7,7 +7,7 @@
 class VelocityInflow : public BoundaryBase {
     public:
 
-        VelocityInflow() { this->setInterfaceID(3); }
+        VelocityInflow() : BoundaryBase(3) {}
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);

@@ -7,7 +7,7 @@
 class DirichletVariable : public BoundaryBase {
     public:
 
-        DirichletVariable() { this->setInterfaceID(4); }
+        DirichletVariable() : BoundaryBase(4) {}
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);

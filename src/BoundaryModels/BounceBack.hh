@@ -6,7 +6,7 @@
 class BounceBack : public BoundaryBase {
     public:
 
-        BounceBack() { this->setInterfaceID(1); }
+        BounceBack() : BoundaryBase(1) {}
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);

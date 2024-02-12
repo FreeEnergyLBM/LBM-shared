@@ -6,7 +6,7 @@
 class Bouzidi : public BoundaryBase {
     public:
 
-        Bouzidi() { this->setInterfaceID(5); }
+        Bouzidi()  : BoundaryBase(5) {}
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);

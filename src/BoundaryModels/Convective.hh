@@ -7,7 +7,7 @@
 class Convective : public BoundaryBase {
     public:
 
-        Convective() { this->setInterfaceID(4); }
+        Convective() : BoundaryBase(4) {}
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);
@@ -76,7 +76,7 @@ template<class TForceTuple>
 class Convective2 : public BoundaryBase {
     public:
 
-        Convective2() { this->setInterfaceID(4); }
+        Convective2() : BoundaryBase(4) {}
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);
@@ -93,7 +93,7 @@ class Convective2 : public BoundaryBase {
         inline void communicateProcessor();
 
         template<class TTraits>
-        inline void precompute(int k);
+        inline void runProcessor(int k);
 
         inline void setVelocityCalculator(double (*v)(const double* distribution, TForceTuple& forcetuple,  const double& density, int xyz, int k)) {mVelocityCalculator=v;}
 
@@ -113,7 +113,7 @@ class Convective2 : public BoundaryBase {
 
 template<class TForceTuple>
 template<class TTraits>
-inline void Convective2<TForceTuple>::precompute(int k) { //CHANGE THIS SO YOU DONT NEED TO COMMUNICATE
+inline void Convective2<TForceTuple>::runProcessor(int k) { //CHANGE THIS SO YOU DONT NEED TO COMMUNICATE
     
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
@@ -131,21 +131,28 @@ inline void Convective2<TForceTuple>::precompute(int k) { //CHANGE THIS SO YOU D
     double magnormal = 0;
 
     for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
-        normalvelocity += normal[xyz]*Velocity<>::get<Lattice, Lattice::NDIM>(data.getNeighbor(k,normalq),xyz);//Velocity<>::get<Lattice, Lattice::NDIM>(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq),xyz);
+        normalvelocity += normal[xyz]*(Velocity<>::get<Lattice, Lattice::NDIM>(data.getNeighbor(data.getNeighbor(k,normalq),normalq),xyz));//Velocity<>::get<Lattice, Lattice::NDIM>(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq),xyz);
         magnormal += pow(normal[xyz],2);
     }
 
     magnormal = sqrt(magnormal);
 
     normalvelocity *= 1./magnormal;
-
+    /*
     #pragma omp parallel reduction (+:mVelocity,mCount)
     {
-        //mVelocity+=normalvelocity;
+        mVelocity+=normalvelocity;
+        mCount+=1;
+    }
+    */
+    #pragma omp critical
+    {
+        mVelocity+=normalvelocity;
         mCount+=1;
     }
     //std::cout<<"HERE "<<mVelocity/((double)mCount)<<std::endl;
-    if (fabs(normalvelocity)>fabs(mVelocity)) mVelocity=-normalvelocity;
+    //#pragma omp critic
+    //if (fabs(normalvelocity)>fabs(mVelocity)) mVelocity=-normalvelocity;
     
 }
 
@@ -169,21 +176,32 @@ inline void Convective2<TForceTuple>::compute(TDistributionType& distribution, i
         }
         if (normdotci<=0) continue;
         //std::cout<<idx<<std::endl;
-        /*
+        
+        double civelocity = 0;
         double normalvelocity = 0;
         double magnormal = 0;
         for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
-            normalvelocity += -normal[xyz]*mVelocityCalculator(distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq)),mt_Forces,Density<>::get<Lattice>(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq)),xyz,distribution.streamIndex(distribution.streamIndex(k, normalq), normalq));//Velocity<>::get<Lattice, Lattice::NDIM>(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq),xyz);
+            civelocity += 3*Stencil::Ci_xyz(xyz)[idx]*mVelocityCalculator(distribution.getDistributionPointer(distribution.streamIndex(k, normalq)),mt_Forces,Density<>::get<Lattice>(distribution.streamIndex(k, normalq)),xyz,distribution.streamIndex(k, normalq))-4*Stencil::Ci_xyz(xyz)[idx]*mVelocityCalculator(distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq)),mt_Forces,Density<>::get<Lattice>(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq)),xyz,distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))+Stencil::Ci_xyz(xyz)[idx]*mVelocityCalculator(distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq), normalq)),mt_Forces,Density<>::get<Lattice>(distribution.streamIndex(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq), normalq)),xyz,distribution.streamIndex(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq), normalq));//Velocity<>::get<Lattice, Lattice::NDIM>(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq),xyz);
             magnormal += pow(normal[xyz],2);
+            normalvelocity += normal[xyz]*mVelocityCalculator(distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq)),mt_Forces,Density<>::get<Lattice>(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq)),xyz,distribution.streamIndex(distribution.streamIndex(k, normalq), normalq));//Velocity<>::get<Lattice, Lattice::NDIM>(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq),xyz);
+            
         }
 
         magnormal = sqrt(magnormal);
 
         normalvelocity *= 1./magnormal;
+        //if (idx==6) distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[8] = (distribution.getDistributionOldPointer(distribution.streamIndex(k, normalq))[8]+normalvelocity*distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[8])/(1+normalvelocity);
+        //else if (idx==8) distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[6] = (distribution.getDistributionOldPointer(distribution.streamIndex(k, normalq))[6]+normalvelocity*distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[6])/(1+normalvelocity);
+        //distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = (distribution.getDistributionOldPointer(distribution.streamIndex(k, normalq))[idx]+normalvelocity*distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx])/(1+normalvelocity);
         
-        distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = (distribution.getDistributionOldPointer(distribution.streamIndex(k, normalq))[idx]+normalvelocity*distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx])/(1+normalvelocity);
-        */
-        distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = (distribution.getDistributionOldPointer(distribution.streamIndex(k, normalq))[idx]+mVelocity*distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx])/(1+mVelocity);
+        //distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = (distribution.getDistributionOldPointer(distribution.streamIndex(k, normalq))[idx]+mVelocity*distribution.getDistributionPointer(distribution.streamIndex(distribution.streamIndex(k, normalq), normalq))[idx])/(1+mVelocity);
+        //distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = distribution.getDistributionOldPointer(distribution.streamIndex(k, normalq))[idx]+3*TTraits::Stencil::Weights[idx]*mVelocity/(double)mCount/2.0*civelocity;
+        distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] = distribution.getDistributionOldPointer(distribution.streamIndex(k, normalq))[idx]+3*TTraits::Stencil::Weights[idx]*normalvelocity/2.0*civelocity;
+
+        //#pragma omp critical
+        //{
+        //if (TIME==50000) std::cout<<mCount<<std::endl;
+        //}
 
     }  
 

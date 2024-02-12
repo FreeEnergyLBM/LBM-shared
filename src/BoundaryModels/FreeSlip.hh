@@ -6,7 +6,7 @@
 class FreeSlip : public BoundaryBase {
     public:
 
-        FreeSlip() { this->setInterfaceID(1); }
+        FreeSlip() : BoundaryBase(1) {}
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);

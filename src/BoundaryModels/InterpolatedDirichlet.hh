@@ -6,7 +6,7 @@
 class InterpolatedDirichlet : public BoundaryBase {
     public:
 
-        InterpolatedDirichlet() { this->setInterfaceID(5); }
+        InterpolatedDirichlet() : BoundaryBase(5) {}
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);

@@ -7,7 +7,7 @@ template<class TParam0thMoment>
 class Neumann : public BoundaryBase {
     public:
 
-        Neumann() { this->setInterfaceID(4); }
+        Neumann() : BoundaryBase(4) {}
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);

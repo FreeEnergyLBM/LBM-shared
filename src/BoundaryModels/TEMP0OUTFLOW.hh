@@ -7,7 +7,7 @@
 class Temp0Outflow : public BoundaryBase {
     public:
 
-        Temp0Outflow() { this->setInterfaceID(4); }
+        Temp0Outflow() : BoundaryBase(4) {}
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);

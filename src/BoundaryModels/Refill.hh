@@ -8,7 +8,7 @@ template<class TParam>
 class Refill : public BoundaryBase {
     public:
 
-        Refill() { this->setInterfaceID(6); }
+        Refill() : BoundaryBase(6) {}
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);

@@ -7,6 +7,14 @@ class Model;
 class BoundaryBase{
     public:
 
+        BoundaryBase (int id) : mInterfaceID(1,id) {
+
+        }
+
+        BoundaryBase (std::vector<int> id) : mInterfaceID(id) {
+
+        }
+
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);
 
@@ -37,9 +45,11 @@ class BoundaryBase{
 
         inline void initialise(Model* model) {mModel = model;};
 
+        std::vector<int> mInterfaceID;
+
     private:
 
-        std::vector<int> mInterfaceID = {1};
+        
 
     protected:
         Model *mModel;

@@ -7,7 +7,7 @@
 class ExtrapolationOutflow : public BoundaryBase {
     public:
 
-        ExtrapolationOutflow() { this->setInterfaceID(4); }
+        ExtrapolationOutflow() : BoundaryBase(4) {}
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);
