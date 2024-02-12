@@ -12,6 +12,12 @@
 #include "Collide.hh"
 #include "Geometry.hh"
 
+/**
+ * \file Forcing.hh
+ * \brief Contains commonly used forcing/source models for the LBM.
+ * There is a base class which contains the dimensions of each force needed and the dependence on the relaxation time.
+ */
+
 template<class ...TStencils>
 struct ForcingBase{
 
@@ -326,6 +332,43 @@ struct LeeGamma0 : ForcingBase<Cartesian,AllDirections> {
         double prefactor = TTraits::Lattice::DT * TTraits::Stencil::Weights[idx]; //Prefactor for Guo forcing
 
         return prefactor*(ma_ForceQ[idx]-velocity_dot_force);
+
+    }
+};
+
+struct HeGamma0 : ForcingBase<Cartesian> {
+
+    std::vector<double> ma_Force;
+    
+    double velocity_dot_force = 0;
+    double ci_dot_force = 0;
+
+    inline void reset() {
+        std::fill(ma_Force.begin(), ma_Force.end(), 0);
+    }
+
+    template<class TTraits, class TForce>
+    inline void precompute(TForce& f, int k){
+        if (ma_Force.size()<TTraits::Lattice::NDIM) ma_Force.resize(TTraits::Lattice::NDIM,0);
+        ma_Force[0]+=f.template computeXYZ<TTraits>(0,k);
+        if constexpr (TTraits::Lattice::NDIM>=2) ma_Force[1]+=f.template computeXYZ<TTraits>(1,k);
+        if constexpr (TTraits::Lattice::NDIM==3) ma_Force[2]+=f.template computeXYZ<TTraits>(2,k);
+
+        velocity_dot_force = 0;
+        for (int xyz=0;xyz<TTraits::Stencil::D;xyz++){
+            velocity_dot_force += (ma_Force[xyz] * Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector with velocity
+        }
+        for (int xyz=0;xyz<TTraits::Stencil::D;xyz++){
+            ci_dot_force += (ma_Force[xyz] * Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,xyz)); //Dot product of discrete velocity vector with velocity
+        }
+    }
+    
+    template<class TTraits>
+    inline double compute(int idx, int k) { //Guo forcing
+        
+        double prefactor = TTraits::Lattice::DT * TTraits::Stencil::Weights[idx]; //Prefactor for Guo forcing
+
+        return prefactor*(ci_dot_force-velocity_dot_force);
 
     }
 };
