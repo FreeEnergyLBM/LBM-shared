@@ -148,8 +148,8 @@ void readWriteArray(const char rw, MPI_File file, std::vector<T>& data, int nDim
 }
 
 #else
-template<class TLattice, typename T, typename TFStream>
-void readWriteArray(const char rw, TFStream& file, std::vector<T>& data, int nDim=1, int nInst=1, int instance=-1) {
+template<class TLattice, typename T>
+void readWriteArray(const char rw, std::fstream& file, std::vector<T>& data, int nDim=1, int nInst=1, int instance=-1) {
     int dInst = (instance==-1) ? 1 : nInst;
     for (int k=0; k<TLattice::N; k++) {
         for (int iInst=instance; iInst<nInst; iInst+=dInst) {
@@ -456,7 +456,7 @@ void SaveHandler<TLattice>::saveParameter(int timestep, int instance) {
         MPI_File file;
         MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
     #else
-        std::ofstream file(filename);
+        std::fstream file(filename);
     #endif
 
     readWriteArray<TLattice>('w', file, param, TNumDir, TParameter::instances, instance);
@@ -503,7 +503,7 @@ void SaveHandler<TLattice>::loadParameter(std::string filename, std::string file
             MPI_File file;
             MPI_File_open(MPI_COMM_WORLD, filename.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &file);
         #else
-            std::ifstream file(filename.c_str());
+            std::fstream file(filename.c_str());
         #endif
         readWriteArray<TLattice>('r', file, param, TNumDir, TParameter::instances, instance);
         #ifdef MPIPARALLEL
