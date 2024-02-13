@@ -36,13 +36,17 @@ int main(int argc, char **argv) {
     FlowFieldBinary<Lattice,PoiseuilleTrait> model1;
     Binary<Lattice> model2;
 
-    model1.getForce<BodyForce<>>().setMagnitudeX(force);
+    model1.template getForce<BodyForce<>>().setMagnitudeX(force);
     model2.setTau1(0.55);
     model2.setTau2(1.0);
 
-    // Set the solid and initialise the liquid
+    // Set the solid
     Geometry<Lattice>::initialiseBoundaries(initSolid);
-    OrderParameter<>::set<Lattice>(initFluid);
+    model1.template getBoundary<BounceBack>().setNodeID(1);
+    model2.template getBoundary<BounceBack>().setNodeID(1);
+
+    // Initialise the liquid
+    OrderParameter<>::template set<Lattice>(initFluid);
 
     // Create save handler
     SaveHandler<Lattice> saver("data/");
@@ -53,7 +57,7 @@ int main(int argc, char **argv) {
 
     // Main loop
     for (int timestep=0; timestep<=timesteps; timestep++) {
-        if (timestep%saveInterval==0) saver.saveParameter<Velocity<>,Lattice::NDIM>(timestep);
+        if (timestep%saveInterval==0) saver.template saveParameter<Velocity<>,Lattice::NDIM>(timestep);
         lbm.evolve();
     }
 

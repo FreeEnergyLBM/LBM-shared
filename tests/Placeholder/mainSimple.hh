@@ -204,13 +204,13 @@ EvaporationHumidity<Lattice, TTrait> initHumidity(){
     using dbtype = InterpolatedDirichlet;
 
     humidity.template getBoundary<InterpolatedDirichlet>().setInterfaceDistanceFunction(distancefunc);
-    humidity.template getBoundary<dbtype>().setInterfaceID(5);
+    humidity.template getBoundary<dbtype>().setNodeID(5);
     humidity.template getBoundary<dbtype>().setInterfaceVal(Hsat);
 
-    humidity.template getBoundary<Dirichlet>().setInterfaceID({4});
+    humidity.template getBoundary<Dirichlet>().setNodeID({4});
     humidity.template getBoundary<Dirichlet>().setInterfaceVal(Hwall);
 
-    //humidity.template getBoundary<ExtrapolationOutflow>().setInterfaceID({4});
+    //humidity.template getBoundary<ExtrapolationOutflow>().setNodeID({4});
 
     humidity.setDiffusivity(diffusivity);
 
@@ -245,13 +245,13 @@ auto initPressure(){
 
     pressure.template getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setInterfaceHumidity(Hsat);
     pressure.template getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setGasDensity(dens2);
-    pressure.template getBoundary<BounceBack>().setInterfaceID({1});
-    pressure.template getBoundary<PressureOutflow>().setInterfaceID({4});
-    //pressure.template getPreProcessor<NoFluxSolid<Pressure<>>>().setInterfaceID({4});
-    //pressure.template getBoundary<FreeSlip>().setInterfaceID({2});
-    //pressure.template getBoundary<VelocityInflow>().setInterfaceID({3,4});
+    pressure.template getBoundary<BounceBack>().setNodeID({1});
+    pressure.template getBoundary<PressureOutflow>().setNodeID({4});
+    //pressure.template getPreProcessor<NoFluxSolid<Pressure<>>>().setNodeID({4});
+    //pressure.template getBoundary<FreeSlip>().setNodeID({2});
+    //pressure.template getBoundary<VelocityInflow>().setNodeID({3,4});
     //pressure.template getBoundary<VelocityInflow>().setWallVelocity({inflowmomentum,0});
-    //pressure.template getPreProcessor<ConstantGradientBoundary<Pressure<>>>().setInterfaceID(100);
+    //pressure.template getPreProcessor<ConstantGradientBoundary<Pressure<>>>().setNodeID(100);
 
     return pressure;
 
@@ -285,9 +285,9 @@ auto initBinary(){
 
     binary.template getPreProcessor<SimpleMassLossCalculator>().setEvaporationRate(0);
 
-    //binary.template getPostProcessor<NoFluxSolid<OrderParameter<>>>().setInterfaceID({4});
-    //binary.template getPostProcessor<NoFluxSolid<Density<>>>().setInterfaceID({4});
-    //binary.template getPostProcessor<NoFluxSolid<Pressure<>>>().setInterfaceID({2,3,4});
+    //binary.template getPostProcessor<NoFluxSolid<OrderParameter<>>>().setNodeID({4});
+    //binary.template getPostProcessor<NoFluxSolid<Density<>>>().setNodeID({4});
+    //binary.template getPostProcessor<NoFluxSolid<Pressure<>>>().setNodeID({2,3,4});
     
     //binary.template getPreProcessor<MassLossCalculatorInterpolated>().setInterfaceHumidity(Hsat);
     //binary.template getPreProcessor<MassLossCalculatorInterpolated>().setDiffusivity(diffusivity);
@@ -295,8 +295,8 @@ auto initBinary(){
     //binary.template getPreProcessor<MassLossCalculatorInterpolated>().setPhiGasLiquid(0,1);
     //binary.template getPreProcessor<MassLossCalculatorInterpolated>().setGasDensity(dens2);
 
-    binary.template getBoundary<FreeSlip>().setInterfaceID({1});
-    binary.template getBoundary<ExtrapolationOutflow>().setInterfaceID({4});
+    binary.template getBoundary<FreeSlip>().setNodeID({1});
+    binary.template getBoundary<ExtrapolationOutflow>().setNodeID({4});
     
     double wettingprefactor = - cos(theta*M_PI/180.0)*sqrt(2*A/kappa);
 

@@ -7,7 +7,7 @@
 class Temp0Outflow : public BoundaryBase {
     public:
 
-        Temp0Outflow() : BoundaryBase(4) {}
+        Temp0Outflow() { this->setNodeID(4, true); } // TMP: Default NodeID warning
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);

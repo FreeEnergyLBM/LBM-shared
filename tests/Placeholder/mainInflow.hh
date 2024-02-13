@@ -218,13 +218,13 @@ EvaporationHumidity<Lattice, TTrait> initHumidity(){
     humidity.setCollideID({0,6});
 
     humidity.template getBoundary<InterpolatedDirichlet>().setInterfaceDistanceFunction(distancefunc);
-    humidity.template getBoundary<dbtype>().setInterfaceID(5);
+    humidity.template getBoundary<dbtype>().setNodeID(5);
     humidity.template getBoundary<dbtype>().setInterfaceVal(Hsat);
 
-    humidity.template getBoundary<Dirichlet>().setInterfaceID({2,3});
+    humidity.template getBoundary<Dirichlet>().setNodeID({2,3});
     humidity.template getBoundary<Dirichlet>().setInterfaceVal(Hwall);
 
-    humidity.template getBoundary<ExtrapolationOutflow>().setInterfaceID({4,7});
+    humidity.template getBoundary<ExtrapolationOutflow>().setNodeID({4,7});
 
     humidity.setDiffusivity(diffusivity);
 
@@ -266,10 +266,10 @@ auto initPressure(){
     pressure.template getForce<EvaporationPressureSource<EvaporationSourceMethod>>().setGasDensity(dens2);
     //pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setPressureCalculator(pressure.computePressure);
     //pressure.template getBoundary<PressureOutflow<typename DefaultTraitPressureLeeHumidity<Lattice>::Forces>>().setForceTuple(pressure.mt_Forces);
-    pressure.template getBoundary<BounceBack,2>().setInterfaceID({1});
-    pressure.template getBoundary<FreeSlip,0>().setInterfaceID({2});
-    pressure.template getBoundary<VelocityInflowVariable,1>().setInterfaceID({3});
-    //pressure.template getBoundary<Temp0Outflow,1>().setInterfaceID({7});
+    pressure.template getBoundary<BounceBack,2>().setNodeID({1});
+    pressure.template getBoundary<FreeSlip,0>().setNodeID({2});
+    pressure.template getBoundary<VelocityInflowVariable,1>().setNodeID({3});
+    //pressure.template getBoundary<Temp0Outflow,1>().setNodeID({7});
     std::unordered_map<int,std::vector<double>> momentumvector;
     int xx = 1;
     for (int yy = ly/3; yy < ly-4; yy++) {
@@ -289,11 +289,11 @@ auto initPressure(){
     }
     pressure.template getBoundary<VelocityInflowVariable,1>().setWallVelocity(momentumvector);
     //pressure.template getBoundary<VelocityInflow,1>().setWallVelocity({inflowmomentum,0});
-    pressure.template getBoundary<Convective2<typename DefaultTraitPressureLee<Lattice>:: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>::Forces>,1>().setInterfaceID({4});
+    pressure.template getBoundary<Convective2<typename DefaultTraitPressureLee<Lattice>:: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>::Forces>,1>().setNodeID({4});
     //pressure.template getBoundary<Convective2<typename DefaultTraitPressureLee<Lattice>:: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>::Forces>,1>().setVelocityCalculator(pressure.computeVelocity);
     //pressure.template getBoundary<Convective2<typename DefaultTraitPressureLee<Lattice>:: template AddForce<EvaporationPressureSource<EvaporationSourceMethod>>::Forces>,1>().setForceTuple(pressure.mt_Forces);
-    //pressure.template getBoundary<Temp0Outflow,2>().setInterfaceID({7});
-    //pressure.template getPreProcessor<ConstantGradientBoundary<Pressure<>>>().setInterfaceID(100);
+    //pressure.template getBoundary<Temp0Outflow,2>().setNodeID({7});
+    //pressure.template getPreProcessor<ConstantGradientBoundary<Pressure<>>>().setNodeID(100);
 
     return pressure;
 
@@ -332,8 +332,8 @@ auto initBinary(){
 
     //binary.template getPreProcessor<SimpleMassLossCalculator>().setEvaporationRate(2e-5);
 
-    //binary.template getPostProcessor<NoFluxSolid<OrderParameter<>>>().setInterfaceID({2,3,4});
-    //binary.template getPostProcessor<NoFluxSolid<Pressure<>>>().setInterfaceID({2,3,4});
+    //binary.template getPostProcessor<NoFluxSolid<OrderParameter<>>>().setNodeID({2,3,4});
+    //binary.template getPostProcessor<NoFluxSolid<Pressure<>>>().setNodeID({2,3,4});
     binary.template getProcessor<MassLossCalculatorInterpolated,1>().toggleCalculate(false);
     binary.template getProcessor<MassLossCalculatorInterpolated,1>().setInterfaceHumidity(Hsat);
     binary.template getProcessor<MassLossCalculatorInterpolated,1>().setDiffusivity(diffusivity);
@@ -341,10 +341,10 @@ auto initBinary(){
     binary.template getProcessor<MassLossCalculatorInterpolated,1>().setPhiGasLiquid(0,1);
     binary.template getProcessor<MassLossCalculatorInterpolated,1>().setGasDensity(dens2);
 
-    binary.template getBoundary<BounceBack,1>().setInterfaceID({1,2,3});
-    //binary.template getBoundary<Dirichlet>().setInterfaceID({44});
+    binary.template getBoundary<BounceBack,1>().setNodeID({1,2,3});
+    //binary.template getBoundary<Dirichlet>().setNodeID({44});
     //binary.template getBoundary<Dirichlet>().setInterfaceVal(0);
-    binary.template getBoundary<Convective>().setInterfaceID({4});
+    binary.template getBoundary<Convective>().setNodeID({4});
     //binary.template getBoundary<Convective2<typename DefaultTraitBinaryLee<Lattice>:: template AddForce<EvaporationPhaseSource<EvaporationSourceMethod>>::Forces>>().setVelocityCalculator(binary.computeVelocity);
     //binary.template getBoundary<Convective2<typename DefaultTraitBinaryLee<Lattice>:: template AddForce<EvaporationPhaseSource<EvaporationSourceMethod>>::Forces>>().setForceTuple(binary.mt_Forces);
     

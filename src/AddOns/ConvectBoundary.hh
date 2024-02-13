@@ -1,24 +1,17 @@
 #pragma once
 #include "../Parameters.hh"
 #include "AddOnBase.hh"
-#include<iostream>
-#include<math.h>
+#include <iostream>
+#include <math.h>
 
 template<class TParameter, class TParameterOld>
 class ConvectParameterBoundary : public AddOnBase {
     public:
 
+        ConvectParameterBoundary() { this->setNodeID(4); }
+
         template<class TTraits>
         inline void compute(int k);
-
-        inline void setInterfaceID(int id) {mInterfaceID[0]=id;};
-
-        inline void setInterfaceID(const std::vector<int>& id) {mInterfaceID=id;};
-
-    private:
-
-        double mInterfaceVal;
-        std::vector<int> mInterfaceID = {4};
 
 };
 
@@ -33,35 +26,29 @@ inline void ConvectParameterBoundary<TParameter,TParameterOld>::compute(int k) {
 
     DataType& data = DataType::getInstance();
 
-    for (int i : mInterfaceID){
-        if(Geometry<typename TTraits::Lattice>::getBoundaryType(k) == i) goto runloop;
+    if (!this->apply<Lattice>(k)) return;
+
+    //const std::vector<int>& neighbors = DataType::getInstance().getNeighbors();
+    const std::array<int8_t,TTraits::Lattice::NDIM>& normal = BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection;
+    int normalq = Stencil::QMap.find(normal)->second;
+    if(normalq>0){
+
+        double normalvelocity = 0;
+        double magnormal = 0;
+        for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
+            normalvelocity += -normal[xyz]*Velocity<>::get<Lattice, Lattice::NDIM>(DataType::getInstance().getNeighbor(k,normalq),xyz);
+            magnormal += pow(normal[xyz],2);
+        }
+
+        magnormal = sqrt(magnormal);
+
+        normalvelocity *= 1./magnormal;
+        for (int component = 0 ; component < TParameter::instances; component++){
+            TParameter::template get<Lattice>(k,component) = (TParameterOld::template get<Lattice>(k,component)+normalvelocity*TParameter::template get<Lattice>(DataType::getInstance().getNeighbor(k,normalq),component))/(1+normalvelocity);
+
+            TParameter::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[normalq]),component) = (TParameterOld::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[normalq]),component)+normalvelocity*TParameter::template get<Lattice>(k,component))/(1+normalvelocity);
+        }
+
     }
 
-    return;
-
-    runloop:
-
-        //const std::vector<int>& neighbors = DataType::getInstance().getNeighbors();
-        const std::array<int8_t,TTraits::Lattice::NDIM>& normal = BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection;
-        int normalq = Stencil::QMap.find(normal)->second;
-        if(normalq>0){
-
-            double normalvelocity = 0;
-            double magnormal = 0;
-            for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
-                normalvelocity += -normal[xyz]*Velocity<>::get<Lattice, Lattice::NDIM>(DataType::getInstance().getNeighbor(k,normalq),xyz);
-                magnormal += pow(normal[xyz],2);
-            }
-
-            magnormal = sqrt(magnormal);
-
-            normalvelocity *= 1./magnormal;
-            for (int component = 0 ; component < TParameter::instances; component++){
-                TParameter::template get<Lattice>(k,component) = (TParameterOld::template get<Lattice>(k,component)+normalvelocity*TParameter::template get<Lattice>(DataType::getInstance().getNeighbor(k,normalq),component))/(1+normalvelocity);
-
-                TParameter::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[normalq]),component) = (TParameterOld::template get<Lattice>(data.getNeighbor(k, Stencil::Opposites[normalq]),component)+normalvelocity*TParameter::template get<Lattice>(k,component))/(1+normalvelocity);
-            }
-
-        }
-    
 }

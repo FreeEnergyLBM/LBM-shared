@@ -93,7 +93,10 @@ inline std::array<int,3> computeXYZ(int k) {
   int xlocal = k / lyz;
   int ylocal = (k - xlocal*lyz) / TLattice::LZdiv;
   int zlocal = k % TLattice::LZdiv;
-  return {TLattice::LXMPIOffset+xlocal, TLattice::LYMPIOffset+ylocal, TLattice::LZMPIOffset+zlocal};
+  int xglobal = (xlocal + TLattice::LXMPIOffset - TLattice::HaloXWidth + TLattice::LX) % TLattice::LX;
+  int yglobal = (ylocal + TLattice::LYMPIOffset - TLattice::HaloYWidth + TLattice::LY) % TLattice::LY;
+  int zglobal = (zlocal + TLattice::LZMPIOffset - TLattice::HaloZWidth + TLattice::LZ) % TLattice::LZ;
+  return {xglobal, yglobal, zglobal};
 }
 
 /// Compute the local index from the local x,y,z coordinates
@@ -123,6 +126,120 @@ inline int computeKFromGlobal(int x, int y, int z) {
   if (xProc>=lxProc || yProc>=lyProc || zProc>=lzProc) return -1;
   return xProc*lyProc*lzProc + yProc*lzProc + zProc;
 }
+
+
+template<class TLattice, typename TOut>
+struct RangeXYZIterator {
+    RangeXYZIterator(int k) : k(k) {
+      auto xyz = computeXYZ<TLattice>(k);
+      x = xyz[0];
+      y = xyz[1];
+      z = xyz[2];
+    }
+
+    TOut operator*() const {
+      if constexpr(std::is_same<TOut,int>::value) {
+        return k;
+      } else if constexpr(std::is_same<TOut,std::array<int,3>>::value) {
+        return {x,y,z};
+      } else if constexpr(std::is_same<TOut,std::array<int,4>>::value) {
+        return {x, y, z, k};
+      }
+    }
+
+    // Increment x, y, z, and k, skipping the halo nodes
+    RangeXYZIterator<TLattice,TOut> operator++() {
+      if (z < zEnd-1) {
+        z++;
+        k++;
+      } else if (y < yEnd-1) {
+        z = zStart;
+        y++;
+        k += 1 + 2*TLattice::HaloZWidth;
+      } else if (x < xEnd-1) {
+        z = zStart;
+        y = yStart;
+        x++;
+        k += 1 + 2*(TLattice::HaloZWidth + TLattice::HaloYWidth*TLattice::LZdiv);
+      } else {
+        k++; // Increment to match end() value
+      }
+      return *this;
+    };
+
+    bool operator!=(const RangeXYZIterator& other) const {
+      return k != other.k;
+    };
+
+  private:
+    int k, x, y, z;
+    int xStart = TLattice::LXMPIOffset;
+    int yStart = TLattice::LYMPIOffset;
+    int zStart = TLattice::LZMPIOffset;
+    int xEnd = xStart + TLattice::subArray[0];
+    int yEnd = yStart + TLattice::subArray[1];
+    int zEnd = zStart + TLattice::subArray[2];
+};
+
+
+/**
+  * \brief Iterator over the index k of the local lattice.
+  */
+template<class TLattice>
+class RangeK {
+  public:
+    RangeK<TLattice>() {
+      kStart = computeK<TLattice>(0, 0, 0);
+      kEnd = computeK<TLattice>(TLattice::subArray[0]-1, TLattice::subArray[1]-1, TLattice::subArray[2]-1) + 1;
+    }
+
+    using Iterator = RangeXYZIterator<TLattice,int>;
+    Iterator begin() { return Iterator(kStart); }
+    Iterator end() { return Iterator(kEnd); }
+
+  private:
+    int kStart, kEnd;
+};
+
+
+/**
+  * \brief Iterator over the x,y,z coordinates of the local lattice.
+  */
+template<class TLattice>
+class RangeXYZ {
+  public:
+    RangeXYZ<TLattice>() {
+      kStart = computeK<TLattice>(0, 0, 0);
+      kEnd = computeK<TLattice>(TLattice::subArray[0]-1, TLattice::subArray[1]-1, TLattice::subArray[2]-1) + 1;
+    }
+
+    using Iterator = RangeXYZIterator<TLattice,std::array<int,3>>;
+    Iterator begin() { return Iterator(kStart); }
+    Iterator end() { return Iterator(kEnd); }
+
+  private:
+    int kStart, kEnd;
+};
+
+
+/**
+  * \brief Iterator over the x,y,z coordinates and the index k of the local lattice.
+  */
+template<class TLattice>
+class RangeXYZK {
+  public:
+    RangeXYZK<TLattice>() {
+      kStart = computeK<TLattice>(0, 0, 0);
+      kEnd = computeK<TLattice>(TLattice::subArray[0]-1, TLattice::subArray[1]-1, TLattice::subArray[2]-1) + 1;
+    }
+
+    using Iterator = RangeXYZIterator<TLattice,std::array<int,4>>;
+    Iterator begin() { return Iterator(kStart); }
+    Iterator end() { return Iterator(kEnd); }
+
+  private:
+    int kStart, kEnd;
+};
 
 
 /**

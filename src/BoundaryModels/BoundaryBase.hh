@@ -1,19 +1,12 @@
 #pragma once
 #include "../Geometry.hh"
+#include "../Service.hh" //TMP: Default NodeID warning
 
 class Model;
 
 
 class BoundaryBase{
     public:
-
-        BoundaryBase (int id) : mInterfaceID(1,id) {
-
-        }
-
-        BoundaryBase (std::vector<int> id) : mInterfaceID(id) {
-
-        }
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);
@@ -30,15 +23,26 @@ class BoundaryBase{
         template<class TTraits>
         inline void runProcessor(int k){};
 
-        inline void setInterfaceID(int id) {mInterfaceID[0]=id;};
-
-        inline void setInterfaceID(const std::vector<int>& id) {mInterfaceID=id;};
+        // TMP: Default NodeID warning
+        // inline void setNodeID(int id) {mNodeID={id};};
+        // inline void setNodeID(const std::vector<int>& id) {mNodeID=id;};
+        inline void setNodeID(int id, bool preset=false) {mNodeID={id}; preset_warning=preset;};
+        inline void setNodeID(const std::vector<int>& id, bool preset=false) {mNodeID=id; preset_warning=preset;};
 
         template<class TLattice>
         inline bool apply(int k) {
             if (Geometry<TLattice>::getBoundaryType(k) == -1) return false;
-            for (int i : mInterfaceID){
-                if(Geometry<TLattice>::getBoundaryType(k) == i) return true;
+            for (int i : mNodeID){
+                // TMP: Default NodeID warning
+                // if(Geometry<TLattice>::getBoundaryType(k) == i) return true;
+                if(Geometry<TLattice>::getBoundaryType(k) == i) {
+                    if (preset_warning) {
+                        #pragma omp critical
+                        print("\033[31;1mDEPRECATION WARNING\033[0m: Using default NodeID (",i,") for a boundary. Please eplicitly set NodeIDs for all boundaries in use.");
+                        preset_warning = false;
+                    }
+                    return true;
+                }
             }
             return false;
         }
@@ -49,7 +53,8 @@ class BoundaryBase{
 
     private:
 
-        
+        std::vector<int> mNodeID = {};
+        bool preset_warning = false; // TMP: Default NodeID warning
 
     protected:
         Model *mModel;

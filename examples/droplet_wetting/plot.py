@@ -30,45 +30,37 @@ def read_data(direc='data'):
     times = np.arange(0, tend+1, tinc)
     phi = np.zeros((len(times), lx, ly, lz))
     vel = np.zeros((len(times), lx, ly, lz, ndim))
-    solid = np.zeros((len(times), lx, ly, lz))
 
     for it, t in enumerate(times):
         try:
             phi_file = open(direc+"/OrderParameter_t%li.mat"%t, 'rb')
             vel_file = open(direc+"/Velocity_t%li.mat"%t, 'rb')
-            solid_file = open(direc+"/BoundaryLabels_t%li.mat"%t, 'rb')
 
             for k in range(lx*ly*lz):
                 (xk,yk,zk) = coord_k(k,ly,lz)
                 phi[it,xk,yk,zk] = struct.unpack('=d', phi_file.read(8))[0]
                 for i in range(ndim):
                     vel[it,xk,yk,zk,i] = struct.unpack('=d', vel_file.read(8))[0]
-                solid[it,xk,yk,zk] = struct.unpack('=i', solid_file.read(4))[0]
             
             phi_file.close()
             vel_file.close()
-            solid_file.close()
         except FileNotFoundError:
             phi = phi[:it]
             vel = vel[:it]
-            solid = solid[:it]
             break
 
-    phi = np.ma.masked_where(solid, phi)
-    # vel = np.ma.masked_where(solid, vel)
-    return phi, vel, solid
+    return phi, vel
 
 
 def plot(phi):
     print('Plotting...')
-    plt.gca().set_aspect('equal')
     for i in range(len(phi)):
         phi2d = phi[i,:,:,0]
         plt.contourf(phi2d.T, cmap='Blues', zorder=i,levels=5)
         plt.contour(phi2d.T, levels=[0], colors='k', zorder=i)
         #plt.pause(0.5)
-    #plt.show()
-    plt.savefig("test.png",format="png")
+    plt.gca().set_aspect('equal')
+    plt.show()
 
 
 def measure_angle(phi, it=-1):
@@ -89,6 +81,6 @@ def measure_angle(phi, it=-1):
     print(f'Measured contact angle: {theta:g} degrees')
 
 
-phi, vel, solid = read_data('data')
+phi, vel = read_data('data')
 measure_angle(phi)
 plot(phi)

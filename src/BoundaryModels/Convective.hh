@@ -7,7 +7,7 @@
 class Convective : public BoundaryBase {
     public:
 
-        Convective() : BoundaryBase(4) {}
+        Convective() { this->setNodeID(4, true); } // TMP: Default NodeID warning
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);
@@ -76,7 +76,7 @@ template<class TForceTuple>
 class Convective2 : public BoundaryBase {
     public:
 
-        Convective2() : BoundaryBase(4) {}
+        Convective2() { this->setNodeID(4, true); } // TMP: Default NodeID warning
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);

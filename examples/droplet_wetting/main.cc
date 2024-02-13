@@ -53,18 +53,21 @@ int main(int argc, char **argv){
     FlowFieldBinary<Lattice,TraitFlowField> flowFieldModel; //Flowfield (navier stokes solver) that can be used with the binary model
     Binary<Lattice> componentSeparationModel; //Binary model with hybrid equilibrium and forcing term
 
+    componentSeparationModel.setTau2(0.51);
     componentSeparationModel.getProcessor<ChemicalPotentialCalculatorBinary>().setA(0.015);
     componentSeparationModel.getProcessor<ChemicalPotentialCalculatorBinary>().setKappa(0.03);
 
-    // Define the contact angle on the solid
-    componentSeparationModel.getProcessor<CubicWetting>().setThetaDegrees(contactAngle);
-    componentSeparationModel.getProcessor<CubicWetting>().setAlpha(sqrt(2));
-    componentSeparationModel.setTau2(0.51);
-
-    // Define the solid using the function above
+    // Set the boundaries
     Geometry<Lattice>::initialiseBoundaries(initSolid);
 
-    // Initialise the liquid and gas using the function above
+    flowFieldModel.getBoundary<BounceBack>().setNodeID(1);
+    componentSeparationModel.getBoundary<BounceBack>().setNodeID(1);
+
+    componentSeparationModel.getProcessor<CubicWetting>().setNodeID(1);
+    componentSeparationModel.getProcessor<CubicWetting>().setThetaDegrees(contactAngle);
+    componentSeparationModel.getProcessor<CubicWetting>().setAlpha(sqrt(2));
+
+    // Initialise the liquid and gas
     OrderParameter<>::set<Lattice>(initFluid);
 
     // Algorithm creates an object that combines the lattice models and runs them in order

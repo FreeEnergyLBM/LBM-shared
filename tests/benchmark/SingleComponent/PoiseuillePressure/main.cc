@@ -37,13 +37,15 @@ int main(int argc, char **argv){
     // Define the model
     using Trait = DefaultTraitFlowField<Lattice>::AddBoundary<ZouHeDensity>;
     FlowField<Lattice,Trait> model;
-    model.template getBoundary<BounceBack>().setInterfaceID({1});
-    model.template getBoundary<ZouHeDensity>().setInterfaceID({2});
+
+    // Set up geometry
+    Geometry<Lattice>::initialiseBoundaries(initBoundaries);
+    model.template getBoundary<BounceBack>().setNodeID({1});
+    model.template getBoundary<ZouHeDensity>().setNodeID({2});
     model.setCollideID({0, 2});
 
-    // Initialise
-    Geometry<Lattice>::initialiseBoundaries(initBoundaries);
-    Density<>::set<Lattice>(initDensity);
+    // Initialise fluid
+    Density<>::template set<Lattice>(initDensity);
 
     SaveHandler<Lattice> saver("data/");
     saver.maskSolid();

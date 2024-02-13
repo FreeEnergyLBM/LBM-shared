@@ -66,8 +66,12 @@ int main(int argc, char **argv){
     // Define the magnitude of the body force
     flowFieldModel.getForce<BodyForce<>>().setMagnitudeX(force);
 
-    // Define the solid and fluid using the functions above
+    // Define the solid boundaries
     Geometry<Lattice>::initialiseBoundaries(initSolid);
+    flowFieldModel.getBoundary<BounceBack>().setNodeID(1);
+    componentSeparationModel.getBoundary<BounceBack>().setNodeID(1);
+
+    // Initialise the fluid using the function above
     OrderParameter<>::set<Lattice>(initFluid);
 
     // Algorithm creates an object that can run our chosen LBM model

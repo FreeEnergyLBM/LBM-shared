@@ -8,7 +8,7 @@ template<class TParam>
 class Refill : public BoundaryBase {
     public:
 
-        Refill() : BoundaryBase(6) {}
+        Refill() { this->setNodeID(6, true); } // TMP: Default NodeID warning
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);

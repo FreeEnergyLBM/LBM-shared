@@ -12,7 +12,6 @@
 
 class ZouHe : public BoundaryBase {
     public:
-        ZouHe() : BoundaryBase(4) {}
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);
 

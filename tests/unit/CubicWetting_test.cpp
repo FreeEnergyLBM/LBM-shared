@@ -7,12 +7,14 @@ using Lattice = LatticeProperties<NoParallel, 2, 1>;
 using Trait = DefaultTrait<Lattice>;
 
 TEST(CubicWetting, orderParameter) {
-  BoundaryLabels<Lattice::NDIM>::get<Lattice>(0).Id = true;
   auto orderParam = OrderParameter<>::getAddress<Lattice>(0);
   orderParam[1] = 1;
 
-  // Check default (no wetting)
+  BoundaryLabels<Lattice::NDIM>::get<Lattice>(0).Id = 1;
   CubicWetting wetting;
+  wetting.setNodeID(1);
+
+  // Check default (no wetting)
   wetting.compute<Trait>(0);
   wetting.compute<Trait>(1);
   EXPECT_FLOAT_EQ(orderParam[0], 1);

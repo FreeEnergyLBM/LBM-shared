@@ -26,7 +26,7 @@ class SaveHandler {
 
         void saveBoundaries(int timestep);
 
-        template<class TParameter, int TNumDir=1> void saveParameter(int timestep);
+        template<class TParameter, int TNumDir=1> void saveParameter(int timestep, int instance=-1);
         template<class... TParameter> void saveParameter(int timestep, TParameter&... params);
 
         template<class TParameter, int TNumDir=1> void loadParameter(std::string filename, std::string filetype="bin", int instance=-1);
@@ -105,33 +105,64 @@ void writeText(std::ofstream& file, std::string text) {
 
 #ifdef MPIPARALLEL
 template<class TLattice, typename T>
-void writeArray(MPI_File file, std::vector<T> data) {
-    int lsize[3] = {TLattice::subArray[0], TLattice::subArray[1], TLattice::subArray[2]};
-    int gsize[3] = {TLattice::LX, TLattice::LY, TLattice::LZ};
-    int dsize[3] = {TLattice::LXdiv, TLattice::LYdiv, TLattice::LZdiv};
-    int glstart[3] = {TLattice::LXMPIOffset, TLattice::LYMPIOffset, TLattice::LZMPIOffset};
-    int dlstart[3] = {TLattice::HaloXWidth, TLattice::HaloYWidth, TLattice::HaloYWidth};
+void readWriteArray(const char rw, MPI_File file, std::vector<T>& data, int nDim=1, int nInst=1, int instance=-1) {
+    int nInstFile = 1;
+    if (instance == -1) { // Read all instances
+        nInstFile = nInst;
+        instance = 0;
+    }
+    int lsize[5] = {TLattice::subArray[0], TLattice::subArray[1], TLattice::subArray[2], nInstFile, nDim}; // Local array size (to read/write)
+    int fsize[5] = {TLattice::LX, TLattice::LY, TLattice::LZ, nInstFile, nDim}; // File array size (global)
+    int dsize[5] = {TLattice::LXdiv, TLattice::LYdiv, TLattice::LZdiv, nInst, nDim}; // Data array size (local+halo)
+    int flstart[5] = {TLattice::LXMPIOffset, TLattice::LYMPIOffset, TLattice::LZMPIOffset, 0, 0}; // Local array start in file
+    int dlstart[5] = {TLattice::HaloXWidth, TLattice::HaloYWidth, TLattice::HaloYWidth, instance, 0}; // Local array start in data
 
-    int ng = gsize[0] * gsize[1] * gsize[2];
+    int nf = fsize[0] * fsize[1] * fsize[2] * fsize[3] * fsize[4];
 
-    // Create subarray objects for writing to file and reading from the data array
+    // Create subarray objects for writing to file and reading from the data array (or vice versa)
     MPI_Datatype fileSubArray;
     MPI_Datatype dataSubArray;
-    MPI_Type_create_subarray(2, gsize, lsize, glstart, MPI_ORDER_C, MPI_FLOAT, &fileSubArray);
-    MPI_Type_create_subarray(2, dsize, lsize, dlstart, MPI_ORDER_C, MPI_FLOAT, &dataSubArray);
+    MPI_Type_create_subarray(5, fsize, lsize, flstart, MPI_ORDER_C, MPI_DOUBLE, &fileSubArray);
+    MPI_Type_create_subarray(5, dsize, lsize, dlstart, MPI_ORDER_C, MPI_DOUBLE, &dataSubArray);
     MPI_Type_commit(&fileSubArray);
     MPI_Type_commit(&dataSubArray);
 
-    // Write
+    // Read / write
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Offset offset;
     MPI_File_get_position_shared(file, &offset);
-    MPI_File_set_view(file, offset, MPI_FLOAT, fileSubArray, "native", MPI_INFO_NULL);
-    MPI_File_write_all(file, &data[0], 1, dataSubArray, MPI_STATUS_IGNORE);
+    MPI_File_set_view(file, offset, MPI_DOUBLE, fileSubArray, "native", MPI_INFO_NULL);
+    if (rw == 'r') {
+        MPI_File_read_all(file, &data[0], 1, dataSubArray, MPI_STATUS_IGNORE);
+    } else if (rw =='w') {
+        MPI_File_write_all(file, &data[0], 1, dataSubArray, MPI_STATUS_IGNORE);
+    }
 
     // Move file pointer
-    offset += ng * sizeof(data[0]);
+    offset += nf * sizeof(T);
     MPI_File_set_view(file, offset, MPI_BYTE, MPI_BYTE, "native", MPI_INFO_NULL);
+
+    // Delete subarray mpi types
+    MPI_Type_free(&fileSubArray);
+    MPI_Type_free(&dataSubArray);
+}
+
+#else
+template<class TLattice, typename T, typename TFStream>
+void readWriteArray(const char rw, TFStream& file, std::vector<T>& data, int nDim=1, int nInst=1, int instance=-1) {
+    int dInst = (instance==-1) ? 1 : nInst;
+    for (int k=0; k<TLattice::N; k++) {
+        for (int iInst=instance; iInst<nInst; iInst+=dInst) {
+            for (int iDim=0; iDim<nDim; iDim++) {
+                int iData = k*nInst*nDim + iInst*nDim + iDim;
+                if (rw == 'r') {
+                    file.read((char *)(&data[iData]), sizeof(T));
+                } else if (rw == 'w') {
+                    file.write((char *)(&data[iData]), sizeof(T));
+                }
+            }
+        }
+    }
 }
 #endif
 
@@ -156,14 +187,14 @@ std::string formatPoint(T data[], std::string fmt, std::string delim1, std::stri
 
 #ifdef MPIPARALLEL
 template<class TLattice, typename T>
-void writeArrayTxt(MPI_File file, std::vector<T> data, std::string fmt, std::string delim="\n", std::string end="NONE", int ndim=1, std::string dimDelim=" ") {
+void writeArrayTxt(MPI_File file, const std::vector<T>& data, std::string fmt, std::string delim="\n", std::string end="NONE", int ndim=1, std::string dimDelim=" ") {// TODO: instances
     int lsize[3] = {TLattice::subArray[0], TLattice::subArray[1], TLattice::subArray[2]};
-    int gsize[3] = {TLattice::LX, TLattice::LY, TLattice::LZ};
+    int fsize[3] = {TLattice::LX, TLattice::LY, TLattice::LZ};
     int dsize[3] = {TLattice::LXdiv, TLattice::LYdiv, TLattice::LZdiv};
-    int glstart[3] = {TLattice::LXMPIOffset, TLattice::LYMPIOffset, TLattice::LZMPIOffset};
+    int flstart[3] = {TLattice::LXMPIOffset, TLattice::LYMPIOffset, TLattice::LZMPIOffset};
     int dlstart[3] = {TLattice::HaloXWidth, TLattice::HaloYWidth, TLattice::HaloYWidth};
 
-    int ng = gsize[0] * gsize[1] * gsize[2];
+    int nf = fsize[0] * fsize[1] * fsize[2];
     int nl = lsize[0] * lsize[1] * lsize[2];
 
     // Convert data to plaintext
@@ -185,7 +216,7 @@ void writeArrayTxt(MPI_File file, std::vector<T> data, std::string fmt, std::str
 
     // Create subarray
     MPI_Datatype subarray;
-    MPI_Type_create_subarray(2, gsize, lsize, glstart, MPI_ORDER_C, numString, &subarray);
+    MPI_Type_create_subarray(3, fsize, lsize, flstart, MPI_ORDER_C, numString, &subarray);
     MPI_Type_commit(&subarray);
 
     // Get the current offset from the beginning of the file
@@ -199,17 +230,20 @@ void writeArrayTxt(MPI_File file, std::vector<T> data, std::string fmt, std::str
     MPI_File_set_view(file, 0, MPI_CHAR, MPI_CHAR, "native", MPI_INFO_NULL);
 
     // Write any ending and progress the file pointer
-    offset += ng * numStringLen;
+    offset += nf * numStringLen;
     if (end != "NONE") {
         if (mpi.rank==0) MPI_File_write_at(file, offset-delim.length(), end.c_str(), end.length(), MPI_CHAR, MPI_STATUS_IGNORE);
         offset += end.length() - delim.length();
     }
     MPI_File_seek_shared(file, offset, MPI_SEEK_CUR);
+
+    // Delete subarray mpi type
+    MPI_Type_free(&subarray);
 }
 
 #else
 template<class TLattice, typename T>
-void writeArrayTxt(std::ofstream& file, std::vector<T> data, std::string fmt, std::string delim="\n", std::string end="NONE", int ndim=1, std::string dimDelim=" ") {
+void writeArrayTxt(std::ofstream& file, const std::vector<T>& data, std::string fmt, std::string delim="\n", std::string end="NONE", int ndim=1, std::string dimDelim=" ") {
     // Convert data to plaintext
     std::string dataString = "";
     for (int iData=0; iData<TLattice::N; iData++) {
@@ -228,10 +262,10 @@ void SaveHandler<TLattice>::saveVTK(int timestep, TParameter&... params) {
     char filename[512];
     sprintf(filename, "%s/%s_%d.vtk", mDataDir.c_str(), filePrefix.c_str(), timestep);
     #ifdef MPIPARALLEL
-    MPI_File file;
-    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
+        MPI_File file;
+        MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
     #else
-    std::ofstream file(filename);
+        std::ofstream file(filename);
     #endif
 
     // Write the header
@@ -268,6 +302,12 @@ void SaveHandler<TLattice>::saveVTK(int timestep, TParameter&... params) {
         // Write data
         writeArrayTxt<TLattice>(file, data, "%13.8f", "\n", "NONE", directions, " ");
     } (), ...);
+
+    #ifdef MPIPARALLEL
+        MPI_File_close(&file);
+    #else
+        file.close();
+    #endif
 }
 
 
@@ -286,10 +326,10 @@ void SaveHandler<TLattice>::saveDAT(int timestep, TParameter&... params) {
     char filename[512];
     sprintf(filename, "%s/%s_%d.dat", mDataDir.c_str(), filePrefix.c_str(), timestep);
     #ifdef MPIPARALLEL
-    MPI_File file;
-    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
+        MPI_File file;
+        MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
     #else
-    std::ofstream file(filename);
+        std::ofstream file(filename);
     #endif
 
     // Parameter data
@@ -342,6 +382,12 @@ void SaveHandler<TLattice>::saveDAT(int timestep, TParameter&... params) {
         }
     }
     writeArrayTxt<TLattice>(file, data, "%s");
+
+    #ifdef MPIPARALLEL
+        MPI_File_close(&file);
+    #else
+        file.close();
+    #endif
 }
 
 
@@ -398,39 +444,28 @@ void SaveHandler<TLattice>::saveBoundaries(int timestep){
 
 template<class TLattice>
 template<class TParameter, int TNumDir>
-void SaveHandler<TLattice>::saveParameter(int timestep) {
+void SaveHandler<TLattice>::saveParameter(int timestep, int instance) {
     // Setup array for saving
     std::vector<typename TParameter::ParamType>& param = TParameter::template get<TLattice,TNumDir>();
     if (mMaskSolid) applyMask<TLattice>(param, TNumDir, mMaskValue);
 
-    // File
-    char fdump[512];
-    sprintf(fdump, "%s/%s_t%i.mat", mDataDir.c_str(), TParameter::mName, timestep);
-    int fileOffset = sizeof(typename TParameter::ParamType) * mpi.rank * TNumDir * TParameter::instances * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size;
-
+    // Open and write file
+    char filename[512];
+    sprintf(filename, "%s/%s_t%d.mat", mDataDir.c_str(), TParameter::mName, timestep);
     #ifdef MPIPARALLEL
-    // Parallel saving with MPI
-    // TODO: Fix for other parallelisations
-    MPI_File fh;
-    MPI_File_open(MPI_COMM_SELF, fdump, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
-    MPI_File_seek(fh, fileOffset, MPI_SEEK_SET);
-    MPI_File_write(fh,&param[TLattice::HaloSize*TNumDir*TParameter::instances], TNumDir*(TLattice::N-2*TLattice::HaloSize)*TParameter::instances, MPI_DOUBLE, MPI_STATUSES_IGNORE);
-    MPI_File_close(&fh);
-
+        MPI_File file;
+        MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
     #else
-    // Saving without MPI
-    std::ofstream fs(fdump, std::ios::out | std::ios::binary);
-    fs.seekp(fileOffset);
-    for (int k = TLattice::HaloSize; k < TLattice::N-TLattice::HaloSize; k++) { // TODO: Fix for other parallelisations
-        for(int idx = 0; idx < TParameter::instances; idx++) {
-            for(int idx2 = 0; idx2 < TNumDir; idx2++) {
-                fs.write((char *)(&param[k*TNumDir*TParameter::instances+idx*TNumDir+idx2]), sizeof(typename TParameter::ParamType));
-            }
-        }
-    };
-    fs.close();
+        std::ofstream file(filename);
     #endif
 
+    readWriteArray<TLattice>('w', file, param, TNumDir, TParameter::instances, instance);
+
+    #ifdef MPIPARALLEL
+        MPI_File_close(&file);
+    #else
+        file.close();
+    #endif
 }
 
 
@@ -463,30 +498,19 @@ void SaveHandler<TLattice>::loadParameter(std::string filename, std::string file
     std::vector<typename TParameter::ParamType> &param = TParameter::template get<TLattice,TNumDir>();
 
     if (filetype == "bin") {
-        int fileOffset = sizeof(typename TParameter::ParamType) * mpi.rank * TNumDir * TParameter::instances * (TLattice::LX * TLattice::LY * TLattice::LZ) / mpi.size;
-
+        // Open and read file
         #ifdef MPIPARALLEL
-        // Parallel loading with MPI
-        MPI_File fh;
-        MPI_File_open(MPI_COMM_SELF, filename.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
-        MPI_File_seek(fh, fileOffset, MPI_SEEK_SET);
-        MPI_File_read(fh, &param[TLattice::HaloSize*TNumDir*TParameter::instances], TNumDir*(TLattice::N-2*TLattice::HaloSize)*TParameter::instances, MPI_DOUBLE, MPI_STATUSES_IGNORE);
-        MPI_File_close(&fh);
-
+            MPI_File file;
+            MPI_File_open(MPI_COMM_WORLD, filename.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &file);
         #else
-        // Load without MPI
-        std::ifstream fs(filename.c_str(), std::ios::binary);
-        fs.seekg(fileOffset);
-        for (int k = TLattice::HaloSize; k < TLattice::N-TLattice::HaloSize; k++) {
-            for(int idx = 0; idx < TParameter::instances; idx++) {
-                for(int idx2 = 0; idx2 < TNumDir; idx2++) {
-                    fs.read((char *)(&param[k*TNumDir*TParameter::instances+idx*TNumDir+idx2]), sizeof(typename TParameter::ParamType));
-                }
-            }
-        };
-        fs.close();
+            std::ifstream file(filename.c_str());
         #endif
-
+        readWriteArray<TLattice>('r', file, param, TNumDir, TParameter::instances, instance);
+        #ifdef MPIPARALLEL
+            MPI_File_close(&file);
+        #else
+            file.close();
+        #endif
 
     } else if (filetype == "txt") {
         std::ifstream fs(filename.c_str());
@@ -496,18 +520,21 @@ void SaveHandler<TLattice>::loadParameter(std::string filename, std::string file
         int xStop = std::min(xStart + TLattice::LXdiv, TLattice::LX);
         int yStop = std::min(yStart + TLattice::LYdiv, TLattice::LY);
         int zStop = std::min(zStart + TLattice::LZdiv, TLattice::LZ);
-        int nI = (instance==-1) ? TNumDir : TParameter::instances*TNumDir;
-        int dI = (instance==-1) ? TParameter::instances : 1;
+        int dInst = (instance==-1) ? 1 : TParameter::instances;
+        if (instance==-1) instance = 0;
         double dummy;
         for (int xg=0; xg<xStop; xg++) {
             for (int yg=0; yg<yStop; yg++) {
                 for (int zg=0; zg<zStop; zg++) {
                     int k = computeKFromGlobal<TLattice>(xg%TLattice::LX, yg%TLattice::LY, zg%TLattice::LZ);
-                    for (int i=0; i<nI; i+=dI) {
-                        if (k == -1) {
-                            fs >> dummy;
-                        } else {
-                            fs >> param[k*TParameter::instances*TNumDir + i];
+                    for (int iInst=instance; iInst<TParameter::instances; iInst+=dInst) {
+                        for (int iDim=0; iDim<TNumDir; iDim++) {
+                            if (k == -1) {
+                                fs >> dummy;
+                            } else {
+                                int i = k*TParameter::instances*TNumDir + iInst*TNumDir + iDim;
+                                fs >> param[i];
+                            }
                         }
                     }
                 }
@@ -530,10 +557,10 @@ void SaveHandler<TLattice>::loadParameter(int timestep, std::string filetype, in
     char filename[512];
     if (filetype == "bin") {
         sprintf(filename, "%s/%s_t%i.mat", mDataDir.c_str(), TParameter::mName, timestep);
-    } else if (filetype="txt") {
+    } else if (filetype == "txt") {
         sprintf(filename, "%s/%s_t%i.txt", mDataDir.c_str(), TParameter::mName, timestep);
     }
-    loadParameter(filename, filetype, instance);
+    loadParameter<TParameter,TNumDir>(filename, filetype, instance);
 }
 
 template<class TLattice>

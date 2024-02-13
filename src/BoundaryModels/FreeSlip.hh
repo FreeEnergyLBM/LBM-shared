@@ -6,7 +6,7 @@
 class FreeSlip : public BoundaryBase {
     public:
 
-        FreeSlip() : BoundaryBase(1) {}
+        FreeSlip() { this->setNodeID(1, true); } // TMP: Default NodeID warning
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);

@@ -7,7 +7,7 @@
 class ExtrapolationOutflow : public BoundaryBase {
     public:
 
-        ExtrapolationOutflow() : BoundaryBase(4) {}
+        ExtrapolationOutflow() { this->setNodeID(4, true); } // TMP: Default NodeID warning
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);

@@ -29,23 +29,22 @@ int main(int argc, char **argv) {
     FlowFieldBinary<Lattice> model1;
     Binary<Lattice> model2;
 
-    model2.getPreProcessor<ChemicalPotentialCalculatorBinary>().setA(0.00015);
-    model2.getPreProcessor<ChemicalPotentialCalculatorBinary>().setKappa(0.0003);
+    model2.template getProcessor<ChemicalPotentialCalculatorBinary>().setA(0.00015);
+    model2.template getProcessor<ChemicalPotentialCalculatorBinary>().setKappa(0.0003);
 
-    OrderParameter<>::set<Lattice>(initFluid);
+    // Initialise fluid
+    OrderParameter<>::template set<Lattice>(initFluid);
 
     // Create save handler
     SaveHandler<Lattice> saver("data/");
     saver.saveHeader(timesteps, saveInterval);
 
-    // Initialise
-    Algorithm lbm(model1, model2);
-
     // Main loop
+    Algorithm lbm(model1, model2);
     for (int timestep=0; timestep<=timesteps; timestep++) {
         if (timestep%saveInterval==0) {
-          saver.saveParameter<Density<>>(timestep);
-          saver.saveParameter<OrderParameter<>>(timestep);
+          saver.template saveParameter<Density<>>(timestep);
+          saver.template saveParameter<OrderParameter<>>(timestep);
         }
         lbm.evolve();
     }

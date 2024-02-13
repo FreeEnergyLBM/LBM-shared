@@ -21,10 +21,6 @@ double initFluid(const int k) {
     else return -1;
 }
 
-//User defined function to define some fluid initialisation (optional)
-bool velocityLocation(const int k) {
-    return true;
-}
 
 int main(int argc, char **argv) {
     mpi.init();
@@ -33,13 +29,13 @@ int main(int argc, char **argv) {
     FlowFieldBinary<Lattice> model1;
     Binary<Lattice> model2;
 
-    model2.getPreProcessor<ChemicalPotentialCalculatorBinary>().setA(0.001);
-    model2.getPreProcessor<ChemicalPotentialCalculatorBinary>().setKappa(0.001);
+    model2.template getProcessor<ChemicalPotentialCalculatorBinary>().setA(0.001);
+    model2.template getProcessor<ChemicalPotentialCalculatorBinary>().setKappa(0.001);
 
-    OrderParameter<>::set<Lattice>(initFluid);
-
-    Velocity<>::set<Lattice,2,0>([](const int k){ return 0.001; });
-    Velocity<>::set<Lattice,2,1>([](const int k){ return 0.001; });
+    // Initialise the fluid
+    OrderParameter<>::template set<Lattice>(initFluid);
+    Velocity<>::template set<Lattice,2,0>([](const int k){ return 0.001; });
+    Velocity<>::template set<Lattice,2,1>([](const int k){ return 0.001; });
 
     // Create save handler
     SaveHandler<Lattice> saver("data/");
@@ -51,9 +47,9 @@ int main(int argc, char **argv) {
     // Main loop
     for (int timestep=0; timestep<=timesteps; timestep++) {
         if (timestep%saveInterval==0) {
-          saver.saveParameter<Density<>>(timestep);
-          saver.saveParameter<OrderParameter<>>(timestep);
-          saver.saveParameter<Velocity<>,Lattice::NDIM>(timestep);
+          saver.template saveParameter<Density<>>(timestep);
+          saver.template saveParameter<OrderParameter<>>(timestep);
+          saver.template saveParameter<Velocity<>,Lattice::NDIM>(timestep);
         }
         lbm.evolve();
     }

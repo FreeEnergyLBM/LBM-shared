@@ -7,7 +7,7 @@
 class Dirichlet : public BoundaryBase {
     public:
 
-        Dirichlet() : BoundaryBase(4) {}
+        Dirichlet() { this->setNodeID(4, true); } // TMP: Default NodeID warning
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);
@@ -55,7 +55,7 @@ inline void Dirichlet::communicate(TDistributionType& distribution) {
 class DirichletSecondOrder : public BoundaryBase {
     public:
 
-        Dirichlet() { this->setInterfaceID(4); }
+        Dirichlet() { this->setNodeID(4, true); } // TMP: Default NodeID warning
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);

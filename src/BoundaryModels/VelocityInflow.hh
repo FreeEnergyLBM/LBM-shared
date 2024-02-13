@@ -7,7 +7,7 @@
 class VelocityInflow : public BoundaryBase {
     public:
 
-        VelocityInflow() : BoundaryBase(3) {}
+        VelocityInflow() { this->setNodeID(3, true); } // TMP: Default NodeID warning
 
         template<class TTraits, class TDistributionType>
         inline void compute(TDistributionType& mDistribution, int k);

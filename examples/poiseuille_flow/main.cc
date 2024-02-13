@@ -34,8 +34,9 @@ int main(int argc, char **argv){
     // Define the magnitude of the body force
     model.getForce<BodyForce<>>().setMagnitudeX(force);
 
-    // Define the solid using the function above
+    // Define the solid boundaries
     Geometry<Lattice>::initialiseBoundaries(initSolid);
+    model.getBoundary<BounceBack>().setNodeID(1);
 
     // Set up the handler object for saving data
     SaveHandler<Lattice> saver("data/");

@@ -63,8 +63,12 @@ int main(int argc, char **argv){
     double wettingPrefactor = -cos(contactAngle*M_PI/180.0)*sqrt(2*binaryA/binaryKappa);
     binary.getProcessor<OrderParameterGradients>().setWettingPrefactor(wettingPrefactor);
 
-    // Initialise
+    // Boundaries
     Geometry<Lattice>::initialiseBoundaries(initSolid);
+    binary.getBoundary<BounceBack>().setNodeID(1);
+    binary.getProcessor<NoFluxSolid<OrderParameter<>>>().setNodeID(1);
+
+    // Initialise
     OrderParameter<>::set<Lattice>(initFluid);
 
     SaveHandler<Lattice> saver("data/");

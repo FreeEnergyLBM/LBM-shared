@@ -197,14 +197,14 @@ int main(int argc, char **argv){
     using dbtype = InterpolatedDirichlet;
 
     //humidity.getBoundary<InterpolatedDirichlet,0>().setInterfaceDistanceFunction(distancefunc);
-    //humidity.getBoundary<dbtype,0>().setInterfaceID(5);
+    //humidity.getBoundary<dbtype,0>().setNodeID(5);
     //humidity.getBoundary<dbtype,0>().setInterfaceVal(0.8);
 
     humidity.getBoundary<InterpolatedDirichlet>().setInterfaceDistanceFunction(distancefunc);
-    humidity.getBoundary<dbtype>().setInterfaceID(5);
+    humidity.getBoundary<dbtype>().setNodeID(5);
     humidity.getBoundary<dbtype>().setInterfaceVal(Hsat);
 
-    humidity.getBoundary<Dirichlet>().setInterfaceID(4);
+    humidity.getBoundary<Dirichlet>().setNodeID(4);
     humidity.getBoundary<Dirichlet>().setInterfaceVal(0.0);
 
     humidity.setDiffusivity(0.008);

@@ -28,10 +28,11 @@ int main(int argc, char **argv) {
     // Set up the model
     using PoiseuilleTrait = DefaultTraitFlowField<Lattice> ::AddForce<BodyForce<>>;
     FlowField<Lattice,PoiseuilleTrait> model;
-    model.getForce<BodyForce<>>().setMagnitudeX(force);
+    model.template getForce<BodyForce<>>().setMagnitudeX(force);
 
     // Set the solid
     Geometry<Lattice>::initialiseBoundaries(initSolid);
+    model.template getBoundary<BounceBack>().setNodeID(1);
 
     // Create save handler
     SaveHandler<Lattice> saver("data/");
@@ -42,7 +43,7 @@ int main(int argc, char **argv) {
 
     // Main loop
     for (int timestep=0; timestep<=timesteps; timestep++) {
-        if (timestep%saveInterval==0) saver.saveParameter<Velocity<>,Lattice::NDIM>(timestep);
+        if (timestep%saveInterval==0) saver.template saveParameter<Velocity<>,Lattice::NDIM>(timestep);
         lbm.evolve();
     }
 
