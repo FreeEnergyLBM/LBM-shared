@@ -451,7 +451,11 @@ void SaveHandler<TLattice>::saveParameter(int timestep, int instance) {
 
     // Open and write file
     char filename[512];
-    sprintf(filename, "%s/%s_t%d.mat", mDataDir.c_str(), TParameter::mName, timestep);
+    if (instance == -1) {
+        sprintf(filename, "%s/%s_t%d.mat", mDataDir.c_str(), TParameter::mName, timestep);
+    } else {
+        sprintf(filename, "%s/%s%d_t%d.mat", mDataDir.c_str(), TParameter::mName, instance, timestep);
+    }
     #ifdef MPIPARALLEL
         MPI_File file;
         MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
