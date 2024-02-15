@@ -26,6 +26,7 @@ class SaveHandler {
 
         void saveBoundaries(int timestep);
 
+        template<class TParameter, int TNumDir=1> void saveParameter(std::string filename, int instance=-1);
         template<class TParameter, int TNumDir=1> void saveParameter(int timestep, int instance=-1);
         template<class... TParameter> void saveParameter(int timestep, TParameter&... params);
 
@@ -151,6 +152,7 @@ void readWriteArray(const char rw, MPI_File file, std::vector<T>& data, int nDim
 template<class TLattice, typename T>
 void readWriteArray(const char rw, std::fstream& file, std::vector<T>& data, int nDim=1, int nInst=1, int instance=-1) {
     int dInst = (instance==-1) ? 1 : nInst;
+    instance = (instance==-1) ? 0 : instance;
     for (int k=0; k<TLattice::N; k++) {
         for (int iInst=instance; iInst<nInst; iInst+=dInst) {
             for (int iDim=0; iDim<nDim; iDim++) {
@@ -444,23 +446,17 @@ void SaveHandler<TLattice>::saveBoundaries(int timestep){
 
 template<class TLattice>
 template<class TParameter, int TNumDir>
-void SaveHandler<TLattice>::saveParameter(int timestep, int instance) {
+void SaveHandler<TLattice>::saveParameter(std::string filename, int instance) {
     // Setup array for saving
     std::vector<typename TParameter::ParamType>& param = TParameter::template get<TLattice,TNumDir>();
     if (mMaskSolid) applyMask<TLattice>(param, TNumDir, mMaskValue);
 
     // Open and write file
-    char filename[512];
-    if (instance == -1) {
-        sprintf(filename, "%s/%s_t%d.mat", mDataDir.c_str(), TParameter::mName, timestep);
-    } else {
-        sprintf(filename, "%s/%s%d_t%d.mat", mDataDir.c_str(), TParameter::mName, instance, timestep);
-    }
     #ifdef MPIPARALLEL
         MPI_File file;
-        MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
+        MPI_File_open(MPI_COMM_WORLD, filename.c_str(), MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
     #else
-        std::fstream file(filename);
+        std::fstream file(filename.c_str(), std::fstream::out);
     #endif
 
     readWriteArray<TLattice>('w', file, param, TNumDir, TParameter::instances, instance);
@@ -472,6 +468,17 @@ void SaveHandler<TLattice>::saveParameter(int timestep, int instance) {
     #endif
 }
 
+template<class TLattice>
+template<class TParameter, int TNumDir>
+void SaveHandler<TLattice>::saveParameter(int timestep, int instance) {
+    char filename[512];
+    if (instance == -1) {
+        sprintf(filename, "%s/%s_t%d.mat", mDataDir.c_str(), TParameter::mName, timestep);
+    } else {
+        sprintf(filename, "%s/%s%d_t%d.mat", mDataDir.c_str(), TParameter::mName, instance, timestep);
+    }
+    saveParameter<TParameter,TNumDir>(filename, instance);
+}
 
 template<class TLattice>
 template<class... TParameter>
@@ -495,7 +502,6 @@ void SaveHandler<TLattice>::maskSolid(double value) {
 
 
 //==== Loading ====//
-
 template<class TLattice>
 template<class TParameter, int TNumDir>
 void SaveHandler<TLattice>::loadParameter(std::string filename, std::string filetype, int instance) {
@@ -558,11 +564,12 @@ void SaveHandler<TLattice>::loadParameter(std::string filename, std::string file
 template<class TLattice>
 template<class TParameter, int TNumDir>
 void SaveHandler<TLattice>::loadParameter(int timestep, std::string filetype, int instance) {
+    std::string extension = (filetype=="bin") ? "mat" : filetype;
     char filename[512];
-    if (filetype == "bin") {
-        sprintf(filename, "%s/%s_t%i.mat", mDataDir.c_str(), TParameter::mName, timestep);
-    } else if (filetype == "txt") {
-        sprintf(filename, "%s/%s_t%i.txt", mDataDir.c_str(), TParameter::mName, timestep);
+    if (instance==-1) {
+        sprintf(filename, "%s/%s_t%i.%s", mDataDir.c_str(), TParameter::mName, timestep, extension.c_str());
+    } else {
+        sprintf(filename, "%s/%s%d_t%i.%s", mDataDir.c_str(), TParameter::mName, instance, timestep, extension.c_str());
     }
     loadParameter<TParameter,TNumDir>(filename, filetype, instance);
 }
