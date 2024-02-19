@@ -18,7 +18,7 @@ class ZouHe : public BoundaryBase {
         // Used to set a non-perpendicular velocity for constant density boundaries
         void setAngledVelocity(std::vector<double> velocityDirection);
 
-        enum BoundaryTypes { DENSITY=0, VELOCITY=1 };
+        enum BoundaryTypes { DENSITY=0, VELOCITY=1, PRESSURE=2 };
         int boundaryType;
 
     private:
@@ -45,6 +45,12 @@ class ZouHeVelocity : public ZouHe {
 };
 
 
+class ZouHePressure : public ZouHe {
+    public:
+        ZouHePressure() { boundaryType = PRESSURE; };
+};
+
+
 template<class TLattice>
 inline void getNormal(int k, int& normalDim, int& normalDir) {
     auto normalVec = BoundaryLabels<TLattice::NDIM>::template get<TLattice>(k).NormalDirection;
@@ -55,15 +61,26 @@ inline void getNormal(int k, int& normalDim, int& normalDir) {
 
 template<class TLattice>
 inline void ZouHe::initialiseBoundaryValue(int k) {
-    if (boundaryType == DENSITY) {
-        #pragma omp critical
-        mBoundaryValues.insert({k, Density<>::template get<TLattice>(k)});
-    } else {
-        int normalDim, normalDir;
-        getNormal<TLattice>(k, normalDim, normalDir);
-        double velOut = normalDir * Velocity<>::template get<TLattice,TLattice::NDIM>(k, normalDim);
-        #pragma omp critical
-        mBoundaryValues.insert({k, velOut});
+    switch (boundaryType) {
+        case DENSITY:
+            #pragma omp critical
+            mBoundaryValues.insert({k, Density<>::template get<TLattice>(k)});
+            break;
+        case PRESSURE:
+            #pragma omp critical
+            mBoundaryValues.insert({k, Pressure<>::template get<TLattice>(k)});
+            break;
+        case VELOCITY:
+        {
+            int normalDim, normalDir;
+            getNormal<TLattice>(k, normalDim, normalDir);
+            double velOut = normalDir * Velocity<>::template get<TLattice,TLattice::NDIM>(k, normalDim);
+            #pragma omp critical
+            mBoundaryValues.insert({k, velOut});
+            break;
+        }
+        default:
+            throw std::invalid_argument("Invalid boundary type");
     }
 }
 
@@ -96,17 +113,27 @@ inline void ZouHe::compute(TDistributionType& distribution, int k) {
         }
     }
 
-    // Compute the unknown velocity or density
+    // Compute the unknown velocity or density / pressure
     double *density = Density<>::template getAddress<Lattice>(k);
+    double *pressure = Pressure<>::template getAddress<Lattice>(k);
     double *velocity = Velocity<>::template getAddress<Lattice,Lattice::NDIM>(k, normalDim);
-    if (boundaryType == DENSITY) {
-        *density = mBoundaryValues[k];
-        *velocity = normalDir * (1 - (distNeutral + 2*distOut) / *density);
-        if (mUseAngledVelocity) angleVelocity<Lattice>(k, normalDim);
-    } else {
-        double velOut = mBoundaryValues[k];
-        *velocity = normalDir * velOut;
-        *density = (distNeutral + 2*distOut) / (1 - velOut);
+    switch (boundaryType) {
+        case DENSITY:
+            *density = mBoundaryValues[k];
+            *velocity = normalDir * (1 - (distNeutral + 2*distOut) / *density);
+            if (mUseAngledVelocity) angleVelocity<Lattice>(k, normalDim);
+            break;
+        case PRESSURE:
+            *pressure = mBoundaryValues[k];
+            *velocity = normalDir * (*pressure - (distNeutral + 2*distOut) / (*density*TTraits::Stencil::Cs2));
+            if (mUseAngledVelocity) angleVelocity<Lattice>(k, normalDim);
+            break;
+        case VELOCITY: // TODO: Velocity boundary for pressure model
+            *velocity = normalDir * mBoundaryValues[k];
+            *density = (distNeutral + 2*distOut) / (1 - mBoundaryValues[k]);
+            break;
+        default:
+            throw std::invalid_argument("Invalid boundary type");
     }
 
     // Compute the unknown distribution functions
@@ -116,8 +143,6 @@ inline void ZouHe::compute(TDistributionType& distribution, int k) {
         double distrEqOpp = model->computeEquilibrium(k, iQOpp);
         distrK[iQ] = distrK[iQOpp] + (distrEq - distrEqOpp);
     }
-
-    // TODO: Pressure models
 }
 
 
