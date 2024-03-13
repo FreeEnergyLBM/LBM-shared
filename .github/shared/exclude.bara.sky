@@ -5,5 +5,8 @@ EXCLUDE_FILES = [
     "src/Forces/EvaporationSource.hh",
     "src/LBModels/Humidity.hh",
     "src/LBModels/BinaryLee.hh",
+    "src/LBModels/TernaryLee.hh",
+    "src/LBModels/NComponent.hh",
+    "src/LBModels/WellBalanced.hh",
     "tests/Placeholder",
 ]
