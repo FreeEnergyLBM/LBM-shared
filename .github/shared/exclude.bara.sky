@@ -1,0 +1,9 @@
+EXCLUDE_FILES = [
+    "src/AddOns/MassLossCalculator.hh",
+    "src/AddOns/HumidityBoundaryLabels.hh",
+    "src/AddOns/HumidityLiquidInterface.hh",
+    "src/Forces/EvaporationSource.hh",
+    "src/LBModels/Humidity.hh",
+    "src/LBModels/BinaryLee.hh",
+    "tests/Placeholder",
+]
