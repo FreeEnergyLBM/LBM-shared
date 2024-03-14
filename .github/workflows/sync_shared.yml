@@ -1,8 +1,8 @@
 name: Sync Shared Repo
 
 on:
-  push:
-    branches: [shared]
+  pull_request:
+    branches: [main]
 
 jobs:
   sync-shared:
