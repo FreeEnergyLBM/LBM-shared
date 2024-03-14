@@ -10,4 +10,5 @@ EXCLUDE_FILES = [
     "src/LBModels/NComponent.hh",
     "src/LBModels/WellBalanced.hh",
     "tests/Placeholder",
+    "examples/evaporation_simple",
 ]
