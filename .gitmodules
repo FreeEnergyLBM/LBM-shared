@@ -4,3 +4,9 @@
 [submodule "tests/gtest-mpi-listener"]
 	path = tests/unit/gtest-mpi-listener
 	url = https://github.com/LLNL/gtest-mpi-listener
+[submodule "tests/unit/googletest"]
+	path = tests/unit/googletest
+	url = https://github.com/google/googletest
+[submodule "tests/unit/gtest-mpi-listener"]
+	path = tests/unit/gtest-mpi-listener
+	url = https://github.com/LLNL/gtest-mpi-listener
