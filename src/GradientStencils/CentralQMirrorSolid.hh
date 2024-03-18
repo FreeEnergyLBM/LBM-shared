@@ -5,7 +5,7 @@
 struct CentralQMirrorSolid : GradientBase<AllDirections> {
 
     template<class TTraits, class TParameter>
-    static inline double compute(const int direction, const int k, int num = 0);
+    inline double compute(const int direction, const int k, int num = 0);
 
     template<class TObj>
     using GradientType = Gradient<TObj,TObj::instances>;
@@ -18,7 +18,7 @@ inline double CentralQMirrorSolid::compute(const int direction, const int k, int
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
-    if (Geometry<Lattice>::getBoundaryType(k) == 4) return 0;
+    //if (Geometry<Lattice>::getBoundaryType(k) == 4) return 0;
 
     using DataType = Data_Base<Lattice, Stencil>;
 
@@ -54,13 +54,13 @@ inline double CentralQMirrorSolid::compute(const int direction, const int k, int
 
     }
     */
-    if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + direction]) == 1)) {
+    if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + direction]))) {
 
         const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, direction)).NormalDirection)->second;
 
         double csolid = param[data.getNeighbor(data.getNeighbor(k, direction), normalq)*TParameter::instances + num];
 
-        if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]) == 1)) {
+        if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]))) {
             const int& normalqbackward = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, Stencil::Opposites[direction])).NormalDirection)->second;
             double csolidbackward = param[data.getNeighbor(data.getNeighbor(k, direction), normalqbackward)*TParameter::instances + num];
             return 0.5 * (csolid - csolidbackward);
@@ -68,7 +68,7 @@ inline double CentralQMirrorSolid::compute(const int direction, const int k, int
         return 0.5 * (csolid - param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]*TParameter::instances + num]);
 
     }
-    else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]) == 1)) {
+    else if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]))) {
 
         const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, Stencil::Opposites[direction])).NormalDirection)->second;
 

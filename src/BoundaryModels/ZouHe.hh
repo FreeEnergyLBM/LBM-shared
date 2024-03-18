@@ -125,7 +125,7 @@ inline void ZouHe::compute(TDistributionType& distribution, int k) {
             break;
         case PRESSURE:
             *pressure = mBoundaryValues[k];
-            *velocity = normalDir * (*pressure - (distNeutral + 2*distOut)) / (*density*TTraits::Stencil::Cs2);
+            *velocity = normalDir * (*pressure - (distNeutral + 2*distOut) / (*density*TTraits::Stencil::Cs2));
             if (mUseAngledVelocity) angleVelocity<Lattice>(k, normalDim);
             break;
         case VELOCITY: // TODO: Velocity boundary for pressure model

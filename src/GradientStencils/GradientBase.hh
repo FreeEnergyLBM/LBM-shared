@@ -12,6 +12,29 @@ struct GradientBase{
         else return TStencil::D; 
     } 
     
+    template<class TLattice>
+    inline bool isBoundary(int k) {
+        if (Geometry<TLattice>::getBoundaryType(k) == -1) return true;
+        for (int i : mBoundaryID){
+            // TMP: Default BoundaryID warning
+            // if(Geometry<TLattice>::getBoundaryType(k) == i) return true;
+            if(Geometry<TLattice>::getBoundaryType(k) == i) {
+                if (preset_warning) {
+                    #pragma omp critical
+                    print("\033[31;1mDEPRECATION WARNING\033[0m: Using default BoundaryID (",i,") for a boundary. Please eplicitly set BoundaryIDs for all boundaries in use.");
+                    preset_warning = false;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    inline void setBoundaryID(int id, bool preset=false) {mBoundaryID={id}; preset_warning=preset;};
+    inline void setBoundaryID(const std::vector<int>& id, bool preset=false) {mBoundaryID=id; preset_warning=preset;};
+
+    std::vector<int> mBoundaryID={1};
+    bool preset_warning = false; 
 };
 
 template<class TDirections=Cartesian>

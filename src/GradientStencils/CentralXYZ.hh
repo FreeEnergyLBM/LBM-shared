@@ -5,7 +5,7 @@
 struct CentralXYZ : GradientBase<Cartesian> {
 
     template<class TTraits, class TParameter>
-    static inline double compute(int direction, int k, int num = 0);
+    inline double compute(int direction, int k, int num = 0);
 
     template<class TObj>
     using GradientType = Gradient<TObj,TObj::instances>;

@@ -5,7 +5,7 @@
 struct CentralQ : GradientBase<AllDirections> {
 
     template<class TTraits, class TParameter>
-    static inline double compute(const int direction, const int k, int num = 0);
+    inline double compute(const int direction, const int k, int num = 0);
 
     template<class TObj>
     using GradientType = Gradient<TObj,TObj::instances>;

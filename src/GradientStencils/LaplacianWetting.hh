@@ -19,7 +19,7 @@ inline double LaplacianCentralWetting::compute(int direction, int k, int num){
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
-    if (Geometry<Lattice>::getBoundaryType(k) == 4) return 0;
+    //if (this->isBoundary<Lattice>(k) == 4) return 0;
 
     using DataType = Data_Base<Lattice, Stencil>;
 
@@ -29,7 +29,7 @@ inline double LaplacianCentralWetting::compute(int direction, int k, int num){
 
     for (int idx = 1; idx <Stencil::Q; idx++) {
 
-        if(Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))!=1) {
+        if(this->isBoundary<Lattice>(data.getNeighbor(k, idx))!=1) {
 
             laplaciansum +=  Stencil::Weights[idx] * 2 * (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num) - TParameter::template get<Lattice>(k, num));
 
@@ -49,7 +49,7 @@ inline double LaplacianCentralWetting::compute(int direction, int k, int num){
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
-    if (Geometry<Lattice>::getBoundaryType(k) == 4) return 0;
+    //if (this->isBoundary<Lattice>(k) == 4) return 0;
 
     using DataType = Data_Base<Lattice, Stencil>;
 
@@ -60,7 +60,7 @@ inline double LaplacianCentralWetting::compute(int direction, int k, int num){
     /*
     for (int idx = 1; idx <Stencil::Q; idx++) {
 
-        if(Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))!=1) {
+        if(this->isBoundary<Lattice>(data.getNeighbor(k, idx))!=1) {
 
             laplaciansum +=  Stencil::Weights[idx] * 2 * (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num) - TParameter::template get<Lattice>(k, num));
 
@@ -79,7 +79,7 @@ inline double LaplacianCentralWetting::compute(int direction, int k, int num){
     */
     for (int idx = 1; idx <Stencil::Q; idx++) {
 
-        if(Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))!=1) {
+        if(!this->isBoundary<Lattice>(data.getNeighbor(k, idx))) {
 
             laplaciansum +=  Stencil::Weights[idx] * 2 * (param[data.getNeighbor(k, idx)*TParameter::instances + num] - param[k*TParameter::instances + num]);
 

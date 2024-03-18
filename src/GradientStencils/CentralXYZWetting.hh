@@ -18,7 +18,7 @@ inline double CentralXYZWetting::compute(int direction, int k, int num){
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
-    if (Geometry<Lattice>::getBoundaryType(k) == 4) return 0;
+    //if (this->isBoundary<Lattice>(k) == 4) return 0;
 
     using DataType = Data_Base<Lattice, Stencil>;
 
@@ -28,7 +28,7 @@ inline double CentralXYZWetting::compute(int direction, int k, int num){
 
     for (int idx = 1; idx <Stencil::Q; idx++) {
         
-        if ((Geometry<Lattice>::getBoundaryType(data.getNeighbor(k,idx))==1)) {
+        if ((this->isBoundary<Lattice>(data.getNeighbor(k,idx))==1)) {
 
             double csolid = TParameter::template get<Lattice>(k, num);
 
@@ -55,7 +55,7 @@ inline double CentralXYZWetting::compute(int direction, int k, int num) {
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
-    if (Geometry<Lattice>::getBoundaryType(k) == 4) return 0;
+    //if (this->isBoundary<Lattice>(k) == 4) return 0;
 
     using DataType = Data_Base<Lattice, Stencil>;
 
@@ -65,7 +65,7 @@ inline double CentralXYZWetting::compute(int direction, int k, int num) {
 
     for (int idx = 1; idx <Stencil::Q; idx++) {
         
-        if ((Geometry<Lattice>::getBoundaryType(data.getNeighbor(k,idx))==1)) {
+        if ((this->isBoundary<Lattice>(data.getNeighbor(k,idx)))) {
             
                 const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, idx)).NormalDirection)->second;
 
