@@ -146,7 +146,7 @@ inline double ChemicalForceBinaryMu<TMethod, TGradientType>::computeChemicalForc
         //
     }
     
-    return sum;
+    return -sum;
 
 }
 

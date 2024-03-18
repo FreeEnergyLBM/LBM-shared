@@ -247,7 +247,7 @@ inline void FlowFieldPressure<TLattice, TTraits>::initialise() { //Initialise mo
         double* old_distribution = ModelBase<TLattice, TTraits>::mDistribution.getDistributionOldPointer(k);
         InverseTau<>::initialise<TLattice>(1.0,k);
         Pressure<>::initialise<TLattice>(1.0,k); //Set density to 1 initially (This will change)
-        Density<>::initialise<TLattice>(1/TTraits::Stencil::Cs2, k);
+        Density<>::initialise<TLattice>(1, k);
         Velocity<>::initialise<TLattice,TLattice::NDIM>(0.0,k,x);
         Velocity<>::initialise<TLattice,TLattice::NDIM>(0.0,k,y);
         if constexpr (TLattice::NDIM==3) Velocity<>::initialise<TLattice,TLattice::NDIM>(0.0,k,z);
