@@ -16,11 +16,13 @@ class SimpleMassLossCalculator : public AddOnBase {
         /// Set the constant evaporation rate per unit area
         inline void setEvaporationRate(double rate);
 
-        inline void setFluidPhase(int phase) {mFluidPhase=phase;}
+        inline void setLiquidID(int id) {mLiquidID=id;}
+        inline void setGasID(int id) {mGasID=id;}
 
     private:
         double mEvaporationRate = 1e-4;
-        int mFluidPhase=0;
+        int mLiquidID=0;
+        int mGasID=0;
 };
 
 
@@ -30,9 +32,17 @@ inline void SimpleMassLossCalculator::compute(int k){
 
     // Get the local gradient of the order parameter
     double gradOP = 0;
-    for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
-        gradOP += pow(GradientOrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k, mFluidPhase, xyz), 2);
+    if (mGasID<TTraits::NumberOfComponents-1){
+        for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
+            gradOP += fabs(GradientOrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k, mLiquidID, xyz)*GradientOrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k, mGasID, xyz));//pow(GradientOrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k, mFluidPhase, xyz), 2);
+        }
     }
+    else {
+        for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
+            gradOP += fabs(GradientOrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k, mLiquidID, xyz)*(GradientOrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k, 0, xyz)+GradientOrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k, 1, xyz)));//pow(GradientOrderParameter<TTraits::NumberOfComponents-1>::template get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k, mFluidPhase, xyz), 2);
+        }
+    }
+    
     gradOP = sqrt(gradOP);
 
     // Calculate the volumetric mass loss

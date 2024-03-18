@@ -110,6 +110,12 @@ class ChemicalPotentialCalculatorBinaryLee : public AddOnBase {
         template<class TTraits>
         inline void compute(int k);
 
+        template<class TTraits>
+        inline void communicate(){
+            using Lattice = typename TTraits::Lattice;
+            Lattice::communicate(ChemicalPotential<>::getInstance<Lattice>());
+        }
+
         inline void setA(double A);
 
         inline void setKappa(double kappa);
@@ -120,7 +126,7 @@ class ChemicalPotentialCalculatorBinaryLee : public AddOnBase {
 
         double mKappa;
 
-        double mOmega = 0;
+        double mOmega = 0.0001;
     
 };
 
@@ -136,6 +142,10 @@ inline void ChemicalPotentialCalculatorBinaryLee::compute(int k){
                                            + 4 * mA * pow(OrderParameter<>::get<Lattice>(k), 3)
                                            + 2 * mOmega * (OrderParameter<>::get<Lattice>(k) < 0) * OrderParameter<>::get<Lattice>(k)
                                            - mKappa * LaplacianOrderParameter<>::get<Lattice>(k);
+    //#pragma omp critical
+    //{
+    //std::cout<<k<<" "<<mKappa * LaplacianOrderParameter<>::get<Lattice>(k)<<" "<<ChemicalPotential<>::get<Lattice>(k)<<std::endl;
+    //}
     //std::cout<<ChemicalPotential<>::get<Lattice>(k)<<std::endl;
 }
 
@@ -169,13 +179,20 @@ class ChemicalPotentialCalculatorTernaryLee : public AddOnBase {
         inline void setOmega(double omega);
         inline void setLambda(double lambda);
         inline void setInterfaceWidth(double interfacewidth);
+        template<class TTraits>
+        inline void communicate(){
+
+            using Lattice = typename TTraits::Lattice;
+            Lattice::communicate(ChemicalPotential<3>::getInstance<Lattice>());
+
+        }
 
         std::array<double,3> mSigma={};
         std::array<double,3> mGamma={};
         double mGammaT = 0;
 
-        double mOmega = 0.0001;
-        double mLambda = 0.0000;
+        double mOmega = 0.0001;//1;
+        double mLambda = 0.00;//15*5;//1;
         double mInterfaceWidth = 4;
     
 };
@@ -184,7 +201,7 @@ template<class TTraits>
 inline void ChemicalPotentialCalculatorTernaryLee::compute(int k){
 
     using Lattice = typename TTraits::Lattice;
-
+    
     if (Geometry<Lattice>::isBulkSolid(k)) return;
 
     //std::cout<<ChemicalPotential<>::get<Lattice>(k)<<std::endl;
@@ -192,6 +209,7 @@ inline void ChemicalPotentialCalculatorTernaryLee::compute(int k){
     const double C2=OrderParameter<2>::get<Lattice>(k,1); 
     const double C3=1-C1-C2;
 
+    /*
     double dEd12 = -2 * C1 * C1 * C2 * mSigma[0] - C1 * C1 * C3 * mSigma[0] + 2 * C1 * C2 * C2 * mSigma[0] + 2 * C1 * C2 * C3 * mSigma[0] - 2 * C1 * C2 * C3 * mSigma[1] + 2 * C1 * C3 * C3 * mSigma[1] - C1 * C3 * C3 * mSigma[2] + C2 * C2 * C3 * mSigma[1] - C2 * C3 * C3 * mSigma[2] + 2 * mLambda * C3 * C3 * (C2 * C2 * C1 - C1 * C1 * C2)
             + (C1 < 0) * 2 * mOmega * C1 - (C2 < 0) * 2 * mOmega * C2;
 
@@ -200,15 +218,32 @@ inline void ChemicalPotentialCalculatorTernaryLee::compute(int k){
 
     double dEd23 = C1 * C1 * C2 * mSigma[0] + C1 * C1 * C3 * mSigma[0] - 2 * C1 * C1 * C3 * mSigma[1] - C1 * C2 * C2 * mSigma[1] + 2 * C1 * C2 * C3 * mSigma[1] - 2 * C1 * C2 * C3 * mSigma[2] + C1 * C3 * C3 * mSigma[2] - 2 * C2 * C2 * C3 * mSigma[2] + 2 * C2 * C3 * C3 * mSigma[2] + 2 * mLambda * C1 * C1 * (C3 * C3 * C2 - C2 * C2 * C3)
             + (C2 < 0) * 2 * mOmega * C2 - (C3 < 0) * 2 * mOmega * C3;
+    */
     
-    ChemicalPotential<3>::get<Lattice>(k,0)=4.0*mGammaT/mInterfaceWidth*(1/mGamma[1]*dEd12+1/mGamma[2]*dEd13)
-                -3.0/4.0*mInterfaceWidth*mGamma[0]*(LaplacianOrderParameter<2>::get<Lattice>(k,0));
-    
-    ChemicalPotential<3>::get<Lattice>(k,1)=4.0*mGammaT/mInterfaceWidth*(-1/mGamma[0]*dEd12+1/mGamma[2]*dEd23)
-                -3.0/4.0*mInterfaceWidth*mGamma[1]*(LaplacianOrderParameter<2>::get<Lattice>(k,1));
+    double dEd12 = mGamma[0] * C1 * (1 - 3 * C1 + 2 * C1 * C1) - mGamma[1] * C2 * (1 - 3 * C2 + 2 * C2 * C2) + 2 * mLambda * C3 * C3 * (C2 * C2 * C1 - C1 * C1 * C2)
+            + (C1 < 0) * 2 * mOmega * C1 - (C2 < 0) * 2 * mOmega * C2;
 
-    ChemicalPotential<3>::get<Lattice>(k,2)=4.0*mGammaT/mInterfaceWidth*(-1/mGamma[0]*dEd13-1/mGamma[1]*dEd23)
-                -3.0/4.0*mInterfaceWidth*mGamma[2]*(-LaplacianOrderParameter<2>::get<Lattice>(k,0)-LaplacianOrderParameter<2>::get<Lattice>(k,1));
+    double dEd13 = mGamma[0] * C1 * (1 - 3 * C1 + 2 * C1 * C1) - mGamma[2] * C3 * (1 - 3 * C3 + 2 * C3 * C3) + 2 * mLambda * C2 * C2 * (C3 * C3 * C1 - C1 * C1 * C3)
+            + (C1 < 0) * 2 * mOmega * C1 - (C3 < 0) * 2 * mOmega * C3;
+
+    double dEd23 = mGamma[1] * C2 * (1 - 3 * C2 + 2 * C2 * C2) - mGamma[2] * C3 * (1 - 3 * C3 + 2 * C3 * C3) + 2 * mLambda * C1 * C1 * (C3 * C3 * C2 - C2 * C2 * C3)
+            + (C2 < 0) * 2 * mOmega * C2 - (C3 < 0) * 2 * mOmega * C3;
+
+    ChemicalPotential<3>::get<Lattice>(k,0)=0.5*(4.0*mGammaT/mInterfaceWidth*(1/mGamma[1]*dEd12+1/mGamma[2]*dEd13)
+                -3.0/4.0*mInterfaceWidth*mGamma[0]*(LaplacianOrderParameter<2>::get<Lattice>(k,0)));
+    
+    //if (computeXGlobal<Lattice>(k)==161&&computeY(Lattice::LY,Lattice::LZ,k)==5&&computeZ(Lattice::LY,Lattice::LZ,k)==92) std::cout<<C1<<" "<<C2<<" "<<C3<<" "<<4.0*mGammaT/mInterfaceWidth*(1/mGamma[1]*dEd12+1/mGamma[2]*dEd13)<<" "<<3.0/4.0*mInterfaceWidth*mGamma[0]*(LaplacianOrderParameter<2>::get<Lattice>(k,0))<<std::endl;
+    
+    ChemicalPotential<3>::get<Lattice>(k,1)=0.5*(4.0*mGammaT/mInterfaceWidth*(-1/mGamma[0]*dEd12+1/mGamma[2]*dEd23)
+                -3.0/4.0*mInterfaceWidth*mGamma[1]*(LaplacianOrderParameter<2>::get<Lattice>(k,1)));
+
+    ChemicalPotential<3>::get<Lattice>(k,2)=0.5*(4.0*mGammaT/mInterfaceWidth*(-1/mGamma[0]*dEd13-1/mGamma[1]*dEd23)
+                -3.0/4.0*mInterfaceWidth*mGamma[2]*(-LaplacianOrderParameter<2>::get<Lattice>(k,0)-LaplacianOrderParameter<2>::get<Lattice>(k,1)));
+    
+    //#pragma omp critical
+    //{
+    //std::cout<<k<<" "<<3.0/4.0*mInterfaceWidth*mGamma[0]*LaplacianOrderParameter<2>::get<Lattice>(k,0)<<" "<<ChemicalPotential<3>::get<Lattice>(k,0)-ChemicalPotential<3>::get<Lattice>(k,2)<<std::endl;
+    //}
 
 }
 
@@ -223,7 +258,7 @@ inline void ChemicalPotentialCalculatorTernaryLee::setSurfaceTension(double sigm
     mGamma[2] = sigma13 + sigma23 - sigma12;
 
     mGammaT = 3.0 / (1.0 / mGamma[0] + 1.0 / mGamma[1] + 1.0 / mGamma[2]);
-
+    std::cout<<sigma12<<" "<<sigma13<<" "<<sigma23<<" "<<mGamma[0]<<" "<<mGamma[1]<<" "<<mGamma[2]<<" "<<mGammaT<<std::endl;
 }
 
 inline void ChemicalPotentialCalculatorTernaryLee::setOmega(double omega){
