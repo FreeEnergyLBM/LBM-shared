@@ -18,7 +18,7 @@ class ZouHe : public BoundaryBase {
         // Used to set a non-perpendicular velocity for constant density boundaries
         void setAngledVelocity(std::vector<double> velocityDirection);
 
-        enum BoundaryTypes { DENSITY=0, VELOCITY=1, PRESSURE=2 };
+        enum BoundaryTypes { DENSITY=0, VELOCITY=1, PRESSURE=2, PRESSUREEVAPORATION=3 };
         int boundaryType;
 
     private:
@@ -50,12 +50,17 @@ class ZouHePressure : public ZouHe {
         ZouHePressure() { boundaryType = PRESSURE; };
 };
 
+class ZouHePressureEvaporation : public ZouHe {
+    public:
+        ZouHePressureEvaporation() { boundaryType = PRESSUREEVAPORATION; };
+};
 
 template<class TLattice>
 inline void getNormal(int k, int& normalDim, int& normalDir) {
     auto normalVec = BoundaryLabels<TLattice::NDIM>::template get<TLattice>(k).NormalDirection;
-    normalDim = std::distance(begin(normalVec), std::find_if(begin(normalVec), end(normalVec), [](int ni) {return ni!=0;}));
-    normalDir = normalVec[normalDim];
+    normalDim = std::distance(begin(normalVec), std::find_if(begin(normalVec), end(normalVec), [](int8_t ni) {return (int)ni!=0;}));
+    //std::cout<<(int)normalVec[0]<<std::endl;
+    normalDir = (int)normalVec[normalDim];
 }
 
 
@@ -67,6 +72,10 @@ inline void ZouHe::initialiseBoundaryValue(int k) {
             mBoundaryValues.insert({k, Density<>::template get<TLattice>(k)});
             break;
         case PRESSURE:
+            #pragma omp critical
+            mBoundaryValues.insert({k, Pressure<>::template get<TLattice>(k)});
+            break;
+        case PRESSUREEVAPORATION:
             #pragma omp critical
             mBoundaryValues.insert({k, Pressure<>::template get<TLattice>(k)});
             break;
@@ -124,8 +133,15 @@ inline void ZouHe::compute(TDistributionType& distribution, int k) {
             if (mUseAngledVelocity) angleVelocity<Lattice>(k, normalDim);
             break;
         case PRESSURE:
+        
             *pressure = mBoundaryValues[k];
-            *velocity = normalDir * (*pressure - (distNeutral + 2*distOut) / (*density*TTraits::Stencil::Cs2));
+            *velocity = normalDir * (*pressure/(*density*TTraits::Stencil::Cs2) - (distNeutral + 2*distOut) / (*density*TTraits::Stencil::Cs2));
+            if (mUseAngledVelocity) angleVelocity<Lattice>(k, normalDim);
+            break;
+        case PRESSUREEVAPORATION:
+        
+            *pressure = mBoundaryValues[k];
+            *velocity = normalDir * (*pressure*(1 - TTraits::Stencil::Weights[0])/(*density*TTraits::Stencil::Cs2) - (distNeutral + 2*distOut-distrK[0]-TTraits::Stencil::Cs2*Density<>::get<Lattice>(k)*TTraits::Stencil::Weights[0]*(Velocity<>::get<Lattice,2>(k,0)*Velocity<>::get<Lattice,2>(k,0)+Velocity<>::get<Lattice,2>(k,1)*Velocity<>::get<Lattice,2>(k,1))/(2*TTraits::Stencil::Cs2)) / (*density*TTraits::Stencil::Cs2));
             if (mUseAngledVelocity) angleVelocity<Lattice>(k, normalDim);
             break;
         case VELOCITY: // TODO: Velocity boundary for pressure model
