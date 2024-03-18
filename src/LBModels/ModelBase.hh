@@ -608,7 +608,6 @@ inline void ModelBase<TLattice,TTraits>::computeProcessors() {
     std::apply([this](auto&... processor) {
 
         (runProcessors(processor), ...);
-        (communicateTuple(processor), ...);
                 
     }, mt_Processors);
 
@@ -729,6 +728,6 @@ inline void ModelBase<TLattice,TTraits>::runProcessors(TProcessorType& processor
                     }, processortuple);
 
         }
-
+        communicateTuple(processortuple);
     }
 }

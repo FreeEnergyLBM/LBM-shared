@@ -45,7 +45,33 @@ struct ForcingBase{
 
 };
 
+struct SimpleForcing : ForcingBase<Cartesian> {
 
+    std::vector<double> ma_Force;
+
+    using Prefactor = GuoPrefactor;
+    
+    template<class TTraits, class TForce>
+    inline void precompute(TForce& f, int k){
+        if (ma_Force.size()<TTraits::Lattice::NDIM) ma_Force.resize(TTraits::Lattice::NDIM,0);
+        ma_Force[0]+=f.template computeXYZ<TTraits>(0,k);
+        if constexpr (TTraits::Lattice::NDIM>=2) ma_Force[1]+=f.template computeXYZ<TTraits>(1,k);
+        if constexpr (TTraits::Lattice::NDIM==3) ma_Force[2]+=f.template computeXYZ<TTraits>(2,k);
+    }
+    
+    template<class TTraits>
+    inline double compute(int idx, int k) { //Guo forcing
+        
+        double prefactor = TTraits::Stencil::Weights[idx]; //Prefactor for Guo forcing
+
+        double ci_dot_force = (TTraits::Stencil::Ci_x[idx] * ma_Force[0]);
+        if constexpr (TTraits::Stencil::D>1) ci_dot_force += (TTraits::Stencil::Ci_y[idx] * ma_Force[1]);
+        if constexpr (TTraits::Stencil::D>2) ci_dot_force += (TTraits::Stencil::Ci_z[idx] * ma_Force[2]);
+
+        return prefactor*ci_dot_force/TTraits::Stencil::Cs2;
+
+    }
+};
 
 struct Guo : ForcingBase<Cartesian> {
 
@@ -153,6 +179,38 @@ struct AllenCahnSourceMethod : ForcingBase<Cartesian> {
         }
 
         return forceterm/(TTraits::Stencil::Cs2*TTraits::Lattice::DT*TTraits::Lattice::DT);
+
+    }
+};
+
+struct AdvectionDiffusionSourceMethod : ForcingBase<Cartesian> {
+
+    std::vector<double> ma_Source;
+    
+    using Prefactor = GuoPrefactor;
+
+    template<class TTraits, class TForce>
+    inline void precompute(TForce& f, int k){
+        if (ma_Source.size()<TTraits::Lattice::NDIM) ma_Source.resize(TTraits::Lattice::NDIM,0);
+        ma_Source[0]+=f.template computeXYZ<TTraits>(0,k);
+        if constexpr (TTraits::Lattice::NDIM>=2) ma_Source[1]+=f.template computeXYZ<TTraits>(1,k);
+        if constexpr (TTraits::Lattice::NDIM==3) ma_Source[2]+=f.template computeXYZ<TTraits>(2,k);
+    }
+    
+    template<class TTraits>
+    inline double compute(int idx, int k) { //Guo forcing
+        
+        double sourceterm = 0;
+        
+        double prefactor = TTraits::Stencil::Weights[idx]; //Prefactor for Guo forcing
+        
+        for (int xyz = 0; xyz < TTraits::Stencil::D; xyz++) {
+
+            sourceterm += (TTraits::Stencil::Ci_xyz(xyz)[idx]) * ma_Source[xyz]; //Force
+                                                                                                        //Calculation
+        }
+
+        return prefactor * (sourceterm/(TTraits::Stencil::Cs2));
 
     }
 };
@@ -373,7 +431,7 @@ struct HeGamma0 : ForcingBase<Cartesian> {
     }
 };
 
-
+/*
 struct LeeMuLocal : ForcingBase<AllDirections> {
 
     std::vector<double> ma_ForceQ;
@@ -389,7 +447,8 @@ struct LeeMuLocal : ForcingBase<AllDirections> {
     template<class TTraits, class TForce>
     inline void precompute(TForce& f, int q, int k){
 
-        ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
+        if (ma_ForceQ.size()<TTraits::Stencil::Q) ma_ForceQ.resize(TTraits::Stencil::Q,0);
+        ma_ForceQ[q] += f.template computeQ<TTraits>(q,k);
 
     }
     
@@ -438,5 +497,56 @@ struct LeeMuNonLocal : ForcingBase<AllDirections> {
 
         return prefactor*(ma_ForceQ[idx]);
 
+    }
+};
+*/
+
+
+struct LeeMuLocal : ForcingBase<AllDirections> {
+    std::vector<double> ma_ForceQ;
+    template<class TTraits, class TForce>
+    const inline void precompute(TForce& f, int k){
+
+        ma_ForceQ = {};
+        for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
+
+    }
+
+    template<class TTraits, class TForce>
+    inline void precompute(TForce& f, int q, int k){
+        ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
+    }
+    
+    template<class TTraits>
+    inline double compute(int idx, int k) { //Guo forcing
+        double prefactor = 0.5 * TTraits::Lattice::DT * CollisionBase<typename TTraits::Lattice,typename TTraits::Stencil>::computeGamma(&Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,0),idx); //Prefactor for Guo forcing
+        return prefactor*(ma_ForceQ[idx]);
+    }
+};
+struct LeeMuNonLocal : ForcingBase<AllDirections> {
+    std::vector<double> ma_ForceQ;
+    template<class TTraits, class TForce>
+    const inline void precompute(TForce& f, int k){
+
+        ma_ForceQ = {};
+        for (int q = 0; q < TTraits::Stencil::Q; q++) ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
+
+    }
+
+    template<class TTraits, class TForce>
+    const inline void precompute(TForce& f, int q, int k){
+
+        ma_ForceQ.push_back(f.template computeQ<TTraits>(q,k));
+
+    }
+
+    template<class TTraits>
+    const inline double compute(int idx, int k) { //Guo forcing
+        using data = Data_Base<typename TTraits::Lattice, typename TTraits::Stencil>;
+        double gamma;
+        if (Geometry<typename TTraits::Lattice>::getBoundaryType(data::getInstance().getNeighbors()[k * TTraits::Stencil::Q + idx]) != 0) gamma = CollisionBase<typename TTraits::Lattice,typename TTraits::Stencil>::computeGamma(&Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(k,0),TTraits::Stencil::Opposites[idx]);
+        else gamma = CollisionBase<typename TTraits::Lattice,typename TTraits::Stencil>::computeGamma(&Velocity<>::get<typename TTraits::Lattice,TTraits::Lattice::NDIM>(data::getInstance().getNeighbors()[k * TTraits::Stencil::Q+idx],0),idx);
+        const double prefactor = 0.5 * TTraits::Lattice::DT * gamma; //Prefactor for Guo forcing
+        return prefactor*(ma_ForceQ[idx]);
     }
 };

@@ -164,12 +164,12 @@ inline std::array<int8_t,TLattice::NDIM> Geometry<TLattice>::findNormal(int (*co
 
     std::array<int8_t,TLattice::NDIM> normal = {};
     
-    if (!apply(k,condition,fluidvals)) return normal;
+    //if (!apply(k,condition,fluidvals)) return normal;
 
     std::vector<int> sum(TLattice::NDIM,0);
 
     for (int idx = 0; idx < TStencil::Q; idx++){
-        
+
         if(!apply(neighbors[k*TStencil::Q+idx],condition,fluidvals)&&condition(k)!=condition(neighbors[k*TStencil::Q+idx])) {
             sum[0]+=TStencil::Ci_xyz(0)[idx];
             if constexpr (TLattice::NDIM>1) sum[1]+=TStencil::Ci_xyz(1)[idx];
