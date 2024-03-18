@@ -1,6 +1,7 @@
 #include "ChemicalPotentialCalculator.hh"
 #include "LinearWetting.hh"
 #include "CubicWetting.hh"
+#include "CorrectVelocity.hh"
 #include "Gradients.hh"
 #include "AddOnBase.hh"
 
