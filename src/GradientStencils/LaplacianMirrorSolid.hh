@@ -2,13 +2,10 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct LaplacianCentralMirrorSolid : GradientBase<One> { //FIX
+struct LaplacianCentralMirrorSolid : GradientBase<Laplacian,One> { //FIX
 
     template<class TTraits, class TParameter>
     inline double compute(int direction, int k, int num = 0);
-
-    template<class TObj>
-    using GradientType = Laplacian<TObj,TObj::instances>;
     
 };
 

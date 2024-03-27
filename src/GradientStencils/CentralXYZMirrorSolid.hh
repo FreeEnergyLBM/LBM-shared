@@ -2,13 +2,10 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct CentralXYZMirrorSolid : GradientBase<Cartesian> {
+struct CentralXYZMirrorSolid : GradientBase<Gradient,Cartesian> {
     
     template<class TTraits, class TParameter>
     inline double compute( int direction, int k, int num = 0);
-
-    template<class TObj>
-    using GradientType = Gradient<TObj,TObj::instances>;
     
 };
 

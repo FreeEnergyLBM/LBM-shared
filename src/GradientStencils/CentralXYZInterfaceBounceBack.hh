@@ -2,13 +2,10 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct CentralXYZInterfaceBounceBack : InterfaceGradient<Cartesian> {
+struct CentralXYZInterfaceBounceBack : GradientBase<Gradient,Cartesian> {
     
     template<class TTraits, class TParameter>
     inline double compute( int direction, int k, int num = 0);
-
-    template<class TObj>
-    using GradientType = Gradient<TObj,TObj::instances>;
 
     inline void setInterfaceId(int id){
 

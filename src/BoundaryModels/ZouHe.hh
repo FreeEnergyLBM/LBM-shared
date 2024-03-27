@@ -126,6 +126,7 @@ inline void ZouHe::compute(TDistributionType& distribution, int k) {
     double *density = Density<>::template getAddress<Lattice>(k);
     double *pressure = Pressure<>::template getAddress<Lattice>(k);
     double *velocity = Velocity<>::template getAddress<Lattice,Lattice::NDIM>(k, normalDim);
+    double dotvel = 0;
     switch (boundaryType) {
         case DENSITY:
             *density = mBoundaryValues[k];
@@ -141,7 +142,10 @@ inline void ZouHe::compute(TDistributionType& distribution, int k) {
         case PRESSUREEVAPORATION:
         
             *pressure = mBoundaryValues[k];
-            *velocity = normalDir * (*pressure*(1 - TTraits::Stencil::Weights[0])/(*density*TTraits::Stencil::Cs2) - (distNeutral + 2*distOut-distrK[0]-TTraits::Stencil::Cs2*Density<>::get<Lattice>(k)*TTraits::Stencil::Weights[0]*(Velocity<>::get<Lattice,2>(k,0)*Velocity<>::get<Lattice,2>(k,0)+Velocity<>::get<Lattice,2>(k,1)*Velocity<>::get<Lattice,2>(k,1))/(2*TTraits::Stencil::Cs2)) / (*density*TTraits::Stencil::Cs2));
+            for (int xyz=0; xyz<TTraits::Lattice::NDIM; xyz++) {
+                dotvel += Velocity<>::get<Lattice,TTraits::Lattice::NDIM>(k,xyz)*Velocity<>::get<Lattice,TTraits::Lattice::NDIM>(k,xyz);
+            }
+            *velocity = normalDir * (*pressure*(1 - TTraits::Stencil::Weights[0])/(*density*TTraits::Stencil::Cs2) - (distNeutral + 2*distOut-distrK[0]-TTraits::Stencil::Cs2*Density<>::get<Lattice>(k)*TTraits::Stencil::Weights[0]*(dotvel)/(2*TTraits::Stencil::Cs2)) / (*density*TTraits::Stencil::Cs2));
             if (mUseAngledVelocity) angleVelocity<Lattice>(k, normalDim);
             break;
         case VELOCITY: // TODO: Velocity boundary for pressure model

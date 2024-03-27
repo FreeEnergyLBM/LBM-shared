@@ -139,8 +139,10 @@ inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int)
  */
 template<class TLattice>
 inline bool Geometry<TLattice>::isBoundary(int k) {
-
-    return (BoundaryLabels<TLattice::NDIM>::template get<TLattice>(k).Id!=0);
+    for (int i : mFluidVals){
+        if(BoundaryLabels<TLattice::NDIM>::template get<TLattice>(k).Id == i) return false;
+    }
+    return true;
 
 }
 

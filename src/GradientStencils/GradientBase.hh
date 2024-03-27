@@ -1,8 +1,14 @@
 #pragma once
 #include "../Service.hh"
 
-template<class TDirections=Cartesian>
+template<template <class,int> class TGradientType, class TDirections=Cartesian>
 struct GradientBase{
+
+    template<class TTraits, class TParameter>
+    inline double compute(const int direction, const int k, int num = 0);
+
+    template<class TObj>
+    using GradientType = TGradientType<TObj,TObj::instances>;
 
     template<class TStencil>
     inline static constexpr int getNumberOfDirections(){
@@ -35,15 +41,6 @@ struct GradientBase{
 
     std::vector<int> mBoundaryID={1};
     bool preset_warning = false; 
-};
-
-template<class TDirections=Cartesian>
-struct InterfaceGradient : GradientBase<TDirections> {
-    
-};
-
-template<class TDirections=Cartesian>
-struct WettingGradient : GradientBase<TDirections> {
 
     inline void setPrefactor(double prefactor) {
 
@@ -52,5 +49,13 @@ struct WettingGradient : GradientBase<TDirections> {
     }
 
     double mPrefactor = 0;
+
+    inline void setInterfaceDistance(double (*distance)(int k, int idx)){
+
+    }
+
+    inline void setInterfaceVal(double value){
+
+    }
 
 };

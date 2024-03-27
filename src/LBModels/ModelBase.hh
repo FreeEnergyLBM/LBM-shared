@@ -100,6 +100,16 @@ class ModelBase : public Model {
 
         inline virtual void boundaries(); //Boundary calculation
 
+        inline bool isNan() {
+            bool isnan = false;
+            #pragma omp for schedule(guided)
+            for (auto i : distribution)
+            {
+                if (std::isnan(i)||std::isinf(i)) isnan = true;
+            }
+            return isnan;
+        }
+
         template<class TBoundaryType>
         inline void runBoundaries(TBoundaryType& boundary); //Boundary calculation
 

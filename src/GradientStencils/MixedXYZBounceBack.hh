@@ -2,13 +2,10 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct MixedXYZBounceBack : GradientBase<Cartesian> {
+struct MixedXYZBounceBack : GradientBase<GradientMixed,Cartesian> {
 
     template<class TTraits, class TParameter>
     inline double compute(const int direction, const int k, int num = 0);
-
-    template<class TObj>
-    using GradientType = GradientMixed<TObj,TObj::instances>;
     
 };
 

@@ -23,19 +23,19 @@ class Gradients : public AddOnBase {
 
         inline void setInterfaceDistance(double (*distance)(int k, int idx)){
 
-            if constexpr (is_base_of_template<InterfaceGradient, TGradientStencil>()) mGradientStencil.setInterfaceDistance(distance);
+            mGradientStencil.setInterfaceDistance(distance);
 
         }
 
         inline void setInterfaceVal(double value){
 
-            if constexpr (is_base_of_template<InterfaceGradient, TGradientStencil>()) mGradientStencil.setInterfaceVal(value);
+            mGradientStencil.setInterfaceVal(value);
 
         }
 
         inline void setWettingPrefactor(double value){
 
-            if constexpr (is_base_of_template<WettingGradient, TGradientStencil>()) mGradientStencil.setPrefactor(value);
+            mGradientStencil.setPrefactor(value);
 
         }
 

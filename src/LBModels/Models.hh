@@ -4,6 +4,6 @@
 
 
 
-//#include "AdvectionDiffusion.hh"
+#include "AdvectionDiffusion.hh"
 
 //#include "Temperature.hh"

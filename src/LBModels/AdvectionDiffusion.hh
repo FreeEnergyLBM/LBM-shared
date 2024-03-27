@@ -14,8 +14,10 @@
 //FlowField.hh: Contains the details of the LBM model to solve the Navier-Stokes and continuity equation. Each
 //Model is given a "TTraits" class that contains stencil, data, force and boundary information
 
+//Needs to be adapted for multicomponent zeroth moment vals
+
 template<class TLattice>
-using DefaultTraitAdvectionDiffusion = typename DefaultTrait<TLattice>;
+using DefaultTraitAdvectionDiffusion = DefaultTrait<TLattice>;
 
 template<class TZerothMoment, class TLattice, class TTraits = DefaultTraitAdvectionDiffusion<TLattice>>
 class AdvectionDiffusion : public CollisionBase<TLattice,typename TTraits::Stencil>, public ModelBase<TLattice, TTraits> { //Inherit from base class to avoid repetition of common
@@ -41,15 +43,15 @@ class AdvectionDiffusion : public CollisionBase<TLattice,typename TTraits::Stenc
         double mTau = 0.02/Stencil::Cs2+0.5*TLattice::DT; //TEMPORARY relaxation time
         double mInverseTau = 1.0 / mTau; //TEMPORARY inverse relaxation time
     
-        std::vector<double>& zerothmoment = TZerothMoment::get<TLattice>(); //Reference to vector of TDensities
+        std::vector<double>& zerothmoment = TZerothMoment::template get<TLattice>(); //Reference to vector of TDensities
         std::vector<double>& velocity = Velocity<>::get<TLattice,mNDIM>(); //Reference to vector of velocities
 
         enum{ x = 0, y = 1, z = 2 }; //Indices corresponding to x, y, z directions
         
 };
 
-template<class TLattice, class TTraits>
-inline void AdvectionDiffusion<TLattice, TTraits>::collide() { //Collision step
+template<class TZerothMoment, class TLattice, class TTraits>
+inline void AdvectionDiffusion<TZerothMoment, TLattice, TTraits>::collide() { //Collision step
 
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { //loop over k
@@ -74,8 +76,8 @@ inline void AdvectionDiffusion<TLattice, TTraits>::collide() { //Collision step
 
 }
 
-template<class TLattice, class TTraits>
-inline void AdvectionDiffusion<TLattice, TTraits>::initialise() { //Initialise model
+template<class TZerothMoment, class TLattice, class TTraits>
+inline void AdvectionDiffusion<TZerothMoment, TLattice, TTraits>::initialise() { //Initialise model
 
     this -> mData.generateNeighbors(); //Fill array of neighbor values (See Data.hh)
     TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this -> mt_Forces,mTau,mTau);
@@ -83,12 +85,12 @@ inline void AdvectionDiffusion<TLattice, TTraits>::initialise() { //Initialise m
     #pragma omp parallel for schedule(guided)
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { //loop over k
 
-        TZerothMoment<>::initialise<TLattice>(0.0 ,k); //Set density to 1 initially (This will change)
+        TZerothMoment::template initialise<TLattice>(0.0 ,k); //Set density to 1 initially (This will change)
 
     }
 
     this -> mData.communicate(BoundaryLabels<TLattice::NDIM>::template getInstance<TLattice>());
-    this -> mData.communicate(TZerothMoment::getInstance<TLattice>());
+    this -> mData.communicate(TZerothMoment::template getInstance<TLattice>());
 
     #pragma omp parallel for schedule(guided)
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { 
@@ -112,8 +114,8 @@ inline void AdvectionDiffusion<TLattice, TTraits>::initialise() { //Initialise m
 }
 
 
-template<class TLattice, class TTraits>
-inline void AdvectionDiffusion<TLattice, TTraits>::computeMomenta() { //Calculate Density<> and Velocity
+template<class TZerothMoment, class TLattice, class TTraits>
+inline void AdvectionDiffusion<TZerothMoment, TLattice, TTraits>::computeMomenta() { //Calculate Density<> and Velocity
 
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //Loop over k
@@ -132,8 +134,8 @@ inline void AdvectionDiffusion<TLattice, TTraits>::computeMomenta() { //Calculat
 }
 
 
-template<class TLattice, class TTraits>
-inline double AdvectionDiffusion<TLattice, TTraits>::computeEquilibrium(int k, int idx) {
+template<class TZerothMoment, class TLattice, class TTraits>
+inline double AdvectionDiffusion<TZerothMoment, TLattice, TTraits>::computeEquilibrium(int k, int idx) {
 
     double gamma = CollisionBase<TLattice,Stencil>::computeGamma(&velocity[k*mNDIM], idx);
     return zerothmoment[k] * gamma;
@@ -141,16 +143,16 @@ inline double AdvectionDiffusion<TLattice, TTraits>::computeEquilibrium(int k, i
 }
 
 
-template<class TZerothMoment,class TZerothMomentOld,template TMethod = AdvectionDiffusionSourceMethod>
+template<class TZerothMoment,class TZerothMomentOld,class TMethod = AdvectionDiffusionSourceMethod>
 class AdvectionDiffusionCorrection : public ForceBase<TMethod> {
 
     public:
         template<class TTraits>
         inline double computeXYZ(int xyz, int k) const {
 
-            return (TZerothMoment<>::get<typename TTraits::Lattice>(k) 
+            return (TZerothMoment::template get<typename TTraits::Lattice>(k) 
                     * Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k,xyz)
-                    - TZerothMomentOld<>::get<typename TTraits::Lattice>(k) 
+                    - TZerothMomentOld::template get<typename TTraits::Lattice>(k) 
                     * VelocityOld<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k,xyz)) / TTraits::Lattice::DT;
 
         }
@@ -162,7 +164,7 @@ template<class TLattice,class TZerothMoment,class TZerothMomentOld>
 using DefaultTraitAdvectionDiffusionCorrected = typename DefaultTrait<TLattice>:: template SetForce<AdvectionDiffusionCorrection<TZerothMoment,TZerothMomentOld>>;
                                                              //:: template SetPostProcessor<Gradients<Humidity<>, CentralXYZBounceBack>>;
 
-template<class TZerothMoment, class TZerothMomentOld, class TLattice, class TTraits = DefaultTraitAdvectionDiffusionCorrected<TLattice>>
+template<class TZerothMoment, class TZerothMomentOld, class TLattice, class TTraits = DefaultTraitAdvectionDiffusionCorrected<TLattice,TZerothMoment,TZerothMomentOld>>
 class AdvectionDiffusionCorrected : public CollisionBase<TLattice,typename TTraits::Stencil>, public ModelBase<TLattice, TTraits> { //Inherit from base class to avoid repetition of common
                                                          //calculations
                                                          
@@ -186,8 +188,8 @@ class AdvectionDiffusionCorrected : public CollisionBase<TLattice,typename TTrai
         double mTau = 0.02/Stencil::Cs2+0.5*TLattice::DT; //TEMPORARY relaxation time
         double mInverseTau = 1.0 / mTau; //TEMPORARY inverse relaxation time
     
-        std::vector<double>& zerothmoment = TZerothMoment::get<TLattice>(); //Reference to vector of TDensities
-        std::vector<double>& zerothmomentold = TZerothMomentOld::get<TLattice>(); //Reference to vector of TDensities
+        std::vector<double>& zerothmoment = TZerothMoment::template get<TLattice>(); //Reference to vector of TDensities
+        std::vector<double>& zerothmomentold = TZerothMomentOld::template get<TLattice>(); //Reference to vector of TDensities
         std::vector<double>& velocity = Velocity<>::get<TLattice,mNDIM>(); //Reference to vector of velocities
 
         enum{ x = 0, y = 1, z = 2 }; //Indices corresponding to x, y, z directions
@@ -229,14 +231,14 @@ inline void AdvectionDiffusionCorrected<TZerothMoment, TZerothMomentOld, TLattic
     #pragma omp parallel for schedule(guided)
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { //loop over k
 
-        TZerothMoment<>::initialise<TLattice>(0.0 ,k); //Set density to 1 initially (This will change)
-        TZerothMomentOld<>::initialise<TLattice>(TZerothMoment<>::get<TLattice>(k) ,k); //Set density to 1 initially (This will change)
+        TZerothMoment::template initialise<TLattice>(0.0 ,k); //Set density to 1 initially (This will change)
+        TZerothMomentOld::template initialise<TLattice>(TZerothMoment::template get<TLattice>(k) ,k); //Set density to 1 initially (This will change)
 
     }
 
     this -> mData.communicate(BoundaryLabels<TLattice::NDIM>::template getInstance<TLattice>());
-    this -> mData.communicate(TZerothMoment<>::getInstance<TLattice>());
-    this -> mData.communicate(TZerothMomentOld<>::getInstance<TLattice>());
+    this -> mData.communicate(TZerothMoment::template getInstance<TLattice>());
+    this -> mData.communicate(TZerothMomentOld::template getInstance<TLattice>());
 
     #pragma omp parallel for schedule(guided)
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) { 
@@ -263,7 +265,7 @@ inline void AdvectionDiffusionCorrected<TZerothMoment, TZerothMomentOld, TLattic
 template<class TZerothMoment, class TZerothMomentOld, class TLattice, class TTraits>
 inline void AdvectionDiffusionCorrected<TZerothMoment, TZerothMomentOld, TLattice, TTraits>::computeMomenta() { //Calculate Density<> and Velocity
 
-    TZerothMoment<>::get<typename TTraits::Lattice>().swap(TZerothMomentOld<>::get<typename TTraits::Lattice>());
+    TZerothMoment::template get<typename TTraits::Lattice>().swap(TZerothMomentOld::template get<typename TTraits::Lattice>());
 
     #pragma omp for schedule(guided)
     for (int k = TLattice::HaloSize; k <TLattice::N - TLattice::HaloSize; k++) { //Loop over k
@@ -279,8 +281,8 @@ inline void AdvectionDiffusionCorrected<TZerothMoment, TZerothMomentOld, TLattic
 
     }
 
-    this -> mData.communicate(TZerothMomentOld<>::getInstance<TLattice>());
-    this -> mData.communicate(TZerothMoment<>::getInstance<TLattice>());
+    this -> mData.communicate(TZerothMomentOld::template getInstance<TLattice>());
+    this -> mData.communicate(TZerothMoment::template getInstance<TLattice>());
 
 }
 

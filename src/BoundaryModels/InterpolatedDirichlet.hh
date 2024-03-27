@@ -48,7 +48,14 @@ inline void InterpolatedDirichlet::compute(TDistributionType& distribution, int 
 
         double dist = evalDistanceFunction(distribution.streamIndex(k, idx),distribution.getOpposite(idx));
         
-        if (dist <= 0.5) distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -2 * (dist) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) + (2 * dist - 1) * distribution.getPostCollisionDistribution(distribution.streamIndex(distribution.streamIndex(k, idx), idx),distribution.getOpposite(idx)) + 2 * TTraits::Stencil::Weights[idx] * mInterfaceVal;
+        if (dist <= 0.5) {
+            if (Geometry<Lattice>::isBoundary(distribution.streamIndex(distribution.streamIndex(k, idx), idx))){
+                distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) + 2*TTraits::Stencil::Weights[idx]*mInterfaceVal;
+            }
+            else {
+                distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = -2 * (dist) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) + (2 * dist - 1) * distribution.getPostCollisionDistribution(distribution.streamIndex(distribution.streamIndex(k, idx), idx),distribution.getOpposite(idx)) + 2 * TTraits::Stencil::Weights[idx] * mInterfaceVal;
+            }
+        }
         else distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] = - 1.0 / (2.0*dist) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),distribution.getOpposite(idx)) + (1-1.0 / (2.0 * dist)) * distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx),idx) + 2 * (1.0/(2.0 * dist)) * TTraits::Stencil::Weights[idx] * mInterfaceVal;
 
 }    
