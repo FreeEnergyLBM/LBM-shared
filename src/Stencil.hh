@@ -6,17 +6,20 @@
 #include <map>
 #include <unordered_map>
 
-//Stencil.hh: This file specifies the stencils that can be used. This determines the discretisation of the model.
-//The "D" refers to the number of cartesian dimensions in the stencil, so "D2" would be a 2D simulation. The "Q"
-//refers to the number of discrete velocity directions, including the 0 direction. Convention for the directions
-//of these discrete velocities is standard in LBM.
-//
-//Each class contains the information for "D", "Q", the speed of sound squared in the lattice "Cs2", the
-//velocity vector arrays "Ci_x[Q]"..., a function to return the x, y or z vector depending on the direction
-//passed to it "Ci_xyz(d)", an array of the opposing velocity vector, an array of lattice weights used in the
-//LBM collision step "Weights[Q]", the modulus of velocity vectors depending on the direciton "CModulus", a
-//currently not implemented array of MRT moments "Moments[Q]" and a function to calculate MRT relaxation times
-//"MRTWeights()".
+/**
+ * \file Stencil.hh
+ * \brief  This file specifies the stencils that can be used. This determines the velocity discretisation of the model.
+ * The "D" refers to the number of cartesian dimensions in the stencil, so "D2" would be a 2D simulation. The "Q"
+ * refers to the number of discrete velocity directions, including the 0 direction. Convention for the directions
+ * of these discrete velocities is standard in LBM.
+ *
+ * Each class contains the information for "D", "Q", the speed of sound squared in the lattice "Cs2", the
+ * velocity vector arrays "Ci_x[Q]"..., a function to return the x, y or z vector depending on the direction
+ * passed to it "Ci_xyz(d)", an array of the opposing velocity vector, an array of lattice weights used in the
+ * LBM collision step "Weights[Q]", the modulus of velocity vectors depending on the direciton "CModulus", a
+ * currently not implemented array of MRT moments "Moments[Q]" and a function to calculate MRT relaxation times
+ * "MRTWeights()".
+ */
 
 //using boost::hash_combine
 template <class T>
@@ -44,17 +47,26 @@ namespace std
     };
 }
 
-
-
 struct Stencil3D{};
 
 struct StencilQ{};
 
 struct StencilBase {};
 
+/**
+ * \brief Class to set one MRT matrix row based on the given moment class.
+ * \tparam N Element of the MRT matrix row to start from. Also the velocity index.
+ * \tparam moment Class containing the moment information. Accepts N as a template paramter.
+ * This class will count down from N until 0, setting these elements of the matrix row.
+ */
 template<int N,template<int> class moment>
 struct MRTRowSetter{
     
+    /**
+     * \brief This function sets one element N of an mrt matrix row idx. It then calls itself for the next element.
+     * \param matrix Pointer to the first element of the MRT matrix row idx.
+     * \param idx Index of the moment/row to be set.
+     */
     static constexpr void setMRTRow(int* matrix,int idx){
         matrix[N]=moment<N>::ma_Moments[idx];
         MRTRowSetter<N-1,moment>::setMRTRow(matrix,idx);
@@ -62,18 +74,40 @@ struct MRTRowSetter{
 
 };
 
+
+/**
+ * \brief Class to set the first element in an  MRT matrix row based on the given moment class. Specialisation of MRTRowSetter.
+ * \tparam moment Class containing the moment information. Accepts N as a template paramter, although N is 0 in this case.
+ */
 template<template<int> class moment>
 struct MRTRowSetter<0,moment>{
     
+    /**
+     * \brief This function sets the first element of an mrt matrix row idx.
+     * \param matrix Pointer to the first element of the MRT matrix row idx.
+     * \param idx Index of the moment/row to be set.
+     * This class should be used to terminate the recursive setting of elements in the MRT matrix, counting from N to 0 in this class.
+     */
     static constexpr void setMRTRow(int* matrix,int idx){
         matrix[0]=moment<0>::ma_Moments[idx];
     }
 
 };
 
+/**
+ * \brief Class to set the MRT matrix for a given stencil.
+ * \tparam N Index of the current moment being set.
+ * \tparam Q Size of the matrix QxQ
+ * \tparam moment Class containing the moment information. Accepts the velocity index as a template paramter.
+ * This class will count down from N until 0, setting these rows of the MRT matrix.
+ */
 template<int N, int Q,template<int> class moment>
 struct MRTMatrixSetter{
     
+    /**
+     * \brief This function sets one row N of an mrt matrix. It then calls itself for the next row, decrimenting N.
+     * \param matrix Pointer to the first element of the MRT matrix
+     */
     static constexpr void setMRTMatrix(int* matrix){
         MRTRowSetter<Q-1,moment>::setMRTRow(&matrix[Q*N],N);
         MRTMatrixSetter<N-1,Q,moment>::setMRTMatrix(matrix);
@@ -81,15 +115,32 @@ struct MRTMatrixSetter{
 
 };
 
+
+/**
+ * \brief Class to set the first row of an matrix for a given stencil. Specialisation of MRTMatrix Setter.
+ * \tparam Q Size of the matrix QxQ.
+ * \tparam moment Class containing the moment information. Accepts the velocity index as a template paramter.
+ */
 template<int Q,template<int> class moment>
 struct MRTMatrixSetter<0,Q,moment>{
     
+    /**
+     * \brief This function sets the first row of an mrt matrix.
+     * \param matrix Pointer to the first element of the MRT matrix
+     * This is used to terminate the recursive MRTMatrixSetter function.
+     */
     static constexpr void setMRTMatrix(int* matrix){
         MRTRowSetter<Q-1,moment>::setMRTRow(&matrix[0],0);
     }
 
 };
 
+/**
+ * \brief This function computes and returns the MRT matrix for a stencil.
+ * \tparam Q The number of velociy directions in the stencil.
+ * \tparam moment Class containing the moment array. Accepts the velocity index as a template argument.
+ * \return The full MRT matrix for the stencil.
+ */
 template<int Q,template<int> class moment>
 static constexpr std::array<int,Q*Q> GenerateMRTMatrix(){
     std::array<int,Q*Q> matrix{};
@@ -97,20 +148,29 @@ static constexpr std::array<int,Q*Q> GenerateMRTMatrix(){
     return matrix;
 }
 
-struct D1Q3 : StencilBase { //Most commonly used 2D stencil
+/**
+ * \brief 1D velocity stencil class.
+ */
+struct D1Q3 : StencilBase {
     
-    static constexpr int D = 1; //Number of cartesian directions
-    static constexpr int Q = 3; //Number of velocity directions
-    static constexpr double Cs2 = 0.33333333333333; //Speed of sound squared
+    static constexpr int D = 1; //!<Number of cartesian directions.
+    static constexpr int Q = 3; //!<Number of velocity directions.
+    static constexpr double Cs2 = 1.0/3.0; //!<Speed of sound squared.
     
-    static constexpr int Ci_x[Q] = {0, 1, -1}; //Vectors of velocity directions
-    static constexpr int Ci_y[Q] = {0, 0, 0}; //There is no convecntion for the ordering of these
-    static constexpr int Ci_z[Q] = {0, 0, 0}; //0 array because there is no z direction
+    static constexpr int Ci_x[Q] = {0, 1, -1}; //!<X component vector of velocity directions.
+    static constexpr int Ci_y[Q] = {0, 0, 0}; //!<Y component vector of velocity directions. 0 for 1D stencil.
+    static constexpr int Ci_z[Q] = {0, 0, 0}; //!<Z component vector of velocity directions. 0 for 1D stencil.
 
-    static std::map<std::array<int8_t,D>,int> QMap;
+    static std::map<std::array<int8_t,D>,int> QMap; //!<Map of cartesian vector to velocity index.
 
     enum{x = 0, y = 1, z = 2};
-    inline static auto Ci_xyz(const int d) -> const int(&)[Q] { //Returns velocity direction vector depending on input d, this is probably slow
+
+    /**
+     * \brief Returns velocity direction vector depending on input d.
+     * \param d Cartesian direction (x=0, y=1, z=2).
+     * \return Vector of d component of velocity vectors.
+     */
+    inline static auto Ci_xyz(const int d) -> const int(&)[Q] {
 
         if (d == x) {
             return Ci_x;
@@ -121,13 +181,18 @@ struct D1Q3 : StencilBase { //Most commonly used 2D stencil
         return Ci_z;
 
     }
-    static constexpr int Opposites[Q] = {0, 2, 1}; //Opposite vector at a given index
+
+    static constexpr int Opposites[Q] = {0, 2, 1}; //!<Opposite vector at a given index.
     
-    static constexpr double Weights[Q] = {2.0 / 3.0, 1.0 / 6.0, 1.0 / 6.0}; //Lattice weights
+    static constexpr double Weights[Q] = {2.0 / 3.0, 1.0 / 6.0, 1.0 / 6.0}; //!<Lattice weights.
 
     template<int idx>
-    static constexpr int CModulus = Ci_x[idx] * Ci_x[idx]; //Returns the modulus of the velocity vector at a given index, used for the MRT weight calculation
+    static constexpr int CModulus = Ci_x[idx] * Ci_x[idx]; //!<Computes the modulus of the velocity vector at a given index, used for the MRT weight calculation.
     
+    /**
+     * \brief Class containing an array of the MRT matrix moments for a given idx.
+     * \tparam idx Velocity vector index.
+     */
     template<int idx>
     struct Moments{
         static constexpr int ma_Moments[Q]={1,
@@ -135,8 +200,12 @@ struct D1Q3 : StencilBase { //Most commonly used 2D stencil
                                         3 * (CModulus<idx>)-2};
     };
 
-    static constexpr std::array<int,Q*Q> MRTMatrix = GenerateMRTMatrix<Q,Moments>();
+    static constexpr std::array<int,Q*Q> MRTMatrix = GenerateMRTMatrix<Q,Moments>(); //!<MRT matrix array.
 
+    /**
+     * \brief Function that returns the diagonal entries of the MRT weight matrix for a given inverse relaxation time.
+     * \param invtau Inverse of the relaxation time.
+     */
     inline static std::vector<double> MRTWeights(const double& invtau){
         return {0,0,invtau};
     }
@@ -147,20 +216,29 @@ std::map<std::array<int8_t,D1Q3::D>,int> D1Q3::QMap = {{{0},0},
                                                       {{1},1},
                                                       {{-1},2}};
 
-struct D2Q5 : StencilBase { //Most commonly used 2D stencil
+/**
+ * \brief Simple 2D stencil with no diagonal velocity directions.
+ */
+struct D2Q5 : StencilBase {
     
-    static constexpr int D = 2; //Number of cartesian directions
-    static constexpr int Q = 5; //Number of velocity directions
-    static constexpr double Cs2 = 0.33333333333333; //Speed of sound squared
+    static constexpr int D = 2; //!<Number of cartesian directions.
+    static constexpr int Q = 5; //!<Number of velocity directions.
+    static constexpr double Cs2 = 1.0/3.0; //Speed of sound squared.
     
-    static constexpr int Ci_x[Q] = {0, 1, -1, 0, 0}; //Vectors of velocity directions
-    static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1}; //There is no convecntion for the ordering of these
-    static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0}; //0 array because there is no z direction
+    static constexpr int Ci_x[Q] = {0, 1, -1, 0, 0}; //!<X component vector of velocity directions.
+    static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1}; //!<Y component vector of velocity directions.
+    static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0}; //!<Z component vector of velocity directions. 0 for 2D stencil.
 
-    static std::map<std::array<int8_t,D>,int> QMap;
+    static std::map<std::array<int8_t,D>,int> QMap; //!<Map of cartesian vector to velocity index.
 
     enum{x = 0, y = 1, z = 2};
-    inline static auto Ci_xyz(const int d) -> const int(&)[Q] { //Returns velocity direction vector depending on input d, this is probably slow
+    
+    /**
+     * \brief Returns velocity direction vector depending on input d.
+     * \param d Cartesian direction (x=0, y=1, z=2).
+     * \return Vector of d component of velocity vectors.
+     */
+    inline static auto Ci_xyz(const int d) -> const int(&)[Q] {
 
         if (d == x) {
             return Ci_x;
@@ -171,13 +249,18 @@ struct D2Q5 : StencilBase { //Most commonly used 2D stencil
         return Ci_z;
 
     }
-    static constexpr int Opposites[Q] = {0, 2, 1, 4, 3}; //Opposite vector at a given index
+
+    static constexpr int Opposites[Q] = {0, 2, 1, 4, 3}; //!<Opposite vector at a given index
     
-    static constexpr double Weights[Q] = {1.0 / 3.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0}; //Lattice weights
+    static constexpr double Weights[Q] = {1.0 / 3.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0}; //!<Lattice weights
 
     template<int idx>
-    static constexpr int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx]; //Returns the modulus of the velocity vector at a given index, used for the MRT weight calculation
+    static constexpr int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx]; //!<Computes the modulus of the velocity vector at a given index, used for the MRT weight calculation
     
+    /**
+     * \brief Class containing an array of the MRT matrix moments for a given idx.
+     * \tparam idx Velocity vector index.
+     */
     template<int idx>
     struct Moments{
         static constexpr int ma_Moments[Q]={1,
@@ -187,8 +270,12 @@ struct D2Q5 : StencilBase { //Most commonly used 2D stencil
                                         Ci_x[idx]*Ci_x[idx]-Ci_y[idx]*Ci_y[idx]};
     };
 
-    static constexpr std::array<int,Q*Q> MRTMatrix = GenerateMRTMatrix<Q,Moments>();
+    static constexpr std::array<int,Q*Q> MRTMatrix = GenerateMRTMatrix<Q,Moments>(); //!<MRT matrix array.
 
+    /**
+     * \brief Function that returns the diagonal entries of the MRT weight matrix for a given inverse relaxation time.
+     * \param invtau Inverse of the relaxation time.
+     */
     inline static std::vector<double> MRTWeights(const double& invtau){
         return {0,1,0,0,invtau};
     }
@@ -201,20 +288,29 @@ std::map<std::array<int8_t,D2Q5::D>,int> D2Q5::QMap = {{{0,0},0},
                                                       {{0,1},3},
                                                       {{0,-1},4}};
 
-struct D2Q9:StencilBase { //Most commonly used 2D stencil
+/**
+ * \brief 2D Stencil with diagonal directions.
+ */
+struct D2Q9:StencilBase {
     
-    static constexpr int D = 2; //Number of cartesian directions
-    static constexpr int Q = 9; //Number of velocity directions
-    static constexpr double Cs2 = 0.33333333333333; //Speed of sound squared
+    static constexpr int D = 2; //!<Number of cartesian directions.
+    static constexpr int Q = 9; //!<Number of velocity directions.
+    static constexpr double Cs2 = 1.0/3.0; //!<Speed of sound squared.
     
-    static constexpr int Ci_x[Q] = {0, 1, -1, 0, 0, 1, -1, 1, -1}; //Vectors of velocity directions
-    static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 1, -1, -1, 1}; //There is no convecntion for the ordering of these
-    static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 0, 0, 0, 0}; //0 array because there is no z direction
+    static constexpr int Ci_x[Q] = {0, 1, -1, 0, 0, 1, -1, 1, -1}; //!<X component vector of velocity directions.
+    static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 1, -1, -1, 1}; //!<Y component vector of velocity directions.
+    static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 0, 0, 0, 0}; //!<Z component vector of velocity directions. 0 for 2D stencil.
 
-    static std::map<std::array<int8_t,D>,int> QMap;
+    static std::map<std::array<int8_t,D>,int> QMap; //!<Map of cartesian vector to velocity index.
 
     enum{x = 0, y = 1, z = 2};
-    inline static auto Ci_xyz(const int d) -> const int(&)[Q] { //Returns velocity direction vector depending on input d, this is probably slow
+    
+    /**
+     * \brief Returns velocity direction vector depending on input d.
+     * \param d Cartesian direction (x=0, y=1, z=2).
+     * \return Vector of d component of velocity vectors.
+     */
+    inline static auto Ci_xyz(const int d) -> const int(&)[Q] {
 
         if (d == x) {
             return Ci_x;
