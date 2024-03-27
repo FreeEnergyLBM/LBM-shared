@@ -194,7 +194,7 @@ class ModelBase : public Model {
             
             if constexpr(std::tuple_size<typename TTraits::Forces>::value != 0){
 
-                if constexpr (mDistribution.SaveEquilibrium) {
+                if (mDistribution.SaveEquilibrium) {
                     mDistribution.saveEquilibriums(equilibriums,k);
                 }
                 
