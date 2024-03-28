@@ -321,13 +321,17 @@ struct D2Q9:StencilBase {
         return Ci_z;
 
     }
-    static constexpr int Opposites[Q] = {0, 2, 1, 4, 3, 6, 5, 8, 7}; //Opposite vector at a given index
-    
-    static constexpr double Weights[Q] = {4.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0}; //Lattice weights
+    static constexpr int Opposites[Q] = {0, 2, 1, 4, 3, 6, 5, 8, 7}; //!<Opposite vector at a given index.
+
+    static constexpr double Weights[Q] = {4.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0}; //!<Lattice weights.
 
     template<int idx>
-    static constexpr int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx]; //Returns the modulus of the velocity vector at a given index, used for the MRT weight calculation
+    static constexpr int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx]; //!<Computes the modulus of the velocity vector at a given index, used for the MRT weight calculation.
 
+    /**
+     * \brief Class containing an array of the MRT matrix moments for a given idx.
+     * \tparam idx Velocity vector index.
+     */
     template<int idx>
     struct Moments{
         static constexpr int ma_Moments[Q] = {1,
@@ -341,9 +345,13 @@ struct D2Q9:StencilBase {
                                             Ci_x[idx] * Ci_y[idx]};
     };
 
-    static constexpr std::array<int,Q*Q> MRTMatrix = GenerateMRTMatrix<Q,Moments>();
+    static constexpr std::array<int,Q*Q> MRTMatrix = GenerateMRTMatrix<Q,Moments>(); //!<MRT matrix.
 
-    inline static std::vector<double> MRTWeights(const double& invtau) { //MRT relaxation rates
+    /**
+     * \brief Function that returns the diagonal entries of the MRT weight matrix for a given inverse relaxation time.
+     * \param invtau Inverse of the relaxation time.
+     */
+    inline static std::vector<double> MRTWeights(const double& invtau) {
 
         return {0, 1, 1, 0, 1, 0, 1, invtau, invtau};
         
@@ -361,17 +369,26 @@ std::map<std::array<int8_t,D2Q9::D>,int> D2Q9::QMap = {{{0,0},0},
                                                       {{1,-1},7},
                                                       {{-1,1},8}};
 
+/**
+ * \brief Simple 3D stencil. Limited number of diagonal directions. Galilean invariance issues.
+ */
 struct D3Q15:StencilBase{
-    static constexpr int D = 3;
 
-    static constexpr int Q = 15;
-    static constexpr double Cs2 = 0.33333333333333;
-    static constexpr int Ci_x[Q] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1};
-    static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, -1, 1, 1, -1};
-    static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 1, -1, 1, -1, -1, 1, 1, -1, 1, -1};
+    static constexpr int D = 3; //!<Number of cartesian directions.
+    static constexpr int Q = 15; //!<Number of velocity directions.
+    static constexpr double Cs2 = 1.0/3.0; //!<Speed of sound squared.
 
-    static std::map<std::array<int8_t,D>,int> QMap;
+    static constexpr int Ci_x[Q] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 1, -1, -1, 1}; //!<X component vector of velocity directions.
+    static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 0, 0, 1, -1, 1, -1, -1, 1, 1, -1}; //!<Y component vector of velocity directions.
+    static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 1, -1, 1, -1, -1, 1, 1, -1, 1, -1}; //!<Z component vector of velocity directions.
 
+    static std::map<std::array<int8_t,D>,int> QMap; //!<Map of cartesian vector to velocity index.
+
+    /**
+     * \brief Returns velocity direction vector depending on input d.
+     * \param d Cartesian direction (x=0, y=1, z=2).
+     * \return Vector of d component of velocity vectors.
+     */
     inline static auto Ci_xyz(const int d) -> const int(&)[Q]{
         if (d==0) {
             return Ci_x;
@@ -382,15 +399,19 @@ struct D3Q15:StencilBase{
         return Ci_z;
     }
 
-    static constexpr int Opposites[Q] = {0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13};
+    static constexpr int Opposites[Q] = {0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13}; //!<Opposite vector at a given index.
     static constexpr double Weights[Q] = {2.0 / 9.0,  1.0 / 9.0,  1.0 / 9.0,  1.0 / 9.0, 
 				                          1.0 / 9.0,  1.0 / 9.0,  1.0 / 9.0,  1.0 / 72.0, 
 				                          1.0 / 72.0,  1.0 / 72.0,  1.0 / 72.0,  1.0 / 72.0, 
-				                          1.0 / 72.0,  1.0 / 72.0,  1.0 / 72.0};
+				                          1.0 / 72.0,  1.0 / 72.0,  1.0 / 72.0}; //!<Lattice weights.
 
     template<int idx>
-    static const int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx] + Ci_z[idx] * Ci_z[idx];
+    static const int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx] + Ci_z[idx] * Ci_z[idx]; //!<Computes the modulus of the velocity vector at a given index, used for the MRT weight calculation.
 
+    /**
+     * \brief Class containing an array of the MRT matrix moments for a given idx.
+     * \tparam idx Velocity vector index.
+     */
     template<int idx>
     struct Moments{
         static constexpr int ma_Moments[Q] = {1,
@@ -410,8 +431,12 @@ struct D3Q15:StencilBase{
                                         Ci_x[idx] * Ci_y[idx] * Ci_z[idx]};
     };
 
-    static constexpr std::array<int,Q*Q> MRTMatrix = GenerateMRTMatrix<Q,Moments>();
+    static constexpr std::array<int,Q*Q> MRTMatrix = GenerateMRTMatrix<Q,Moments>(); //!<MRT matrix.
 
+    /**
+     * \brief Function that returns the diagonal entries of the MRT weight matrix for a given inverse relaxation time.
+     * \param invtau Inverse of the relaxation time.
+     */
     inline static std::vector<double> MRTWeights(const double& invtau) {
 
         return {0, 1, 1, 0, 1, 0, 1, 0, 1, invtau, invtau, invtau, invtau, invtau, 1, 1};
@@ -435,17 +460,26 @@ std::map<std::array<int8_t,D3Q15::D>,int> D3Q15::QMap = {{{0,0,0},0},
                                                        {{-1,1,1},13},
                                                        {{1,-1,-1},14}};
 
-struct D3Q19:StencilBase{ //Most commonly used 3D stencil
-    static constexpr int D = 3;
+/**
+ * \brief Most commonly used 3D stencil.
+ */
+struct D3Q19:StencilBase{
 
-    static constexpr int Q = 19;
-    static constexpr double Cs2 = 0.33333333333333;
-    static constexpr int Ci_x[Q] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1};
-    static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 1, -1, 1, -1, 0, 0, 0, 0};
-    static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 1, -1, -1, 1, 1, -1, -1, 1};
+    static constexpr int D = 3; //!<Number of cartesian directions.
+    static constexpr int Q = 19; //!<Number of velocity directions.
+    static constexpr double Cs2 = 1.0/3.0; //!<Speed of sound squared.
 
-    static std::map<std::array<int8_t,D>,int> QMap;
+    static constexpr int Ci_x[Q] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1}; //!<X component vector of velocity directions.
+    static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 1, -1, 1, -1, 0, 0, 0, 0}; //!<Y component vector of velocity directions.
+    static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 1, -1, -1, 1, 1, -1, -1, 1}; //!<Z component vector of velocity directions.
 
+    static std::map<std::array<int8_t,D>,int> QMap; //!<Map of cartesian vector to velocity index.
+
+    /**
+     * \brief Returns velocity direction vector depending on input d.
+     * \param d Cartesian direction (x=0, y=1, z=2).
+     * \return Vector of d component of velocity vectors.
+     */
     inline static auto Ci_xyz(const int d) -> const int(&)[Q]{
         if (d==0) {
             return Ci_x;
@@ -456,16 +490,21 @@ struct D3Q19:StencilBase{ //Most commonly used 3D stencil
         return Ci_z;
     }
 
-    static constexpr int Opposites[Q] = {0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17};
+    static constexpr int Opposites[Q] = {0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17}; //!<Opposite vector at a given index.
     static constexpr double Weights[Q] = {1.0 / 3.0,  1.0 / 18.0,  1.0 / 18.0,  1.0 / 18.0, 
 				                          1.0 / 18.0,  1.0 / 18.0,  1.0 / 18.0,  1.0 / 36.0, 
 				                          1.0 / 36.0,  1.0 / 36.0,  1.0 / 36.0,  1.0 / 36.0, 
 				                          1.0 / 36.0,  1.0 / 36.0,  1.0 / 36.0,  1.0 / 36.0, 
-				                          1.0 / 36.0,  1.0 / 36.0,  1.0 / 36.0};
+				                          1.0 / 36.0,  1.0 / 36.0,  1.0 / 36.0}; //!<Lattie weights.
+
 
     template<int idx>
-    static const int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx] + Ci_z[idx] * Ci_z[idx];
+    static const int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx] + Ci_z[idx] * Ci_z[idx]; //!<Computes the modulus of the velocity vector at a given index, used for the MRT weight calculation.
 
+    /**
+     * \brief Class containing an array of the MRT matrix moments for a given idx.
+     * \tparam idx Velocity vector index.
+     */
     template<int idx>
     struct Moments{
         static constexpr int ma_Moments[Q] = {1,
@@ -489,8 +528,12 @@ struct D3Q19:StencilBase{ //Most commonly used 3D stencil
                                         Ci_z[idx] * (Ci_x[idx] * Ci_x[idx] - Ci_y[idx] * Ci_y[idx])};
     };
 
-    static constexpr std::array<int,Q*Q> MRTMatrix = GenerateMRTMatrix<Q,Moments>();
+    static constexpr std::array<int,Q*Q> MRTMatrix = GenerateMRTMatrix<Q,Moments>(); //!<MRT matrix.
 
+    /**
+     * \brief Function that returns the diagonal entries of the MRT weight matrix for a given inverse relaxation time.
+     * \param invtau Inverse of the relaxation time.
+     */
     inline static std::vector<double> MRTWeights(const double& invtau) {
 
         return {0, 1, 1, 0, 1, 0, 1, 0, 1, invtau, 1, invtau, 1, invtau, invtau, invtau, 1, 1, 1};
@@ -518,17 +561,26 @@ std::map<std::array<int8_t,D3Q19::D>,int> D3Q19::QMap = {{{0,0,0},0},
                                                        {{1,0,-1},17},
                                                        {{-1,0,1},18}};
 
-struct D3Q27:StencilBase{ //Most commonly used 3D stencil
-    static constexpr int D = 3;
+/**
+ * Higher isotropy 3D stencil.
+ */
+struct D3Q27:StencilBase{
 
-    static constexpr int Q = 27;
-    static constexpr double Cs2 = 0.33333333333333;
-    static constexpr int Ci_x[Q] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1};
-    static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 1, -1, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, -1, 1, -1, 1};
-    static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 1, -1, -1, 1, 1, -1, -1, 1, 1, -1, -1, 1, -1, 1, 1, -1};
+    static constexpr int D = 3; //!<Number of cartesian directions.
+    static constexpr int Q = 27; //!<Number of velocity directions.
+    static constexpr double Cs2 = 1.0/3.0; //!<Speed of sound squared.
 
-    static std::map<std::array<int8_t,D>,int> QMap;
+    static constexpr int Ci_x[Q] = {0, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1}; //!<X component vector of velocity directions.
+    static constexpr int Ci_y[Q] = {0, 0, 0, 1, -1, 0, 0, 1, -1, -1, 1, 1, -1, 1, -1, 0, 0, 0, 0, 1, -1, 1, -1, -1, 1, -1, 1}; //!<Y component vector of velocity directions.
+    static constexpr int Ci_z[Q] = {0, 0, 0, 0, 0, 1, -1, 0, 0, 0, 0, 1, -1, -1, 1, 1, -1, -1, 1, 1, -1, -1, 1, -1, 1, 1, -1}; //!<Z component vector of velocity directions.
 
+    static std::map<std::array<int8_t,D>,int> QMap; //!<Map of cartesian vector to velocity index.
+
+    /**
+     * \brief Returns velocity direction vector depending on input d.
+     * \param d Cartesian direction (x=0, y=1, z=2).
+     * \return Vector of d component of velocity vectors.
+     */
     inline static auto Ci_xyz(const int d) -> const int(&)[Q]{
         if (d==0) {
             return Ci_x;
@@ -539,15 +591,15 @@ struct D3Q27:StencilBase{ //Most commonly used 3D stencil
         return Ci_z;
     }
 
-    static constexpr int Opposites[Q] = {0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17, 20, 19, 22, 21, 24, 23, 26, 25};
+    static constexpr int Opposites[Q] = {0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17, 20, 19, 22, 21, 24, 23, 26, 25}; //!<Opposite vector at a given index.
     static constexpr double Weights[Q] = {8.0 / 27.0,  2.0 / 27.0,  2.0 / 27.0,  2.0 / 27.0, 
 				                          2.0 / 27.0,  2.0 / 27.0,  2.0 / 27.0,  1.0 / 54.0, 
 				                          1.0 / 54.0,  1.0 / 54.0,  1.0 / 54.0,  1.0 / 54.0, 
 				                          1.0 / 54.0,  1.0 / 54.0,  1.0 / 54.0,  1.0 / 54.0, 
-				                          1.0 / 54.0,  1.0 / 54.0,  1.0 / 54.0, };
+				                          1.0 / 54.0,  1.0 / 54.0,  1.0 / 54.0, }; //!<Lattice weights.
 
     template<int idx>
-    static const int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx] + Ci_z[idx] * Ci_z[idx];
+    static const int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx] + Ci_z[idx] * Ci_z[idx]; //!<Computes the modulus of the velocity vector at a given index, used for the MRT weight calculation.
 
 };
 
