@@ -255,6 +255,57 @@ void writeArrayTxt(std::ofstream& file, const std::vector<T>& data, std::string 
 }
 #endif
 
+/// MPIPARALLEL part should be corrected!
+// #ifdef MPIPARALLEL
+// template<class TLattice, typename T>
+// void rearrangeArrayTxt(const std::vector<T>& data, std::vector<T>& rearrangedData, int dir) {
+//     int rank, size;
+//     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//     MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+//     // Allocate temporary buffers for each process
+//     std::vector<T> localData(data.size() / size);
+//     std::vector<T> localRearrangedData(rearrangedData.size() / size);
+
+//     // Distribute data across processes
+//     MPI_Scatter(data.data(), data.size() / size, MPI_DOUBLE, localData.data(), data.size() / size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+//     // Perform local rearrangement
+//     for (int i = 0; i < TLattice::LX / size; i++) {
+//         for (int j = 0; j < TLattice::LY; j++) {
+//             for (int k = 0; k < TLattice::LZ; k++) {
+//                 int index = (i * TLattice::LY * TLattice::LZ + j * TLattice::LZ + k) * dir;
+//                 int newIndex = (k * TLattice::LY * (TLattice::LX / size) + j * (TLattice::LX / size) + i) * dir;
+//                 localRearrangedData[newIndex] = localData[index];
+//                 localRearrangedData[newIndex + 1] = localData[index + 1];
+//                 localRearrangedData[newIndex + 2] = localData[index + 2];
+//             }
+//         }
+//     }
+
+//     // Gather rearranged data from all processes
+//     MPI_Gather(localRearrangedData.data(), localRearrangedData.size(), MPI_DOUBLE, rearrangedData.data(), localRearrangedData.size(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+// }
+// #else
+template<class TLattice, typename T>
+void rearrangeArrayTxt(const std::vector<T>& data, std::vector<T>& rearrangedData, int dir){
+
+    for (int i=0; i<TLattice::LX; i++) {
+        for (int k=0; k<TLattice::LZ; k++) {
+            for (int j=0; j<TLattice::LY; j++) {    
+                int index = (i*TLattice::LZ*TLattice::LY + k*TLattice::LY + j) * dir;
+                int newIndex = (k*TLattice::LY*TLattice::LX + j*TLattice::LX + i) * dir;
+                rearrangedData[newIndex] = data[index];
+                if (dir != 1)
+                {
+                    rearrangedData[newIndex + 1] = data[index + 1];
+                    rearrangedData[newIndex + 2] = data[index + 2];
+                }
+            }
+        }
+    }
+}
+// #endif
 
 template<class TLattice>
 template<typename... TParameter>
@@ -273,7 +324,7 @@ void SaveHandler<TLattice>::saveVTK(int timestep, TParameter&... params) {
     // Write the header
     char header[1024];
     int nPoints = TLattice::LX * TLattice::LY * TLattice::LZ;
-    sprintf(header, "# vtk DataFile Version 3.0\nSimulation data at timestep %d\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %d %d %d\nORIGIN 0 0 0\nSPACING 1 1 1\nPOINT_DATA %d\n", timestep, TLattice::LZ, TLattice::LY, TLattice::LX, nPoints);
+    sprintf(header, "# vtk DataFile Version 3.0\nSimulation data at timestep %d\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %d %d %d\nORIGIN 0 0 0\nSPACING 1 1 1\nPOINT_DATA %d\n", timestep, TLattice::LX, TLattice::LY, TLattice::LZ, nPoints);
     writeText(file, header);
 
     // Write each parameter
@@ -301,8 +352,15 @@ void SaveHandler<TLattice>::saveVTK(int timestep, TParameter&... params) {
             }
             data = newData;
         }
+
+        // data iterates in the order of y, z, and x, which
+        // is not suitable for the visualisation with ParaView.
+        // Rearrange the data to reiterate in the order of x, y, and z.
+        std::vector<double> rearrangedData(data.size());
+        rearrangeArrayTxt<TLattice>(data, rearrangedData, directions);
+        
         // Write data
-        writeArrayTxt<TLattice>(file, data, "%13.8f", "\n", "NONE", directions, " ");
+        writeArrayTxt<TLattice>(file, rearrangedData, "%13.8f", "\n", "NONE", directions, " ");
     } (), ...);
 
     #ifdef MPIPARALLEL
