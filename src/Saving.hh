@@ -291,9 +291,9 @@ template<class TLattice, typename T>
 void rearrangeArrayTxt(const std::vector<T>& data, std::vector<T>& rearrangedData, int dir){
 
     for (int i=0; i<TLattice::LX; i++) {
-        for (int k=0; k<TLattice::LZ; k++) {
-            for (int j=0; j<TLattice::LY; j++) {    
-                int index = (i*TLattice::LZ*TLattice::LY + k*TLattice::LY + j) * dir;
+            for (int j=0; j<TLattice::LY; j++) { 
+                    for (int k=0; k<TLattice::LZ; k++) {    
+                int index = (i*TLattice::LY*TLattice::LZ + j*TLattice::LZ + k) * dir;
                 int newIndex = (k*TLattice::LY*TLattice::LX + j*TLattice::LX + i) * dir;
                 rearrangedData[newIndex] = data[index];
                 if (dir != 1)
@@ -353,7 +353,7 @@ void SaveHandler<TLattice>::saveVTK(int timestep, TParameter&... params) {
             data = newData;
         }
 
-        // data iterates in the order of y, z, and x, which
+        // data iterates in the order of z, y, and x, which
         // is not suitable for the visualisation with ParaView.
         // Rearrange the data to reiterate in the order of x, y, and z.
         std::vector<double> rearrangedData(data.size());
