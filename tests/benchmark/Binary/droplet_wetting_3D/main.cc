@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 
     // Set up the handler object for saving data
     SaveHandler<Lattice> saver("data/");
-    // saver.saveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)
+	saver.maskSolid();
 
     // Perform the main LBM loop
     for (int timestep = 0; timestep <= timesteps; timestep++)
@@ -82,11 +82,10 @@ int main(int argc, char **argv)
         if (timestep % saveInterval == 0)
         {
             std::cout << "Saving at timestep " << timestep << "." << std::endl;
-            // saver.saveParameter<OrderParameter<>>(timestep);
-            // saver.saveParameter<Velocity<>, Lattice::NDIM>(timestep);
             saver.saveVTK(timestep,
                           Density<>::template getInstance<Lattice>(),
-                          OrderParameter<>::template getInstance<Lattice>());
+                          OrderParameter<>::template getInstance<Lattice>(),
+                          Velocity<>::template getInstance<Lattice, Lattice::NDIM>());
         }
         lbm.evolve();
     }
