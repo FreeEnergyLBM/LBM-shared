@@ -2,23 +2,22 @@
 
 // This script simulates a droplet on a flat surface with a given contact angle.
 
-const int lx = 100; // Size of domain in x direction
-const int ly = 100; // Size of domain in y direction
-const int lz = 1;  // Size of domain in z direction
+const int lx = 50; // Size of domain in x direction
+const int ly = 50; // Size of domain in y direction
 
-const int timesteps = 200000;  // Number of iterations to perform
-const int saveInterval = 50000; // Interval to save global data
+const int timesteps = 1000;  // Number of iterations to perform
+const int saveInterval = 100; // Interval to save global data
 
 const double contactAngle = 30; // Contact angle of the liquid on the solid
 const double dropRadius = 0.2 * lx;   // Radius to initialise the droplet
 
 // Set up the lattice, including the resolution and data/parallelisation method
-using Lattice = LatticeProperties<ParallelX<1>, lx, ly, lz>;
+using Lattice = LatticeProperties<ParallelX<1>, lx, ly>;
 
 // Function used to define the solid geometry
 int initSolid(const int k)
 {
-    int y = computeY(ly, lz, k);
+    int y = computeY(ly, 1, k);
     if (y <= 1 || y >= ly - 2)
         return 1;
     else
@@ -29,7 +28,7 @@ int initSolid(const int k)
 double initFluid(int k)
 {
     int x = computeXGlobal<Lattice>(k); // global function used because the x direction is split among the processors
-    int y = computeY(ly, lz, k);
+    int y = computeY(ly, 1, k);
 
     // Check if within droplet radius
     double y0 = 1.5; // - dropRadius * cos(contactAngle*M_PI/180);
@@ -73,7 +72,7 @@ int main(int argc, char **argv)
 
     // Set up the handler object for saving data
     SaveHandler<Lattice> saver("data/");
-    saver.saveHeader(timesteps, saveInterval); // Create a header with lattice information (lx, ly, lz, NDIM (2D or 3D), timesteps, saveInterval)
+    saver.maskSolid();
 
     // Perform the main LBM loop
     for (int timestep = 0; timestep <= timesteps; timestep++)
@@ -81,8 +80,10 @@ int main(int argc, char **argv)
         if (timestep % saveInterval == 0)
         {
             std::cout << "Saving at timestep " << timestep << "." << std::endl;
-            saver.saveParameter<OrderParameter<>>(timestep);
-            saver.saveParameter<Velocity<>, Lattice::NDIM>(timestep);
+            saver.saveDAT(timestep,
+                          Density<>::template getInstance<Lattice>(),
+                          OrderParameter<>::template getInstance<Lattice>(),
+                          Velocity<>::template getInstance<Lattice, Lattice::NDIM>());
         }
         lbm.evolve();
     }
