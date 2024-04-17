@@ -26,6 +26,10 @@ class BodyForce : public ForceBase<TMethod> {
         inline void setMagnitudeY(double magnitude);
         inline void setMagnitudeZ(double magnitude);
 
+        // These functions activate gravity in a desired (y or z) direction.
+        // the Gravity term is only applied to the c_1: c_1 = 0.5 * rho * (1 + phi)
+        inline void activateGravityY() { gravityY = true; }
+        inline void activateGravityZ() { gravityZ = true; }
 
     private:
 
@@ -33,6 +37,8 @@ class BodyForce : public ForceBase<TMethod> {
         double mMagnitudeY = 0;
         double mMagnitudeZ = 0;
 
+        bool gravityY = false;
+        bool gravityZ = false;
 };
 
 template<class TMethod>
@@ -63,17 +69,31 @@ inline double BodyForce<TMethod>::computeXYZ(int xyz, int k) {
 
     using Lattice = typename TTraits::Lattice;
 
-    //double& density = Density<>::get<Lattice>(k);
-    double density = 1.;
+    // Why is Density<>::get<typename TTraits::Lattice>(k) not used and instead a constant density is used?
+    double density = 1.;    
     
+    // 2D cases
     if constexpr (Lattice::NDIM == 2){
         if (xyz == 0) return mMagnitudeX * density;
+        
+        if (gravityY == true)
+            return mMagnitudeY * Density<>::get<typename TTraits::Lattice>(k) * (1.0 + OrderParameter<>::get<typename TTraits::Lattice>(k)) / 2.0;
+        else
         return mMagnitudeY * density;
     }
 
+    // 3D cases
     else if constexpr (Lattice::NDIM == 3){
-        if(xyz == 1) return mMagnitudeY * density;
-        return mMagnitudeZ * density;
+        if (xyz == 0) return mMagnitudeX * density;
+
+        if (xyz == 1) {
+        if (gravityY == true)
+            return mMagnitudeY * Density<>::get<typename TTraits::Lattice>(k) * (1.0 + OrderParameter<>::get<typename TTraits::Lattice>(k)) / 2.0;
+        else return mMagnitudeY * density;}
+        
+        if (gravityZ == true)
+            return mMagnitudeZ * Density<>::get<typename TTraits::Lattice>(k) * (1.0 + OrderParameter<>::get<typename TTraits::Lattice>(k)) / 2.0;
+        else return mMagnitudeZ * density;
     }
 
     return mMagnitudeX * density;
