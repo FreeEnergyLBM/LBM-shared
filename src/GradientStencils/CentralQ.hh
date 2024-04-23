@@ -2,13 +2,10 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct CentralQ : GradientBase<AllDirections> {
+struct CentralQ : GradientBase<Gradient,AllDirections> {
 
     template<class TTraits, class TParameter>
-    static inline double compute(const int direction, const int k, int num = 0);
-
-    template<class TObj>
-    using GradientType = Gradient<TObj,TObj::instances>;
+    inline double compute(const int direction, const int k, int num = 0);
     
 };
 

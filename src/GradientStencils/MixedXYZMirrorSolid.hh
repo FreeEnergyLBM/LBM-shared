@@ -2,13 +2,10 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct MixedXYZMirrorSolid : GradientBase<Cartesian> {
+struct MixedXYZMirrorSolid : GradientBase<GradientMixed,Cartesian> {
 
     template<class TTraits, class TParameter>
-    static inline double compute(const int direction, const int k, int num = 0);
-
-    template<class TObj>
-    using GradientType = GradientMixed<TObj,TObj::instances>;
+    inline double compute(const int direction, const int k, int num = 0);
     
 };
 
@@ -18,7 +15,7 @@ inline double MixedXYZMirrorSolid::compute(const int direction, const int k, int
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
-    if (Geometry<Lattice>::getBoundaryType(k) == 4) return 0;
+    //if (this->isBoundary<Lattice>(k) == 4) return 0;
     
     using DataType = Data_Base<Lattice, Stencil>;
 
@@ -28,9 +25,9 @@ inline double MixedXYZMirrorSolid::compute(const int direction, const int k, int
     /*
     for (int idx = 1; idx < Stencil::Q; idx++) {
         //if (idx == 2) std::cerr<<" s "<<data.getNeighbors().size()<<" n1 "<<data.getNeighbors()[k * Stencil::Q + idx]<<" n2 "<<data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx]<<std::endl;
-        if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + idx])==1)) {
+        if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + idx])==1)) {
             
-            if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])==1)) {
+            if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])==1)) {
                 
                 const std::array<int8_t,TTraits::Lattice::NDIM>& normal = BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, idx)).NormalDirection;
                 const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, idx)).NormalDirection)->second;
@@ -83,16 +80,16 @@ inline double MixedXYZMirrorSolid::compute(const int direction, const int k, int
             }
             
         }
-        else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx])==1)) {
+        else if ((this->isBoundary<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx])==1)) {
             
-            if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])==1)) {
+            if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])==1)) {
                 
                 const int& normalqforward = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(data.getNeighbor(k, idx), idx)).NormalDirection)->second;
                 double csolidforward = TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(data.getNeighbor(k, idx), idx), normalqforward), num);
                 const int& normalqbackward = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, Stencil::Opposites[idx])).NormalDirection)->second;
                 double csolidbackward = TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[idx]), normalqbackward), num);
 
-                if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + idx])==4)) {
+                if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + idx])==4)) {
 
                     return gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (+ 4 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + idx], num)
                                 - 3 * TParameter::template get<Lattice>(k, num)
@@ -110,7 +107,7 @@ inline double MixedXYZMirrorSolid::compute(const int direction, const int k, int
                 const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(data.getNeighbor(k, idx), idx)).NormalDirection)->second;
                 double csolid = TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(data.getNeighbor(k, idx), idx), normalq), num);
                 
-                if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + idx])==4)) {
+                if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + idx])==4)) {
 
                     gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 * (4 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + idx], num)
                                                                                             - 3 * TParameter::template get<Lattice>(k, num)
@@ -125,7 +122,7 @@ inline double MixedXYZMirrorSolid::compute(const int direction, const int k, int
             }
             
         }
-        else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])==1)) {
+        else if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])==1)) {
             
             const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, Stencil::Opposites[idx])).NormalDirection)->second;
             double csolid = TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[idx]), normalq), num);
@@ -136,8 +133,8 @@ inline double MixedXYZMirrorSolid::compute(const int direction, const int k, int
                        - (csolid));
 
         }
-        else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + idx])!=1)
-                || (Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])!=1)) {
+        else if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + idx])!=1)
+                || (this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])!=1)) {
             
             gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 * (- TParameter::template get<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx]
                                                                                                                                                 * Stencil::Q+  idx], num)
@@ -152,8 +149,8 @@ inline double MixedXYZMirrorSolid::compute(const int direction, const int k, int
 
     for (int idx = 1; idx < Stencil::Q; idx++) {
 
-        if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + idx])!=1)
-                && (Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])!=1)) {
+        if ((!this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + idx]))&& (!this->isBoundary<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx]))
+                && (!this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]]))) {
 
             gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 * (- param[data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx]
                                                                                                                                                 * Stencil::Q+  idx]*TParameter::instances + num]
@@ -162,9 +159,9 @@ inline double MixedXYZMirrorSolid::compute(const int direction, const int k, int
                                                                                        - param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]]*TParameter::instances + num]);
 
         }
-        else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + idx])==1)) {
+        else if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + idx]))) {
 
-            if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])==1)) {
+            if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]]))) {
 
                 const std::array<int8_t,TTraits::Lattice::NDIM>& normal = BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, idx)).NormalDirection;
                 const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, idx)).NormalDirection)->second;
@@ -217,23 +214,23 @@ inline double MixedXYZMirrorSolid::compute(const int direction, const int k, int
             }
 
         }
-        else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx])==1)) {
+        else if ((this->isBoundary<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx]))) {
 
-            if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])==1)) {
+            if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]]))) {
 
                 const int& normalqforward = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(data.getNeighbor(k, idx), idx)).NormalDirection)->second;
                 double csolidforward = param[data.getNeighbor(data.getNeighbor(data.getNeighbor(k, idx), idx), normalqforward)*TParameter::instances + num];
                 const int& normalqbackward = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(k, Stencil::Opposites[idx])).NormalDirection)->second;
                 double csolidbackward = param[data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[idx]), normalqbackward)*TParameter::instances + num];
 
-                if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + idx])==4)) {
+                /*if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + idx])==4)) {
 
                     return gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (+ 4 * param[data.getNeighbors()[k * Stencil::Q + idx]*TParameter::instances + num]
                                 - 3 * param[k*TParameter::instances + num]
                                 - (csolidbackward));
             
-                }
-                else gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 * (- (csolidforward)
+                }*/
+                gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 * (- (csolidforward)
                                                                                             + 5 * param[data.getNeighbors()[k * Stencil::Q + idx]*TParameter::instances + num]
                                                                                             - 3 * param[k*TParameter::instances + num]
                                                                                             - csolidbackward);
@@ -244,14 +241,14 @@ inline double MixedXYZMirrorSolid::compute(const int direction, const int k, int
                 const int& normalq = TTraits::Stencil::QMap.find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(data.getNeighbor(data.getNeighbor(k, idx), idx)).NormalDirection)->second;
                 double csolid = param[data.getNeighbor(data.getNeighbor(data.getNeighbor(k, idx), idx), normalq)*TParameter::instances + num];
                 
-                if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + idx])==4)) {
+                /*if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + idx])==4)) {
 
                     gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 * (4 * param[data.getNeighbors()[k * Stencil::Q + idx]*TParameter::instances + num]
                                                                                             - 3 * param[k*TParameter::instances + num]
                                                                                             - param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]]*TParameter::instances + num]);
 
-                }
-                else gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 * (- (csolid)
+                }*/
+                gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 * (- (csolid)
                                                                                             + 5 * param[data.getNeighbors()[k * Stencil::Q + idx]*TParameter::instances + num]
                                                                                             - 3 * param[k*TParameter::instances + num]
                                                                                             - param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]]*TParameter::instances + num]);

@@ -2,14 +2,11 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct LaplacianCentral : GradientBase<One> {
+struct LaplacianCentral : GradientBase<Laplacian,One> {
 
     template<class TTraits, class TParameter>
-    static inline double compute(int direction, int k, int num = 0);
+    inline double compute(int direction, int k, int num = 0);
 
-    template<class TObj>
-    using GradientType = Laplacian<TObj,TObj::instances>;
-    
 };
 
 

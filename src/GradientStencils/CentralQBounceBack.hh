@@ -2,13 +2,10 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct CentralQBounceBack : GradientBase<AllDirections> {
+struct CentralQBounceBack : GradientBase<Gradient,AllDirections> {
 
     template<class TTraits, class TParameter>
-    static inline double compute(const int direction, const int k, int num = 0);
-
-    template<class TObj>
-    using GradientType = Gradient<TObj,TObj::instances>;
+    inline double compute(const int direction, const int k, int num = 0);
     
 };
 
@@ -19,6 +16,8 @@ inline double CentralQBounceBack::compute(const int direction, const int k, int 
     using Stencil = typename TTraits::Stencil;
 
     using DataType = Data_Base<Lattice, Stencil>;
+
+    if (this->isBoundary<Lattice>(k)) return 0;
 
     DataType& data = DataType::getInstance();
     const static auto& param = TParameter::template get<Lattice>();
@@ -40,13 +39,13 @@ inline double CentralQBounceBack::compute(const int direction, const int k, int 
 
     }
     */ 
-    if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + direction])==1)) {
+    if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + direction]))) {
 
-        if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)) return 0;
+        if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]))) return 0;
         return 0.5 * (param[k*TParameter::instances + num] - param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]*TParameter::instances + num]);
 
     }
-    else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)) {
+    else if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]))) {
 
         return 0.5 * (param[data.getNeighbors()[k * Stencil::Q+direction]*TParameter::instances + num]-param[k*TParameter::instances + num]);
 

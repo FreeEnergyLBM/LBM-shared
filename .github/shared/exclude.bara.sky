@@ -8,6 +8,7 @@ EXCLUDE_FILES = [
     "src/LBModels/BinaryLee.hh",
     "src/LBModels/TernaryLee.hh",
     "src/LBModels/NComponent.hh",
+    "src/LBModels/NComponentLee.hh",
     "src/LBModels/WellBalanced.hh",
     "tests/Placeholder",
     "examples/evaporation_simple",

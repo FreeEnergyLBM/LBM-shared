@@ -146,7 +146,7 @@ inline double ChemicalForceBinaryMu<TMethod, TGradientType>::computeChemicalForc
         //
     }
     
-    return sum;
+    return -sum;
 
 }
 
@@ -232,7 +232,7 @@ inline double ChemicalForce<TMethod, TGradientType>::computeChemicalForce(int id
 
     }
 
-    sum += ChemicalPotential<TTraits::NumberOfComponents - (TTraits::NumberOfComponents == 2)>::template get<typename TTraits::Lattice>(k, TTraits::NumberOfComponents - 1) * (-gradopsum);
+    if constexpr ((TTraits::NumberOfComponents > 2)) sum += ChemicalPotential<TTraits::NumberOfComponents - (TTraits::NumberOfComponents == 2)>::template get<typename TTraits::Lattice>(k, TTraits::NumberOfComponents - 1) * (-gradopsum);
 
     return sum;
 
@@ -246,6 +246,84 @@ inline double ChemicalForce<TMethod, TGradientType>::computeVelocitySource(const
     
 }
 
+template<class TMethod=Guo, template<class,int> class TGradientType=Gradient>
+class ChemicalForceMu : public ForceBase<TMethod> {
+    
+    public:
+
+        template<class TTraits>
+        inline double computeXYZ(int xyz, int k); //Return force at traits::Lattice point k in direction xyz
+
+        template<class TTraits>
+        inline double computeQ(int xyz, int k);
+
+        template<class TTraits>
+        inline double computeVelocitySource(int xyz, int k); //Calculate any possible source/correction term for velocity
+
+        template<class TTraits, int TDirections>
+        inline double computeChemicalForce(int idx, int k);
+
+};
+
+template<class TMethod, template<class,int> class TGradientType>
+template<class TTraits>
+inline double ChemicalForceMu<TMethod, TGradientType>::computeXYZ(int xyz, int k) {
+    //tupletype::_;
+
+    if constexpr (has_type<Cartesian,typename TMethod::mt_Stencils>::type::value){
+        
+        return computeChemicalForce<TTraits,TTraits::Lattice::NDIM>(xyz,k);
+
+    }
+    return 0;
+
+}
+
+template<class TMethod, template<class,int> class TGradientType>
+template<class TTraits>
+inline double ChemicalForceMu<TMethod, TGradientType>::computeQ(int idx, int k) {
+    
+    if constexpr (has_type<AllDirections,typename TMethod::mt_Stencils>::type::value){
+        
+        return computeChemicalForce<TTraits,TTraits::Stencil::Q>(idx,k);
+
+    }
+    return 0;
+
+}
+
+template<class TMethod, template<class,int> class TGradientType>
+template<class TTraits, int TDirections>
+inline double ChemicalForceMu<TMethod, TGradientType>::computeChemicalForce(int idx, int k) {
+
+
+
+    double sum = 0;
+
+    double opsum = 0;
+
+    for (int component = 0; component < TTraits::NumberOfComponents - 1; component++) {
+
+        const double& OP = OrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice>(k, component);
+        const double& gradchemPot = TGradientType<ChemicalPotential<TTraits::NumberOfComponents - (TTraits::NumberOfComponents == 2)>,(TTraits::NumberOfComponents - (TTraits::NumberOfComponents == 2))>::template get<typename TTraits::Lattice, TDirections>(k, component, idx);
+        sum += OP * gradchemPot;
+        opsum += OP;
+
+    }
+
+    if constexpr ((TTraits::NumberOfComponents > 2)) sum += TGradientType<ChemicalPotential<TTraits::NumberOfComponents - (TTraits::NumberOfComponents == 2)>,(TTraits::NumberOfComponents - (TTraits::NumberOfComponents == 2))>::template get<typename TTraits::Lattice, TDirections>(k, TTraits::NumberOfComponents - 1, idx) * (1.0-opsum);
+
+    return sum;
+
+}
+
+template<class TMethod, template<class,int> class TGradientType>
+template<class TTraits>
+inline double ChemicalForceMu<TMethod, TGradientType>::computeVelocitySource(const int xyz, const int k) { //Need to correct velocity
+    
+    return +computeXYZ<TTraits>(xyz, k) * TTraits::Lattice::DT / (2.0);
+    
+}
 
 template<class TMethod=Guo, template<class,int> class TGradientType=Gradient>
 class ChemicalForceRho : public ForceBase<TMethod> {

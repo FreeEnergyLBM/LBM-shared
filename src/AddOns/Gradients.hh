@@ -23,19 +23,31 @@ class Gradients : public AddOnBase {
 
         inline void setInterfaceDistance(double (*distance)(int k, int idx)){
 
-            if constexpr (is_base_of_template<InterfaceGradient, TGradientStencil>()) mGradientStencil.setInterfaceDistance(distance);
+            mGradientStencil.setInterfaceDistance(distance);
 
         }
 
         inline void setInterfaceVal(double value){
 
-            if constexpr (is_base_of_template<InterfaceGradient, TGradientStencil>()) mGradientStencil.setInterfaceVal(value);
+            mGradientStencil.setInterfaceVal(value);
 
         }
 
         inline void setWettingPrefactor(double value){
 
-            if constexpr (is_base_of_template<WettingGradient, TGradientStencil>()) mGradientStencil.setPrefactor(value);
+            mGradientStencil.setPrefactor(value);
+
+        }
+
+        inline void setBoundaryID(int id, bool preset=false){
+
+            mGradientStencil.setBoundaryID(id,preset);
+
+        }
+
+        inline void setBoundaryID(const std::vector<int>& id, bool preset=false){
+
+            mGradientStencil.setBoundaryID(id,preset);
 
         }
 
@@ -108,6 +120,22 @@ class GradientsMultiParam : public AddOnBase {
 
         }
 
+        inline void setBoundaryID(int id, bool preset=false){
+
+            std::apply([id,preset](auto&... gradient){
+                (gradient.setBoundaryID(id,preset), ...);
+                                        }, mt_Param);
+
+        }
+
+        inline void setBoundaryID(const std::vector<int>& id, bool preset=false){
+
+            std::apply([id,preset](auto&... gradient){
+                (gradient.setBoundaryID(id,preset), ...);
+                                        }, mt_Param);
+
+        }
+
     private:
 
         std::tuple<Gradients<TParam, TGradientStencil>...> mt_Param;
@@ -161,6 +189,22 @@ class GradientsMultiStencil : public AddOnBase {
 
             std::apply([value](auto&... gradient){
                 (gradient.setWettingPrefactor(value), ...);
+                                        }, mt_GradientStencil);
+
+        }
+
+        inline void setBoundaryID(int id, bool preset=false){
+
+            std::apply([id,preset](auto&... gradient){
+                (gradient.setBoundaryID(id,preset), ...);
+                                        }, mt_GradientStencil);
+
+        }
+
+        inline void setBoundaryID(const std::vector<int>& id, bool preset=false){
+
+            std::apply([id,preset](auto&... gradient){
+                (gradient.setBoundaryID(id,preset), ...);
                                         }, mt_GradientStencil);
 
         }

@@ -2,13 +2,10 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct LaplacianCentralMirrorSolid : GradientBase<One> { //FIX
+struct LaplacianCentralMirrorSolid : GradientBase<Laplacian,One> { //FIX
 
     template<class TTraits, class TParameter>
-    static inline double compute(int direction, int k, int num = 0);
-
-    template<class TObj>
-    using GradientType = Laplacian<TObj,TObj::instances>;
+    inline double compute(int direction, int k, int num = 0);
     
 };
 
@@ -18,7 +15,8 @@ inline double LaplacianCentralMirrorSolid::compute(const int direction, const in
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
-    if (Geometry<Lattice>::getBoundaryType(k) == 4) return 0;
+    //if (Geometry<Lattice>::getBoundaryType(k) == 4) return 0;
+    if (this->isBoundary<Lattice>(k)) return 0;
 
     using DataType = Data_Base<Lattice, Stencil>;
 
@@ -47,6 +45,8 @@ inline double LaplacianCentralMirrorSolid::compute(const int direction, const in
     }
     */
     for (int idx = 1; idx <Stencil::Q; idx++) {
+
+        //if (Stencil::Ci_xyz(1)[idx]!=0) continue;
 
         if(Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))!=1) {
 

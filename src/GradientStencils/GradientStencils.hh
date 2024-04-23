@@ -11,6 +11,7 @@
 #include "LaplacianMirrorSolid.hh"
 #include "LaplacianWetting.hh"
 #include "LaplacianFourthOrder.hh"
+#include "LaplacianFourthOrderMirrorSolid.hh"
 #include "CentralQ.hh"
 #include "CentralQBounceBack.hh"
 #include "CentralQMirrorSolid.hh"

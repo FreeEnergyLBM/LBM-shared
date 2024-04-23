@@ -2,13 +2,10 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct MixedXYZBounceBack : GradientBase<Cartesian> {
+struct MixedXYZBounceBack : GradientBase<GradientMixed,Cartesian> {
 
     template<class TTraits, class TParameter>
-    static inline double compute(const int direction, const int k, int num = 0);
-
-    template<class TObj>
-    using GradientType = GradientMixed<TObj,TObj::instances>;
+    inline double compute(const int direction, const int k, int num = 0);
     
 };
 
@@ -20,14 +17,16 @@ inline double MixedXYZBounceBack::compute(const int direction, const int k, int 
 
     using DataType = Data_Base<Lattice, Stencil>;
 
+    if (this->isBoundary<Lattice>(k)) return 0;
+
     static DataType& data = DataType::getInstance();
 
     double gradientsum=0;
     const static auto& param = TParameter::template get<Lattice>();
     for (int idx = 1; idx < Stencil::Q; idx++) {
 
-        if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + idx])!=1)
-                && (Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])!=1)) {
+        if ((!this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + idx]))&& (!this->isBoundary<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx]))
+                && (!this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]]))) {
                 
             
             gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 * (- param[data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx]
@@ -44,18 +43,18 @@ inline double MixedXYZBounceBack::compute(const int direction, const int k, int 
             */
 
         }
-        else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + idx])==1)) {
+        else if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + idx]))) {
             /*
-            if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])!=1)) gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 * (2 *  TParameter::template get<Lattice>(k, num)
+            if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])!=1)) gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 * (2 *  TParameter::template get<Lattice>(k, num)
                                                                                        - 2 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]], num));
             */
-            if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])!=1)) gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 * (2 *  param[k *TParameter::instances + num]
+            if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])!=1)) gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 * (2 *  param[k *TParameter::instances + num]
                                                                                        - 2 * param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]] *TParameter::instances + num]);
 
         }
-        else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx])==1)) {
+        else if ((this->isBoundary<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx]))) {
             /*
-            if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])==1)) {
+            if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])==1)) {
                 
                 gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 * (4 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + idx], num) 
                                                                                        - 4 * TParameter::template get<Lattice>(k, num));
@@ -65,7 +64,7 @@ inline double MixedXYZBounceBack::compute(const int direction, const int k, int 
                                                                                        - 3 * TParameter::template get<Lattice>(k, num)
                                                                                        - TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]], num));
             */
-            if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])==1)) {
+            if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]]))) {
                 
                 gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 * (4 * param[data.getNeighbors()[k * Stencil::Q + idx] *TParameter::instances + num] 
                                                                                        - 4 * param[k *TParameter::instances + num]);

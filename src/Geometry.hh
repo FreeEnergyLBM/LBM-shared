@@ -28,24 +28,68 @@ class Geometry {
          */
         static inline bool isBoundary(int k);
 
+        /**
+         * \brief Returns the normal to the boundary as a cartesian vector.
+         * \tparam TStencil The type of the velocity stencil.
+         * \param condition Function pointer that returns the boundary index for a given lattice index k.
+         * \param neighbors Vector that contains the neighboring index in each velocity direction on each lattice index.
+         * \param fluidvals Boundary index of lattice points that are fluids (for normal calculation).
+	 * \param k Latice index.
+         */
         template<class TStencil>
         static inline std::array<int8_t,TLattice::NDIM> findNormal(int (*condition)(const int),const std::vector<int>& neighbors,const std::vector<int> fluidvals,int k);
 
+        /**
+         * \brief Returns true if the current lattice point is a corner boundary.
+         * \param condition Function pointer that returns the boundary index for a given lattice index k.
+	 * \param normal Normal to the boundary as a cartesian vector.
+         * \param fluidvals Boundary index of lattice points that are fluids (for normal calculation).
+	 * \param k Latice index.
+         */
         static inline bool isCorner(int (*condition)(const int),const std::array<int8_t,TLattice::NDIM>& normal,const std::vector<int> fluidvals,int k);
 
+        /**
+         * \brief Returns true if the current lattice point is a corner boundary.
+	 * \param k Latice index.
+         */
         static inline bool isCorner(int k);
 
-        static inline bool isBulkSolid(int k,int (*condition)(const int),const std::vector<int>& neighbors,std::vector<int> fluidvals);
+        /**
+         * \brief Returns true if the current lattice point is surrounded by boundary/other bulk solid nodes..
+         * \param condition Function pointer that returns the boundary index for a given lattice index k.
+	 * \param normal Normal to the boundary as a cartesian vector.
+         * \param fluidvals Boundary index of lattice points that are fluids (for normal calculation).
+	 * \param k Latice index.
+         */
+        static inline bool isBulkSolid(int (*condition)(const int),const std::vector<int>& neighbors,std::vector<int> fluidvals, int k);
 
+        /**
+         * \brief Returns true if the current lattice point is surrounded by boundary/other bulk solid nides.
+	 * \param k Latice index.
+         */
         static inline bool isBulkSolid(int k);
 
+        /**
+         * \brief Initialises the BoundaryLabels class and sets fluid boundary indices.
+         * \param condition Function pointer that returns the boundary index for a given lattice index k.
+         * \param fluidval Boundary index of lattice points that are fluids (for normal calculation).
+         */
         static inline void initialiseBoundaries(int (*condition)(const int),int fluidval = 0);
 
+        /**
+         * \brief Initialises the BoundaryLabels class and sets fluid boundary indices.
+         * \param condition Function pointer that returns the boundary index for a given lattice index k.
+         * \param fluidval Boundary indices of lattice points that are fluids (for normal calculation).
+         */
         static inline void initialiseBoundaries(int (*condition)(const int),std::vector<int> fluidvals);
 
+        /**
+         * \brief Returns the boundary index at the given lattice index.
+         * \param k Lattice index.
+         */
         static inline int& getBoundaryType(int k);
 
-        static std::vector<int> mFluidVals;
+        static std::vector<int> mFluidVals; //!<Boundary indices corresponding to fluid nodes.
 
     private:
 
@@ -61,8 +105,13 @@ class Geometry {
             RefillNode = 6
         };
 
-        static inline bool apply(int k, int (*condition)(const int),std::vector<int> fluidvals) {
-            
+        /**
+         * \brief Returns true if the lattice index is not a fluid node.
+         * \param condition Function pointer that returns the boundary index for a given lattice index k.
+         * \param fluidvals Boundary index of lattice points that are fluids (for normal calculation).
+	 * \param k Latice index.
+         */
+        static inline bool apply(int (*condition)(const int),std::vector<int> fluidvals, int k) {
             for (int i : fluidvals){
                 if(condition(k) == i) return false;
             }
@@ -74,8 +123,12 @@ class Geometry {
 template<class TLattice>
 std::vector<int> Geometry<TLattice>::mFluidVals;
 
+/**
+ * \detauls This function iterates through all velocity irections and then iterates through the fluid boundary indices.
+ *          If it finds that the boundary indiex in any velocity direction is a fluid, it returns false. Otherwise it returns true
+ */
 template<class TLattice>
-inline bool Geometry<TLattice>::isBulkSolid(int k,int (*condition)(const int),const std::vector<int>& neighbors,std::vector<int> fluidvals) {
+inline bool Geometry<TLattice>::isBulkSolid(int (*condition)(const int),const std::vector<int>& neighbors,std::vector<int> fluidvals, int k) {
 
     mFluidVals=fluidvals;
 
@@ -93,6 +146,11 @@ inline bool Geometry<TLattice>::isBulkSolid(int k,int (*condition)(const int),co
 
 }
 
+/**
+ * \details This function iterates through all lattice points in the simulation domain and initialises the
+ *          array of structures stored in the BoundaryLabels class with the boundary label, whether or not the
+ *          point is a corner and the normal direction pointing into the fluid.
+ */
 template<class TLattice>
 inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int),const std::vector<int> fluidvals) {
 
@@ -106,7 +164,7 @@ inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int)
 
         int solidval;
         
-        if (isBulkSolid(k,condition,neighbors,fluidvals)) {
+        if (isBulkSolid(condition,neighbors,fluidvals,k)) {
             solidval = -1;
         }
         else {
@@ -125,6 +183,9 @@ inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int)
 
 }
 
+/**
+ * \details This class calls the InitialiseBoundaries class after converting the integer fluidval to a vector.
+ */
 template<class TLattice>
 inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int), int fluidval) {
 
@@ -139,11 +200,17 @@ inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int)
  */
 template<class TLattice>
 inline bool Geometry<TLattice>::isBoundary(int k) {
-
-    return (BoundaryLabels<TLattice::NDIM>::template get<TLattice>(k).Id!=0);
+    for (int i : mFluidVals){
+        if(BoundaryLabels<TLattice::NDIM>::template get<TLattice>(k).Id == i) return false;
+    }
+    return true;
 
 }
 
+/**
+ * \details This function returns the true/false value stored in BoundaryLabels indicating whether the current
+ *          lattice point is a corner boundary,
+ */
 template<class TLattice>
 inline bool Geometry<TLattice>::isCorner(int k) {
 
@@ -151,6 +218,10 @@ inline bool Geometry<TLattice>::isCorner(int k) {
 
 }
 
+/**
+ * \details This function returns true if the boundary index stored in BoundaryLabels at the given lattice
+ *          index is equal to -1.
+ */
 template<class TLattice>
 inline bool Geometry<TLattice>::isBulkSolid(int k) {
 
@@ -158,19 +229,25 @@ inline bool Geometry<TLattice>::isBulkSolid(int k) {
 
 }
 
+/**
+ * \details This function finds the normal by computing the sum of the number of fluid nodes adjacent in each
+ *          cartesian direction. The normal in that direction is then -1, 0 or +1 depending on whether the sum is <0, ==0 or <0. It first sums the indices around the the current nodes and incriments the sum in each
+ *          direction if the neighboring node is a fluid and is not the same boundary index as the current node.
+ *          It then checks if there is a difference in the sum in each direction, If the normal would not form
+ *          a 45 or 90 degree angle, it sets the sum to zero in the direction where the sum is smallest. It
+ *          then sets the normal to the sign of the sum in each direction.
+ */
 template<class TLattice>
 template<class TStencil>
 inline std::array<int8_t,TLattice::NDIM> Geometry<TLattice>::findNormal(int (*condition)(const int), const std::vector<int>& neighbors,const std::vector<int> fluidvals,int k) {
 
     std::array<int8_t,TLattice::NDIM> normal = {};
-    
-    if (!apply(k,condition,fluidvals)) return normal;
 
     std::vector<int> sum(TLattice::NDIM,0);
 
     for (int idx = 0; idx < TStencil::Q; idx++){
-        
-        if(!apply(neighbors[k*TStencil::Q+idx],condition,fluidvals)&&condition(k)!=condition(neighbors[k*TStencil::Q+idx])) {
+
+        if(!apply(condition,fluidvals,neighbors[k*TStencil::Q+idx])&&condition(k)!=condition(neighbors[k*TStencil::Q+idx])) {
             sum[0]+=TStencil::Ci_xyz(0)[idx];
             if constexpr (TLattice::NDIM>1) sum[1]+=TStencil::Ci_xyz(1)[idx];
             if constexpr (TLattice::NDIM>2) sum[2]+=TStencil::Ci_xyz(2)[idx];
@@ -225,10 +302,14 @@ inline std::array<int8_t,TLattice::NDIM> Geometry<TLattice>::findNormal(int (*co
 
 }
 
+/**
+ * \details This function returns false if the current lattice node is a fluid. It returns true if more than
+ *          one of the normal directions is not equal to zero. Otherwise it returns false.
+ */
 template<class TLattice>
 inline bool Geometry<TLattice>::isCorner(int (*condition)(const int),const std::array<int8_t,TLattice::NDIM>& normal,const std::vector<int> fluidvals,int k) { // DOesnt
 
-    if (!apply(k,condition,fluidvals)) return false;
+    if (!apply(condition,fluidvals,k)) return false;
 
     int normalsum = 0;
 
@@ -240,9 +321,12 @@ inline bool Geometry<TLattice>::isCorner(int (*condition)(const int),const std::
 
 }
 
+/**
+ * \details This function returns the boundary index stored in BoundaryLabels at the given lattice index.
+ */
 template<class TLattice>
 inline int& Geometry<TLattice>::getBoundaryType(int k) {
-    //static auto& test = BoundaryLabels<TLattice::NDIM>::template get<TLattice>();
+
     return BoundaryLabels<TLattice::NDIM>::template get<TLattice>(k).Id;
 
 }

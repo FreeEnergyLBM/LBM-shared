@@ -72,10 +72,10 @@ inline double BodyForce<TMethod>::computeXYZ(int xyz, int k) {
     // Why is Density<>::get<typename TTraits::Lattice>(k) not used and instead a constant density is used?
     double density = 1.;    
     
+    if (xyz == 0) return mMagnitudeX * density;
+    if constexpr (Lattice::NDIM == 2){
     // 2D cases
     if constexpr (Lattice::NDIM == 2){
-        if (xyz == 0) return mMagnitudeX * density;
-        
         if (gravityY == true)
             return mMagnitudeY * Density<>::get<typename TTraits::Lattice>(k) * (1.0 + OrderParameter<>::get<typename TTraits::Lattice>(k)) / 2.0;
         else

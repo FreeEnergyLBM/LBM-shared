@@ -168,6 +168,7 @@ const inline double& SRT<TStencil>::Omega(const double& itau){
 
 }
 
+/////Add TRT
 /**
  * \brief The MRT class provides internal functions to calculate the collision operator, Omega, based on the relaxation
  *        time (tau). For MRT, each moment has a different relaxation frequency, so this is contained within a matrix.

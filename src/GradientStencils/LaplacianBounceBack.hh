@@ -2,13 +2,10 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct LaplacianCentralBounceBack : GradientBase<One> { //FIX
+struct LaplacianCentralBounceBack : GradientBase<Laplacian,One> { //FIX
 
     template<class TTraits, class TParameter>
-    static inline double compute(int direction, int k, int num = 0);
-
-    template<class TObj>
-    using GradientType = Laplacian<TObj,TObj::instances>;
+    inline double compute(int direction, int k, int num = 0);
     
 };
 
@@ -26,7 +23,7 @@ inline double LaplacianCentralBounceBack::compute(const int direction, const int
 
     for (int idx = 1; idx <Stencil::Q; idx++) {
 
-        if(Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx))!=1) {
+        if(!this->isBoundary<Lattice>(data.getNeighbor(k, idx))) {
 
             laplaciansum +=  Stencil::Weights[idx] * 2 * (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num) - TParameter::template get<Lattice>(k, num));
 

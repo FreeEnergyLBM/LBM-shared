@@ -2,13 +2,10 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct CentralXYZBounceBack : GradientBase<Cartesian> {
+struct CentralXYZBounceBack : GradientBase<Gradient,Cartesian> {
     
     template<class TTraits, class TParameter>
-    static inline double compute( int direction, int k, int num = 0);
-
-    template<class TObj>
-    using GradientType = Gradient<TObj,TObj::instances>;
+    inline double compute( int direction, int k, int num = 0);
     
 };
 
@@ -21,6 +18,8 @@ inline double CentralXYZBounceBack::compute(int direction, int k, int num) {
     using DataType = Data_Base<Lattice, Stencil>;
 
     DataType& data = DataType::getInstance();
+
+    if (this->isBoundary<Lattice>(k)) return 0;
 
     double gradientsum = 0;
     const static auto& param = TParameter::template get<Lattice>();
@@ -42,7 +41,7 @@ inline double CentralXYZBounceBack::compute(int direction, int k, int num) {
     */
     for (int idx = 1; idx <Stencil::Q; idx++) {
         
-        if ((Geometry<Lattice>::getBoundaryType(data.getNeighbor(k,idx))==1)) {
+        if ((this->isBoundary<Lattice>(data.getNeighbor(k,idx)))) {
 
             gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (param[k*TParameter::instances + num]);
 

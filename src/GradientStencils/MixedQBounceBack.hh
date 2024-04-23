@@ -2,13 +2,10 @@
 #include "../Service.hh"
 #include "GradientBase.hh"
 
-struct MixedQBounceBack : GradientBase<AllDirections> {
+struct MixedQBounceBack : GradientBase<GradientMixed,AllDirections> {
 
     template<class TTraits, class TParameter>
-    static inline double compute(const int direction, const int k, int num = 0);
-
-    template<class TObj>
-    using GradientType = GradientMixed<TObj,TObj::instances>;
+    inline double compute(const int direction, const int k, int num = 0);
     
 };
 
@@ -19,6 +16,8 @@ inline double MixedQBounceBack::compute(const int direction, const int k, int nu
     using Stencil = typename TTraits::Stencil;
 
     using DataType = Data_Base<Lattice, Stencil>;
+
+    if (this->isBoundary<Lattice>(k)) return 0;
 
     DataType& data = DataType::getInstance();
 
@@ -31,9 +30,9 @@ inline double MixedQBounceBack::compute(const int direction, const int k, int nu
     
     const static auto& param = TParameter::template get<Lattice>();
     /*
-    if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + direction])==1)) {
+    if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + direction])==1)) {
 
-        if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)){
+        if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)){
             return 0;
         }
 
@@ -41,9 +40,9 @@ inline double MixedQBounceBack::compute(const int direction, const int k, int nu
                        - 2 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
 
     }
-    else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction])==1)) {
+    else if ((this->isBoundary<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction])==1)) {
 
-        if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)){
+        if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)){
             return 0.25 * (4 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q+  direction], num) 
                        - 4 * TParameter::template get<Lattice>(k, num));
         }
@@ -54,7 +53,7 @@ inline double MixedQBounceBack::compute(const int direction, const int k, int nu
 
     }
     
-    else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)) {
+    else if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)) {
 
         return 0.25 * (- TParameter::template get<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction], num)
                        + 5 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction], num)
@@ -70,8 +69,8 @@ inline double MixedQBounceBack::compute(const int direction, const int k, int nu
 
     }
     */
-    if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + direction])!=1)
-                && (Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])!=1)) {
+    if ((!this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + direction])) && (!this->isBoundary<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction]))
+                && (!this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]))) {
 
         return 0.25 * (- param[data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q+direction]*TParameter::instances + num]
                        + 5 * param[data.getNeighbors()[k * Stencil::Q + direction]*TParameter::instances + num]
@@ -79,9 +78,9 @@ inline double MixedQBounceBack::compute(const int direction, const int k, int nu
                        - param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]*TParameter::instances + num]);
 
     }
-    else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + direction])==1)) {
+    else if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + direction]))) {
 
-        if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)){
+        if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]))){
             return 0;
         }
 
@@ -89,9 +88,9 @@ inline double MixedQBounceBack::compute(const int direction, const int k, int nu
                        - 2 * param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]*TParameter::instances + num]);
 
     }
-    else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction])==1)) {
+    else if ((this->isBoundary<Lattice>(data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction]))) {
 
-        if ((Geometry<Lattice>::getBoundaryType(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]])==1)){
+        if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]))){
             return 0.25 * (4 * param[data.getNeighbors()[k * Stencil::Q+  direction]*TParameter::instances + num] 
                        - 4 * param[k*TParameter::instances + num]);
         }

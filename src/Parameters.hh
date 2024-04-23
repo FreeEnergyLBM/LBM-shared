@@ -340,6 +340,13 @@ struct Humidity : public ParameterSingleton<Humidity<TInstances>> {
 };
 
 template<int TInstances=1>
+struct Temperature : public ParameterSingleton<Temperature<TInstances>> {
+
+    static constexpr const char *mName = "Humidity";
+
+};
+
+template<int TInstances=1>
 struct HumidityOld : public ParameterSingleton<HumidityOld<TInstances>> {
 
     static constexpr const char *mName = "HumidityOld";
