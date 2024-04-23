@@ -255,6 +255,57 @@ void writeArrayTxt(std::ofstream& file, const std::vector<T>& data, std::string 
 }
 #endif
 
+/// MPIPARALLEL part should be corrected!
+// #ifdef MPIPARALLEL
+// template<class TLattice, typename T>
+// void rearrangeArrayTxt(const std::vector<T>& data, std::vector<T>& rearrangedData, int dir) {
+//     int rank, size;
+//     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//     MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+//     // Allocate temporary buffers for each process
+//     std::vector<T> localData(data.size() / size);
+//     std::vector<T> localRearrangedData(rearrangedData.size() / size);
+
+//     // Distribute data across processes
+//     MPI_Scatter(data.data(), data.size() / size, MPI_DOUBLE, localData.data(), data.size() / size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+//     // Perform local rearrangement
+//     for (int i = 0; i < TLattice::LX / size; i++) {
+//         for (int j = 0; j < TLattice::LY; j++) {
+//             for (int k = 0; k < TLattice::LZ; k++) {
+//                 int index = (i * TLattice::LY * TLattice::LZ + j * TLattice::LZ + k) * dir;
+//                 int newIndex = (k * TLattice::LY * (TLattice::LX / size) + j * (TLattice::LX / size) + i) * dir;
+//                 localRearrangedData[newIndex] = localData[index];
+//                 localRearrangedData[newIndex + 1] = localData[index + 1];
+//                 localRearrangedData[newIndex + 2] = localData[index + 2];
+//             }
+//         }
+//     }
+
+//     // Gather rearranged data from all processes
+//     MPI_Gather(localRearrangedData.data(), localRearrangedData.size(), MPI_DOUBLE, rearrangedData.data(), localRearrangedData.size(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+// }
+// #else
+template<class TLattice, typename T>
+void rearrangeArrayTxt(const std::vector<T>& data, std::vector<T>& rearrangedData, int dir){
+
+    for (int i=0; i<TLattice::LX; i++) {
+            for (int j=0; j<TLattice::LY; j++) { 
+                    for (int k=0; k<TLattice::LZ; k++) {    
+                int index = (i*TLattice::LY*TLattice::LZ + j*TLattice::LZ + k) * dir;
+                int newIndex = (k*TLattice::LY*TLattice::LX + j*TLattice::LX + i) * dir;
+                rearrangedData[newIndex] = data[index];
+                if (dir != 1)
+                {
+                    rearrangedData[newIndex + 1] = data[index + 1];
+                    rearrangedData[newIndex + 2] = data[index + 2];
+                }
+            }
+        }
+    }
+}
+// #endif
 
 template<class TLattice>
 template<typename... TParameter>
@@ -273,7 +324,7 @@ void SaveHandler<TLattice>::saveVTK(int timestep, TParameter&... params) {
     // Write the header
     char header[1024];
     int nPoints = TLattice::LX * TLattice::LY * TLattice::LZ;
-    sprintf(header, "# vtk DataFile Version 3.0\nSimulation data at timestep %d\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %d %d %d\nORIGIN 0 0 0\nSPACING 1 1 1\nPOINT_DATA %d\n", timestep, TLattice::LZ, TLattice::LY, TLattice::LX, nPoints);
+    sprintf(header, "# vtk DataFile Version 3.0\nSimulation data at timestep %d\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %d %d %d\nORIGIN 0 0 0\nSPACING 1 1 1\nPOINT_DATA %d\n", timestep, TLattice::LX, TLattice::LY, TLattice::LZ, nPoints);
     writeText(file, header);
 
     // Write each parameter
@@ -301,8 +352,15 @@ void SaveHandler<TLattice>::saveVTK(int timestep, TParameter&... params) {
             }
             data = newData;
         }
+
+        // data iterates in the order of z, y, and x, which
+        // is not suitable for the visualisation with ParaView.
+        // Rearrange the data to reiterate in the order of x, y, and z.
+        std::vector<double> rearrangedData(data.size());
+        rearrangeArrayTxt<TLattice>(data, rearrangedData, directions);
+        
         // Write data
-        writeArrayTxt<TLattice>(file, data, "%13.8f", "\n", "NONE", directions, " ");
+        writeArrayTxt<TLattice>(file, rearrangedData, "%13.8f", "\n", "NONE", directions, " ");
     } (), ...);
 
     #ifdef MPIPARALLEL
@@ -313,17 +371,90 @@ void SaveHandler<TLattice>::saveVTK(int timestep, TParameter&... params) {
 }
 
 
+// template<class TLattice>
+// template<typename... TParameter>
+// void SaveHandler<TLattice>::saveDAT(int timestep, TParameter&... params) {
+//     // File layout:
+//     // TITLE = [NAME]
+//     // VARIABLES = x, y, z, [param]...
+//     // ZONE  t= "solid", f= point, I= [LX], J= [LY], K= LZ
+//     // [x]\t[y]\t[z]\t[param]...
+//     // [x]\t[y]\t[z]\t[param]...
+//     // ...
+
+//     std::string filePrefix = "data";
+//     char filename[512];
+//     sprintf(filename, "%s/%s_%d.dat", mDataDir.c_str(), filePrefix.c_str(), timestep);
+//     #ifdef MPIPARALLEL
+//         MPI_File file;
+//         MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
+//     #else
+//         std::ofstream file(filename);
+//     #endif
+
+//     // Parameter data
+//     std::string parameterHeader = "";
+//     int nPoints = TLattice::LXdiv * TLattice::LYdiv * TLattice::LZdiv;
+//     int nData = 3 * nPoints;
+//     ([&] {
+//         int directions = params.mDirections;
+//         nData += nPoints * directions;
+//         if (directions == 1) {
+//             parameterHeader += std::string(", ") + TParameter::mName;
+//         } else {
+//             for (int idir=0; idir<directions; idir++) {
+//                 parameterHeader += ", " + (TParameter::mName + std::to_string(idir));
+//             }
+//         }
+//     } (), ...);
+
+//     // Write the header
+//     char text[1024];
+//     sprintf(text, "TITLE = Simulation data at timestep %d\nVARIABLES = x, y, z%s", timestep, parameterHeader.c_str());
+//     writeText(file, text);
+//     sprintf(text, "\nZONE  t=\"solid\", f= point, I= %d, J= %d, K= %d\n", TLattice::LX, TLattice::LY, TLattice::LZ);
+//     writeText(file, text);
+
+//     // Write the data
+//     std::vector<std::string> data;
+//     data.reserve(nData);
+//     int nWidth = std::to_string(std::max({TLattice::LX, TLattice::LY, TLattice::LZ})).length();
+//     for (int x=0; x<TLattice::subArray[0]; x++) {
+//         for (int y=0; y<TLattice::subArray[1]; y++) {
+//             for (int z=0; z<TLattice::subArray[2]; z++) {
+//                 int k = computeK<TLattice>(x, y, z);
+//                 std::stringstream pointData;
+//                 // Global coordinates
+//                 pointData << std::setw(nWidth) << x+TLattice::LXMPIOffset-TLattice::HaloXWidth << "\t";
+//                 pointData << std::setw(nWidth) << y+TLattice::LYMPIOffset-TLattice::HaloYWidth << "\t";
+//                 pointData << std::setw(nWidth) << z+TLattice::LZMPIOffset-TLattice::HaloZWidth;
+//                 // Parameters
+//                 ([&] {
+//                     int directions = params.mDirections;
+//                     for (int idir=0; idir<directions; idir++) {
+//                         auto value = params.getParameter()[k*directions+idir];
+//                         if (mMaskSolid && isMasked<TLattice>(k)) value = mMaskValue; // Apply the solid mask, if using
+//                         pointData << "\t" << std::setw(12) << value;
+//                     }
+//                 } (), ...);
+//                 data.push_back(pointData.str());
+//             }
+//         }
+//     }
+//     writeArrayTxt<TLattice>(file, data, "%s");
+
+//     #ifdef MPIPARALLEL
+//         MPI_File_close(&file);
+//     #else
+//         file.close();
+//     #endif
+// }
+
+
 template<class TLattice>
 template<typename... TParameter>
 void SaveHandler<TLattice>::saveDAT(int timestep, TParameter&... params) {
-    // File layout:
-    // TITLE = [NAME]
-    // VARIABLES = x, y, z, [param]...
-    // ZONE  t= "solid", f= point, I= [LX], J= [LY], K= LZ
-    // [x]\t[y]\t[z]\t[param]...
-    // [x]\t[y]\t[z]\t[param]...
-    // ...
-
+    
     std::string filePrefix = "data";
     char filename[512];
     sprintf(filename, "%s/%s_%d.dat", mDataDir.c_str(), filePrefix.c_str(), timestep);
@@ -334,56 +465,56 @@ void SaveHandler<TLattice>::saveDAT(int timestep, TParameter&... params) {
         std::ofstream file(filename);
     #endif
 
-    // Parameter data
-    std::string parameterHeader = "";
-    int nPoints = TLattice::LXdiv * TLattice::LYdiv * TLattice::LZdiv;
-    int nData = 3 * nPoints;
+    // Write the header
+    char header[1024];
+    sprintf(header, "TITLE = \"Simulation data at timestep %d\"\n", timestep);
+    writeText(file, header);
+
+    // Write variables
+    sprintf(header, "VARIABLES = \"x\", \"y\", \"z\"");
     ([&] {
         int directions = params.mDirections;
-        nData += nPoints * directions;
         if (directions == 1) {
-            parameterHeader += std::string(", ") + TParameter::mName;
+            sprintf(header + strlen(header), ", \"%s\"", TParameter::mName);
         } else {
-            for (int idir=0; idir<directions; idir++) {
-                parameterHeader += ", " + (TParameter::mName + std::to_string(idir));
+            for (int idir = 0; idir < directions; idir++) {
+                sprintf(header + strlen(header), ", \"%s_%d\"", TParameter::mName, idir);
             }
         }
     } (), ...);
+    strcat(header, "\n");
+    writeText(file, header);
 
-    // Write the header
-    char text[1024];
-    sprintf(text, "TITLE = Simulation data at timestep %d\nVARIABLES = x, y, z%s", timestep, parameterHeader.c_str());
-    writeText(file, text);
-    sprintf(text, "\nZONE  t=\"solid\", f= point, I= %d, J= %d, K= %d\n", TLattice::LX, TLattice::LY, TLattice::LZ);
-    writeText(file, text);
+    // Write zone information
+    sprintf(header, "ZONE T = \"solid\", I = %d, J = %d, K = %d, DATAPACKING = POINT, VARLOCATION = ([3]=CELLCENTERED)\n", TLattice::LX, TLattice::LY, TLattice::LZ);
+    writeText(file, header);
 
     // Write the data
-    std::vector<std::string> data;
-    data.reserve(nData);
-    int nWidth = std::to_string(std::max({TLattice::LX, TLattice::LY, TLattice::LZ})).length();
-    for (int x=0; x<TLattice::subArray[0]; x++) {
-        for (int y=0; y<TLattice::subArray[1]; y++) {
-            for (int z=0; z<TLattice::subArray[2]; z++) {
+    for (int x = 0; x < TLattice::LX; x++) {
+        for (int y = 0; y < TLattice::LY; y++) {
+            for (int z = 0; z < TLattice::LZ; z++) {
                 int k = computeK<TLattice>(x, y, z);
-                std::stringstream pointData;
                 // Global coordinates
-                pointData << std::setw(nWidth) << x+TLattice::LXMPIOffset-TLattice::HaloXWidth << "\t";
-                pointData << std::setw(nWidth) << y+TLattice::LYMPIOffset-TLattice::HaloYWidth << "\t";
-                pointData << std::setw(nWidth) << z+TLattice::LZMPIOffset-TLattice::HaloZWidth;
+                writeText(file, std::to_string(x).c_str());
+                writeText(file, "\t");
+                writeText(file, std::to_string(y).c_str());
+                writeText(file, "\t");
+                writeText(file, std::to_string(z).c_str());
+                writeText(file, "\t");
                 // Parameters
                 ([&] {
                     int directions = params.mDirections;
-                    for (int idir=0; idir<directions; idir++) {
-                        auto value = params.getParameter()[k*directions+idir];
+                    for (int idir = 0; idir < directions; idir++) {
+                        auto value = params.getParameter()[k * directions + idir];
                         if (mMaskSolid && isMasked<TLattice>(k)) value = mMaskValue; // Apply the solid mask, if using
-                        pointData << "\t" << std::setw(12) << value;
+                        writeText(file, std::to_string(value).c_str());
+                        writeText(file, "\t");
                     }
                 } (), ...);
-                data.push_back(pointData.str());
+                writeText(file, "\n");
             }
         }
     }
-    writeArrayTxt<TLattice>(file, data, "%s");
 
     #ifdef MPIPARALLEL
         MPI_File_close(&file);
@@ -391,6 +522,7 @@ void SaveHandler<TLattice>::saveDAT(int timestep, TParameter&... params) {
         file.close();
     #endif
 }
+
 
 
 template<class TLattice>

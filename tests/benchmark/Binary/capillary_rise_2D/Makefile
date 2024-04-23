@@ -1,4 +1,4 @@
-ROOT_DIR =	../..
+ROOT_DIR =	../../../..
 INCS	=	-I$(ROOT_DIR)/src
 DEFS    =	-g -O3 -Wno-deprecated -Wall -fmax-errors=1 -std=c++17 -fopenmp# -DMPIPARALLEL
 LIBS	=	-lm
