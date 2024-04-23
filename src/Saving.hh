@@ -374,7 +374,14 @@ void SaveHandler<TLattice>::saveVTK(int timestep, TParameter&... params) {
 // template<class TLattice>
 // template<typename... TParameter>
 // void SaveHandler<TLattice>::saveDAT(int timestep, TParameter&... params) {
-    
+//     // File layout:
+//     // TITLE = [NAME]
+//     // VARIABLES = x, y, z, [param]...
+//     // ZONE  t= "solid", f= point, I= [LX], J= [LY], K= LZ
+//     // [x]\t[y]\t[z]\t[param]...
+//     // [x]\t[y]\t[z]\t[param]...
+//     // ...
+
 //     std::string filePrefix = "data";
 //     char filename[512];
 //     sprintf(filename, "%s/%s_%d.dat", mDataDir.c_str(), filePrefix.c_str(), timestep);
@@ -442,11 +449,6 @@ void SaveHandler<TLattice>::saveVTK(int timestep, TParameter&... params) {
 //         file.close();
 //     #endif
 // }
-
-
-
-
-
 
 
 template<class TLattice>
