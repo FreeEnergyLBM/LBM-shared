@@ -14,3 +14,5 @@
 #include "Bouzidi.hh"
 #include "Bouzidi2.hh"
 #include "ZouHe.hh"
+
+#include "DirichletOrderParameter.hh"
