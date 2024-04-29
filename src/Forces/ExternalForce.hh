@@ -73,7 +73,6 @@ inline double BodyForce<TMethod>::computeXYZ(int xyz, int k) {
     double density = 1.;    
     
     if (xyz == 0) return mMagnitudeX * density;
-    if constexpr (Lattice::NDIM == 2){
     // 2D cases
     if constexpr (Lattice::NDIM == 2){
         if (gravityY == true)
