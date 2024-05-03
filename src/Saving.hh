@@ -25,6 +25,8 @@ class SaveHandler {
         inline void saveHeader(int timestep, int saveinterval);
 
         void saveBoundaries(int timestep);
+        void saveBoundariesVTK(int timestep);
+        void saveBoundariesDAT(int timestep);
 
         template<class TParameter, int TNumDir=1> void saveParameter(std::string filename, int instance=-1);
         template<class TParameter, int TNumDir=1> void saveParameter(int timestep, int instance=-1);
@@ -575,6 +577,113 @@ void SaveHandler<TLattice>::saveBoundaries(int timestep){
 
 }
 
+template<class TLattice>
+void SaveHandler<TLattice>::saveBoundariesVTK(int timestep) {
+
+    std::string filePrefix = BoundaryLabels<TLattice::NDIM>::mName;
+    char filename[512];
+    sprintf(filename, "%s/%s_%d.vtk", mDataDir.c_str(), filePrefix.c_str(), timestep);
+    #ifdef MPIPARALLEL
+        MPI_File file;
+        MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
+    #else
+        std::ofstream file(filename);
+    #endif
+
+    // Write the header
+    char header[1024];
+    int nPoints = TLattice::LX * TLattice::LY * TLattice::LZ;
+    sprintf(header, "# vtk DataFile Version 3.0\nGeometry Labels\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %d %d %d\nORIGIN 0 0 0\nSPACING 1 1 1\nPOINT_DATA %d\n", TLattice::LX, TLattice::LY, TLattice::LZ, nPoints);
+    writeText(file, header);
+
+    // Write the labels
+    std::vector<int> labels(TLattice::N);
+    for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) {
+        int value = BoundaryLabels<TLattice::NDIM>::template get<TLattice>()[k].Id;
+        labels[k] = value;
+    };
+    
+    // Write header
+    char dataHeader[1024];
+    sprintf(dataHeader, "\nSCALARS %s float\nLOOKUP_TABLE default\n", BoundaryLabels<TLattice::NDIM>::mName);
+
+    writeText(file, dataHeader);
+        
+    // data iterates in the order of z, y, and x, which
+    // is not suitable for the visualisation with ParaView.
+    // Rearrange the data to reiterate in the order of x, y, and z.
+    std::vector<int> rearrangedLabels(labels.size());
+    rearrangeArrayTxt<TLattice>(labels, rearrangedLabels, 1);
+        
+    // Write data
+    writeArrayTxt<TLattice>(file, rearrangedLabels, "%d", "\n", "NONE", 1, " ");
+
+
+    #ifdef MPIPARALLEL
+        MPI_File_close(&file);
+    #else
+        file.close();
+    #endif
+}
+
+
+template<class TLattice>
+void SaveHandler<TLattice>::saveBoundariesDAT(int timestep) {
+    
+    std::string filePrefix = BoundaryLabels<TLattice::NDIM>::mName;
+    char filename[512];
+    sprintf(filename, "%s/%s_%d.dat", mDataDir.c_str(), filePrefix.c_str(), timestep);
+    #ifdef MPIPARALLEL
+        MPI_File file;
+        MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
+    #else
+        std::ofstream file(filename);
+    #endif
+
+    // Write the header and variable name
+    char header[1024];
+    sprintf(header, "TITLE = \"Geometry Labels\"\n");
+    writeText(file, header);
+
+    sprintf(header, "VARIABLES = \"x\", \"y\", \"z\"");
+    sprintf(header + strlen(header), ", \"%s\"", BoundaryLabels<TLattice::NDIM>::mName);
+    
+    strcat(header, "\n");
+    writeText(file, header);
+
+    // Write zone information
+    sprintf(header, "ZONE T = \"solid\", I = %d, J = %d, K = %d, DATAPACKING = POINT, VARLOCATION = ([3]=CELLCENTERED)\n", TLattice::LX, TLattice::LY, TLattice::LZ);
+    writeText(file, header);
+
+    // Write the data
+    for (int x = 0; x < TLattice::LX; x++) {
+        for (int y = 0; y < TLattice::LY; y++) {
+            for (int z = 0; z < TLattice::LZ; z++) {
+                int k = computeK<TLattice>(x, y, z);
+                // Global coordinates
+                writeText(file, std::to_string(x).c_str());
+                writeText(file, "\t");
+                writeText(file, std::to_string(y).c_str());
+                writeText(file, "\t");
+                writeText(file, std::to_string(z).c_str());
+                writeText(file, "\t");
+                
+                // Labels
+                auto value = BoundaryLabels<TLattice::NDIM>::template get<TLattice>()[k].Id;
+                writeText(file, std::to_string(value).c_str());
+                writeText(file, "\t");
+               
+                writeText(file, "\n");
+            }
+        }
+    }
+
+    #ifdef MPIPARALLEL
+        MPI_File_close(&file);
+    #else
+        file.close();
+    #endif
+}
 
 template<class TLattice>
 template<class TParameter, int TNumDir>
