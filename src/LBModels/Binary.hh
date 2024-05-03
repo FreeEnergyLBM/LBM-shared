@@ -31,6 +31,7 @@ class Binary: public CollisionBase<TLattice, typename TTraits::Stencil>, public 
 
         inline void setTau1(double val){mTau1=val;}
         inline void setTau2(double val){mTau2=val;}
+        inline void setA(double val){mA=val;}
 
         inline void collide() override; //Collision step
 
@@ -54,9 +55,12 @@ class Binary: public CollisionBase<TLattice, typename TTraits::Stencil>, public 
         double mTau1=1;
         double mTau2=1;
 
+        double mA;
+
         std::vector<double>& orderparameter = OrderParameter<>::get<TLattice>(); //Reference to vector of order parameters
         std::vector<double>& velocity = Velocity<>::get<TLattice,TLattice::NDIM>(); //Reference to vector of velocities
-        std::vector<double>& itau = InverseTau<>::get<TLattice>(); //Reference to vector of velocities
+        std::vector<double>& itau = InverseTau<>::get<TLattice>(); //Reference to vector of inverse relaxation times
+        std::vector<double>& pressure = Pressure<>::get<TLattice>(); // Reference to vector of pressures
 
 };
 
@@ -110,7 +114,15 @@ inline void Binary<TLattice, TTraits>::initialise() { //Initialise model
 
         OrderParameter<>::initialise<TLattice>(1.0,k);
         
-        InverseTau<>::initialise<TLattice>(1.0 / (0.5 * (1.0 + OrderParameter<>::get<TLattice>(k)) * (mTau1 - mTau2) + mTau2), k);
+        // InverseTau<>::initialise<TLattice>(1.0 / (0.5 * (1.0 + OrderParameter<>::get<TLattice>(k)) * (mTau1 - mTau2) + mTau2), k);
+        
+        // InverseTau = c_1 / tau_1 + c_2 / tau_2; c_1 = 0.5 * (rho + phi), c_2 = 0.5 * (rho - phi)
+        double density = Density<>::get<TLattice>(k);
+        double orderParameter = OrderParameter<>::get<TLattice>(k);
+        
+        InverseTau<>::initialise<TLattice>(0.5 * ((density + orderParameter) / mTau1 + (density - orderParameter) / mTau2), k);
+
+        Pressure<>::initialise<TLattice>(density / 3., k);
 
         double equilibriumsum = 0;
 
@@ -148,7 +160,12 @@ inline void Binary<TLattice, TTraits>::computeMomenta() { //Calculate order para
 
             orderparameter[k] = this -> computeDensity(distribution, k);
 
-            itau[k] = 1.0 / (0.5 * (1.0 + orderparameter[k]) * (mTau1) - 0.5 * (-1.0 + orderparameter[k]) * mTau2);
+            double density = Density<>::get<TLattice>(k);
+
+            itau[k] = 0.5 * ((density + orderparameter[k]) / mTau1 + (density - orderparameter[k]) / mTau2);
+
+            pressure[k] = density / 3 +
+                          mA * (-0.5 * pow(orderparameter[k], 2) + 0.75 * pow(orderparameter[k], 4));
         
         }
 
