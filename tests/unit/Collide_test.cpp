@@ -1,54 +1,50 @@
-#include "test_main.hh"
 #include "Collide.hh"
-#include "Forcing.hh"
 
-#include "Lattice.hh"
 #include "Data.hh"
+#include "Forcing.hh"
+#include "LBModels/ModelBase.hh"
+#include "Lattice.hh"
 #include "Parallel.hh"
 #include "Stencil.hh"
-#include "LBModels/ModelBase.hh"
+#include "test_main.hh"
 
 double epsilon = 1e-10;
 
 using Lattice = LatticeProperties<NoParallel, 1, 1>;
 
 TEST(CollideTest, computeGammaD2Q9) {
-  CollisionBase<Lattice,D2Q9> collision;
-  double v[2] = {1,2};
-  double vv = v[0]*v[0] + v[1]*v[1];
-  for (int i=0; i<9; i++) {
-    int c[2] = {D2Q9::Ci_x[i], D2Q9::Ci_y[i]};
-    double vc = v[0]*c[0] + v[1]*c[1];
-    double gamma = D2Q9::Weights[i] * (1 + 3*vc + 4.5*vc*vc - 1.5*vv);
-    EXPECT_NEAR(collision.computeGamma(v, i), gamma, epsilon);
-  }
+    CollisionBase<Lattice, D2Q9> collision;
+    double v[2] = {1, 2};
+    double vv = v[0] * v[0] + v[1] * v[1];
+    for (int i = 0; i < 9; i++) {
+        int c[2] = {D2Q9::Ci_x[i], D2Q9::Ci_y[i]};
+        double vc = v[0] * c[0] + v[1] * c[1];
+        double gamma = D2Q9::Weights[i] * (1 + 3 * vc + 4.5 * vc * vc - 1.5 * vv);
+        EXPECT_NEAR(collision.computeGamma(v, i), gamma, epsilon);
+    }
 }
-
 
 TEST(CollideTest, computeZerothMomentD2Q9) {
-  CollisionBase<Lattice,D2Q9> collision;
-  double distr[9] = {1,1,1,1,1,1,1,1,1};
-  EXPECT_NEAR(collision.computeZerothMoment(distr), 9, epsilon);
+    CollisionBase<Lattice, D2Q9> collision;
+    double distr[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
+    EXPECT_NEAR(collision.computeZerothMoment(distr), 9, epsilon);
 }
-
 
 TEST(CollideTest, computeFirstMomentD2Q9) {
-  CollisionBase<Lattice,D2Q9> collision;
-  double distr[9] = {1,1,0,1,0,1,0,1,0};
-  EXPECT_NEAR(collision.computeFirstMoment(distr,0), 3, epsilon);
-  EXPECT_NEAR(collision.computeFirstMoment(distr,1), 1, epsilon);
+    CollisionBase<Lattice, D2Q9> collision;
+    double distr[9] = {1, 1, 0, 1, 0, 1, 0, 1, 0};
+    EXPECT_NEAR(collision.computeFirstMoment(distr, 0), 3, epsilon);
+    EXPECT_NEAR(collision.computeFirstMoment(distr, 1), 1, epsilon);
 }
-
 
 TEST(CollideTest, collideSRTD2Q9) {
-  using Collision = SRT<D2Q9>;
-  double old[1] = {2};
-  double eq[1] = {1};
-  EXPECT_NEAR(Collision::collide<Lattice>(old, eq, 1, 0), eq[0], epsilon);
-  EXPECT_NEAR(Collision::collide<Lattice>(old, eq, 0.5, 0), 0.5*(eq[0]+old[0]), epsilon);
-  EXPECT_NEAR(Collision::collide<Lattice>(old, eq, 0.9, 0), 0.9*eq[0]+0.1*old[0], epsilon);
+    using Collision = SRT<D2Q9>;
+    double old[1] = {2};
+    double eq[1] = {1};
+    EXPECT_NEAR(Collision::collide<Lattice>(old, eq, 1, 0), eq[0], epsilon);
+    EXPECT_NEAR(Collision::collide<Lattice>(old, eq, 0.5, 0), 0.5 * (eq[0] + old[0]), epsilon);
+    EXPECT_NEAR(Collision::collide<Lattice>(old, eq, 0.9, 0), 0.9 * eq[0] + 0.1 * old[0], epsilon);
 }
-
 
 // TEST(CollideTest, forceGuoSRTD2Q9) {
 //   using Trait = DefaultTrait<Lattice>;

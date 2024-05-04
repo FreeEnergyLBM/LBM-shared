@@ -1,0 +1,10 @@
+lx=100
+ly=100
+lz=1
+saveInterval=100
+timesteps=1000
+datadir="data/"
+s01=0.0015
+s02=0.0015
+s12=0.0015
+interfacewidth=4
