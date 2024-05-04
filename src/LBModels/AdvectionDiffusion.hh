@@ -9,7 +9,6 @@
 #include "../GradientStencils/GradientStencils.hh"
 #include "../Parallel.hh"
 #include "../Parameters.hh"
-
 #include "ModelBase.hh"
 
 // FlowField.hh: Contains the details of the LBM model to solve the Navier-Stokes and continuity equation. Each

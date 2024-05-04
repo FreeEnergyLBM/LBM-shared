@@ -5,10 +5,7 @@
 #include "CorrectVelocity.hh"
 #include "CubicWetting.hh"
 #include "Gradients.hh"
-
-
 #include "LinearWetting.hh"
-
 #include "NoFluxSolid.hh"
 #include "SetParameterOld.hh"
 #include "SimpleMassLossCalculator.hh"

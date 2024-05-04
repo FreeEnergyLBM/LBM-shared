@@ -9,7 +9,6 @@
 #include "FreeSlip.hh"
 #include "InterpolatedDirichlet.hh"
 #include "Neumann.hh"
-
 #include "Refill.hh"
 #include "VelocityInflow.hh"
 #include "VelocityInflowVariable.hh"
