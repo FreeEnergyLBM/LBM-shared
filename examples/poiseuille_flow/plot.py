@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 
 def coord_k(k, ly, lz):
-    """From a k value, determines its xk, yk, and zk."""    
+    """From a k value, determines its xk, yk, and zk."""
     xk = math.floor(k/(ly*lz))
     yk = math.floor((k - xk*lz*ly)/lz)
     zk = k - xk*lz*ly - yk*lz
@@ -28,28 +28,20 @@ def read_data(direc='data'):
 
     times = np.arange(0, tend+1, tinc)
     vel = np.zeros((len(times), lx, ly, lz, ndim))
-    solid = np.zeros((len(times), lx, ly, lz))
 
     for it, t in enumerate(times):
         try:
             vel_file = open(direc+"/Velocity_t%li.mat"%t, 'rb')
-            solid_file = open(direc+"/BoundaryLabels_t%li.mat"%t, 'rb')
-
             for k in range(lx*ly*lz):
                 (xk,yk,zk) = coord_k(k,ly,lz)
                 for i in range(ndim):
                     vel[it,xk,yk,zk,i] = struct.unpack('=d', vel_file.read(8))[0]
-                solid[it,xk,yk,zk] = struct.unpack('=i', solid_file.read(4))[0]
-            
             vel_file.close()
-            solid_file.close()
         except FileNotFoundError:
             vel = vel[:it]
-            solid = solid[:it]
             break
 
-    # vel = np.ma.masked_where(solid, vel)
-    return vel, solid
+    return vel
 
 
 def plot(vel):
@@ -62,9 +54,9 @@ def plot(vel):
         ax[0].contourf(vel2d.T, cmap='Reds')
         points, = ax[1].plot(vel2d[0], 'k.')
         plt.pause(0.5)
-        points.remove()
+        if (i<len(vel)-1): points.remove()
     plt.show()
 
 
-vel, solid = read_data('data')
+vel = read_data('data')
 plot(vel)
