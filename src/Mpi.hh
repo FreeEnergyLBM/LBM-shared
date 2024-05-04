@@ -51,6 +51,12 @@ class MpiClass {
     MpiClass() { throw std::runtime_error("Error: Do not create new instances of MpiClass"); };
     MpiClass(int){};
 
+    void barrier() {
+#ifdef MPIPARALLEL
+        MPI_Barrier(MPI_COMM_WORLD);
+#endif
+    }
+
    private:
     bool initialised = false;
     bool initialisedHere = false;

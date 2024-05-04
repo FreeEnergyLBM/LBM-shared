@@ -27,6 +27,8 @@ class SaveHandler {
     inline void saveHeader(int timestep, int saveinterval);
 
     void saveBoundaries(int timestep);
+    void saveBoundariesVTK(int timestep);
+    void saveBoundariesDAT(int timestep);
 
     template <class TParameter, int TNumDir = 1>
     void saveParameter(std::string filename, int instance = -1);
@@ -477,6 +479,111 @@ void SaveHandler<TLattice>::saveBoundaries(int timestep) {
     };
     fs.close();
 
+#endif
+}
+
+template <class TLattice>
+void SaveHandler<TLattice>::saveBoundariesVTK(int timestep) {
+    // Open the file
+    std::string filePrefix = BoundaryLabels<TLattice::NDIM>::mName;
+    char filename[512];
+    sprintf(filename, "%s/%s_%d.vtk", mDataDir.c_str(), filePrefix.c_str(), timestep);
+#ifdef MPIPARALLEL
+    MPI_File file;
+    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
+#else
+    std::ofstream file(filename);
+#endif
+
+    // If choosing to transpose the data to be column major (as expected by VTK)
+    if (vtkTranspose && (mpi.size > 1)) {
+        vtkTranspose = false;
+        print("WARNING: VTK saving cannot transpose the data for multiple processors.");
+    }
+
+    // Write the header
+    char header[1024];
+    int nPoints = TLattice::LX * TLattice::LY * TLattice::LZ;
+    sprintf(header,
+            "# vtk DataFile Version 3.0\nGeometry Labels\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %d %d "
+            "%d\nORIGIN 0 0 0\nSPACING 1 1 1\nPOINT_DATA %d\n",
+            TLattice::LX, TLattice::LY, TLattice::LZ, nPoints);
+    writeText(file, header);
+
+    // Write the labels
+    std::vector<int> labels(TLattice::N);
+    for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) {
+        int value = BoundaryLabels<TLattice::NDIM>::template get<TLattice>()[k].Id;
+        labels[k] = value;
+    };
+
+    // Write parameter header
+    char dataHeader[1024];
+    sprintf(dataHeader, "\nSCALARS %s float\nLOOKUP_TABLE default\n", BoundaryLabels<TLattice::NDIM>::mName);
+
+    writeText(file, dataHeader);
+
+    if (vtkTranspose) labels = transposeArray<TLattice>(labels, 1);
+
+    // Write data
+    writeArrayTxt<TLattice>(file, labels, "%d", "\n", "NONE", 1, " ");
+
+#ifdef MPIPARALLEL
+    MPI_File_close(&file);
+#else
+    file.close();
+#endif
+}
+
+template <class TLattice>
+void SaveHandler<TLattice>::saveBoundariesDAT(int timestep) {
+    std::string filePrefix = BoundaryLabels<TLattice::NDIM>::mName;
+    char filename[512];
+    sprintf(filename, "%s/%s_%d.dat", mDataDir.c_str(), filePrefix.c_str(), timestep);
+#ifdef MPIPARALLEL
+    MPI_File file;
+    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
+#else
+    std::ofstream file(filename);
+#endif
+
+    // Write the header and variable name
+    char header[1024];
+    sprintf(header, "TITLE = \"Geometry Labels\"\n");
+    writeText(file, header);
+
+    sprintf(header, "VARIABLES = \"x\", \"y\", \"z\"");
+    sprintf(header + strlen(header), ", \"%s\"", BoundaryLabels<TLattice::NDIM>::mName);
+
+    strcat(header, "\n");
+    writeText(file, header);
+
+    // Write zone information
+    sprintf(header,
+            "ZONE T = \"solid\", I = %d, J = %d, K = %d, DATAPACKING = POINT, VARLOCATION = ([3]=CELLCENTERED)\n",
+            TLattice::LX, TLattice::LY, TLattice::LZ);
+    writeText(file, header);
+
+    // Write the data
+    std::vector<std::string> data(TLattice::N);
+    int nWidth = std::to_string(std::max({TLattice::LX, TLattice::LY, TLattice::LZ})).length();
+    for (auto [x, y, z, k] : RangeXYZK<TLattice>()) {
+        std::stringstream pointData;
+        // Global coordinates
+        pointData << std::setw(nWidth) << x << "\t";
+        pointData << std::setw(nWidth) << y << "\t";
+        pointData << std::setw(nWidth) << z << "\t";
+        // Labels
+        int label = BoundaryLabels<TLattice::NDIM>::template get<TLattice>()[k].Id;
+        pointData << std::setw(nWidth) << label;
+        data[k] = pointData.str();
+    }
+    writeArrayTxt<TLattice>(file, data, "%s");
+
+#ifdef MPIPARALLEL
+    MPI_File_close(&file);
+#else
+    file.close();
 #endif
 }
 
