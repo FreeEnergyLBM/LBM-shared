@@ -504,29 +504,30 @@ void SaveHandler<TLattice>::saveBoundariesVTK(int timestep) {
     // Write the header
     char header[1024];
     int nPoints = TLattice::LX * TLattice::LY * TLattice::LZ;
+    int l1 = (vtkTranspose) ? TLattice::LX : TLattice::LZ;
+    int l2 = TLattice::LY;
+    int l3 = (vtkTranspose) ? TLattice::LZ : TLattice::LX;
     sprintf(header,
             "# vtk DataFile Version 3.0\nGeometry Labels\nASCII\nDATASET STRUCTURED_POINTS\nDIMENSIONS %d %d "
             "%d\nORIGIN 0 0 0\nSPACING 1 1 1\nPOINT_DATA %d\n",
-            TLattice::LX, TLattice::LY, TLattice::LZ, nPoints);
+            l1, l2, l3, nPoints);
     writeText(file, header);
-
-    // Write the labels
-    std::vector<int> labels(TLattice::N);
-    for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) {
-        int value = BoundaryLabels<TLattice::NDIM>::template get<TLattice>()[k].Id;
-        labels[k] = value;
-    };
 
     // Write parameter header
     char dataHeader[1024];
     sprintf(dataHeader, "\nSCALARS %s float\nLOOKUP_TABLE default\n", BoundaryLabels<TLattice::NDIM>::mName);
-
     writeText(file, dataHeader);
 
+    // Get the array of labels
+    std::vector<int> labels(TLattice::N);
+    for (int k : RangeK<TLattice>()) {
+        int value = BoundaryLabels<TLattice::NDIM>::template get<TLattice>()[k].Id;
+        labels[k] = value;
+    };
     if (vtkTranspose) labels = transposeArray<TLattice>(labels, 1);
 
     // Write data
-    writeArrayTxt<TLattice>(file, labels, "%d", "\n", "NONE", 1, " ");
+    writeArrayTxt<TLattice>(file, labels, "%5d", "\n", "NONE", 1, " ");
 
 #ifdef MPIPARALLEL
     MPI_File_close(&file);
