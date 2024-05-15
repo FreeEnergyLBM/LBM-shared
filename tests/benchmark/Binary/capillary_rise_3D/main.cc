@@ -1,24 +1,25 @@
 #include <lbm.hh>
 
-// This script simulates capillary rise.
+// This script simulates 3D capillary rise.
 
-const int lx = 100;  // Size of domain in x direction
+const int lx = 40;   // Size of domain in x direction
 const int ly = 100;  // Size of domain in y direction
-const int lz = 100;  // Size of domain in z direction
+const int lz = 40;   // Size of domain in z direction
 
-const double capillaryRadius = 0.1 * lx;
+const double capillaryRadius = lx / 8;  // Radius of the capillary
 
-const double force = -1.0e-5;  // Driving force, equivalent to the pressure gradient
+std::vector<double> gravity = {0.0, -1.0e-5};  // Gravitational force
 
 const int timesteps = 10000000;  // Number of iterations to perform
 const int saveInterval = 10000;  // Interval to save global data
 
+// Surface tension (in lattice units) = sqrt(8 * kappa * A / 9)
+// Interface width (in lattice units) = sqrt(kappa / A)
 const double binaryA = 1.0e-3;
 const double binaryKappa = 2 * binaryA;
-const double contactAngle = 30;  // Contact angle of the liquid on the solid
+const double contactAngle = 30;  // Contact angle of the liquid (phi = 1) on the solid
 
-// Relaxation times of each component. tau1 corresponds to phi=1.0, tau2 corresponds to phi=-1.0
-// Viscosity (in lattice units) = 1.0/3.0 * (tau - 0.5)
+// Relaxation times of each component. tau1 corresponds to phi = 1.0, tau2 corresponds to phi = -1.0
 double tau1 = 0.621;
 double tau2 = 0.509;
 
@@ -31,11 +32,12 @@ int initSolid(const int k) {
     int y = computeY(ly, lz, k);
     int z = computeZ(ly, lz, k);
 
-    double dist = sqrt(pow(x - lx / 2, 2) + pow(z - lz / 2, 2));
+    double distxz = sqrt(pow(x - lx / 2, 2) + pow(z - lz / 2, 2));
+
     if (y <= 1 || y >= ly - 2)
         return 1;
-    else if (y >= ly * 0.1 && y <= ly * 0.9) {
-        if (dist >= capillaryRadius && dist <= capillaryRadius + 2)
+    else if (y >= ly * 0.05 && y <= ly * 0.95) {
+        if (distxz >= capillaryRadius && distxz < capillaryRadius + 2)
             return 1;
         else
             return 0;
@@ -66,6 +68,7 @@ int main(int argc, char **argv) {
 
     componentSeparationModel.setTau1(tau1);
     componentSeparationModel.setTau2(tau2);
+    componentSeparationModel.setA(binaryA);
 
     componentSeparationModel.getProcessor<ChemicalPotentialCalculatorBinary>().setA(binaryA);
     componentSeparationModel.getProcessor<ChemicalPotentialCalculatorBinary>().setKappa(binaryKappa);
@@ -80,9 +83,9 @@ int main(int argc, char **argv) {
     componentSeparationModel.getProcessor<CubicWetting>().setThetaDegrees(contactAngle);
     componentSeparationModel.getProcessor<CubicWetting>().setAlpha(sqrt(2));
 
-    // Define the magnitude of the body force
-    flowFieldModel.getForce<BodyForce<>>().setMagnitudeY(force);
-    flowFieldModel.getForce<BodyForce<>>().activateGravityY();
+    // Set the force acting on the fluid: first argument is the force vector, second argument is the component to which
+    // it applies. 0 corresponds to the liquid component (phi = 1), 1 corresponds to the gas component (phi = -1).
+    flowFieldModel.getForce<BodyForce<>>().setForce(gravity, 0);
 
     // Initialise the liquid and gas
     OrderParameter<>::set<Lattice>(initFluid);
@@ -94,14 +97,22 @@ int main(int argc, char **argv) {
     SaveHandler<Lattice> saver("data/");
     saver.maskSolid();
 
+    saver.saveBoundariesVTK(0);
+    saver.saveHeader(timesteps, saveInterval);  // Create a header with lattice information (lx, ly, lz, NDIM (2D or
+                                                // 3D), timesteps, saveInterval)
+
     // Perform the main LBM loop
     for (int timestep = 0; timestep <= timesteps; timestep++) {
         if (timestep % saveInterval == 0) {
-            std::cout << "Saving at timestep " << timestep << "." << std::endl;
             saver.saveVTK(timestep, Density<>::template getInstance<Lattice>(),
                           OrderParameter<>::template getInstance<Lattice>(),
                           Velocity<>::template getInstance<Lattice, Lattice::NDIM>());
+
+            saver.saveParameter<OrderParameter<>>(timestep);
+            saver.saveParameter<Velocity<>, Lattice::NDIM>(timestep);
+            std::cout << "Saving at timestep " << timestep << "." << std::endl;
         }
+        // Evolve by one timestep
         lbm.evolve();
     }
 
