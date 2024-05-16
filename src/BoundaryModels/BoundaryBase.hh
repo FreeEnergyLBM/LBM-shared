@@ -40,7 +40,7 @@ class BoundaryBase {
                 if (preset_warning) {
 #pragma omp critical
                     print("\033[31;1mDEPRECATION WARNING\033[0m: Using default NodeID (", i,
-                          ") for a boundary. Please eplicitly set NodeIDs for all boundaries in use.");
+                          ") for a boundary. Please explicitly set NodeIDs for all boundaries in use.");
                     preset_warning = false;
                 }
                 return true;
