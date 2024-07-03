@@ -1,6 +1,8 @@
+#include "ADSinkSource.hh"
 #include "AllenCahnSource.hh"
 #include "ChemicalForce.hh"
 #include "CorrectVelocityForce.hh"
+#include "CoupledADSinkSource.hh"
 #include "EvaporationSource.hh"
 #include "ExternalForce.hh"
 #include "ForceBase.hh"
