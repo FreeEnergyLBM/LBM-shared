@@ -25,9 +25,6 @@ class BodyForce : public ForceBase<TMethod> {
     inline void setMagnitudeY(double magnitude);  //!< Set the y-component of the force
     inline void setMagnitudeZ(double magnitude);  //!< Set the z-component of the force
 
-    inline void activateGravityY();  //!< (DEPRECATED) Activates gravity in the y-direction.
-    inline void activateGravityZ();  //!< (DEPRECATED) Activates gravity in the z-direction.
-
     //! Return force at lattice point k in direction xyz
     template <class TTraits>
     inline double computeXYZ(int xyz, int k);
@@ -68,18 +65,6 @@ inline void BodyForce<TMethod>::setMagnitudeY(double magnitude) {
 template <class TMethod>
 inline void BodyForce<TMethod>::setMagnitudeZ(double magnitude) {
     mMagnitudeZ = magnitude;
-}
-
-template <class TMethod>
-inline void BodyForce<TMethod>::activateGravityY() {
-    mComponent = 0;
-    print("DEPRECATION WARNING: Use setForce on component 0 (or 1) for a gravitational force.");
-}
-
-template <class TMethod>
-inline void BodyForce<TMethod>::activateGravityZ() {
-    mComponent = 0;
-    print("DEPRECATION WARNING: Use setForce on component 0 (or 1) for a gravitational force.");
 }
 
 template <class TMethod>

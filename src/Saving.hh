@@ -376,7 +376,7 @@ void SaveHandler<TLattice>::saveDAT(int timestep, TParameter&... params) {
 
     // Write the header
     char text[1024];
-    sprintf(text, "TITLE = Simulation data at timestep %d\n", timestep);
+    sprintf(text, "TITLE = \"Simulation data at timestep %d\"\n", timestep);
     writeText(file, text);
 
     // Write variables

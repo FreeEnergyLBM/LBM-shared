@@ -7,6 +7,7 @@
 #include "Gradients.hh"
 #include "LinearWetting.hh"
 #include "NoFluxSolid.hh"
+#include "Precipitation.hh"
 #include "SetParameterOld.hh"
 #include "SimpleMassLossCalculator.hh"
 #include "Swapper.hh"

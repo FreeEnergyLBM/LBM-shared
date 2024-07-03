@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-
-# This script is used to visualise the output of the simulation and measures the contact angle
-
 import math
 import struct
 import numpy as np
@@ -56,31 +52,39 @@ def plot(phi):
     print('Plotting...')
     for i in range(len(phi)):
         phi2d = phi[i,:,:,0]
-        plt.contourf(phi2d.T, cmap='Blues', zorder=i,levels=5)
+        plt.contourf(phi2d.T, cmap='Blues', zorder=i, levels=5)
         plt.contour(phi2d.T, levels=[0], colors='k', zorder=i)
         #plt.pause(0.5)
     plt.gca().set_aspect('equal')
     plt.show()
+    
+def compute_numerical_capillary_rise(phi, it  = -1):
+    print('Computing capillary rise...')
+    # Finding y_1 at the latest time step
+    tol = 0.5
+    y_1_index = np.where(np.abs(phi[it, 0, 2:-2, 0]) < tol)[0][0] + 2
+    y_1 = y_1_index
+    # Finding y_2 at the latest time step
+    y_2_index = np.where(np.abs(phi[it, int(phi.shape[1] / 2), 2:-2, int(phi.shape[1] / 2)]) < tol)[0][0] + 2
+    y_2 = y_2_index
+    h_num = y_2 - y_1
+    print(f'y_1: {y_1}, y_2: {y_2}')
+    print(f'Numerical capillary rise: {h_num} grid points')
+    return h_num
 
 
-def measure_angle(phi, it=-1):
-    hsolid = 2
-    phi2d = phi[it,:,hsolid:-hsolid,0]
-    lx, ly = phi2d.shape
-
-    def phi_circ(xy, x0, y0, r0, w):
-        x = xy // ly
-        y = xy % ly
-        r = np.sqrt((x-x0)**2 + (y-y0)**2)
-        return np.tanh((r0-r)/w)
-
-    xy = np.arange(lx*ly)
-    popt, _ = curve_fit(phi_circ, xy, phi2d.ravel(), [lx/2,0,20,1])
-    x0, y0, r0, w0 = popt
-    theta = 180/np.pi * np.arccos((-0.5-y0)/r0)
-    print(f'Measured contact angle: {theta:g} degrees')
+def compute_analytical_capillary_rise(lx, A, theta, rhog):   
+    kappa = 2 * A
+    r = lx / 8
+    IFT = np.sqrt(8/9*kappa*A)
+    h_ana = 2 * IFT * np.cos(np.deg2rad(theta)) / (r * rhog)
+    print(f'Analytical capillary rise: {h_ana:.2f} grid points')
+    return h_ana
 
 
 phi, vel = read_data('data')
-measure_angle(phi)
 plot(phi)
+h_num = compute_numerical_capillary_rise(phi)
+h_ana = compute_analytical_capillary_rise(lx = 40, A = 1.00E-03, theta = 30, rhog = 1.0E-05)
+print(f'The relative difference is: {abs(h_ana - h_num) / h_ana * 100:.2f}%')
+

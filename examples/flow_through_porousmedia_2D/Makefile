@@ -1,6 +1,6 @@
 ROOT_DIR =	../..
 INCS	=	-I$(ROOT_DIR)/src
-DEFS    =	-g -O3 -Wno-deprecated -Wall -std=c++17 -fopenmp #-DMPIPARALLEL #
+DEFS    =	-g -O3 -Wno-deprecated -Wall -fmax-errors=1 -std=c++17 -fopenmp -DMPIPARALLEL
 LIBS	=	-lm
 COMP	=	mpicxx
 DEPS    =       
@@ -9,6 +9,7 @@ OBJ     =	main.cc
 ifdef strip_templates
 STRIP_TEMPLATES = -fdiagnostics-color=always 2>&1 | sed 's/ \[with [^]]*\]//g'
 endif
+
 
 all: run.exe 
 
@@ -20,6 +21,5 @@ run.exe: $(OBJ)
 
 clean:
 	rm -f *.o run.exe
-	
+	rm -r data
 
-#rm -r data

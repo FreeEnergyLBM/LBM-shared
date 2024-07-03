@@ -102,6 +102,9 @@ class Geometry {
      */
     static inline int& getBoundaryType(int k);
 
+    // New function declaration to modify the boundary label
+    static inline void modifyBoundaryLabel(int k, int modifiedLabel);
+
     static std::vector<int> mFluidVals;  //!< Boundary indices corresponding to fluid nodes.
 
    private:
@@ -352,4 +355,9 @@ inline bool Geometry<TLattice>::isCorner(int (*condition)(const int), const std:
 template <class TLattice>
 inline int& Geometry<TLattice>::getBoundaryType(int k) {
     return BoundaryLabels<TLattice::NDIM>::template get<TLattice>(k).Id;
+}
+
+template <class TLattice>
+inline void Geometry<TLattice>::modifyBoundaryLabel(int k, int modifiedLabel) {
+    BoundaryLabels<TLattice::NDIM>::template get<TLattice>(k).Id = modifiedLabel;
 }

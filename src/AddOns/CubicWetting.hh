@@ -21,6 +21,15 @@ class CubicWetting : public AddOnBase {
 
     inline void setAlpha(double alpha);
 
+    // TODO by Mehrdad: This should be written in a more general way to allow for inclusion of y and z directions if
+    // needed!
+    /**
+     * \brief Set the thickness of the neutral wet layer at the inlet and outlet to avoid
+     *       wetting phase towards them.
+     * \param thickness Thickness of the neutral wet layer.
+     */
+    inline void setNeutralWetLayerThickness(const int thickness) { neutralWetLayerThickness = thickness; }
+
     template <class TTraits>
     inline void compute(int k);
 
@@ -30,6 +39,7 @@ class CubicWetting : public AddOnBase {
    private:
     double mAlpha = 2;
     double mPrefactor = 0;
+    int neutralWetLayerThickness = 0;
     std::map<int, double> mPrefactorMap;
     std::function<double(std::array<int, 3>, double)> mPrefactorFn;
 };
@@ -54,6 +64,11 @@ inline void CubicWetting::compute(int k) {
         prefactor = mPrefactor;
     }
 
+    // reset the order parameter
+    OrderParameter<>::get<Lattice>(k) = 0.0;
+
+    bool neighborsSinglePhase = true;
+
     // Get average order parameter from the neighbours
     double phiAvg = 0;
     int count = 0;
@@ -63,12 +78,20 @@ inline void CubicWetting::compute(int k) {
         if (!Geometry<Lattice>::isBoundary(neighbor)) {
             phiAvg += OrderParameter<>::get<Lattice>(neighbor);
             count++;
+
+            if (abs(OrderParameter<>::get<Lattice>(neighbor)) < 0.5) neighborsSinglePhase = false;
         }
     }
     phiAvg /= count;
 
     // Set the order parameter on the solid node
-    OrderParameter<>::get<Lattice>(k) = phiAvg - prefactor * (pow(phiAvg, 2) - 1.0);
+    int x = computeXGlobal<Lattice>(k);
+    if (x <= neutralWetLayerThickness || x > Lattice::LX - neutralWetLayerThickness)
+        OrderParameter<>::get<Lattice>(k) = phiAvg;
+    else if (neighborsSinglePhase)
+        OrderParameter<>::get<Lattice>(k) = phiAvg;
+    else
+        OrderParameter<>::get<Lattice>(k) = phiAvg - prefactor * (pow(phiAvg, 2) - 1.0);
 }
 
 inline void CubicWetting::setTheta(double theta) { mPrefactor = cos(theta) / (sqrt(2.0) * mAlpha); }

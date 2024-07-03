@@ -308,6 +308,16 @@ struct MassSink : public ParameterSingleton<MassSink<TInstances>> {
     static constexpr const char *mName = "MassSink";
 };
 
+template <int TInstances = 1>
+struct Solute : public ParameterSingleton<Solute<TInstances>> {
+    static constexpr const char *mName = "Solute";
+};
+
+template <int TInstances = 1>
+struct SoluteOld : public ParameterSingleton<SoluteOld<TInstances>> {
+    static constexpr const char *mName = "SoluteOld";
+};
+
 template <class TObj, int TInstances = 1>
 struct Laplacian : public ParameterSingleton<Laplacian<TObj, TInstances>, double, TInstances> {
     static constexpr char mName[9 + sizeof(TObj::mName)] = "Laplacian" + TObj::mName;

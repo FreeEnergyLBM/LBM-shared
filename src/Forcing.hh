@@ -72,6 +72,22 @@ struct SimpleForcing : ForcingBase<Cartesian> {
     }
 };
 
+struct ADSinkSourceMethod : ForcingBase<Cartesian> {
+    double m_Source0D;
+
+    template <class TTraits, class TForce>
+    inline void precompute(TForce& f, int k) {
+        m_Source0D += f.template compute<TTraits>(k);
+    }
+
+    template <class TTraits>
+    inline double compute(int idx, int k) {
+        double prefactor = TTraits::Stencil::Weights[idx];
+
+        return prefactor * m_Source0D;
+    }
+};
+
 struct Guo : ForcingBase<Cartesian> {
     std::vector<double> ma_Force;
 

@@ -7,6 +7,7 @@
 #include "DirichletVariable.hh"
 #include "ExtrapolationOutflow.hh"
 #include "FreeSlip.hh"
+#include "HaoCheng.hh"
 #include "InterpolatedDirichlet.hh"
 #include "Neumann.hh"
 #include "Refill.hh"
