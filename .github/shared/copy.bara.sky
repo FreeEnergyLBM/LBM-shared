@@ -4,14 +4,13 @@ MAIN_BRANCH = "shared"
 SHARED_URL = "git@github.com:FreeEnergyLBM/LBM-shared.git"
 SHARED_BRANCH = "main"
 
-load("exclude", "EXCLUDE_FILES")
-FILTER_PATTERN = '|'.join([path.split('/')[-1] for path in EXCLUDE_FILES])
-
+load("exclude", "EXCLUDE_FILES", "EXCLUDE_DIRS")
 WORKFLOW_FILE = ".github/workflows/sync_shared.yml"
-EXCLUDE_FILES = EXCLUDE_FILES + [WORKFLOW_FILE]
+EXCLUDE = EXCLUDE_FILES + EXCLUDE_DIRS + [WORKFLOW_FILE]
 
 
-remove_private_includes = core.replace("#include \"${x}\"${nl}", "", multiline = True, regex_groups={"x": '('+FILTER_PATTERN+')', "nl":r"\n?"}, paths=glob(["**"]))
+FILTER_PATTERN = '(' + '|'.join([path.split('/')[-1] for path in EXCLUDE_FILES]) + ')'
+remove_private_includes = core.replace("#include \"${x}\"${nl}", "", multiline = True, regex_groups={"x": FILTER_PATTERN, "nl":r"\n?"}, paths=glob(["**"]))
 
 remove_private_regions = core.replace("${x}", "", multiline=True, regex_groups={"x": "(?m)^.*BEGIN-PRIVATE[\\w\\W]*?END-PRIVATE.*$\\n"})
 
@@ -26,7 +25,7 @@ core.workflow(
         url = SHARED_URL,
         push = SHARED_BRANCH,
     ),
-    origin_files = glob(["**"], exclude=EXCLUDE_FILES),
+    origin_files = glob(["**"], exclude=EXCLUDE),
     authoring = authoring.pass_thru("Copybara <copybara@example.com>"),
     mode = 'ITERATIVE',
     transformations = [
@@ -51,7 +50,7 @@ core.workflow(
         integrates = [],
     ),
     origin_files = glob(["**"], exclude=[WORKFLOW_FILE]),
-    destination_files = glob(["**"], exclude=EXCLUDE_FILES),
+    destination_files = glob(["**"], exclude=EXCLUDE),
     authoring = authoring.pass_thru("Copybara <copybara@example.com>"),
     mode = 'CHANGE_REQUEST',
     set_rev_id = False,

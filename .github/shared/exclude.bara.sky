@@ -9,5 +9,9 @@ EXCLUDE_FILES = [
     "src/LBModels/NComponent.hh",
     "src/LBModels/NComponentLee.hh",
     "src/LBModels/WellBalanced.hh",
-    "tests/Placeholder",
+]
+
+EXCLUDE_DIRS = [
+    "tests/Placeholder/**",
+    "examples/binary/superhydrophobic/**",
 ]
