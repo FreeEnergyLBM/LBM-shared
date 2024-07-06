@@ -36,6 +36,8 @@ class CubicWetting : public AddOnBase {
     template <class TTraits>
     inline void communicate();
 
+    bool useSinglePhaseCheck = false;
+
    private:
     double mAlpha = 2;
     double mPrefactor = 0;
@@ -64,15 +66,12 @@ inline void CubicWetting::compute(int k) {
         prefactor = mPrefactor;
     }
 
-    // reset the order parameter
-    OrderParameter<>::get<Lattice>(k) = 0.0;
-
-    bool neighborsSinglePhase = true;
+    bool neighborsSinglePhase = useSinglePhaseCheck;
 
     // Get average order parameter from the neighbours
     double phiAvg = 0;
     int count = 0;
-    for (int idx = 0; idx < Stencil::Q; idx++) {
+    for (int idx = 1; idx < Stencil::Q; idx++) {
         int neighbor = data::getInstance().getNeighbors()[k * Stencil::Q + idx];
 
         if (!Geometry<Lattice>::isBoundary(neighbor)) {
@@ -84,14 +83,20 @@ inline void CubicWetting::compute(int k) {
     }
     phiAvg /= count;
 
+    // Neutral wetting situations
+    if (neighborsSinglePhase) {
+        OrderParameter<>::get<Lattice>(k) = phiAvg;
+        return;
+    } else if (neutralWetLayerThickness > 0) {
+        int x = computeXGlobal<Lattice>(k);
+        if (x < neutralWetLayerThickness || x >= Lattice::LX - neutralWetLayerThickness) {
+            OrderParameter<>::get<Lattice>(k) = phiAvg;
+            return;
+        }
+    }
+
     // Set the order parameter on the solid node
-    int x = computeXGlobal<Lattice>(k);
-    if (x <= neutralWetLayerThickness || x > Lattice::LX - neutralWetLayerThickness)
-        OrderParameter<>::get<Lattice>(k) = phiAvg;
-    else if (neighborsSinglePhase)
-        OrderParameter<>::get<Lattice>(k) = phiAvg;
-    else
-        OrderParameter<>::get<Lattice>(k) = phiAvg - prefactor * (pow(phiAvg, 2) - 1.0);
+    OrderParameter<>::get<Lattice>(k) = phiAvg - prefactor * (pow(phiAvg, 2) - 1.0);
 }
 
 inline void CubicWetting::setTheta(double theta) { mPrefactor = cos(theta) / (sqrt(2.0) * mAlpha); }

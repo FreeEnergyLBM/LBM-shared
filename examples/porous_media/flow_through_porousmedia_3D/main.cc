@@ -124,6 +124,7 @@ int main(int argc, char **argv) {
     componentSeparationModel.getProcessor<CubicWetting>().setThetaDegrees(contactAngle);
     componentSeparationModel.getProcessor<CubicWetting>().setAlpha(sqrt(2));
     componentSeparationModel.getProcessor<CubicWetting>().setNeutralWetLayerThickness(10);
+    componentSeparationModel.getProcessor<CubicWetting>().useSinglePhaseCheck = true;
 
     // Initialise the fluid using the function above
     OrderParameter<>::set<Lattice>(initFluid);
