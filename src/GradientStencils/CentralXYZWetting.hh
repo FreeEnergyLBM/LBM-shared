@@ -4,11 +4,11 @@
 
 struct CentralXYZWetting : GradientBase<Gradient, Cartesian> {
     template <class TTraits, class TParameter>
-    inline double compute(int direction, int k, int num = 0);
+    inline double compute(int direction, int k);
 };
 
 template <class TTraits, class TParameter>
-inline double CentralXYZWetting::compute(int direction, int k, int num) {
+inline double CentralXYZWetting::compute(int direction, int k) {
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
@@ -27,14 +27,14 @@ inline double CentralXYZWetting::compute(int direction, int k, int num) {
                               .NormalDirection)
                     ->second;
 
-            double csolid = TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, idx), normalq), num);
+            double csolid = TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, idx), normalq));
 
             gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] *
                            (csolid - 0.5 * this->mPrefactor * (csolid - pow(csolid, 2)));
 
         } else {
             gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] *
-                           (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num));
+                           (TParameter::template get<Lattice>(data.getNeighbor(k, idx)));
         }
     }
 

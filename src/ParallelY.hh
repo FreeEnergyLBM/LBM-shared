@@ -50,10 +50,10 @@ void ParallelY<TWidth>::init() {
 
     // Create communication objects
     this->mI0Send = std::vector<int>(2);
-    this->mI0Send[0] = TWidth * faceSize;
-    this->mI0Send[1] = 2 * TWidth * faceSize;
+    this->mI0Send[0] = 0;
+    this->mI0Send[1] = TWidth * faceSize;
     this->mI0Recv = std::vector<int>(2);
-    this->mI0Recv[0] = 0;
+    this->mI0Recv[0] = 2 * TWidth * faceSize;
     this->mI0Recv[1] = 3 * TWidth * faceSize;
 
     this->mI0SendDistr = std::vector<int>(2);

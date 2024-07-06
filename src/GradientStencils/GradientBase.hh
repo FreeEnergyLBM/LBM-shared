@@ -1,13 +1,14 @@
 #pragma once
-#include "../Service.hh"
+#include "../Geometry.hh"
+#include "../Template.hh"
 
-template <template <class, int> class TGradientType, class TDirections = Cartesian>
+template <template <class> class TGradientType, class TDirections = Cartesian>
 struct GradientBase {
     template <class TTraits, class TParameter>
-    inline double compute(const int direction, const int k, int num = 0);
+    inline double compute(const int direction, const int k);
 
     template <class TObj>
-    using GradientType = TGradientType<TObj, TObj::instances>;
+    using GradientType = TGradientType<TObj>;
 
     template <class TStencil>
     inline static constexpr int getNumberOfDirections() {
@@ -23,14 +24,17 @@ struct GradientBase {
 
     template <class TLattice>
     inline bool isBoundary(int k) {
-        if (Geometry<TLattice>::getBoundaryType(k) == -1) return true;
+        //if (Geometry<TLattice>::getBoundaryType(k) == -1) return true;
         for (int i : mBoundaryID) {
             // TMP: Default BoundaryID warning
             if (Geometry<TLattice>::getBoundaryType(k) == i) {
                 if (preset_warning) {
 #pragma omp critical
-                    print("\033[31;1mDEPRECATION WARNING\033[0m: Using default BoundaryID (", i,
-                          ") for a boundary. Please eplicitly set BoundaryIDs for all boundaries in use.");
+                    print(
+                        "\033[31;1mDEPRECATION WARNING - FIX IMMEDIATELY OR SCRIPT WILL BREAK! \033[0m: "
+                        "Using default BoundaryID (",
+                        i,
+                        ") for a gradient. Please explicitly set BoundaryIDs for all gradients that check boundaries.");
                     preset_warning = false;
                 }
                 return true;
@@ -49,7 +53,7 @@ struct GradientBase {
     };
 
     std::vector<int> mBoundaryID = {1};
-    bool preset_warning = false;
+    bool preset_warning = true;
 
     inline void setPrefactor(double prefactor) { mPrefactor = prefactor; }
 

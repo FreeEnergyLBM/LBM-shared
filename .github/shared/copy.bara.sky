@@ -11,6 +11,11 @@ WORKFLOW_FILE = ".github/workflows/sync_shared.yml"
 EXCLUDE_FILES = EXCLUDE_FILES + [WORKFLOW_FILE]
 
 
+remove_private_includes = core.replace("#include \"${x}\"${nl}", "", multiline = True, regex_groups={"x": '('+FILTER_PATTERN+')', "nl":r"\n?"}, paths=glob(["**"]))
+
+remove_private_regions = core.replace("${x}", "", multiline=True, regex_groups={"x": "(?m)^.*BEGIN-PRIVATE[\\w\\W]*?END-PRIVATE.*$\\n"})
+
+
 core.workflow(
     name = "push",
     origin = git.origin(
@@ -25,7 +30,8 @@ core.workflow(
     authoring = authoring.pass_thru("Copybara <copybara@example.com>"),
     mode = 'ITERATIVE',
     transformations = [
-        core.replace("#include \"${x}\"${nl}", "", multiline = True, regex_groups={"x": '('+FILTER_PATTERN+')', "nl":r"\n?"}, paths=glob(["**"])),
+        remove_private_includes,
+        remove_private_regions,
         metadata.expose_label("GITHUB_PUBLIC_PR_NUMBER", new_name="Closes", separator=" #"),
         metadata.restore_author("ORIGINAL_AUTHOR", search_all_changes=True),
     ],

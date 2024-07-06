@@ -6,8 +6,6 @@
 
 class InterpolatedDirichlet : public BoundaryBase {
    public:
-    InterpolatedDirichlet() { this->setNodeID(5, true); }  // TMP: Default NodeID warning
-
     template <class TTraits, class TDistributionType>
     inline void compute(TDistributionType& mDistribution, int k);
 
@@ -71,4 +69,6 @@ template <class TTraits, class TDistributionType>
 inline void InterpolatedDirichlet::communicate(TDistributionType& distribution) {
     using Lattice = typename TTraits::Lattice;
     Lattice::communicateDistributionAll(distribution);
+    Lattice::communicate(GradientOrderParameter<>::getInstance<Lattice, Lattice::NDIM>());
+    Lattice::communicate(BoundaryLabels<Lattice::NDIM>::template getInstance<Lattice>());
 }

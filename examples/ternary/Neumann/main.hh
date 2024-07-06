@@ -50,7 +50,7 @@ double initFluid2(const int k) {
     int xx = computeXGlobal<Lattice>(k);
     int yy = computeY(ly, 1, k);
     double rr2 = (xx - (lx - 1) / 2.) * (xx - (lx - 1) / 2.) + (yy - (ly - 1) / 2.) * (yy - (ly - 1) / 2.);
-    if (yy >= (ly - 1) / 2 && rr2 >= radius * radius)
+    if (yy > (ly - 1) / 2 && rr2 >= radius * radius)
         return 1;
     else
         return 0;
@@ -85,9 +85,9 @@ void initParams(std::string inputfile) {
     Lattice::init(lx, ly, lz);
 }
 
-template <typename TTrait = DefaultTraitPressureTernaryLee<Lattice>>
+template <typename TTrait = DefaultTraitPressureTernaryLee<Lattice>::template SetCollisionOperator<SRT>>
 auto initPressure() {
-    PressureTernaryLee<Lattice> pressure;
+    PressureTernaryLee<Lattice, TTrait> pressure;
 
     pressure.setCollideID({0});
 

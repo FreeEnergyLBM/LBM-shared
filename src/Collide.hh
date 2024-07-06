@@ -8,6 +8,7 @@
 #include "Global.hh"
 #include "Lattice.hh"
 #include "Stencil.hh"
+#include "Template.hh"
 
 /**
  * \file Collide.hh
@@ -148,7 +149,85 @@ const inline double& SRT<TStencil>::Omega(const double& itau) {
     return itau;
 }
 
-/////Add TRT
+/**
+ * \brief TRT
+ */
+template <class TStencil>
+class TRT {
+   public:
+    /**
+     * \brief The Omega function will return the SRT/BGK collision operator when given 1.0/tau.
+     * \param itau 1.0/tau (where tau is the relaxation time).
+     * \return 1.0/tau.
+     */
+    static const inline std::array<double,2> Omega(const double& itau);
+
+    /**
+     * \brief The initialise function will perform initialisation for SRT to save time later (currently does nothing).
+     * \tparam TLattice LatticeProperties class for the system.
+     * \param tau1 Min/Max bound of tau (where tau is the relaxation time).
+     * \param tau2 Min/Max bound of tau (alternate to tau1).
+     */
+    template <class TLattice>
+    static inline void initialise(double tau1, double tau2){};
+
+    /**
+     * \brief The initialise function will perform initialisation for SRT to save time later (currently does nothing).
+     * \tparam TLattice LatticeProperties class for the system.
+     * \tparam TForceTuple Type of the tuple containing the forces (and source terms) applied to the model.
+     * \param forces Tuple containing objects of all the forces (and source terms) applied to the model.
+     * \param tau1 Min/Max bound of tau (where tau is the relaxation time).
+     * \param tau2 Min/Max bound of tau (alternate to tau1).
+     */
+    template <class TLattice, typename TForceTuple>
+    static inline void initialise(const TForceTuple& forces, double tau1, double tau2){};
+
+    /**
+     * \brief The collide function returns the post collision distribution.
+     * \tparam TLattice LatticeProperties class for the system.
+     * \param old Pointer to first element of array containing old distributions.
+     * \param equilibrium Pointer to first element of array containing updated equilibrium distributions.
+     * \param itau Reference to 1.0/tau parameter.
+     * \param idx Discrete velocity direction index.
+     * \return Updated distribution information.
+     */
+    template <class TLattice>
+    static inline double collide(const double* old, const double* equilibrium, const double& itau, int idx) {
+        const double symmetric = (old[idx]+old[TStencil::Opposites[idx]])/2.0;
+        const double symmetriceq = (equilibrium[idx]+equilibrium[TStencil::Opposites[idx]])/2.0;
+        const double asymmetric = (old[idx]-old[TStencil::Opposites[idx]])/2.0;
+        const double asymmetriceq = (equilibrium[idx]-equilibrium[TStencil::Opposites[idx]])/2.0;
+        return old[idx] - TLattice::DT * Omega(itau)[0] * (symmetric - symmetriceq) - TLattice::DT * Omega(itau)[1] * (asymmetric - asymmetriceq);
+    }
+
+    /**
+     * \brief The forcing function will return the forcing contribution to the collision step.
+     * \tparam TLattice LatticeProperties class for the system.
+     * \tparam TPrefactorType Type of the tau dependant prefactor for the forcing.
+     * \tparam TForceTuple Type of the tuple containing the forces (and source terms) applied to the model.
+     * \param forces Tuple containing objects of all the forces (and source terms) applied to the model.
+     * \param forcearray Pointer to first element of array containing the forces without the tau dependance applied yet.
+     * \param itau Reference to 1.0/tau parameter.
+     * \param idx Discrete velocity direction index.
+     * \return Updated distribution information.
+     */
+    template <class TLattice, class TPrefactorType, typename TForceTuple>
+    static inline double forcing(const TForceTuple& forces, const double* forcearray, const double& itau, int idx) {
+        using prefactor = typename remove_const_and_reference<TPrefactorType>::type;
+        return prefactor::template calculateTauPrefactor<TLattice>(Omega(itau)[0]) * (forcearray[idx]+forcearray[TStencil::Opposites[idx]])/2.0 + prefactor::template calculateTauPrefactor<TLattice>(Omega(itau)[1]) * (forcearray[idx]-forcearray[TStencil::Opposites[idx]])/2.0;
+    }
+};
+
+/**
+ * \details See [1].
+ */
+template <class TStencil>
+const inline std::array<double,2> TRT<TStencil>::Omega(const double& itau) {
+    double factor = (1.0/(itau) - 0.5);
+    //if (TIME==2) std::cout<<itau<<" "<<factor/(TStencil::MagicParam+0.5*factor)<<std::endl;
+    return {itau,factor/(TStencil::MagicParam+0.5*factor)};
+}
+
 /**
  * \brief The MRT class provides internal functions to calculate the collision operator, Omega, based on the relaxation
  *        time (tau). For MRT, each moment has a different relaxation frequency, so this is contained within a matrix.

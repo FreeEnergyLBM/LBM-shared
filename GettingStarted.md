@@ -7,7 +7,7 @@ By writing #include "<insert path to directory here>/lbm.hh" in your main.cc fil
 
 Right now, our main.cc looks something like
 
-   #include <lbm.hh>
+    #include <lbm.hh>
 
     int main(int argc, char **argv) {
         return 0;
@@ -81,17 +81,16 @@ int main(int argc, char **argv) {
 }
 ```
 
-Note that we did not have to perform any initialisation, as this is handled when the Algorithm class is made.
+Initialisation of the model NSSolver is handled in the constructor of the lbm class.
 
 ## Initialising Macroscopic Variables
 
 By default, velocity is zero and density is 1 everywhere.
 If we wanted to set a different value of density and velocity, we could do this in several ways. Density and velocity are unique to each lattice but are global parameters. We use the set() function to initialise them.
-The parameters "Density" and "Velocity" accept a template argument which is the number of instances. You could write Density<2> if you want two densities on each lattice point. For one instance this can be left empty.
-If I want to set the second instance of density, I would write Density<2>::set<Lattice,1>(...);
-The "set function" accepts four template arguments. The first is the Lattice class. The second is the number of directions the parameter has (For instance, in this case our velocity is a vector with two dimensions, so we would put 2. The third and fourth are used to index the parameter.
-If I want to set the y component of velocity, I would write Velocity<>::set<Lattice,2,1>(...);.
-If I wanted to set the third instance of the y component of velocity with three instances, I would write Velocity<3>::set<Lattice,2,2,1>(...).
+The parameters "Density" and "Velocity" accept a template argument which is the instance number. If you want two densities on each lattice point you can use Density<0> and Density<1>. For one instance this can be left empty.
+If I want to set the two instances of density, I would write `Density<0>::set<Lattice>(...);` and `Density<1>::set<Lattice>(...);`.
+The "set function" accepts three template arguments. The first is the Lattice class. The second is the number of directions the parameter has. For instance, in this case our velocity is a vector with two dimensions, so we would put 2. The third is the direction index.
+If I want to set the y component of velocity, I would write `Velocity<>::set<Lattice,2,1>(...);`.
 
 ```diff
 #include <lbm.hh>

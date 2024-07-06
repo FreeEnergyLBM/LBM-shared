@@ -4,11 +4,11 @@
 
 struct MixedXYZBounceBack : GradientBase<GradientMixed, Cartesian> {
     template <class TTraits, class TParameter>
-    inline double compute(const int direction, const int k, int num = 0);
+    inline double compute(const int direction, const int k);
 };
 
 template <class TTraits, class TParameter>
-inline double MixedXYZBounceBack::compute(const int direction, const int k, int num) {
+inline double MixedXYZBounceBack::compute(const int direction, const int k) {
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
@@ -25,45 +25,33 @@ inline double MixedXYZBounceBack::compute(const int direction, const int k, int 
             (!this->isBoundary<Lattice>(
                 data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx])) &&
             (!this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]]))) {
-            gradientsum +=
-                Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 *
-                (-param[data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx] *
-                            TParameter::instances +
-                        num] +
-                 5 * param[data.getNeighbor(k, idx) * TParameter::instances + num] -
-                 3 * param[k * TParameter::instances + num] -
-                 param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]] * TParameter::instances + num]);
+            gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 *
+                           (-param[data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx]] +
+                            5 * param[data.getNeighbor(k, idx)] - 3 * param[k] -
+                            param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]]]);
 
         } else if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + idx]))) {
-            if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]]) != 1))
+            if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]])))
                 gradientsum +=
                     Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 *
-                    (2 * param[k * TParameter::instances + num] -
-                     2 * param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]] * TParameter::instances +
-                               num]);
+                    (2 * param[k] - 2 * param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]]]);
 
         } else if ((this->isBoundary<Lattice>(
                        data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx]))) {
             if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]]))) {
                 gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 *
-                               (4 * param[data.getNeighbors()[k * Stencil::Q + idx] * TParameter::instances + num] -
-                                4 * param[k * TParameter::instances + num]);
+                               (4 * param[data.getNeighbors()[k * Stencil::Q + idx]] - 4 * param[k]);
 
             } else
-                gradientsum +=
-                    Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 *
-                    (4 * param[data.getNeighbors()[k * Stencil::Q + idx] * TParameter::instances + num] -
-                     3 * param[k * TParameter::instances + num] -
-                     param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]] * TParameter::instances +
-                           num]);
-        } else {
+                gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 *
+                               (4 * param[data.getNeighbors()[k * Stencil::Q + idx]] - 3 * param[k] -
+                                param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]]]);
+        } else if ((this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]]))) {
             gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * 0.25 *
-                           (-param[data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx] *
-                                       TParameter::instances +
-                                   num] +
-                            5 * param[data.getNeighbors()[k * Stencil::Q + idx] * TParameter::instances + num] -
-                            4 * param[k * TParameter::instances + num]);
-        }
+                           (-param[data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx]] +
+                            5 * param[data.getNeighbors()[k * Stencil::Q + idx]] - 4 * param[k]);
+        } else
+            return 0;
     }
 
     return 1.0 / (Stencil::Cs2 * Lattice::DT) * gradientsum;

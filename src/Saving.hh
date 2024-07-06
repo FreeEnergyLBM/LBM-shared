@@ -18,7 +18,9 @@ class SaveHandler {
    public:
     SaveHandler(std::string datadir);
     SaveHandler(SaveHandler& other);
-
+#ifdef MPIPARALLEL
+    ~SaveHandler() { MPI_Type_free(&mMPIBoundary); }
+#endif
     template <typename... TParameter>
     void saveVTK(int timestep, TParameter&... params);
     template <typename... TParameter>
@@ -31,16 +33,16 @@ class SaveHandler {
     void saveBoundariesDAT(int timestep);
 
     template <class TParameter, int TNumDir = 1>
-    void saveParameter(std::string filename, int instance = -1);
+    void saveParameter(std::string filename);
     template <class TParameter, int TNumDir = 1>
-    void saveParameter(int timestep, int instance = -1);
+    void saveParameter(int timestep, bool instanceNumber = false);
     template <class... TParameter>
     void saveParameter(int timestep, TParameter&... params);
 
     template <class TParameter, int TNumDir = 1>
-    void loadParameter(std::string filename, std::string filetype = "bin", int instance = -1);
+    void loadParameter(std::string filename, std::string filetype = "bin");
     template <class TParameter, int TNumDir = 1>
-    void loadParameter(int timestep, std::string filetype = "bin", int instance = -1);
+    void loadParameter(int timestep, std::string filetype = "bin");
     template <class... TParameter>
     void loadParameter(int timestep, TParameter&... params);
 
@@ -115,29 +117,23 @@ void writeText(std::ofstream& file, std::string text) { file << text; }
 
 #ifdef MPIPARALLEL
 template <class TLattice, typename T>
-void readWriteArray(const char rw, MPI_File file, std::vector<T>& data, int nDim = 1, int nInst = 1,
-                    int instance = -1) {
-    int nInstFile = 1;
-    if (instance == -1) {  // Read all instances
-        nInstFile = nInst;
-        instance = 0;
-    }
-    int lsize[5] = {TLattice::subArray[0], TLattice::subArray[1], TLattice::subArray[2], nInstFile,
-                    nDim};                                                       // Local array size (to read/write)
-    int fsize[5] = {TLattice::LX, TLattice::LY, TLattice::LZ, nInstFile, nDim};  // File array size (global)
-    int dsize[5] = {TLattice::LXdiv, TLattice::LYdiv, TLattice::LZdiv, nInst, nDim};  // Data array size (local+halo)
-    int flstart[5] = {TLattice::LXMPIOffset, TLattice::LYMPIOffset, TLattice::LZMPIOffset, 0,
+void readWriteArray(const char rw, MPI_File file, std::vector<T>& data, int nDim = 1) {
+    int lsize[4] = {TLattice::subArray[0], TLattice::subArray[1], TLattice::subArray[2],
+                    nDim};                                                     // Local array size (to read/write)
+    int fsize[4] = {TLattice::LX, TLattice::LY, TLattice::LZ, nDim};           // File array size (global)
+    int dsize[4] = {TLattice::LXdiv, TLattice::LYdiv, TLattice::LZdiv, nDim};  // Data array size (local+halo)
+    int flstart[4] = {TLattice::LXMPIOffset, TLattice::LYMPIOffset, TLattice::LZMPIOffset,
                       0};  // Local array start in file
-    int dlstart[5] = {TLattice::HaloXWidth, TLattice::HaloYWidth, TLattice::HaloZWidth, instance,
+    int dlstart[4] = {TLattice::HaloXWidth, TLattice::HaloYWidth, TLattice::HaloZWidth,
                       0};  // Local array start in data
 
-    int nf = fsize[0] * fsize[1] * fsize[2] * fsize[3] * fsize[4];
+    int nf = fsize[0] * fsize[1] * fsize[2] * fsize[3];
 
     // Create subarray objects for writing to file and reading from the data array (or vice versa)
     MPI_Datatype fileSubArray;
     MPI_Datatype dataSubArray;
-    MPI_Type_create_subarray(5, fsize, lsize, flstart, MPI_ORDER_C, MPI_DOUBLE, &fileSubArray);
-    MPI_Type_create_subarray(5, dsize, lsize, dlstart, MPI_ORDER_C, MPI_DOUBLE, &dataSubArray);
+    MPI_Type_create_subarray(4, fsize, lsize, flstart, MPI_ORDER_C, MPI_DOUBLE, &fileSubArray);
+    MPI_Type_create_subarray(4, dsize, lsize, dlstart, MPI_ORDER_C, MPI_DOUBLE, &dataSubArray);
     MPI_Type_commit(&fileSubArray);
     MPI_Type_commit(&dataSubArray);
 
@@ -163,19 +159,14 @@ void readWriteArray(const char rw, MPI_File file, std::vector<T>& data, int nDim
 
 #else
 template <class TLattice, typename T>
-void readWriteArray(const char rw, std::fstream& file, std::vector<T>& data, int nDim = 1, int nInst = 1,
-                    int instance = -1) {
-    int dInst = (instance == -1) ? 1 : nInst;
-    instance = (instance == -1) ? 0 : instance;
+void readWriteArray(const char rw, std::fstream& file, std::vector<T>& data, int nDim = 1) {
     for (int k = 0; k < TLattice::N; k++) {
-        for (int iInst = instance; iInst < nInst; iInst += dInst) {
-            for (int iDim = 0; iDim < nDim; iDim++) {
-                int iData = k * nInst * nDim + iInst * nDim + iDim;
-                if (rw == 'r') {
-                    file.read((char*)(&data[iData]), sizeof(T));
-                } else if (rw == 'w') {
-                    file.write((char*)(&data[iData]), sizeof(T));
-                }
+        for (int iDim = 0; iDim < nDim; iDim++) {
+            int iData = k * nDim + iDim;
+            if (rw == 'r') {
+                file.read((char*)(&data[iData]), sizeof(T));
+            } else if (rw == 'w') {
+                file.write((char*)(&data[iData]), sizeof(T));
             }
         }
     }
@@ -202,7 +193,7 @@ std::string formatPoint(const T data[], std::string fmt, std::string delim1, std
 #ifdef MPIPARALLEL
 template <class TLattice, typename T>
 void writeArrayTxt(MPI_File file, const std::vector<T>& data, std::string fmt, std::string delim = "\n",
-                   std::string end = "NONE", int ndim = 1, std::string dimDelim = " ") {  // TODO: instances
+                   std::string end = "NONE", int ndim = 1, std::string dimDelim = " ") {
     int lsize[3] = {TLattice::subArray[0], TLattice::subArray[1], TLattice::subArray[2]};
     int fsize[3] = {TLattice::LX, TLattice::LY, TLattice::LZ};
     int flstart[3] = {TLattice::LXMPIOffset, TLattice::LYMPIOffset, TLattice::LZMPIOffset};
@@ -590,7 +581,7 @@ void SaveHandler<TLattice>::saveBoundariesDAT(int timestep) {
 
 template <class TLattice>
 template <class TParameter, int TNumDir>
-void SaveHandler<TLattice>::saveParameter(std::string filename, int instance) {
+void SaveHandler<TLattice>::saveParameter(std::string filename) {
     // Setup array for saving
     std::vector<typename TParameter::ParamType>& param = TParameter::template get<TLattice, TNumDir>();
     if (mMaskSolid) applyMask<TLattice>(param, TNumDir, mMaskValue);
@@ -603,7 +594,7 @@ void SaveHandler<TLattice>::saveParameter(std::string filename, int instance) {
     std::fstream file(filename.c_str(), std::fstream::out);
 #endif
 
-    readWriteArray<TLattice>('w', file, param, TNumDir, TParameter::instances, instance);
+    readWriteArray<TLattice>('w', file, param, TNumDir);
 
 #ifdef MPIPARALLEL
     MPI_File_close(&file);
@@ -614,14 +605,14 @@ void SaveHandler<TLattice>::saveParameter(std::string filename, int instance) {
 
 template <class TLattice>
 template <class TParameter, int TNumDir>
-void SaveHandler<TLattice>::saveParameter(int timestep, int instance) {
+void SaveHandler<TLattice>::saveParameter(int timestep, bool instanceNumber) {
     char filename[512];
-    if (instance == -1) {
-        sprintf(filename, "%s/%s_t%d.mat", mDataDir.c_str(), TParameter::mName, timestep);
+    if (instanceNumber) {
+        sprintf(filename, "%s/%s%d_t%d.mat", mDataDir.c_str(), TParameter::mName, TParameter::instance, timestep);
     } else {
-        sprintf(filename, "%s/%s%d_t%d.mat", mDataDir.c_str(), TParameter::mName, instance, timestep);
+        sprintf(filename, "%s/%s_t%d.mat", mDataDir.c_str(), TParameter::mName, timestep);
     }
-    saveParameter<TParameter, TNumDir>(filename, instance);
+    saveParameter<TParameter, TNumDir>(filename);
 }
 
 template <class TLattice>
@@ -644,7 +635,7 @@ void SaveHandler<TLattice>::maskSolid(double value) {
 //==== Loading ====//
 template <class TLattice>
 template <class TParameter, int TNumDir>
-void SaveHandler<TLattice>::loadParameter(std::string filename, std::string filetype, int instance) {
+void SaveHandler<TLattice>::loadParameter(std::string filename, std::string filetype) {
     std::vector<typename TParameter::ParamType>& param = TParameter::template get<TLattice, TNumDir>();
 
     if (filetype == "bin") {
@@ -655,7 +646,7 @@ void SaveHandler<TLattice>::loadParameter(std::string filename, std::string file
 #else
         std::fstream file(filename.c_str());
 #endif
-        readWriteArray<TLattice>('r', file, param, TNumDir, TParameter::instances, instance);
+        readWriteArray<TLattice>('r', file, param, TNumDir);
 #ifdef MPIPARALLEL
         MPI_File_close(&file);
 #else
@@ -670,25 +661,21 @@ void SaveHandler<TLattice>::loadParameter(std::string filename, std::string file
         int xStop = std::min(xStart + TLattice::LXdiv, TLattice::LX);
         int yStop = std::min(yStart + TLattice::LYdiv, TLattice::LY);
         int zStop = std::min(zStart + TLattice::LZdiv, TLattice::LZ);
-        int dInst = (instance == -1) ? 1 : TParameter::instances;
-        if (instance == -1) instance = 0;
         double dummy;
 
-        for (int xg = 0; xg < xStop; xg++) {
+        /*for (int xg = 0; xg < xStop; xg++) {
             for (int yg = 0; yg < yStop; yg++) {
-                for (int zg = 0; zg < zStop; zg++) {
-                    /*for (int yg=0; yg<yStop; yg++) { //////////////////// TEMPORARY, should be x then y then z
-                        for (int zg=0; zg<zStop; zg++) {
-                            for (int xg=0; xg<TLattice::LX; xg++) {*/
+                for (int zg = 0; zg < zStop; zg++) {*/
+        for (int yg = 0; yg < yStop; yg++) {  //////////////////// TEMPORARY, should be x then y then z
+            for (int zg = 0; zg < zStop; zg++) {
+                for (int xg = 0; xg < TLattice::LX; xg++) {
                     int k = computeKFromGlobal<TLattice>(xg % TLattice::LX, yg % TLattice::LY, zg % TLattice::LZ);
-                    for (int iInst = instance; iInst < TParameter::instances; iInst += dInst) {
-                        for (int iDim = 0; iDim < TNumDir; iDim++) {
-                            if (k == -1) {
-                                fs >> dummy;
-                            } else {
-                                int i = k * TParameter::instances * TNumDir + iInst * TNumDir + iDim;
-                                fs >> param[i];
-                            }
+                    for (int iDim = 0; iDim < TNumDir; iDim++) {
+                        if (k == -1) {
+                            fs >> dummy;
+                        } else {
+                            int i = k * TNumDir + iDim;
+                            fs >> param[i];
                         }
                     }
                 }
@@ -706,15 +693,11 @@ void SaveHandler<TLattice>::loadParameter(std::string filename, std::string file
 
 template <class TLattice>
 template <class TParameter, int TNumDir>
-void SaveHandler<TLattice>::loadParameter(int timestep, std::string filetype, int instance) {
+void SaveHandler<TLattice>::loadParameter(int timestep, std::string filetype) {
     std::string extension = (filetype == "bin") ? "mat" : filetype;
     char filename[512];
-    if (instance == -1) {
-        sprintf(filename, "%s/%s_t%i.%s", mDataDir.c_str(), TParameter::mName, timestep, extension.c_str());
-    } else {
-        sprintf(filename, "%s/%s%d_t%i.%s", mDataDir.c_str(), TParameter::mName, instance, timestep, extension.c_str());
-    }
-    loadParameter<TParameter, TNumDir>(filename, filetype, instance);
+    sprintf(filename, "%s/%s_t%i.%s", mDataDir.c_str(), TParameter::mName, timestep, extension.c_str());
+    loadParameter<TParameter, TNumDir>(filename, filetype);
 }
 
 template <class TLattice>

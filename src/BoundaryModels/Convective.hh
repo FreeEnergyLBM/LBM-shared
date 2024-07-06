@@ -6,8 +6,6 @@
 
 class Convective : public BoundaryBase {
    public:
-    Convective() { this->setNodeID(4, true); }  // TMP: Default NodeID warning
-
     template <class TTraits, class TDistributionType>
     inline void compute(TDistributionType& mDistribution, int k);
 
@@ -115,15 +113,12 @@ template <class TTraits, class TDistributionType>
 inline void Convective::communicate(TDistributionType& distribution) {
     using Lattice = typename TTraits::Lattice;
     Lattice::communicateDistributionAll(distribution);
-    Lattice::communicateDistributionAllOld(distribution);
 }
 
 template <class TForceTuple>
 class Convective2 : public BoundaryBase {
    public:
     using ForceTuple = TForceTuple;
-    Convective2() { this->setNodeID(4, true); }  // TMP: Default NodeID warning
-
     template <class TTraits, class TDistributionType>
     inline void compute(TDistributionType& mDistribution, int k);
 
@@ -272,7 +267,6 @@ template <class TTraits, class TDistributionType>
 inline void Convective2<TForceTuple>::communicate(TDistributionType& distribution) {
     using Lattice = typename TTraits::Lattice;
     Lattice::communicateDistributionAll(distribution);
-    Lattice::communicateDistributionAllOld(distribution);
 }
 
 template <class TForceTuple>

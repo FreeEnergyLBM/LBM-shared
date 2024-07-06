@@ -67,6 +67,7 @@ inline void FlowField<TLattice, TTraits>::collide() {  // Collision step
 
 template <class TLattice, class TTraits>
 inline void FlowField<TLattice, TTraits>::initialise() {  // Initialise model
+    this->initialiseProcessors();
 
     this->mData.generateNeighbors();  // Fill array of neighbor values (See Data.hh)
     TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this->mt_Forces, mTau, mTau);
@@ -95,8 +96,6 @@ inline void FlowField<TLattice, TTraits>::initialise() {  // Initialise model
             old_distribution[idx] = equilibrium;
         }
     }
-
-    this->initialiseBoundaries();
 }
 
 template <class TLattice, class TTraits>
@@ -223,6 +222,7 @@ inline void FlowFieldPressure<TLattice, TTraits>::collide() {  // Collision step
 
 template <class TLattice, class TTraits>
 inline void FlowFieldPressure<TLattice, TTraits>::initialise() {  // Initialise model
+    this->initialiseProcessors();
 
     ModelBase<TLattice, TTraits>::mData.generateNeighbors();  // Fill array of neighbor values (See Data.hh)
     TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this->mt_Forces, mTauMin, mTauMax);
@@ -248,8 +248,6 @@ inline void FlowFieldPressure<TLattice, TTraits>::initialise() {  // Initialise 
 
     ModelBase<TLattice, TTraits>::mData.communicate(Pressure<>::getInstance<TLattice>());
     ModelBase<TLattice, TTraits>::mData.communicate(Velocity<>::getInstance<TLattice, TLattice::NDIM>());
-
-    this->initialiseBoundaries();
 }
 
 template <class TLattice, class TTraits>

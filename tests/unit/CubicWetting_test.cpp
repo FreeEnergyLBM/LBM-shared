@@ -11,6 +11,7 @@ TEST(CubicWetting, orderParameter) {
     orderParam[1] = 1;
 
     BoundaryLabels<Lattice::NDIM>::get<Lattice>(0).Id = 1;
+    Geometry<Lattice>::mFluidVals = {0};
     CubicWetting wetting;
     wetting.setNodeID(1);
 

@@ -70,15 +70,11 @@ inline void BodyForce<TMethod>::setMagnitudeZ(double magnitude) {
 template <class TMethod>
 template <class TTraits>
 inline double BodyForce<TMethod>::computeXYZ(int xyz, int k) {
-    using Lattice = typename TTraits::Lattice;
-
     // Density of fluid being forced
-    // TODO: Implement ternary / N-component
     double density = 1;
-    if (mComponent == 0) {
-        density = 0.5 + 0.5 * OrderParameter<>::get<Lattice>(k);
-    } else if (mComponent == 1) {
-        density = 0.5 - 0.5 * OrderParameter<>::get<Lattice>(k);
+    if (mComponent >= 0) {
+        auto lbModel = static_cast<ModelBase<typename TTraits::Lattice, TTraits>*>(this->mModel);
+        density = lbModel->computeConcentration(k, mComponent);
     }
 
     if (xyz == 0) return mMagnitudeX * density;

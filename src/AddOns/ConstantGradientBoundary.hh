@@ -18,6 +18,7 @@ template <class TTraits>
 inline void ConstantGradientBoundary<TParameter>::compute(int k) {
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
+    const int NDIM = Lattice::NDIM;
 
     using DataType = Data_Base<typename TTraits::Lattice, typename TTraits::Stencil>;
 
@@ -26,8 +27,7 @@ inline void ConstantGradientBoundary<TParameter>::compute(int k) {
     if (!this->apply<Lattice>(k)) return;
 
     const std::vector<int>& neighbors = DataType::getInstance().getNeighbors();
-    const std::array<int8_t, TTraits::Lattice::NDIM>& normal =
-        BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection;
+    const std::array<int8_t, NDIM>& normal = BoundaryLabels<NDIM>::template get<Lattice>(k).NormalDirection;
     int idx = Stencil::QMap.find(normal)->second;
     if (idx > 0) {
         double magnormal = 0;

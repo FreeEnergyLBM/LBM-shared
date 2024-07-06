@@ -77,6 +77,7 @@ inline void AdvectionDiffusion<TZerothMoment, TLattice, TTraits>::collide() {  /
 
 template <class TZerothMoment, class TLattice, class TTraits>
 inline void AdvectionDiffusion<TZerothMoment, TLattice, TTraits>::initialise() {  // Initialise model
+    this->initialiseProcessors();
 
     this->mData.generateNeighbors();  // Fill array of neighbor values (See Data.hh)
     TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this->mt_Forces, mTau, mTau);
@@ -101,8 +102,6 @@ inline void AdvectionDiffusion<TZerothMoment, TLattice, TTraits>::initialise() {
             old_distribution[idx] = equilibrium;
         }
     }
-
-    this->initialiseBoundaries();
 }
 
 template <class TZerothMoment, class TLattice, class TTraits>
@@ -206,6 +205,7 @@ AdvectionDiffusionCorrected<TZerothMoment, TZerothMomentOld, TLattice, TTraits>:
 template <class TZerothMoment, class TZerothMomentOld, class TLattice, class TTraits>
 inline void
 AdvectionDiffusionCorrected<TZerothMoment, TZerothMomentOld, TLattice, TTraits>::initialise() {  // Initialise model
+    this->initialiseProcessors();
 
     this->mData.generateNeighbors();  // Fill array of neighbor values (See Data.hh)
     TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this->mt_Forces, mTau, mTau);
@@ -235,8 +235,6 @@ AdvectionDiffusionCorrected<TZerothMoment, TZerothMomentOld, TLattice, TTraits>:
 
         // std::cout<<Geometry<TLattice>::getBoundaryType(k)<<std::endl;
     }
-
-    this->initialiseBoundaries();
 }
 
 template <class TZerothMoment, class TZerothMomentOld, class TLattice, class TTraits>

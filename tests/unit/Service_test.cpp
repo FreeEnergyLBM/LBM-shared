@@ -52,3 +52,20 @@ TEST(Service, RangeIterator) {
     EXPECT_TRUE(ArraysMatch(zs, {0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2}));
     EXPECT_TRUE(ArraysMatch(ks, {3, 4, 5, 6, 7, 8, 15, 16, 17, 18, 19, 20}));
 }
+
+template <int i>
+struct TestFunction {
+    static bool called;
+    static void call() { called = true; }
+};
+
+template <int i>
+bool TestFunction<i>::called = false;
+
+TEST(Service, constexpr_for) {
+    constexpr_for<3>([]<int i>() { TestFunction<i>::call(); });
+    EXPECT_TRUE(TestFunction<0>::called);
+    EXPECT_TRUE(TestFunction<1>::called);
+    EXPECT_TRUE(TestFunction<2>::called);
+    EXPECT_FALSE(TestFunction<3>::called);
+}

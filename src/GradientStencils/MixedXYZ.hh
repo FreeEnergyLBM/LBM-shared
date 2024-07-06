@@ -4,11 +4,11 @@
 
 struct MixedXYZ : GradientBase<GradientMixed, Cartesian> {
     template <class TTraits, class TParameter>
-    inline double compute(const int direction, const int k, int num = 0);
+    inline double compute(const int direction, const int k);
 };
 
 template <class TTraits, class TParameter>
-inline double MixedXYZ::compute(const int direction, const int k, int num) {
+inline double MixedXYZ::compute(const int direction, const int k) {
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
@@ -22,10 +22,10 @@ inline double MixedXYZ::compute(const int direction, const int k, int num) {
         gradientsum +=
             Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] *
             (-TParameter::template get<Lattice>(
-                 data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx], num) +
-             5 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + idx], num) -
-             3 * TParameter::template get<Lattice>(k, num) -
-             TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]], num));
+                 data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + idx] * Stencil::Q + idx]) +
+             5 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + idx]) -
+             3 * TParameter::template get<Lattice>(k) -
+             TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[idx]]));
     }
 
     return 0.25 / (Stencil::Cs2 * Lattice::DT) * gradientsum;

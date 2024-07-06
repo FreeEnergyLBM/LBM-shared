@@ -4,3 +4,9 @@
 [submodule "tests/gtest-mpi-listener"]
 	path = tests/unit/gtest-mpi-listener
 	url = https://github.com/LLNL/gtest-mpi-listener
+[submodule "examples/energy_minimisation/minim"]
+	path = examples/energy_minimisation/minim
+	url = https://github.com/sjavis/minim
+[submodule "examples/energy_minimisation/--force"]
+	path = examples/energy_minimisation/--force
+	url = https://github.com/sjavis/minim

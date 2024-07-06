@@ -5,11 +5,11 @@
 struct LaplacianCentralBounceBack : GradientBase<Laplacian, One> {  // FIX
 
     template <class TTraits, class TParameter>
-    inline double compute(int direction, int k, int num = 0);
+    inline double compute(int direction, int k);
 };
 
 template <class TTraits, class TParameter>
-inline double LaplacianCentralBounceBack::compute(const int direction, const int k, int num) {
+inline double LaplacianCentralBounceBack::compute(const int direction, const int k) {
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
@@ -21,9 +21,9 @@ inline double LaplacianCentralBounceBack::compute(const int direction, const int
 
     for (int idx = 1; idx < Stencil::Q; idx++) {
         if (!this->isBoundary<Lattice>(data.getNeighbor(k, idx))) {
-            laplaciansum += Stencil::Weights[idx] * 2 *
-                            (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num) -
-                             TParameter::template get<Lattice>(k, num));
+            laplaciansum +=
+                Stencil::Weights[idx] * 2 *
+                (TParameter::template get<Lattice>(data.getNeighbor(k, idx)) - TParameter::template get<Lattice>(k));
         }
     }
     return 1.0 / (Stencil::Cs2 * Lattice::DT * Lattice::DT) * laplaciansum;

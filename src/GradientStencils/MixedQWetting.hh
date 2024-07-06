@@ -4,11 +4,11 @@
 
 struct MixedQWetting : GradientBase<GradientMixed, AllDirections> {
     template <class TTraits, class TParameter>
-    inline double compute(const int direction, const int k, int num = 0);
+    inline double compute(const int direction, const int k);
 };
 
 template <class TTraits, class TParameter>
-inline double MixedQWetting::compute(const int direction, const int k, int num) {
+inline double MixedQWetting::compute(const int direction, const int k) {
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
@@ -50,17 +50,15 @@ inline double MixedQWetting::compute(const int direction, const int k, int num) 
 
             const int& newidx = TTraits::Stencil::QMap.find(newdir)->second;
 
-            double csolid = TParameter::template get<Lattice>(
-                data.getNeighbor(data.getNeighbor(k, direction), normalqforward), num);
-            double csolid2 = TParameter::template get<Lattice>(
-                data.getNeighbor(data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[normalqforward]), newidx),
-                                 newidx),
-                num);
+            double csolid =
+                TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, direction), normalqforward));
+            double csolid2 = TParameter::template get<Lattice>(data.getNeighbor(
+                data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[normalqforward]), newidx), newidx));
             double csolid3 = TParameter::template get<Lattice>(
-                data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[direction]), normalqbackward), num);
+                data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[direction]), normalqbackward));
             return 0.25 * (-((csolid2 - 0.5 * this->mPrefactor * (csolid2 - pow(csolid2, 2)))) +
                            5 * ((csolid - 0.5 * this->mPrefactor * (csolid - pow(csolid, 2)))) -
-                           3 * TParameter::template get<Lattice>(k, num) -
+                           3 * TParameter::template get<Lattice>(k) -
                            (csolid3 - 0.5 * this->mPrefactor * (csolid3 - pow(csolid3, 2))));
         } else {
             const std::array<int8_t, TTraits::Lattice::NDIM>& normal =
@@ -88,16 +86,15 @@ inline double MixedQWetting::compute(const int direction, const int k, int num) 
             const int& newidx = TTraits::Stencil::QMap.find(newdir)->second;
 
             double csolid =
-                TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, direction), normalq), num);
+                TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, direction), normalq));
             double csolid2 = TParameter::template get<Lattice>(
-                data.getNeighbor(data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[normalq]), newidx), newidx),
-                num);
+                data.getNeighbor(data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[normalq]), newidx), newidx));
 
             return 0.25 * (-((csolid2 - 0.5 * this->mPrefactor * (csolid2 - pow(csolid2, 2)))) +
                            5 * ((csolid - 0.5 * this->mPrefactor * (csolid - pow(csolid, 2)))) -
-                           3 * TParameter::template get<Lattice>(k, num) -
+                           3 * TParameter::template get<Lattice>(k) -
                            TParameter::template get<Lattice>(
-                               data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
+                               data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]));
         }
 
     } else if (this->isBoundary<Lattice>(data.getNeighbor(data.getNeighbor(k, direction), direction))) {
@@ -109,7 +106,7 @@ inline double MixedQWetting::compute(const int direction, const int k, int num) 
                               .NormalDirection)
                     ->second;
             double csolidforward = TParameter::template get<Lattice>(
-                data.getNeighbor(data.getNeighbor(data.getNeighbor(k, direction), direction), normalqforward), num);
+                data.getNeighbor(data.getNeighbor(data.getNeighbor(k, direction), direction), normalqforward));
             const int& normalqbackward =
                 TTraits::Stencil::QMap
                     .find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(
@@ -118,11 +115,11 @@ inline double MixedQWetting::compute(const int direction, const int k, int num) 
                     ->second;
 
             double csolidbackward = TParameter::template get<Lattice>(
-                data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[direction]), normalqbackward), num);
+                data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[direction]), normalqbackward));
 
             return 0.25 * (-(csolidforward - 0.5 * this->mPrefactor * (csolidforward - pow(csolidforward, 2))) +
-                           5 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction], num) -
-                           3 * TParameter::template get<Lattice>(k, num) -
+                           5 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction]) -
+                           3 * TParameter::template get<Lattice>(k) -
                            (csolidbackward - 0.5 * this->mPrefactor * (csolidbackward - pow(csolidbackward, 2))));
         }
 
@@ -132,13 +129,12 @@ inline double MixedQWetting::compute(const int direction, const int k, int num) 
                                            .NormalDirection)
                                  ->second;
         double csolid = TParameter::template get<Lattice>(
-            data.getNeighbor(data.getNeighbor(data.getNeighbor(k, direction), direction), normalq), num);
+            data.getNeighbor(data.getNeighbor(data.getNeighbor(k, direction), direction), normalq));
 
-        return 0.25 * (-(csolid) +
-                       5 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction], num) -
-                       3 * TParameter::template get<Lattice>(k, num) -
-                       TParameter::template get<Lattice>(
-                           data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]], num));
+        return 0.25 *
+               (-(csolid) + 5 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction]) -
+                3 * TParameter::template get<Lattice>(k) -
+                TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]));
 
     }
 
@@ -149,24 +145,21 @@ inline double MixedQWetting::compute(const int direction, const int k, int num) 
                                            .NormalDirection)
                                  ->second;
         double csolid = TParameter::template get<Lattice>(
-            data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[direction]), normalq), num);
+            data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[direction]), normalq));
 
         return 0.25 *
                (-TParameter::template get<Lattice>(
-                    data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction],
-                    num) +
-                5 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction], num) -
-                3 * TParameter::template get<Lattice>(k, num) -
+                    data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction]) +
+                5 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction]) -
+                3 * TParameter::template get<Lattice>(k) -
                 ((csolid - 0.5 * this->mPrefactor * (csolid - pow(csolid, 2)))));
 
     } else {
         return 0.25 *
                (-TParameter::template get<Lattice>(
-                    data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction],
-                    num) +
-                5 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction], num) -
-                3 * TParameter::template get<Lattice>(k, num) -
-                TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]],
-                                                  num));
+                    data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction]) +
+                5 * TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction]) -
+                3 * TParameter::template get<Lattice>(k) -
+                TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]));
     }
 }

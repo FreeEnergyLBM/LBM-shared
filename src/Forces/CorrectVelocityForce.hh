@@ -24,32 +24,26 @@ template <class TMethod>
 template <class TTraits>
 inline double CorrectVelocityForce<TMethod>::computeXYZ(int xyz, int k) {
     using Lattice = typename TTraits::Lattice;
+    constexpr int NCOMP = TTraits::NumberOfComponents;
 
+    double solidOP = getInstance<OrderParameter, NCOMP, Lattice>(mSolidPhase)[k];
     if (xyz == 0)
-        return OrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice>(k,
-                                                                                                        mSolidPhase) *
-               (mWallVelocity[0] - Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 0)) *
+        return solidOP * (mWallVelocity[0] - Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 0)) *
                Density<>::get<typename TTraits::Lattice>(k) / TTraits::Lattice::DT;
     if constexpr (Lattice::NDIM == 2) {
-        return OrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice>(k,
-                                                                                                        mSolidPhase) *
-               (mWallVelocity[1] - Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 1)) *
+        return solidOP * (mWallVelocity[1] - Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 1)) *
                Density<>::get<typename TTraits::Lattice>(k) / TTraits::Lattice::DT;
     }
 
     else if constexpr (Lattice::NDIM == 3) {
         if (xyz == 1)
-            return OrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice>(
-                       k, mSolidPhase) *
+            return solidOP *
                    (mWallVelocity[1] - Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 1)) *
                    Density<>::get<typename TTraits::Lattice>(k) / TTraits::Lattice::DT;
-        return OrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice>(k,
-                                                                                                        mSolidPhase) *
-               (mWallVelocity[2] - Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 2)) *
+        return solidOP * (mWallVelocity[2] - Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 2)) *
                Density<>::get<typename TTraits::Lattice>(k) / TTraits::Lattice::DT;
     }
 
-    return OrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice>(k, mSolidPhase) *
-           (mWallVelocity[0] - Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 0)) *
+    return solidOP * (mWallVelocity[0] - Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 0)) *
            Density<>::get<typename TTraits::Lattice>(k) / TTraits::Lattice::DT;
 }

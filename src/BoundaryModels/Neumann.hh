@@ -7,8 +7,6 @@
 template <class TParam0thMoment>
 class Neumann : public BoundaryBase {
    public:
-    Neumann() { this->setNodeID(4, true); }  // TMP: Default NodeID warning
-
     template <class TTraits, class TDistributionType>
     inline void compute(TDistributionType& mDistribution, int k);
 
@@ -38,7 +36,7 @@ inline void Neumann<TParam0thMoment>::compute(TDistributionType& distribution, i
             .find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(k).NormalDirection)
             ->second;
 
-    const double oldval = TParam0thMoment::template get<TTraits::Lattice>(k);
+    const double oldval = TParam0thMoment::template get<typename TTraits::Lattice>(k);
 
     double distsum = 0;
     double weightsum = 0;
@@ -62,7 +60,7 @@ inline void Neumann<TParam0thMoment>::compute(TDistributionType& distribution, i
 
     static auto model = static_cast<ModelBase<Lattice, TTraits>*>(mModel);
 
-    TParam0thMoment::template get<TTraits::Lattice>(k) = (mNormalGradient - distsum) / weightsum;
+    TParam0thMoment::template get<typename TTraits::Lattice>(k) = (mNormalGradient - distsum) / weightsum;
 
     for (int idx = 1; idx < TTraits::Stencil::Q; idx++) {
         if (TTraits::Stencil::Ci_x[idx] * normal[0] +
@@ -70,7 +68,7 @@ inline void Neumann<TParam0thMoment>::compute(TDistributionType& distribution, i
                 TTraits::Stencil::Ci_z[idx] * normal[2] * (TTraits::Lattice::NDIM > 2) >
             0) {
             distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] =
-                model.computeEquilibrium(k, idx);
+                model->computeEquilibrium(k, idx);
 
         } else if (Geometry<typename TTraits::Lattice>::isCorner(k) &&
                    TTraits::Stencil::Ci_x[idx] * normal[0] +
@@ -78,11 +76,11 @@ inline void Neumann<TParam0thMoment>::compute(TDistributionType& distribution, i
                            TTraits::Stencil::Ci_z[idx] * normal[2] * (TTraits::Lattice::NDIM > 2) ==
                        0) {
             distribution.getDistributionPointer(distribution.streamIndex(k, normalq))[idx] =
-                model.computeEquilibrium(k, idx);
+                model->computeEquilibrium(k, idx);
         }
     }
 
-    TParam0thMoment::template get<TTraits::Lattice>(k) = oldval;
+    TParam0thMoment::template get<typename TTraits::Lattice>(k) = oldval;
 }
 
 template <class TParam0thMoment>

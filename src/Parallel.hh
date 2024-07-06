@@ -1,8 +1,10 @@
 #pragma once
+
 #include <stdexcept>
 
 #include "Global.hh"
 #include "Mpi.hh"
+#include "Parameters.hh"
 #include "Service.hh"
 /**
  * \file  Parallel.hh
@@ -94,8 +96,14 @@ class Parallel {
     template <class TLattice>
     static void destroyDistributionType() {
 #ifdef MPIPARALLEL
-        // After you're done using the MPI datatype
-        if (isCustomDistributionTypeCreated) MPI_Type_free(&mDistributionType);
+// After you're done using the MPI datatype
+#pragma omp master
+        {
+            if (isCustomDistributionTypeCreated && !isCustomDistributionTypeDestroyed)
+                MPI_Type_free(&mDistributionType);
+            isCustomDistributionTypeDestroyed = true;
+        }
+#pragma omp barrier
 #endif
     }
 
@@ -113,6 +121,7 @@ class Parallel {
 #ifdef MPIPARALLEL
     static MPI_Datatype mDistributionType;
     static bool isCustomDistributionTypeCreated;
+    static bool isCustomDistributionTypeDestroyed;
 #endif
 };
 
@@ -122,6 +131,9 @@ MPI_Datatype Parallel<TDerived, TWidth>::mDistributionType = NULL;
 
 template <class TDerived, int TWidth>
 bool Parallel<TDerived, TWidth>::isCustomDistributionTypeCreated = false;
+
+template <class TDerived, int TWidth>
+bool Parallel<TDerived, TWidth>::isCustomDistributionTypeDestroyed = false;
 #endif
 
 template <class TDerived, int TWidth>
@@ -177,67 +189,51 @@ inline void Parallel<TDerived, TWidth>::updateParameterBeforeCommunication(TPara
         int ln = 0;  // number of elements in the communication region already handled
         if (TLattice::HaloXWidth) {
             int lw = TLattice::HaloXWidth;
-            for (int x = 0; x < 4 * lw; ++x)
+            for (int x = 0; x < 2 * lw; ++x)  // 4*lw
                 for (int y = 0; y < ly; ++y)
                     for (int z = 0; z < lz; ++z) {
                         int k = z + y * lz + x * ly * lz;
-                        int kComm = ln + k;
-                        int xOffset = (x < 2 * lw) ? 0 : lx - 4 * lw;
+                        int xOffset = (x < lw) ? lw : lx - 3 * lw;  // (x<2*lw) ? 0 : lx-4*lw
                         int kGlobal = z + y * lz + (x + xOffset) * ly * lz;
-                        for (int instance = 0; instance < TParameter::mInstances; instance++)
-                            for (int direction = 0; direction < TParameter::mDirections; direction++)
-                                obj.getCommParameter()[kComm * TParameter::mNum +
-                                                       (TParameter::mInstances > 1) * instance *
-                                                           TParameter::mDirections +
-                                                       (TParameter::mNum > 1) * direction] =
-                                    obj.getParameter()[kGlobal * TParameter::mNum +
-                                                       (TParameter::mInstances > 1) * instance *
-                                                           TParameter::mDirections +
-                                                       (TParameter::mNum > 1) * direction];
+                        for (int direction = 0; direction < TParameter::mDirections; direction++) {
+                            obj.getCommParameter()[k * TParameter::mNum + (TParameter::mDirections > 1) * direction] =
+                                obj.getParameter()[kGlobal * TParameter::mNum +
+                                                   (TParameter::mDirections > 1) * direction];
+                        }
                     }
             ln += 4 * lw * ly * lz;
         }
         if (TLattice::HaloYWidth) {
             int lw = TLattice::HaloYWidth;
-            for (int x = 0; x < lx; ++x)
-                for (int y = 0; y < 4 * lw; ++y)
+            for (int x = 0; x < lx; ++x)  // 4*lw
+                for (int y = 0; y < 2 * lw; ++y)
                     for (int z = 0; z < lz; ++z) {
                         int k = z + x * lz + y * lx * lz;
-                        int kComm = ln + k;
-                        int yOffset = (y < 2 * lw) ? 0 : ly - 4 * lw;
+                        k += ln;
+                        int yOffset = (y < lw) ? lw : ly - 3 * lw;  // (x<2*lw) ? 0 : lx-4*lw
                         int kGlobal = z + (y + yOffset) * lz + x * ly * lz;
-                        for (int instance = 0; instance < TParameter::mInstances; instance++)
-                            for (int direction = 0; direction < TParameter::mDirections; direction++)
-                                obj.getCommParameter()[kComm * TParameter::mNum +
-                                                       (TParameter::mInstances > 1) * instance *
-                                                           TParameter::mDirections +
-                                                       (TParameter::mNum > 1) * direction] =
-                                    obj.getParameter()[kGlobal * TParameter::mNum +
-                                                       (TParameter::mInstances > 1) * instance *
-                                                           TParameter::mDirections +
-                                                       (TParameter::mNum > 1) * direction];
+                        for (int direction = 0; direction < TParameter::mDirections; direction++) {
+                            obj.getCommParameter()[k * TParameter::mNum + (TParameter::mDirections > 1) * direction] =
+                                obj.getParameter()[kGlobal * TParameter::mNum +
+                                                   (TParameter::mDirections > 1) * direction];
+                        }
                     }
             ln += 4 * lw * lx * lz;
         }
         if (TLattice::HaloZWidth) {
             int lw = TLattice::HaloZWidth;
-            for (int x = 0; x < lx; ++x)
+            for (int x = 0; x < lx; ++x)  // 4*lw
                 for (int y = 0; y < ly; ++y)
-                    for (int z = 0; z < 4 * lw; ++z) {
+                    for (int z = 0; z < 2 * lw; ++z) {
                         int k = y + x * ly + z * lx * ly;
-                        int kComm = ln + k;
-                        int zOffset = (z < 2 * lw) ? 0 : lz - 4 * lw;
+                        k += ln;
+                        int zOffset = (z < lw) ? lw : lz - 3 * lw;  // (x<2*lw) ? 0 : lx-4*lw
                         int kGlobal = (z + zOffset) + y * lz + x * ly * lz;
-                        for (int instance = 0; instance < TParameter::mInstances; instance++)
-                            for (int direction = 0; direction < TParameter::mDirections; direction++)
-                                obj.getCommParameter()[kComm * TParameter::mNum +
-                                                       (TParameter::mInstances > 1) * instance *
-                                                           TParameter::mDirections +
-                                                       (TParameter::mNum > 1) * direction] =
-                                    obj.getParameter()[kGlobal * TParameter::mNum +
-                                                       (TParameter::mInstances > 1) * instance *
-                                                           TParameter::mDirections +
-                                                       (TParameter::mNum > 1) * direction];
+                        for (int direction = 0; direction < TParameter::mDirections; direction++) {
+                            obj.getCommParameter()[k * TParameter::mNum + (TParameter::mDirections > 1) * direction] =
+                                obj.getParameter()[kGlobal * TParameter::mNum +
+                                                   (TParameter::mDirections > 1) * direction];
+                        }
                     }
             ln += 4 * lw * lx * ly;
         }
@@ -255,64 +251,49 @@ inline void Parallel<TDerived, TWidth>::updateParameterAfterCommunication(TParam
         int ln = 0;  // number of elements in the communication region already handled
         if (TLattice::HaloXWidth) {
             int lw = TLattice::HaloXWidth;
-            for (int x = 0; x < 4 * lw; ++x)
+            for (int x = 0; x < 2 * lw; ++x)  // 4*lw
                 for (int y = 0; y < ly; ++y)
                     for (int z = 0; z < lz; ++z) {
-                        int k = z + y * lz + x * ly * lz;
-                        int kComm = ln + k;
-                        int xOffset = (x < 2 * lw) ? 0 : lx - 4 * lw;
+                        int k = 2 * lw * ly * lz + z + y * lz + x * ly * lz;  // 2*lw*ly*lz +
+                        int xOffset = (x < lw) ? 0 : lx - 2 * lw;             // x<2*lw
                         int kGlobal = z + y * lz + (x + xOffset) * ly * lz;
-                        for (int instance = 0; instance < TParameter::mInstances; instance++)
-                            for (int direction = 0; direction < TParameter::mDirections; direction++)
-                                obj.getParameter()[kGlobal * TParameter::mNum +
-                                                   (TParameter::mInstances > 1) * instance * TParameter::mDirections +
-                                                   (TParameter::mNum > 1) * direction] =
-                                    obj.getCommParameter()[kComm * TParameter::mNum +
-                                                           (TParameter::mInstances > 1) * instance *
-                                                               TParameter::mDirections +
-                                                           (TParameter::mNum > 1) * direction];
+                        for (int direction = 0; direction < TParameter::mDirections; direction++) {
+                            obj.getParameter()[kGlobal * TParameter::mNum + (TParameter::mDirections > 1) * direction] =
+                                obj.getCommParameter()[k * TParameter::mNum +
+                                                       (TParameter::mDirections > 1) * direction];
+                        }
                     }
             ln += 4 * lw * ly * lz;
         }
         if (TLattice::HaloYWidth) {
             int lw = TLattice::HaloYWidth;
-            for (int x = 0; x < lx; ++x)
-                for (int y = 0; y < 4 * lw; ++y)
+            for (int x = 0; x < lx; ++x)  // 4*lw
+                for (int y = 0; y < 2 * lw; ++y)
                     for (int z = 0; z < lz; ++z) {
-                        int k = z + x * lz + y * lx * lz;
-                        int kComm = ln + k;
-                        int yOffset = (y < 2 * lw) ? 0 : ly - 4 * lw;
+                        int k = 2 * lw * lx * lz + z + x * lz + y * lx * lz;  // 2*lw*ly*lz +
+                        int yOffset = (y < lw) ? 0 : ly - 2 * lw;             // x<2*lw
                         int kGlobal = z + (y + yOffset) * lz + x * ly * lz;
-                        for (int instance = 0; instance < TParameter::mInstances; instance++)
-                            for (int direction = 0; direction < TParameter::mDirections; direction++)
-                                obj.getParameter()[kGlobal * TParameter::mNum +
-                                                   (TParameter::mInstances > 1) * instance * TParameter::mDirections +
-                                                   (TParameter::mNum > 1) * direction] =
-                                    obj.getCommParameter()[kComm * TParameter::mNum +
-                                                           (TParameter::mInstances > 1) * instance *
-                                                               TParameter::mDirections +
-                                                           (TParameter::mNum > 1) * direction];
+                        for (int direction = 0; direction < TParameter::mDirections; direction++) {
+                            obj.getParameter()[kGlobal * TParameter::mNum + (TParameter::mDirections > 1) * direction] =
+                                obj.getCommParameter()[k * TParameter::mNum +
+                                                       (TParameter::mDirections > 1) * direction];
+                        }
                     }
             ln += 4 * lw * lx * lz;
         }
         if (TLattice::HaloZWidth) {
             int lw = TLattice::HaloZWidth;
-            for (int x = 0; x < lx; ++x)
+            for (int x = 0; x < lx; ++x)  // 4*lw
                 for (int y = 0; y < ly; ++y)
-                    for (int z = 0; z < 4 * lw; ++z) {
-                        int k = y + x * ly + z * lx * ly;
-                        int kComm = ln + k;
-                        int zOffset = (z < 2 * lw) ? 0 : lz - 4 * lw;
+                    for (int z = 0; z < 2 * lw; ++z) {
+                        int k = 2 * lw * ly * lx + y + x * ly + z * lx * ly;  // 2*lw*ly*lz +
+                        int zOffset = (z < lw) ? 0 : lz - 2 * lw;             // x<2*lw
                         int kGlobal = (z + zOffset) + y * lz + x * ly * lz;
-                        for (int instance = 0; instance < TParameter::mInstances; instance++)
-                            for (int direction = 0; direction < TParameter::mDirections; direction++)
-                                obj.getParameter()[kGlobal * TParameter::mNum +
-                                                   (TParameter::mInstances > 1) * instance * TParameter::mDirections +
-                                                   (TParameter::mNum > 1) * direction] =
-                                    obj.getCommParameter()[kComm * TParameter::mNum +
-                                                           (TParameter::mInstances > 1) * instance *
-                                                               TParameter::mDirections +
-                                                           (TParameter::mNum > 1) * direction];
+                        for (int direction = 0; direction < TParameter::mDirections; direction++) {
+                            obj.getParameter()[kGlobal * TParameter::mNum + (TParameter::mDirections > 1) * direction] =
+                                obj.getCommParameter()[k * TParameter::mNum +
+                                                       (TParameter::mDirections > 1) * direction];
+                        }
                     }
             ln += 4 * lw * lx * ly;
         }
@@ -372,20 +353,22 @@ inline void Parallel<TDerived, TWidth>::communicateDistributionAll(TDistribution
     {
         int nNeighbors = mNeighbors.size();
         MPI_Request commrequest[2 * nNeighbors];
+        MPI_Status commstatus[2 * nNeighbors];
 
         for (int iNeighbor = 0; iNeighbor < nNeighbors; iNeighbor++) {
             int tag = iNeighbor;
-            MPI_Isend(&obj.getCommDistribution()[mI0Send[iNeighbor] * TStencil::Q],
+            MPI_Isend(&obj.getCommDistribution()[mI0SendDistr[iNeighbor] * TStencil::Q * TWidth],
                       TWidth * TLattice::LY * TLattice::LZ * TStencil::Q, mpi_get_type<double, TLattice>(),
                       mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2 * iNeighbor]);
 
             tag = (iNeighbor % 2 == 0) ? iNeighbor + 1 : iNeighbor - 1;
-            MPI_Irecv(&obj.getCommDistribution()[mI0Recv[iNeighbor] * TStencil::Q],
+            // int iNeighbor2 = (iNeighbor % 2 == 0) ? iNeighbor + 1 : iNeighbor - 1;
+            MPI_Irecv(&obj.getCommDistribution()[mI0RecvDistr[iNeighbor] * TStencil::Q * TWidth],
                       TWidth * TLattice::LY * TLattice::LZ * TStencil::Q, mpi_get_type<double, TLattice>(),
                       mNeighbors[iNeighbor], tag, MPI_COMM_WORLD, &commrequest[2 * iNeighbor + 1]);
         }
 
-        MPI_Waitall(2 * nNeighbors, commrequest, MPI_STATUSES_IGNORE);
+        MPI_Waitall(2 * nNeighbors, commrequest, commstatus);
     }
 #endif
 }
@@ -520,6 +503,8 @@ inline void Parallel<TDerived, TWidth>::updateDistributionBeforeCommunicationAll
                             int k = z + y * lz + x * ly * lz;
                             int xOffset = (x < lw) ? lw : lx - 3 * lw;  // (x<2*lw) ? 0 : lx-4*lw
                             int kGlobal = z + y * lz + (x + xOffset) * ly * lz;
+                            // if (x<lw&&mpi.rank==4&&TIME==1000) std::cerr<<"before "<<kGlobal<<"
+                            // "<<obj.getDistribution()[kGlobal * TStencil::Q + idx]<<std::endl;
                             obj.getCommDistribution()[k * TStencil::Q + idx] =
                                 obj.getDistribution()[kGlobal * TStencil::Q + idx];
                         }
@@ -571,8 +556,10 @@ inline void Parallel<TDerived, TWidth>::updateDistributionAfterCommunicationAll(
                     for (int z = 0; z < lz; ++z)
                         for (int idx = 0; idx < TStencil::Q; ++idx) {
                             int k = 2 * lw * ly * lz + z + y * lz + x * ly * lz;  // 2*lw*ly*lz +
-                            int xOffset = (x < lw) ? 0 : lx - 4 * lw;             // x<2*lw
+                            int xOffset = (x < lw) ? 0 : lx - 2 * lw;             // x<2*lw
                             int kGlobal = z + y * lz + (x + xOffset) * ly * lz;
+                            // if (x>=lw&&mpi.rank==3&&TIME==1000) std::cerr<<"after "<<kGlobal<<"
+                            // "<<obj.getCommDistribution()[k * TStencil::Q + idx]<<std::endl;
                             obj.getDistribution()[kGlobal * TStencil::Q + idx] =
                                 obj.getCommDistribution()[k * TStencil::Q + idx];
                         }
@@ -584,7 +571,7 @@ inline void Parallel<TDerived, TWidth>::updateDistributionAfterCommunicationAll(
                     for (int z = 0; z < lz; ++z)
                         for (int idx = 0; idx < TStencil::Q; ++idx) {
                             int k = 2 * lw * lx * lz + z + x * lz + y * lx * lz;  // 2*lw*lx*lz +
-                            int yOffset = (y < lw) ? 0 : ly - 4 * lw;             // y<2*lw
+                            int yOffset = (y < lw) ? 0 : ly - 2 * lw;             // y<2*lw
                             int kGlobal = z + (y + yOffset) * lz + x * ly * lz;
                             obj.getDistribution()[kGlobal * TStencil::Q + idx] =
                                 obj.getCommDistribution()[k * TStencil::Q + idx];
@@ -597,7 +584,7 @@ inline void Parallel<TDerived, TWidth>::updateDistributionAfterCommunicationAll(
                     for (int y = 0; y < ly; ++y)
                         for (int idx = 0; idx < TStencil::Q; ++idx) {
                             int k = 2 * lw * lx * ly + y + x * ly + z * lx * ly;  // 2*lw*lx*ly +
-                            int zOffset = (z < lw) ? 0 : lz - 4 * lw;             // z<2*lw
+                            int zOffset = (z < lw) ? 0 : lz - 2 * lw;             // z<2*lw
                             int kGlobal = (z + zOffset) + y * lz + x * ly * lz;
                             obj.getDistribution()[kGlobal * TStencil::Q + idx] =
                                 obj.getCommDistribution()[k * TStencil::Q + idx];
@@ -784,7 +771,7 @@ inline void Parallel<TDerived, TWidth>::updateDistributionAfterCommunicationAllE
                     for (int z = 0; z < lz; ++z)
                         for (int idx = 0; idx < TStencil::Q; ++idx) {
                             int k = 2 * lw * ly * lz + z + y * lz + x * ly * lz;  // 2*lw*ly*lz +
-                            int xOffset = (x < lw) ? 0 : lx - 4 * lw;             // x<2*lw
+                            int xOffset = (x < lw) ? 0 : lx - 2 * lw;             // x<2*lw
                             int kGlobal = z + y * lz + (x + xOffset) * ly * lz;
                             obj.getEquilibrium()[kGlobal * TStencil::Q + idx] =
                                 obj.getCommDistribution()[k * TStencil::Q + idx];
@@ -797,7 +784,7 @@ inline void Parallel<TDerived, TWidth>::updateDistributionAfterCommunicationAllE
                     for (int z = 0; z < lz; ++z)
                         for (int idx = 0; idx < TStencil::Q; ++idx) {
                             int k = 2 * lw * lx * lz + z + x * lz + y * lx * lz;  // 2*lw*lx*lz +
-                            int yOffset = (y < lw) ? 0 : ly - 4 * lw;             // y<2*lw
+                            int yOffset = (y < lw) ? 0 : ly - 2 * lw;             // y<2*lw
                             int kGlobal = z + (y + yOffset) * lz + x * ly * lz;
                             obj.getEquilibrium()[kGlobal * TStencil::Q + idx] =
                                 obj.getCommDistribution()[k * TStencil::Q + idx];
@@ -810,7 +797,7 @@ inline void Parallel<TDerived, TWidth>::updateDistributionAfterCommunicationAllE
                     for (int y = 0; y < ly; ++y)
                         for (int idx = 0; idx < TStencil::Q; ++idx) {
                             int k = 2 * lw * lx * ly + y + x * ly + z * lx * ly;  // 2*lw*lx*ly +
-                            int zOffset = (z < lw) ? 0 : lz - 4 * lw;             // z<2*lw
+                            int zOffset = (z < lw) ? 0 : lz - 2 * lw;             // z<2*lw
                             int kGlobal = (z + zOffset) + y * lz + x * ly * lz;
                             obj.getEquilibrium()[kGlobal * TStencil::Q + idx] =
                                 obj.getCommDistribution()[k * TStencil::Q + idx];

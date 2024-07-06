@@ -28,28 +28,21 @@ def read_data(direc='data'):
 
     times = np.arange(0, tend+1, tinc)
     vel = np.zeros((len(times), lx, ly, lz, ndim))
-    solid = np.zeros((len(times), lx, ly, lz))
 
     for it, t in enumerate(times):
         try:
             vel_file = open(direc+"/Velocity_t%li.mat"%t, 'rb')
-            solid_file = open(direc+"/BoundaryLabels_t%li.mat"%t, 'rb')
 
             for k in range(lx*ly*lz):
                 (xk,yk,zk) = coord_k(k,ly,lz)
                 for i in range(ndim):
                     vel[it,xk,yk,zk,i] = struct.unpack('=d', vel_file.read(8))[0]
-                solid[it,xk,yk,zk] = struct.unpack('=i', solid_file.read(4))[0]
             
             vel_file.close()
-            solid_file.close()
         except FileNotFoundError:
             vel = vel[:it]
-            solid = solid[:it]
             break
-
-    # vel = np.ma.masked_where(solid, vel)
-    return vel, solid
+    return vel
 
 
 def plot(vel):
@@ -67,5 +60,5 @@ def plot(vel):
     #plt.savefig("test.png", dpi=500, format='png')
 
 
-vel, solid = read_data('data')
+vel = read_data('data')
 plot(vel)

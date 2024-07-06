@@ -61,22 +61,15 @@ for t in range(tstart,tend+1,tinc):
 
     t_file =t+t_zero
 
-    file_name = datadir+"OrderParameter_t%li.mat"%t_file
-
-    File = open(file_name, 'rb')
-
-    print(file_name)
-
-    NLatt=LX*LY*LZ
-
     C = np.zeros((LX,LY,2))
-
-    dat=File.read()
-    C = np.ndarray((LX,LY,numcomp-1),'=d',dat,0,(8*LY*LZ*(numcomp-1),8*LZ*(numcomp-1),8))
+    for iC in range(2):
+        file_name = f"{datadir}OrderParameter{iC}_t{t_file}.mat"
+        File = open(file_name, 'rb')
+        dat=File.read()
+        File.close()
+        C[:,:,iC] = np.frombuffer(dat, '=d').reshape(LX, LY)
 
     liquid = C[:,:,0]
-
-    File.close()
     
     fig,ax=plt.subplots(1,1,figsize=(6,6))
     output = "%s/component_plot_%012d.png"%(outDirName,t)

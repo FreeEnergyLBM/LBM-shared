@@ -9,6 +9,7 @@
 #include "Parallel.hh"
 #include "Service.hh"
 #include "Stencil.hh"
+#include "Template.hh"
 
 /**
  * \file Lattice.hh
@@ -58,6 +59,7 @@ struct LatticeProperties {
     constexpr LatticeProperties(double DT = 1.0) {
         TLattice::DT = DT;
         Parallel.template init<TLattice>();  // Initialise the parallelisation
+        initMPIBoundary<TLattice>();
     }
 
     /**
@@ -84,6 +86,7 @@ struct LatticeProperties {
             for (auto& [_, value] : alreadycommunicatedparameter) value = false;
             for (auto& [_, value] : alreadycommunicateddistribution) value = false;
         }
+#pragma omp barrier
     }
 
     /**
@@ -103,7 +106,17 @@ struct LatticeProperties {
             }
             alreadycommunicatedparameter[typeid(obj)] = true;
         }
+#pragma omp barrier
     }
+
+    /**
+     * \brief This function communicates multiple instances of a parameter
+     * \tparam TParameter Type of object to be communicated.
+     * \tparam NINS Number of instances to communicate
+     * \tparam NDIR Number of directions in parameter
+     */
+    template <template <int> class TParameter, int NINS, int NDIR = 1>
+    static void communicate();
 
     /**
      * \brief This function creates datatype for streaming distributions on its lattice.
@@ -142,6 +155,7 @@ struct LatticeProperties {
             }
             alreadycommunicateddistribution[std::make_pair(0, obj.getDistributionPointer(0))] = true;
         }
+#pragma omp barrier
     }
 
     /**
@@ -163,6 +177,7 @@ struct LatticeProperties {
             }
             alreadycommunicateddistribution[std::make_pair(1, obj.getDistributionPointer(0))] = true;
         }
+#pragma omp barrier
     }
 
     /**
@@ -184,6 +199,7 @@ struct LatticeProperties {
             }
             alreadycommunicateddistribution[std::make_pair(2, obj.getDistributionPointer(0))] = true;
         }
+#pragma omp barrier
     }
 
     /**
@@ -205,6 +221,7 @@ struct LatticeProperties {
             }
             alreadycommunicateddistribution[std::make_pair(3, obj.getDistributionPointer(0))] = true;
         }
+#pragma omp barrier
     }
 };
 
@@ -217,6 +234,21 @@ std::map<std::type_index, bool> LatticeProperties<TParallel, lx, ly, lz>::alread
 template <class TParallel, int lx, int ly, int lz>
 std::unordered_map<std::pair<int, double*>, bool, pair_hash>
     LatticeProperties<TParallel, lx, ly, lz>::alreadycommunicateddistribution;
+
+template <class Lattice, class ParameterTuple, int NDIR>
+struct communicateParameters;
+
+template <class Lattice, class... Parameters, int NDIR>
+struct communicateParameters<Lattice, std::tuple<Parameters...>, NDIR> {
+    communicateParameters() { (Lattice::communicate(Parameters::template getInstance<Lattice, NDIR>()), ...); }
+};
+
+template <class TParallel, int lx, int ly, int lz>
+template <template <int> class TParameter, int NINS, int NDIR>
+void LatticeProperties<TParallel, lx, ly, lz>::communicate() {
+    using Parameters = int_template<TParameter, int_sequence<NINS>>;
+    communicateParameters<LatticeProperties<TParallel, lx, ly, lz>, Parameters, NDIR>();
+}
 
 /**
  * \brief This class will contain lattice information and handle parallelisation when the domain size is not known at
@@ -297,6 +329,7 @@ struct LatticePropertiesRuntime {
             for (auto& [_, value] : alreadycommunicatedparameter) value = false;
             for (auto& [_, value] : alreadycommunicateddistribution) value = false;
         }
+#pragma omp barrier
     }
 
     /**
@@ -316,6 +349,7 @@ struct LatticePropertiesRuntime {
             }
             alreadycommunicatedparameter[typeid(obj)] = true;
         }
+#pragma omp barrier
     }
 
     //! This function creates datatype for streaming distributions on its lattice.
@@ -350,6 +384,7 @@ struct LatticePropertiesRuntime {
             }
             alreadycommunicateddistribution[std::make_pair(0, obj.getDistributionPointer(0))] = true;
         }
+#pragma omp barrier
     }
 
     /**
@@ -371,6 +406,7 @@ struct LatticePropertiesRuntime {
             }
             alreadycommunicateddistribution[std::make_pair(1, obj.getDistributionPointer(0))] = true;
         }
+#pragma omp barrier
     }
 
     /**
@@ -392,6 +428,7 @@ struct LatticePropertiesRuntime {
             }
             alreadycommunicateddistribution[std::make_pair(2, obj.getDistributionPointer(0))] = true;
         }
+#pragma omp barrier
     }
 
     /**
@@ -413,6 +450,7 @@ struct LatticePropertiesRuntime {
             }
             alreadycommunicateddistribution[std::make_pair(3, obj.getDistributionPointer(0))] = true;
         }
+#pragma omp barrier
     }
 };
 

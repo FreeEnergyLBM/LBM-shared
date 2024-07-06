@@ -4,11 +4,11 @@
 
 struct LaplacianCentralFourthOrderMirrorSolid : GradientBase<Laplacian, One> {
     template <class TTraits, class TParameter>
-    inline double compute(int direction, int k, int num = 0);
+    inline double compute(int direction, int k);
 };
 
 template <class TTraits, class TParameter>
-inline double LaplacianCentralFourthOrderMirrorSolid::compute(int direction, int k, int num) {
+inline double LaplacianCentralFourthOrderMirrorSolid::compute(int direction, int k) {
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
@@ -24,9 +24,9 @@ inline double LaplacianCentralFourthOrderMirrorSolid::compute(int direction, int
         if (!this->isBoundary<Lattice>(data.getNeighbor(k, idx)) &&
             !this->isBoundary<Lattice>(data.getNeighbor(data.getNeighbor(k, idx), idx))) {
             laplaciansum += Stencil::Weights[idx] * 2 *
-                            (-TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, idx), idx), num) +
-                             16 * TParameter::template get<Lattice>(data.getNeighbor(k, idx), num) -
-                             15 * TParameter::template get<Lattice>(k, num));
+                            (-TParameter::template get<Lattice>(data.getNeighbor(data.getNeighbor(k, idx), idx)) +
+                             16 * TParameter::template get<Lattice>(data.getNeighbor(k, idx)) -
+                             15 * TParameter::template get<Lattice>(k));
 
         } else if (!this->isBoundary<Lattice>(data.getNeighbor(k, idx))) {
             const int& normalq =
@@ -36,13 +36,11 @@ inline double LaplacianCentralFourthOrderMirrorSolid::compute(int direction, int
                               .NormalDirection)
                     ->second;
 
-            double csolid = param[data.getNeighbor(data.getNeighbor(data.getNeighbor(k, idx), idx), normalq) *
-                                      TParameter::instances +
-                                  num];
+            double csolid = param[data.getNeighbor(data.getNeighbor(data.getNeighbor(k, idx), idx), normalq)];
 
             laplaciansum += Stencil::Weights[idx] * 2 *
-                            (-csolid + 16 * TParameter::template get<Lattice>(data.getNeighbor(k, idx), num) -
-                             15 * TParameter::template get<Lattice>(k, num));
+                            (-csolid + 16 * TParameter::template get<Lattice>(data.getNeighbor(k, idx)) -
+                             15 * TParameter::template get<Lattice>(k));
 
         } else {
             const std::array<int8_t, TTraits::Lattice::NDIM>& normal =
@@ -69,15 +67,12 @@ inline double LaplacianCentralFourthOrderMirrorSolid::compute(int direction, int
 
             const int& newidx = TTraits::Stencil::QMap.find(newdir)->second;
 
-            double csolid = param[data.getNeighbor(data.getNeighbor(k, idx), normalq) * TParameter::instances + num];
-            double csolid2 =
-                param[data.getNeighbor(data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[normalq]), newidx),
-                                       newidx) *
-                          TParameter::instances +
-                      num];
+            double csolid = param[data.getNeighbor(data.getNeighbor(k, idx), normalq)];
+            double csolid2 = param[data.getNeighbor(
+                data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[normalq]), newidx), newidx)];
 
             laplaciansum +=
-                Stencil::Weights[idx] * 2 * (-csolid2 + 16 * csolid - 15 * TParameter::template get<Lattice>(k, num));
+                Stencil::Weights[idx] * 2 * (-csolid2 + 16 * csolid - 15 * TParameter::template get<Lattice>(k));
         }
     }
     return 1.0 / (12.0 * Stencil::Cs2 * Lattice::DT * Lattice::DT) * laplaciansum;

@@ -4,7 +4,7 @@
 
 struct CentralXYZInterfaceBounceBack : GradientBase<Gradient, Cartesian> {
     template <class TTraits, class TParameter>
-    inline double compute(int direction, int k, int num = 0);
+    inline double compute(int direction, int k);
 
     inline void setInterfaceId(int id) { mInterfaceID = id; }
 
@@ -22,7 +22,7 @@ struct CentralXYZInterfaceBounceBack : GradientBase<Gradient, Cartesian> {
 };
 
 template <class TTraits, class TParameter>
-inline double CentralXYZInterfaceBounceBack::compute(int direction, int k, int num) {
+inline double CentralXYZInterfaceBounceBack::compute(int direction, int k) {
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
@@ -34,18 +34,20 @@ inline double CentralXYZInterfaceBounceBack::compute(int direction, int k, int n
 
     if (Geometry<Lattice>::getBoundaryType(k) == 0 || Geometry<Lattice>::getBoundaryType(k) == 6) {
         for (int idx = 1; idx < Stencil::Q; idx++) {
-            if ((Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx)) == 1)) {
+            if ((Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx)) == 1 ||
+                 Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx)) == 7)) {
                 if (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx])) == 0 ||
                     Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx])) == 4) {
                     gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] *
-                                   (TParameter::template get<Lattice>(k, num));
+                                   (TParameter::template get<Lattice>(k));
 
-                } else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx])) == 1))
+                } else if ((Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx])) == 1 ||
+                            Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx])) == 7))
                     ;
                 else {
                     double interfacedistance = evalInterfaceDistance(k, Stencil::Opposites[idx]);
                     gradientsum += 2 * Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] *
-                                   (TParameter::template get<Lattice>(k, num)) / (1 + interfacedistance);
+                                   (TParameter::template get<Lattice>(k)) / (1 + interfacedistance);
                 }
 
             } else {
@@ -55,7 +57,7 @@ inline double CentralXYZInterfaceBounceBack::compute(int direction, int k, int n
                     (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx])) !=
                      mInterfaceID)) {
                     gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] *
-                                   (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num));
+                                   (TParameter::template get<Lattice>(data.getNeighbor(k, idx)));
 
                 } else if (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx)) == mInterfaceID &&
                            (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx])) == 0 ||
@@ -69,11 +71,12 @@ inline double CentralXYZInterfaceBounceBack::compute(int direction, int k, int n
                                mInterfaceID) {
                     double interfacedistance = evalInterfaceDistance(k, Stencil::Opposites[idx]);
                     gradientsum += 2 * Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] *
-                                   (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num)) /
+                                   (TParameter::template get<Lattice>(data.getNeighbor(k, idx))) /
                                    (1 + interfacedistance);
 
                 } else if (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx)) == mInterfaceID &&
-                           Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx])) == 1) {
+                           (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx])) == 1 ||
+                            Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx])) == 7)) {
                     double interfacedistance = evalInterfaceDistance(k, idx);
                     gradientsum += 2 * Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (mInterfaceVal) /
                                    (1 + interfacedistance);

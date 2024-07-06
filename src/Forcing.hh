@@ -22,7 +22,6 @@
 template <class... TStencils>
 struct ForcingBase {
     using mt_Stencils = std::tuple<TStencils...>;
-
     using Prefactor = NoTauDependence;
 
     inline void reset() {}
@@ -588,12 +587,12 @@ struct LeeMuNonLocal : ForcingBase<AllDirections> {
         if (!Geometry<typename TTraits::Lattice>::isBoundary(
                 data::getInstance().getNeighbors()[k * TTraits::Stencil::Q + idx]))
             gamma = CollisionBase<typename TTraits::Lattice, typename TTraits::Stencil>::computeGamma(
-                &Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 0), idx);
-        else
-            gamma = CollisionBase<typename TTraits::Lattice, typename TTraits::Stencil>::computeGamma(
                 &Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(
                     data::getInstance().getNeighbors()[k * TTraits::Stencil::Q + idx], 0),
                 idx);
+        else
+            gamma = CollisionBase<typename TTraits::Lattice, typename TTraits::Stencil>::computeGamma(
+                &Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 0), idx);
         const double prefactor = 0.5 * TTraits::Lattice::DT * gamma;  // Prefactor for Guo forcing
         return prefactor * (ma_ForceQ[idx]);
     }

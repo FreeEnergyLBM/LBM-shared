@@ -2,6 +2,8 @@
 #ifdef MPIPARALLEL
 #include <mpi.h>
 #endif
+#include <cassert>
+#include <complex>
 
 /**
  * \brief This class and its associated 'mpi' object provide a simple interface to access the MPI

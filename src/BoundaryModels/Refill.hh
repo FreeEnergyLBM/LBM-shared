@@ -8,8 +8,6 @@
 template <class TParam>
 class Refill : public BoundaryBase {
    public:
-    Refill() { this->setNodeID(6, true); }  // TMP: Default NodeID warning
-
     template <class TTraits, class TDistributionType>
     inline void compute(TDistributionType& mDistribution, int k);
 
@@ -48,14 +46,25 @@ inline void Refill<TParam>::compute(TDistributionType& distribution, int k) {
         }
     }
 
+    if (sum == 0) {
+        for (int idx = 0; idx < Stencil::Q; idx++) {
+            int neighbor = data.getNeighbors()[k * Stencil::Q + idx];
+            if (Geometry<Lattice>::getBoundaryType(neighbor) == 0 ||
+                Geometry<Lattice>::getBoundaryType(neighbor) == 6 ||
+                Geometry<Lattice>::getBoundaryType(neighbor) == 5) {
+                avgparam += TParam::template get<Lattice>(neighbor);
+                sum += 1;
+            }
+        }
+    }
     avgparam *= 1.0 / (double)sum;
 
     for (int idx = 0; idx < Stencil::Q; idx++) {
-        double updatedist = Stencil::Weights[idx] * avgparam *
-                                (1.0 + CollisionBase<Lattice, Stencil>::computeVelocityFactorFirstOrder(
-                                           Velocity<>::getAddress<Lattice>(k, 0), idx)) +
-                            (distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] -
-                             distribution.getEquilibriumPointer(k)[distribution.getOpposite(idx)]);
+        double updatedist = Stencil::Weights[idx] * avgparam; /* *
+                                 (1.0 + CollisionBase<Lattice, Stencil>::computeVelocityFactorFirstOrder(
+                                            Velocity<>::getAddress<Lattice>(k, 0), idx)) +
+                             (distribution.getDistributionPointer(k)[distribution.getOpposite(idx)] -
+                              distribution.getEquilibriumPointer(k)[distribution.getOpposite(idx)]);*/
 
         distribution.getDistributionPointer(k)[idx] = updatedist;
         distribution.getDistributionOldPointer(k)[idx] = updatedist;

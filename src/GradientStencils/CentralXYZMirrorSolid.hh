@@ -4,11 +4,11 @@
 
 struct CentralXYZMirrorSolid : GradientBase<Gradient, Cartesian> {
     template <class TTraits, class TParameter>
-    inline double compute(int direction, int k, int num = 0);
+    inline double compute(int direction, int k);
 };
 
 template <class TTraits, class TParameter>
-inline double CentralXYZMirrorSolid::compute(int direction, int k, int num) {
+inline double CentralXYZMirrorSolid::compute(int direction, int k) {
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
@@ -24,13 +24,12 @@ inline double CentralXYZMirrorSolid::compute(int direction, int k, int num) {
             const int& normalq =
                 TTraits::Stencil::QMap.find(boundary[data.getNeighbor(k, idx)].NormalDirection)->second;
 
-            double csolid = param[data.getNeighbor(data.getNeighbor(k, idx), normalq) * TParameter::instances + num];
+            double csolid = param[data.getNeighbor(data.getNeighbor(k, idx), normalq)];
 
             gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * csolid;
 
         } else {
-            gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] *
-                           (param[data.getNeighbor(k, idx) * TParameter::instances + num]);
+            gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] * (param[data.getNeighbor(k, idx)]);
         }
     }
 

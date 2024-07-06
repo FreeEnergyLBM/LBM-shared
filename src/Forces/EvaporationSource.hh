@@ -68,21 +68,21 @@ class EvaporationPressureSource : public ForceBase<TMethod> {
     double mPrefactor = 1.0;
     double mDensityLiquid = 1.0;
     double mDensityGas = 1.0;
-    double mInterfaceHumidity = 1.0;
+    double mInterfaceHumidity = 0.0;
 };
 
 template <class TMethod>
 template <class TTraits>
 inline double EvaporationPressureSource<TMethod>::compute(int k) const {
-    return TTraits::Stencil::Cs2 * Density<>::get<typename TTraits::Lattice>(k) *
+    return TTraits::Stencil::Cs2 *Density<>::get<typename TTraits::Lattice>(k) *
            MassSink<>::get<typename TTraits::Lattice>(k) * mPrefactor;
 }
 
 template <class TMethod>
 template <class TTraits>
 inline double EvaporationPressureSource<TMethod>::computeDensitySource(int k) const {
-    return TTraits::Lattice::DT * TTraits::Stencil::Cs2 * 0.5 * (1 - TTraits::Stencil::Weights[0]) *
-           Density<>::get<typename TTraits::Lattice>(k) * MassSink<>::get<typename TTraits::Lattice>(k) * mPrefactor;
+    return TTraits::Lattice::DT * 0.5 * TTraits::Stencil::Cs2 *
+           Density<>::get<typename TTraits::Lattice>(k) * MassSink<>::get<typename TTraits::Lattice>(k) * mPrefactor;// * (1-TTraits::Stencil::Weights[0]);
 }
 
 template <class TMethod>
@@ -116,7 +116,7 @@ class EvaporationHumiditySource : public ForceBase<TMethod> {
     double mPrefactor = 1.0;
     double mDensityLiquid = 1.0;
     double mDensityGas = 1.0;
-    double mInterfaceHumidity = 1.0;
+    double mInterfaceHumidity = 0.0;
 };
 
 template <class TMethod>
@@ -138,5 +138,5 @@ inline double EvaporationHumiditySource<TMethod>::computeXYZ(int xyz, int k) con
 template <class TMethod>
 template <class TTraits>
 inline double EvaporationHumiditySource<TMethod>::computeDensitySourceMultiplicative(int k) const {
-    return 1 - TTraits::Lattice::DT * 0.5 * MassSink<>::get<typename TTraits::Lattice>(k) * mPrefactor;
+    return 1.0/(1 - TTraits::Lattice::DT * 0.5 * MassSink<>::get<typename TTraits::Lattice>(k) * mPrefactor);
 }

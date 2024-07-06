@@ -5,7 +5,7 @@
 
 #include "Data.hh"
 #include "Parameters.hh"
-#include "Service.hh"
+#include "Stencil.hh"
 
 /**
  * \file Geometry.hh
@@ -157,7 +157,9 @@ inline bool Geometry<TLattice>::isBulkSolid(int (*condition)(const int), const s
 
     for (int idx = 0; idx < Stencil::Q; idx++) {
         for (int i : fluidvals) {
-            if (condition(neighbors[k * Stencil::Q + idx]) == i) bulksolid = false;
+            if (  // condition(neighbors[k * Stencil::Q + idx]) != condition(k) ||
+                condition(neighbors[k * Stencil::Q + idx]) == i)
+                bulksolid = false;
         }
     }
 
@@ -174,7 +176,7 @@ inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int)
     using Stencil = std::conditional_t<TLattice::NDIM == 1, D1Q3, std::conditional_t<TLattice::NDIM == 2, D2Q9, D3Q27>>;
 
     using data = Data_Base<TLattice, Stencil>;
-
+    data::getInstance().generateNeighbors();
     std::vector<int>& neighbors = data::getInstance().getNeighbors();
 
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) {

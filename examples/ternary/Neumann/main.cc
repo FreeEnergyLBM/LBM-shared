@@ -19,11 +19,14 @@ int main(int argc, char **argv) {
 
     SaveHandler<Lattice> saver(datadir);
 
-    OrderParameter<2>::set<Lattice, 1, 1>(initFluid2);
-    OrderParameter<2>::set<Lattice, 1, 0>(initFluid1);
-    ChemicalPotential<3>::set<Lattice, 1, 0>(0.0);
-    ChemicalPotential<3>::set<Lattice, 1, 1>(0.0);
-    ChemicalPotential<3>::set<Lattice, 1, 2>(0.0);
+    OrderParameter<1>::set<Lattice, 1>(initFluid2);
+    OrderParameter<1>::smooth<Lattice, 1>(4);
+    OrderParameter<0>::set<Lattice, 1>(initFluid1);
+    OrderParameter<0>::smooth<Lattice, 1>(4);
+    // OrderParameter<1>::set<Lattice,1>(0.0);
+    ChemicalPotential<0>::set<Lattice, 1>(0.0);
+    ChemicalPotential<1>::set<Lattice, 1>(0.0);
+    ChemicalPotential<2>::set<Lattice, 1>(0.0);
     Density<>::set<Lattice>(1.0);
     InverseTau<>::set<Lattice>(1.0);
 
@@ -32,14 +35,20 @@ int main(int argc, char **argv) {
     Data_Base<Lattice, typename DefaultTraitPressureTernaryLee<Lattice>::Stencil>::getInstance().communicate(
         BoundaryLabels<Lattice::NDIM>::template getInstance<Lattice>());
     Data_Base<Lattice, typename DefaultTraitPressureTernaryLee<Lattice>::Stencil>::getInstance().communicate(
-        OrderParameter<2>::getInstance<Lattice>());
+        OrderParameter<0>::getInstance<Lattice>());
+    Data_Base<Lattice, typename DefaultTraitPressureTernaryLee<Lattice>::Stencil>::getInstance().communicate(
+        OrderParameter<1>::getInstance<Lattice>());
     Data_Base<Lattice, typename DefaultTraitPressureTernaryLee<Lattice>::Stencil>::getInstance().communicate(
         Pressure<>::getInstance<Lattice>());
 
     Lattice::ResetParallelTracking();
     Algorithm lbm(ternary1, ternary2, pressure);
     Data_Base<Lattice, typename DefaultTraitPressureTernaryLee<Lattice>::Stencil>::getInstance().communicate(
-        LaplacianChemicalPotential<3>::getInstance<Lattice>());
+        LaplacianChemicalPotential<0>::getInstance<Lattice>());
+    Data_Base<Lattice, typename DefaultTraitPressureTernaryLee<Lattice>::Stencil>::getInstance().communicate(
+        LaplacianChemicalPotential<1>::getInstance<Lattice>());
+    Data_Base<Lattice, typename DefaultTraitPressureTernaryLee<Lattice>::Stencil>::getInstance().communicate(
+        LaplacianChemicalPotential<2>::getInstance<Lattice>());
     Lattice::ResetParallelTracking();
 
     saver.saveHeader(timesteps, saveInterval);
@@ -51,16 +60,20 @@ int main(int argc, char **argv) {
             if (mpi.rank == 0) std::cout << "Saving at timestep " << timestep << "." << std::endl;
 
             saver.saveBoundaries(timestep);
-            saver.saveParameter<ChemicalPotential<3>>(timestep);
-            saver.saveParameter<LaplacianChemicalPotential<3>>(timestep);
-            ;
+            saver.saveParameter<ChemicalPotential<0>>(timestep, true);
+            saver.saveParameter<ChemicalPotential<1>>(timestep, true);
+            saver.saveParameter<ChemicalPotential<2>>(timestep, true);
+            saver.saveParameter<LaplacianChemicalPotential<0>>(timestep, true);
+            saver.saveParameter<LaplacianChemicalPotential<1>>(timestep, true);
+            saver.saveParameter<LaplacianChemicalPotential<2>>(timestep, true);
             saver.saveParameter<Pressure<>>(timestep);
-            saver.saveParameter<OrderParameter<2>>(timestep);
+            saver.saveParameter<OrderParameter<0>>(timestep, true);
+            saver.saveParameter<OrderParameter<1>>(timestep, true);
             saver.saveParameter<Velocity<>, Lattice::NDIM>(timestep);
         }
-
+#ifdef MPIPARALLEL
         MPI_Barrier(MPI_COMM_WORLD);
-
+#endif
         lbm.evolve();
         if (ternary1.isNan()) {
             std::cout << "here" << std::endl;
@@ -68,7 +81,13 @@ int main(int argc, char **argv) {
         }
         Lattice::ResetParallelTracking();
         Data_Base<Lattice, typename DefaultTraitPressureTernaryLee<Lattice>::Stencil>::getInstance().communicate(
-            LaplacianChemicalPotential<3>::getInstance<Lattice>());
+            LaplacianChemicalPotential<0>::getInstance<Lattice>());
+        Data_Base<Lattice, typename DefaultTraitPressureTernaryLee<Lattice>::Stencil>::getInstance().communicate(
+            LaplacianChemicalPotential<1>::getInstance<Lattice>());
+        Data_Base<Lattice, typename DefaultTraitPressureTernaryLee<Lattice>::Stencil>::getInstance().communicate(
+            LaplacianChemicalPotential<2>::getInstance<Lattice>());
+        Data_Base<Lattice, typename DefaultTraitPressureTernaryLee<Lattice>::Stencil>::getInstance().communicate(
+            Pressure<>::getInstance<Lattice>());
         Lattice::ResetParallelTracking();
     }
 }

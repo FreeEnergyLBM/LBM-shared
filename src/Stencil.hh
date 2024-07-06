@@ -186,6 +186,8 @@ struct D1Q3 : StencilBase {
      * \param invtau Inverse of the relaxation time.
      */
     inline static std::vector<double> MRTWeights(const double& invtau) { return {0, 0, invtau}; }
+
+    static constexpr double MagicParam = 1.0/6.0;
 };
 
 std::map<std::array<int8_t, D1Q3::D>, int> D1Q3::QMap = {{{0}, 0}, {{1}, 1}, {{-1}, 2}};
@@ -246,6 +248,8 @@ struct D2Q5 : StencilBase {
      * \param invtau Inverse of the relaxation time.
      */
     inline static std::vector<double> MRTWeights(const double& invtau) { return {0, 1, 0, 0, invtau}; }
+
+    static constexpr double MagicParam = 1.0/6.0;
 };
 
 std::map<std::array<int8_t, D2Q5::D>, int> D2Q5::QMap = {
@@ -315,6 +319,8 @@ struct D2Q9 : StencilBase {
      * \param invtau Inverse of the relaxation time.
      */
     inline static std::vector<double> MRTWeights(const double& invtau) { return {0, 1, 1, 0, 1, 0, 1, invtau, invtau}; }
+
+    static constexpr double MagicParam = 1.0/6.0;
 };
 
 std::map<std::array<int8_t, D2Q9::D>, int> D2Q9::QMap = {{{0, 0}, 0},   {{1, 0}, 1},  {{-1, 0}, 2},
@@ -395,6 +401,8 @@ struct D3Q15 : StencilBase {
     inline static std::vector<double> MRTWeights(const double& invtau) {
         return {0, 1, 1, 0, 1, 0, 1, 0, 1, invtau, invtau, invtau, invtau, invtau, 1, 1};
     }
+
+    static constexpr double MagicParam = 1.0/6.0;
 };
 
 std::map<std::array<int8_t, D3Q15::D>, int> D3Q15::QMap = {
@@ -481,6 +489,8 @@ struct D3Q19 : StencilBase {
     inline static std::vector<double> MRTWeights(const double& invtau) {
         return {0, 1, 1, 0, 1, 0, 1, 0, 1, invtau, 1, invtau, 1, invtau, invtau, invtau, 1, 1, 1};
     }
+
+    static constexpr double MagicParam = 1.0/6.0;
 };
 
 std::map<std::array<int8_t, D3Q19::D>, int> D3Q19::QMap = {
@@ -536,6 +546,8 @@ struct D3Q27 : StencilBase {
     static const int CModulus = Ci_x[idx] * Ci_x[idx] + Ci_y[idx] * Ci_y[idx] +
                                 Ci_z[idx] * Ci_z[idx];  //!< Computes the modulus of the velocity vector at a given
                                                         //!< index, used for the MRT weight calculation.
+
+    static constexpr double MagicParam = 1.0/6.0;
 };
 
 std::map<std::array<int8_t, D3Q27::D>, int> D3Q27::QMap = {

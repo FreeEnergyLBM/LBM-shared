@@ -9,7 +9,7 @@
 const int lx = 100;  // Size of domain in x direction
 const int ly = 100;  // Size of domain in y direction
 
-const int timesteps = 5000;     // Number of iterations to perform
+const int timesteps = 10000;    // Number of iterations to perform
 const int saveInterval = 1000;  // Interval to save global data
 
 const double force = 1e-6;  // Driving force, equivalent to the pressure gradient
@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
     componentSeparationModel.getProcessor<ChemicalPotentialCalculatorBinary>().setKappa(kappa);
 
     // Define the magnitude of the body force
-    flowFieldModel.getForce<BodyForce<>>().setMagnitudeX(force);
+    flowFieldModel.getForce<BodyForce<>>().setForce({force, 0, 0});
 
     // Define the solid boundaries
     Geometry<Lattice>::initialiseBoundaries(initSolid);

@@ -4,11 +4,11 @@
 
 struct CentralQ : GradientBase<Gradient, AllDirections> {
     template <class TTraits, class TParameter>
-    inline double compute(const int direction, const int k, int num = 0);
+    inline double compute(const int direction, const int k);
 };
 
 template <class TTraits, class TParameter>
-inline double CentralQ::compute(const int direction, const int k, const int num) {
+inline double CentralQ::compute(const int direction, const int k) {
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
@@ -16,7 +16,7 @@ inline double CentralQ::compute(const int direction, const int k, const int num)
 
     DataType& data = DataType::getInstance();
 
-    return 0.5 * (TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction], num) -
-                  TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]],
-                                                    num));
+    return 0.5 *
+           (TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + direction]) -
+            TParameter::template get<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]));
 }

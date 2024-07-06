@@ -4,7 +4,7 @@
 
 struct CentralXYZInterface : GradientBase<Gradient, Cartesian> {
     template <class TTraits, class TParameter>
-    inline double compute(int direction, int k, int num = 0);
+    inline double compute(int direction, int k);
 
     inline void setInterfaceId(int id) { mInterfaceID = id; }
 
@@ -22,7 +22,7 @@ struct CentralXYZInterface : GradientBase<Gradient, Cartesian> {
 };
 
 template <class TTraits, class TParameter>
-inline double CentralXYZInterface::compute(int direction, int k, int num) {
+inline double CentralXYZInterface::compute(int direction, int k) {
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
@@ -37,7 +37,7 @@ inline double CentralXYZInterface::compute(int direction, int k, int num) {
             if ((Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx)) != mInterfaceID) &&
                 (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx])) != mInterfaceID)) {
                 gradientsum += Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] *
-                               (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num));
+                               (TParameter::template get<Lattice>(data.getNeighbor(k, idx)));
 
             } else if (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, idx)) == mInterfaceID &&
                        (Geometry<Lattice>::getBoundaryType(data.getNeighbor(k, Stencil::Opposites[idx])) !=
@@ -51,8 +51,7 @@ inline double CentralXYZInterface::compute(int direction, int k, int num) {
                            mInterfaceID) {
                 double interfacedistance = evalInterfaceDistance(k, Stencil::Opposites[idx]);
                 gradientsum += 2 * Stencil::Weights[idx] * Stencil::Ci_xyz(direction)[idx] *
-                               (TParameter::template get<Lattice>(data.getNeighbor(k, idx), num)) /
-                               (1 + interfacedistance);
+                               (TParameter::template get<Lattice>(data.getNeighbor(k, idx))) / (1 + interfacedistance);
             }
         }
     }

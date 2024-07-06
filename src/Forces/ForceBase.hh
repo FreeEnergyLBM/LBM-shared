@@ -3,6 +3,8 @@
 
 #include "../Forcing.hh"
 
+class Model;
+
 template <class TMethod = Guo>
 class ForceBase {
    public:
@@ -34,7 +36,10 @@ class ForceBase {
     template <class TTraits>
     inline void communicate();  // Perform any necessary postprocessing
 
-   private:
+    inline void initialise(Model* model) { mModel = model; };
+
+   protected:
+    Model* mModel;
 };
 
 template <class TMethod>

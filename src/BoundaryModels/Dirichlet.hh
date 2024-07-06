@@ -6,8 +6,6 @@
 
 class Dirichlet : public BoundaryBase {
    public:
-    Dirichlet() { this->setNodeID(4, true); }  // TMP: Default NodeID warning
-
     template <class TTraits, class TDistributionType>
     inline void compute(TDistributionType& mDistribution, int k);
 
@@ -29,7 +27,7 @@ inline void Dirichlet::compute(TDistributionType& distribution, int k) {
 
     if (!this->apply<Lattice>(k)) return;
 
-    for (int idx = 0; idx < TTraits::Stencil::Q; idx++) {
+    for (int idx = 1; idx < TTraits::Stencil::Q; idx++) {
         if (this->apply<Lattice>(distribution.streamIndex(k, idx))) continue;
 
         distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] =

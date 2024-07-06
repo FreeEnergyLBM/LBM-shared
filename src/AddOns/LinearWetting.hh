@@ -62,7 +62,7 @@ inline void LinearWetting::compute(int k) {
     for (int idx = 0; idx < Stencil::Q; idx++) {
         int neighbor = data::getInstance().getNeighbors()[k * Stencil::Q + idx];
 
-        if (Geometry<Lattice>::getBoundaryType(neighbor) == 0) {
+        if (!Geometry<Lattice>::isBoundary(neighbor)) {
             phiAvg += OrderParameter<>::get<Lattice>(neighbor);
             count++;
         }

@@ -1,5 +1,8 @@
 *.out
 *.mat
+**/*.png
+**/*.PNG
+**/input/
 tests/Placeholder/wetP
 tests/Placeholder/figures/*.png
 tests/Placeholder/data/*.mat
@@ -7,6 +10,7 @@ tests/Placeholder/omnitrace-wetP-output
 tests/Placeholder/omnitrace-wetP.inst-output
 **/wetP*
 **/run.exe*
+**/*.exe*
 **/figures*
 **/out*
 **/data*

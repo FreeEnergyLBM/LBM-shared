@@ -1,6 +1,8 @@
 #pragma once
 #include "../Geometry.hh"
 
+class Model;
+
 class AddOnBase {
    public:
     template <class TTraits>
@@ -9,6 +11,8 @@ class AddOnBase {
     template <class TTraits>
     inline void communicate();
 
+    inline void initialise(Model* model) { mModel = model; };
+
     inline void setNodeID(int id) { mNodeID = {id}; };
 
     inline void setNodeID(std::vector<int> id) { mNodeID = id; };
@@ -16,6 +20,7 @@ class AddOnBase {
     template <class TLattice>
     inline bool apply(int k) {
         const int& boundarytype = Geometry<TLattice>::getBoundaryType(k);
+
         if (boundarytype == -1) return false;
         for (int i : mNodeID) {
             if (boundarytype == i) return true;
@@ -25,6 +30,9 @@ class AddOnBase {
 
    private:
     std::vector<int> mNodeID = {};
+
+   protected:
+    Model* mModel;
 };
 
 template <class TTraits>

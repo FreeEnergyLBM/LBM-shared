@@ -4,11 +4,11 @@
 
 struct MixedQMirrorSolid : GradientBase<GradientMixed, AllDirections> {
     template <class TTraits, class TParameter>
-    inline double compute(const int direction, const int k, int num = 0);
+    inline double compute(const int direction, const int k);
 };
 
 template <class TTraits, class TParameter>
-inline double MixedQMirrorSolid::compute(const int direction, const int k, int num) {
+inline double MixedQMirrorSolid::compute(const int direction, const int k) {
     using Lattice = typename TTraits::Lattice;
     using Stencil = typename TTraits::Stencil;
 
@@ -25,13 +25,9 @@ inline double MixedQMirrorSolid::compute(const int direction, const int k, int n
             data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction])) &&
         (!this->isBoundary<Lattice>(data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]))) {
         return 0.25 *
-               (-param[data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction] *
-                           TParameter::instances +
-                       num] +
-                5 * param[data.getNeighbors()[k * Stencil::Q + direction] * TParameter::instances + num] -
-                3 * param[k * TParameter::instances + num] -
-                param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]] * TParameter::instances +
-                      num]);
+               (-param[data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction]] +
+                5 * param[data.getNeighbors()[k * Stencil::Q + direction]] - 3 * param[k] -
+                param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]]);
 
     } else if ((this->isBoundary<Lattice>(data.getNeighbor(k, direction)))) {
         if ((this->isBoundary<Lattice>(data.getNeighbor(k, Stencil::Opposites[direction])))) {
@@ -65,19 +61,13 @@ inline double MixedQMirrorSolid::compute(const int direction, const int k, int n
 
             const int& newidx = TTraits::Stencil::QMap.find(newdir)->second;
 
-            double csolid =
-                param[data.getNeighbor(data.getNeighbor(k, direction), normalqforward) * TParameter::instances + num];
-            double csolid2 =
-                param[data.getNeighbor(
-                          data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[normalqforward]), newidx), newidx) *
-                          TParameter::instances +
-                      num];
+            double csolid = param[data.getNeighbor(data.getNeighbor(k, direction), normalqforward)];
+            double csolid2 = param[data.getNeighbor(
+                data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[normalqforward]), newidx), newidx)];
             double csolid3 =
-                param[data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[direction]), normalqbackward) *
-                          TParameter::instances +
-                      num];
+                param[data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[direction]), normalqbackward)];
 
-            return 0.25 * (-(csolid2) + 5 * (csolid)-3 * param[k * TParameter::instances + num] - csolid3);
+            return 0.25 * (-(csolid2) + 5 * (csolid)-3 * param[k] - csolid3);
         } else {
             const std::array<int8_t, TTraits::Lattice::NDIM>& normal =
                 BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(
@@ -103,18 +93,12 @@ inline double MixedQMirrorSolid::compute(const int direction, const int k, int n
 
             const int& newidx = TTraits::Stencil::QMap.find(newdir)->second;
 
-            double csolid =
-                param[data.getNeighbor(data.getNeighbor(k, direction), normalq) * TParameter::instances + num];
-            double csolid2 =
-                param[data.getNeighbor(data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[normalq]), newidx),
-                                       newidx) *
-                          TParameter::instances +
-                      num];
+            double csolid = param[data.getNeighbor(data.getNeighbor(k, direction), normalq)];
+            double csolid2 = param[data.getNeighbor(
+                data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[normalq]), newidx), newidx)];
 
-            return 0.25 *
-                   (-(csolid2) + 5 * (csolid)-3 * param[k * TParameter::instances + num] -
-                    param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]] * TParameter::instances +
-                          num]);
+            return 0.25 * (-(csolid2) + 5 * (csolid)-3 * param[k] -
+                           param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]]);
         }
 
     } else if (this->isBoundary<Lattice>(data.getNeighbor(data.getNeighbor(k, direction), direction))) {
@@ -126,9 +110,7 @@ inline double MixedQMirrorSolid::compute(const int direction, const int k, int n
                               .NormalDirection)
                     ->second;
             double csolidforward =
-                param[data.getNeighbor(data.getNeighbor(data.getNeighbor(k, direction), direction), normalqforward) *
-                          TParameter::instances +
-                      num];
+                param[data.getNeighbor(data.getNeighbor(data.getNeighbor(k, direction), direction), normalqforward)];
             const int& normalqbackward =
                 TTraits::Stencil::QMap
                     .find(BoundaryLabels<TTraits::Lattice::NDIM>::template get<typename TTraits::Lattice>(
@@ -136,13 +118,10 @@ inline double MixedQMirrorSolid::compute(const int direction, const int k, int n
                               .NormalDirection)
                     ->second;
             double csolidbackward =
-                param[data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[direction]), normalqbackward) *
-                          TParameter::instances +
-                      num];
+                param[data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[direction]), normalqbackward)];
 
-            return 0.25 * (-csolidforward +
-                           5 * param[data.getNeighbors()[k * Stencil::Q + direction] * TParameter::instances + num] -
-                           3 * param[k * TParameter::instances + num] - csolidbackward);
+            return 0.25 * (-csolidforward + 5 * param[data.getNeighbors()[k * Stencil::Q + direction]] - 3 * param[k] -
+                           csolidbackward);
         }
 
         const int& normalq = TTraits::Stencil::QMap
@@ -150,15 +129,10 @@ inline double MixedQMirrorSolid::compute(const int direction, const int k, int n
                                            data.getNeighbor(data.getNeighbor(k, direction), direction))
                                            .NormalDirection)
                                  ->second;
-        double csolid = param[data.getNeighbor(data.getNeighbor(data.getNeighbor(k, direction), direction), normalq) *
-                                  TParameter::instances +
-                              num];
+        double csolid = param[data.getNeighbor(data.getNeighbor(data.getNeighbor(k, direction), direction), normalq)];
 
-        return 0.25 *
-               (-(csolid) + 5 * param[data.getNeighbors()[k * Stencil::Q + direction] * TParameter::instances + num] -
-                3 * param[k * TParameter::instances + num] -
-                param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]] * TParameter::instances +
-                      num]);
+        return 0.25 * (-(csolid) + 5 * param[data.getNeighbors()[k * Stencil::Q + direction]] - 3 * param[k] -
+                       param[data.getNeighbors()[k * Stencil::Q + Stencil::Opposites[direction]]]);
 
     }
 
@@ -168,15 +142,10 @@ inline double MixedQMirrorSolid::compute(const int direction, const int k, int n
                                            data.getNeighbor(k, Stencil::Opposites[direction]))
                                            .NormalDirection)
                                  ->second;
-        double csolid = param[data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[direction]), normalq) *
-                                  TParameter::instances +
-                              num];
+        double csolid = param[data.getNeighbor(data.getNeighbor(k, Stencil::Opposites[direction]), normalq)];
 
         return 0.25 *
-               (-param[data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction] *
-                           TParameter::instances +
-                       num] +
-                5 * param[data.getNeighbors()[k * Stencil::Q + direction] * TParameter::instances + num] -
-                3 * param[k * TParameter::instances + num] - (csolid));
+               (-param[data.getNeighbors()[data.getNeighbors()[k * Stencil::Q + direction] * Stencil::Q + direction]] +
+                5 * param[data.getNeighbors()[k * Stencil::Q + direction]] - 3 * param[k] - (csolid));
     }
 }

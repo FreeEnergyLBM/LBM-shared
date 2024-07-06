@@ -4,6 +4,7 @@
 #include "CentralQWetting.hh"
 #include "CentralXYZ.hh"
 #include "CentralXYZBounceBack.hh"
+#include "CentralXYZBounceBackDirectional.hh"
 #include "CentralXYZFourthOrder.hh"
 #include "CentralXYZInterface.hh"
 #include "CentralXYZInterfaceBounceBack.hh"

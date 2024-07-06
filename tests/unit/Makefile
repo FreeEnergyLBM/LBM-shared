@@ -2,7 +2,8 @@ ROOT_DIR = ../..
 INC_DIR = $(ROOT_DIR)/src
 INC = $(addprefix -I, $(INC_DIR))
 
-TESTS = Service_test ParallelX_test ParallelY_test ParallelZ_test Collide_test BounceBack_test CubicWetting_test FlowField_test # TODO: ParallelXY_test ParallelXZ_test ParallelYZ_test ParallelXYZ_test
+TESTS = Template_test Service_test ParallelX_test ParallelY_test ParallelZ_test Collide_test BounceBack_test CubicWetting_test Gradients_test FlowField_test Binary_test
+
 RUN_TESTS = $(addprefix run_, $(TESTS))
 
 CXX = mpicxx
@@ -18,6 +19,10 @@ $(if $(YPROCS), , $(eval YPROCS=1))
 $(if $(ZPROCS), , $(eval ZPROCS=1))
 $(eval NPROCS = $(shell echo $$(($(XPROCS)*$(YPROCS)*$(ZPROCS)))))
 endef
+
+ifdef strip_templates
+STRIP_TEMPLATES = -fdiagnostics-color=always 2>&1 | sed 's/ \[with [^]]*\]//g'
+endif
 
 .PHONY: all clean cleantests gtest $(RUN_TESTS)
 
@@ -66,7 +71,7 @@ gtest_main.a: gtest-all.o gtest_main.o
 
 # Tests
 $(TESTS): %_test: %_test.o gtest.a
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -lpthread -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -lpthread -o $@ $(STRIP_TEMPLATES)
 
 %_test.o: %_test.cpp $(GTEST_HEADERS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(INC) -c $<
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(INC) -c $< $(STRIP_TEMPLATES)

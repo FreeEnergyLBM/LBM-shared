@@ -47,34 +47,24 @@ template <class TMethod, int TComponentID>
 template <class TTraits>
 inline double AllenCahnSource<TMethod, TComponentID>::computeXYZ(int xyz, int k) const {
     double gradx =
-        GradientOrderParameter<TTraits::NumberOfComponents -
-                               1>::template get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, TComponentID, 0);
+        GradientOrderParameter<TComponentID>::template get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 0);
     double grady =
-        GradientOrderParameter<TTraits::NumberOfComponents -
-                               1>::template get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, TComponentID, 1);
+        GradientOrderParameter<TComponentID>::template get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 1);
 
     double magnitudegrad2 = gradx * gradx + grady * grady;
     if constexpr (TTraits::Lattice::NDIM == 3)
         magnitudegrad2 +=
-            GradientOrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice,
-                                                                                  TTraits::Lattice::NDIM>(
-                k, TComponentID, 2) *
-            GradientOrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice,
-                                                                                  TTraits::Lattice::NDIM>(
-                k, TComponentID, 2);
-    double normal = GradientOrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice,
-                                                                                          TTraits::Lattice::NDIM>(
-                        k, TComponentID, xyz) /
-                    sqrt(magnitudegrad2);
+            GradientOrderParameter<TComponentID>::template get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k,
+                                                                                                                  2) *
+            GradientOrderParameter<TComponentID>::template get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 2);
+    double normal =
+        GradientOrderParameter<TComponentID>::template get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, xyz) /
+        sqrt(magnitudegrad2);
 
     if (sqrt(magnitudegrad2) > magnitudecutoff) {
         return (mMobility / mTau) *
-               (4 *
-                    OrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice>(
-                        k, TComponentID) *
-                    (1. - OrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice>(
-                              k, TComponentID)) *
-                    normal / mD -
+               (4 * OrderParameter<TComponentID>::template get<typename TTraits::Lattice>(k) *
+                    (1. - OrderParameter<TComponentID>::template get<typename TTraits::Lattice>(k)) * normal / mD -
                 computeBeta<TTraits>(xyz, k));
 
     } else
@@ -90,51 +80,32 @@ inline double AllenCahnSource<TMethod, TComponentID>::computeQ(int idx, int k) c
 template <class TMethod, int TComponentID>
 template <class TTraits>
 inline double AllenCahnSource<TMethod, TComponentID>::computeBeta(int xyz, int k) const {
+    using Lattice = typename TTraits::Lattice;
+
     double sum = 0;
     double orderparametersum = 0;
     double gradientsum[TTraits::Lattice::NDIM] = {};
     for (int component = 0; component < TTraits::NumberOfComponents - 1; component++) {
-        double gradx =
-            GradientOrderParameter<TTraits::NumberOfComponents -
-                                   1>::template get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, component, 0);
-        gradientsum[0] += gradx;
-        double grady =
-            GradientOrderParameter<TTraits::NumberOfComponents -
-                                   1>::template get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, component, 1);
-        gradientsum[1] += grady;
-        double magnitudegrad2 = gradx * gradx + grady * grady;
+        const double *gradOP =
+            &getInstance<GradientOrderParameter, TTraits::NumberOfComponents - 1, Lattice, Lattice::NDIM>(
+                component)[k * Lattice::NDIM];
+        gradientsum[0] += gradOP[0];
+        gradientsum[1] += gradOP[1];
+        double magnitudegrad2 = pow(gradOP[0], 2) + pow(gradOP[1], 2);
         if constexpr (TTraits::Lattice::NDIM == 3) {
-            magnitudegrad2 +=
-                GradientOrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice,
-                                                                                      TTraits::Lattice::NDIM>(
-                    k, component, 2) *
-                GradientOrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice,
-                                                                                      TTraits::Lattice::NDIM>(
-                    k, component, 2);
-            gradientsum[2] +=
-                GradientOrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice,
-                                                                                      TTraits::Lattice::NDIM>(
-                    k, component, 2);
+            magnitudegrad2 += pow(gradOP[2], 2);
+            gradientsum[2] += gradOP[2];
         }
-        double normal = GradientOrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice,
-                                                                                              TTraits::Lattice::NDIM>(
-                            k, component, xyz) /
-                        sqrt(magnitudegrad2);
+        double normal = gradOP[xyz] / sqrt(magnitudegrad2);
         if (sqrt(magnitudegrad2) > magnitudecutoff) {
-            orderparametersum +=
-                OrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice>(k, component);
-            sum +=
-                4 *
-                OrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice>(k, component) *
-                (1 - OrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice>(
-                         k, component)) *
-                normal / mD;
+            double orderParameter = getInstance<OrderParameter, TTraits::NumberOfComponents - 1, Lattice>(component)[k];
+            orderparametersum += orderParameter;
+            sum += 4 * orderParameter * (1 - orderParameter) * normal / mD;
         }
     }
     double magnitudegrad2 = gradientsum[0] * gradientsum[0] + gradientsum[1] * gradientsum[1];
     if constexpr (TTraits::Lattice::NDIM == 3) magnitudegrad2 += gradientsum[2] * gradientsum[2];
     double normal = (-gradientsum[xyz]) / (sqrt(magnitudegrad2));
     if (sqrt(magnitudegrad2) > magnitudecutoff) sum += 4 * (1 - orderparametersum) * (orderparametersum)*normal / mD;
-    return OrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice>(k, TComponentID) *
-           sum;
+    return OrderParameter<TComponentID>::template get<typename TTraits::Lattice>(k) * sum;
 }

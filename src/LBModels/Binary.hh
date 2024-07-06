@@ -7,6 +7,7 @@
 #include "../BoundaryModels/BounceBack.hh"
 #include "../Collide.hh"
 #include "../Data.hh"
+#include "../Forces/ChemicalForce.hh"
 #include "../Geometry.hh"
 #include "../GradientStencils/GradientStencils.hh"
 #include "../Parameters.hh"
@@ -41,6 +42,13 @@ class Binary : public CollisionBase<TLattice, typename TTraits::Stencil>,
     inline void computeMomenta() override;  // Momenta (density, velocity) calculation
 
     inline double computeEquilibrium(int k, int idx) override;  // Calculate equilibrium in direction idx
+
+    /**
+     * \brief Function to compute the fractional concentration of each fluid (between 0 and 1).
+     * \param k The index of the node on the lattice.
+     * \param iFluid The index of the fluid (0 or 1).
+     */
+    inline double computeConcentration(int k, int iFluid) override;
 
    private:
     inline double computeModelForce(int xyz, int k);  // Calculate forces specific to the model in direction xyz
@@ -91,6 +99,7 @@ inline void Binary<TLattice, TTraits>::collide() {
 
 template <class TLattice, class TTraits>
 inline void Binary<TLattice, TTraits>::initialise() {  // Initialise model
+    this->initialiseProcessors();
 
     this->mData.generateNeighbors();  // Fill array of neighbor values (See Data.hh)
     TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this->mt_Forces, mTau1, mTau2);
@@ -133,8 +142,6 @@ inline void Binary<TLattice, TTraits>::initialise() {  // Initialise model
     }
 
     this->mData.communicate(BoundaryLabels<TTraits::Lattice::NDIM>::template getInstance<TLattice>());
-
-    this->initialiseBoundaries();
 }
 
 template <class TLattice, class TTraits>
@@ -168,6 +175,17 @@ inline double Binary<TLattice, TTraits>::computeEquilibrium(int k, int idx) {
            (ChemicalPotential<>::get<TLattice>(k) * mGamma / Stencil::Cs2 + orderparameter[k] * velocityFactor);
 }
 
+template <class TLattice, class TTraits>
+inline double Binary<TLattice, TTraits>::computeConcentration(int k, int iFluid) {
+    if (iFluid == 0) {
+        return 0.5 * (1.0 + orderparameter[k]);
+    } else if (iFluid == 1) {
+        return 0.5 * (1.0 - orderparameter[k]);
+    } else {
+        throw std::invalid_argument("Invalid fluid number. Must be 0 or 1.");
+    }
+}
+
 // FlowField.hh: Contains the details of the LBM model to solve the Navier-Stokes and continuity equation. Each
 // Model is given a "TTraits" class that contains stencil, data, force and boundary information
 
@@ -192,6 +210,13 @@ class FlowFieldBinary : public FlowField<TLattice, TTraits> {  // Inherit from b
     inline virtual void initialise() override;  // Initialisation step
 
     inline double computeEquilibrium(int k, int idx) override;  // Calculate equilibrium in direction idx
+
+    /**
+     * \brief Function to compute the fractional concentration of each fluid (between 0 and 1).
+     * \param k The index of the node on the lattice.
+     * \param iFluid The index of the fluid (0 or 1).
+     */
+    inline double computeConcentration(int k, int iFluid) override;
 
    private:
     double mTau1 = 1;
@@ -238,6 +263,7 @@ inline void FlowFieldBinary<TLattice, TTraits>::collide() {  // Collision step
 
 template <class TLattice, class TTraits>
 inline void FlowFieldBinary<TLattice, TTraits>::initialise() {  // Initialise model
+    this->initialiseProcessors();
 
     this->mData.generateNeighbors();  // Fill array of neighbor values (See Data.hh)
     TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this->mt_Forces, mTau1, mTau2);
@@ -270,6 +296,16 @@ inline void FlowFieldBinary<TLattice, TTraits>::initialise() {  // Initialise mo
             equilibriumsum += equilibrium;
         }
     }
+}
 
-    this->initialiseBoundaries();
+template <class TLattice, class TTraits>
+inline double FlowFieldBinary<TLattice, TTraits>::computeConcentration(int k, int iFluid) {
+    double orderParameter = OrderParameter<>::get<TLattice>(k);
+    if (iFluid == 0) {
+        return 0.5 * (1.0 + orderParameter);
+    } else if (iFluid == 1) {
+        return 0.5 * (1.0 - orderParameter);
+    } else {
+        throw std::invalid_argument("Invalid fluid number. Must be 0 or 1.");
+    }
 }

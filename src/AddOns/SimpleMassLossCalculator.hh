@@ -17,42 +17,36 @@ class SimpleMassLossCalculator : public AddOnBase {
     /// Set the constant evaporation rate per unit area
     inline void setEvaporationRate(double rate);
 
-    inline void setLiquidID(int id) { mLiquidID = id; }
-    inline void setGasID(int id) { mGasID = id; }
+    inline void setLiquidID(int id) { mLiquidId = id; }
+    inline void setGasID(int id) { mGasId = id; }
 
    private:
-    double mEvaporationRate = 0.0;
-    int mLiquidID = 0;
-    int mGasID = 0;
+    double mEvaporationRate = 1e-4;
+    int mLiquidId = 0;
+    int mGasId = 0;
 };
 
 template <class TTraits>
 inline void SimpleMassLossCalculator::compute(int k) {
-    if (Geometry<typename TTraits::Lattice>::isBulkSolid(k)) return;
+    using Lattice = typename TTraits::Lattice;
+    if (Geometry<Lattice>::isBulkSolid(k)) return;
+
+    constexpr int N = TTraits::NumberOfComponents;
+    const std::vector<double>& gradLiquid = getInstance<GradientOrderParameter, N, Lattice, Lattice::NDIM>(mLiquidId);
 
     // Get the local gradient of the order parameter
     double gradOP = 0;
-    if (mGasID < TTraits::NumberOfComponents - 1) {
+    if (mGasId < TTraits::NumberOfComponents - 1) {
+        const std::vector<double>& gradGas = getInstance<GradientOrderParameter, N, Lattice, Lattice::NDIM>(mGasId);
         for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
-            gradOP +=
-                fabs(GradientOrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice,
-                                                                                           TTraits::Lattice::NDIM>(
-                         k, mLiquidID, xyz) *
-                     GradientOrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice,
-                                                                                           TTraits::Lattice::NDIM>(
-                         k, mGasID, xyz));
+            gradOP += fabs(gradLiquid[k * Lattice::NDIM + xyz] * gradGas[k * Lattice::NDIM + xyz]);
         }
     } else {
         for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
             gradOP += fabs(
-                GradientOrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice,
-                                                                                      TTraits::Lattice::NDIM>(
-                    k, mLiquidID, xyz) *
-                (GradientOrderParameter<TTraits::NumberOfComponents -
-                                        1>::template get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 0, xyz) +
-                 GradientOrderParameter<TTraits::NumberOfComponents - 1>::template get<typename TTraits::Lattice,
-                                                                                       TTraits::Lattice::NDIM>(k, 1,
-                                                                                                               xyz)));
+                gradLiquid[k * Lattice::NDIM + xyz] *
+                (GradientOrderParameter<0>::template get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, xyz) +
+                 GradientOrderParameter<1>::template get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, xyz)));
         }
     }
 

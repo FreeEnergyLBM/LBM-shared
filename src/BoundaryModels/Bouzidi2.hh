@@ -6,8 +6,6 @@
 
 class Bouzidi2 : public BoundaryBase {
    public:
-    Bouzidi2() { this->setNodeID(5, true); }  // TMP: Default NodeID warning
-
     template <class TTraits, class TDistributionType>
     inline void compute(TDistributionType& mDistribution, int k);
 
