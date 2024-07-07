@@ -1,0 +1,37 @@
+name: Sync Shared Repo
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  sync-shared:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - run: |
+          mkdir ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          echo "https://sjavis:${{ secrets.GH_TOKEN }}@github.com" > ~/.git-credentials
+
+      - run: |
+          git config --global user.name "Sam Avis"
+          git config --global user.email "avissam96@gmail.com"
+
+      - run: docker pull anipos/copybara:latest
+
+      - run: |
+          docker run \
+            -v ~/.ssh:/root/.ssh \
+            -v ~/.git-credentials:/root/.git-credentials \
+            -v ~/.gitconfig:/root/.gitconfig \
+            -v "$(pwd)":/usr/src/app \
+            -e COPYBARA_CONFIG=.github/shared/copy.bara.sky \
+            -e COPYBARA_WORKFLOW="pr ${{ github.event.number }}" \
+            -e COPYBARA_OPTIONS="--nogit-destination-rebase" \
+            -i anipos/copybara copybara

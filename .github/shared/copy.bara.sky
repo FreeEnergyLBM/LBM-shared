@@ -10,9 +10,8 @@ EXCLUDE = EXCLUDE_FILES + EXCLUDE_DIRS + [WORKFLOW_FILE]
 
 
 FILTER_PATTERN = '(' + '|'.join([path.split('/')[-1] for path in EXCLUDE_FILES]) + ')'
-remove_private_includes = core.replace("#include \"${x}\"${nl}", "", multiline = True, regex_groups={"x": FILTER_PATTERN, "nl":r"\n?"}, paths=glob(["**"]))
-
-remove_private_regions = core.replace("${x}", "", multiline=True, regex_groups={"x": "(?m)^.*BEGIN-PRIVATE[\\w\\W]*?END-PRIVATE.*$\\n"})
+remove_private_includes = core.replace("#include \"${x}\"${nl}", "", multiline = True, regex_groups={"x": FILTER_PATTERN, "nl":r"\n?"})
+remove_private_regions = core.replace("${x}", "", multiline=True, regex_groups={"x": "(?m)^.*BEGIN-PRIVATE[\\w\\W]*?END-PRIVATE.*$\\n"}, paths=glob(["**"], exclude=[".github/shared/copy.bara.sky"]))
 
 
 core.workflow(
@@ -31,6 +30,7 @@ core.workflow(
     transformations = [
         remove_private_includes,
         remove_private_regions,
+        core.move(".github/shared/pr_sync_shared.yml", WORKFLOW_FILE, overwrite=True),
         metadata.expose_label("GITHUB_PUBLIC_PR_NUMBER", new_name="Closes", separator=" #"),
         metadata.restore_author("ORIGINAL_AUTHOR", search_all_changes=True),
     ],
