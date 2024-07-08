@@ -1,0 +1,22 @@
+name: Restore Excluded Data
+
+on:
+  pull-request:
+    branches: [shared]
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - run: |
+          git config --global user.name "Sam Avis"
+          git config --global user.email "avissam96@gmail.com"
+
+      - run: |
+          git revert shared-patch --no-commit
+          git commit --amend --no-edit
+          git push

@@ -1,5 +1,6 @@
 MAIN_URL = "git@github.com:FreeEnergyLBM/LBM.git"
 MAIN_BRANCH = "shared"
+MAIN_PATCH_BRANCH = "shared-patch"
 
 SHARED_URL = "git@github.com:FreeEnergyLBM/LBM-shared.git"
 SHARED_BRANCH = "main"
@@ -12,6 +13,27 @@ EXCLUDE = EXCLUDE_FILES + EXCLUDE_DIRS + [WORKFLOW_FILE]
 FILTER_PATTERN = '(' + '|'.join([path.split('/')[-1] for path in EXCLUDE_FILES]) + ')'
 remove_private_includes = core.replace("#include \"${x}\"${nl}", "", multiline = True, regex_groups={"x": FILTER_PATTERN, "nl":r"\n?"})
 remove_private_regions = core.replace("${x}", "", multiline=True, regex_groups={"x": "(?m)^.*BEGIN-PRIVATE[\\w\\W]*?END-PRIVATE.*$\\n"}, paths=glob(["**"], exclude=[".github/shared/copy.bara.sky"]))
+
+
+core.workflow(
+    name = "create_patch",
+    origin = git.origin(
+        url = MAIN_URL,
+        ref = MAIN_BRANCH,
+    ),
+    destination = git.destination(
+        url = MAIN_URL,
+        fetch = MAIN_BRANCH,
+        push = MAIN_PATCH_BRANCH,
+    ),
+    origin_files = glob(["**"]),
+    authoring = authoring.pass_thru("Copybara <copybara@example.com>"),
+    mode = 'SQUASH',
+    transformations = [
+        remove_private_includes,
+        remove_private_regions,
+    ],
+)
 
 
 core.workflow(
