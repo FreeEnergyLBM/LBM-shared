@@ -1,6 +1,7 @@
 #pragma once
 #include <dirent.h>
 
+#include <functional>
 #include <map>
 
 #include "Data.hh"
@@ -33,25 +34,26 @@ class Geometry {
     /**
      * \brief Returns the normal to the boundary as a cartesian vector.
      * \tparam TStencil The type of the velocity stencil.
-     * \param condition Function pointer that returns the boundary index for a given lattice index k.
+     * \param condition Function that returns the boundary index for a given lattice index k.
      * \param neighbors Vector that contains the neighboring index in each velocity direction on each lattice index.
      * \param fluidvals Boundary index of lattice points that are fluids (for normal calculation).
      * \param k Latice index.
      */
     template <class TStencil>
-    static inline std::array<int8_t, TLattice::NDIM> findNormal(int (*condition)(const int),
+    static inline std::array<int8_t, TLattice::NDIM> findNormal(std::function<int(const int)> condition,
                                                                 const std::vector<int>& neighbors,
                                                                 const std::vector<int> fluidvals, int k);
 
     /**
      * \brief Returns true if the current lattice point is a corner boundary.
-     * \param condition Function pointer that returns the boundary index for a given lattice index k.
+     * \param condition Function that returns the boundary index for a given lattice index k.
      * \param normal Normal to the boundary as a cartesian vector.
      * \param fluidvals Boundary index of lattice points that are fluids (for normal calculation).
      * \param k Latice index.
      */
-    static inline bool isCorner(int (*condition)(const int), const std::array<int8_t, TLattice::NDIM>& normal,
-                                const std::vector<int> fluidvals, int k);
+    static inline bool isCorner(std::function<int(const int)> condition,
+                                const std::array<int8_t, TLattice::NDIM>& normal, const std::vector<int> fluidvals,
+                                int k);
 
     /**
      * \brief Returns true if the current lattice point is a corner boundary.
@@ -61,12 +63,12 @@ class Geometry {
 
     /**
      * \brief Returns true if the current lattice point is surrounded by boundary/other bulk solid nodes..
-     * \param condition Function pointer that returns the boundary index for a given lattice index k.
+     * \param condition Function that returns the boundary index for a given lattice index k.
      * \param normal Normal to the boundary as a cartesian vector.
      * \param fluidvals Boundary index of lattice points that are fluids (for normal calculation).
      * \param k Latice index.
      */
-    static inline bool isBulkSolid(int (*condition)(const int), const std::vector<int>& neighbors,
+    static inline bool isBulkSolid(std::function<int(const int)> condition, const std::vector<int>& neighbors,
                                    std::vector<int> fluidvals, int k);
 
     /**
@@ -77,17 +79,31 @@ class Geometry {
 
     /**
      * \brief Initialises the BoundaryLabels class and sets fluid boundary indices.
-     * \param condition Function pointer that returns the boundary index for a given lattice index k.
+     * \param condition Function that returns the boundary index for a given lattice index k.
      * \param fluidval Boundary index of lattice points that are fluids (for normal calculation).
      */
-    static inline void initialiseBoundaries(int (*condition)(const int), int fluidval = 0);
+    static inline void initialiseBoundaries(std::function<int(const int)> condition, int fluidval = 0);
 
     /**
      * \brief Initialises the BoundaryLabels class and sets fluid boundary indices.
-     * \param condition Function pointer that returns the boundary index for a given lattice index k.
+     * \param condition Function that returns the boundary index for a given lattice index k.
      * \param fluidval Boundary indices of lattice points that are fluids (for normal calculation).
      */
-    static inline void initialiseBoundaries(int (*condition)(const int), std::vector<int> fluidvals);
+    static inline void initialiseBoundaries(std::function<int(const int)> condition, std::vector<int> fluidvals);
+
+    /**
+     * \brief Initialises the BoundaryLabels class and sets fluid boundary indices.
+     * \param indices Vector that contains the boundary indices for the entire domain.
+     * \param fluidvals Boundary indices of lattice points that are fluids (for normal calculation).
+     */
+    static inline void initialiseBoundaries(std::vector<int> indices, std::vector<int> fluidvals);
+
+    /**
+     * \brief Initialises the BoundaryLabels class and sets fluid boundary indices.
+     * \param indices Vector that contains the boundary indices for the entire domain.
+     * \param fluidval (optional) Boundary index of lattice points that are fluids (for normal calculation).
+     */
+    static inline void initialiseBoundaries(std::vector<int> indices, int fluidval = 0);
 
     /**
      * \brief Imports the geometry from a text file, placed in the working directory.
@@ -121,11 +137,11 @@ class Geometry {
 
     /**
      * \brief Returns true if the lattice index is not a fluid node.
-     * \param condition Function pointer that returns the boundary index for a given lattice index k.
+     * \param condition Function that returns the boundary index for a given lattice index k.
      * \param fluidvals Boundary index of lattice points that are fluids (for normal calculation).
      * \param k Latice index.
      */
-    static inline bool apply(int (*condition)(const int), std::vector<int> fluidvals, int k) {
+    static inline bool apply(std::function<int(const int)> condition, std::vector<int> fluidvals, int k) {
         for (int i : fluidvals) {
             if (condition(k) == i) return false;
         }
@@ -142,12 +158,12 @@ template <class TLattice>
 std::vector<int> Geometry<TLattice>::geometryLabelsFromFile(TLattice::N, 0);
 
 /**
- * \detauls This function iterates through all velocity irections and then iterates through the fluid boundary indices.
+ * \details This function iterates through all velocity directions and then iterates through the fluid boundary indices.
  *          If it finds that the boundary indiex in any velocity direction is a fluid, it returns false. Otherwise it
  * returns true
  */
 template <class TLattice>
-inline bool Geometry<TLattice>::isBulkSolid(int (*condition)(const int), const std::vector<int>& neighbors,
+inline bool Geometry<TLattice>::isBulkSolid(std::function<int(const int)> condition, const std::vector<int>& neighbors,
                                             std::vector<int> fluidvals, int k) {
     mFluidVals = fluidvals;
 
@@ -172,16 +188,16 @@ inline bool Geometry<TLattice>::isBulkSolid(int (*condition)(const int), const s
  *          point is a corner and the normal direction pointing into the fluid.
  */
 template <class TLattice>
-inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int), const std::vector<int> fluidvals) {
+inline void Geometry<TLattice>::initialiseBoundaries(std::function<int(const int)> condition,
+                                                     const std::vector<int> fluidvals) {
     using Stencil = std::conditional_t<TLattice::NDIM == 1, D1Q3, std::conditional_t<TLattice::NDIM == 2, D2Q9, D3Q27>>;
 
     using data = Data_Base<TLattice, Stencil>;
     data::getInstance().generateNeighbors();
     std::vector<int>& neighbors = data::getInstance().getNeighbors();
 
-    for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) {
+    for (int k : RangeK<TLattice>()) {
         int solidval;
-
         if (isBulkSolid(condition, neighbors, fluidvals, k)) {
             solidval = -1;
         } else if (geometryLabelsFromFile[k] != 0) {
@@ -191,9 +207,7 @@ inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int)
         }
 
         std::array<int8_t, TLattice::NDIM> normal = findNormal<Stencil>(condition, neighbors, fluidvals, k);
-
         Boundary<TLattice::NDIM> boundaryk = {solidval, isCorner(condition, normal, fluidvals, k), normal};
-
         BoundaryLabels<TLattice::NDIM>::template initialise<TLattice>(boundaryk, k);
     }
 
@@ -204,8 +218,23 @@ inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int)
  * \details This class calls the InitialiseBoundaries class after converting the integer fluidval to a vector.
  */
 template <class TLattice>
-inline void Geometry<TLattice>::initialiseBoundaries(int (*condition)(const int), int fluidval) {
+inline void Geometry<TLattice>::initialiseBoundaries(std::function<int(const int)> condition, int fluidval) {
     initialiseBoundaries(condition, std::vector<int>{fluidval});
+}
+
+/**
+ * \details This function first converts the index array to a function before calling the initialiseBoundaries
+ * implementation.
+ */
+template <class TLattice>
+inline void Geometry<TLattice>::initialiseBoundaries(std::vector<int> indices, const std::vector<int> fluidvals) {
+    auto indexFunction = [&indices](const int k) { return indices[computeKGlobal<TLattice>(k)]; };
+    initialiseBoundaries(indexFunction, fluidvals);
+}
+
+template <class TLattice>
+inline void Geometry<TLattice>::initialiseBoundaries(std::vector<int> indices, int fluidval) {
+    initialiseBoundaries(indices, std::vector<int>{fluidval});
 }
 
 /**
@@ -277,7 +306,7 @@ inline void Geometry<TLattice>::importLabels(std::string filename) {
  */
 template <class TLattice>
 template <class TStencil>
-inline std::array<int8_t, TLattice::NDIM> Geometry<TLattice>::findNormal(int (*condition)(const int),
+inline std::array<int8_t, TLattice::NDIM> Geometry<TLattice>::findNormal(std::function<int(const int)> condition,
                                                                          const std::vector<int>& neighbors,
                                                                          const std::vector<int> fluidvals, int k) {
     std::array<int8_t, TLattice::NDIM> normal = {};
@@ -337,7 +366,8 @@ inline std::array<int8_t, TLattice::NDIM> Geometry<TLattice>::findNormal(int (*c
  *          one of the normal directions is not equal to zero. Otherwise it returns false.
  */
 template <class TLattice>
-inline bool Geometry<TLattice>::isCorner(int (*condition)(const int), const std::array<int8_t, TLattice::NDIM>& normal,
+inline bool Geometry<TLattice>::isCorner(std::function<int(const int)> condition,
+                                         const std::array<int8_t, TLattice::NDIM>& normal,
                                          const std::vector<int> fluidvals, int k) {  // DOesnt
 
     if (!apply(condition, fluidvals, k)) return false;
