@@ -1,7 +1,7 @@
 name: Restore Excluded Data
 
 on:
-  pull-request:
+  pull_request:
     branches: [shared]
 
 jobs:
