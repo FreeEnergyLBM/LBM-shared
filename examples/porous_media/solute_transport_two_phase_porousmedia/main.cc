@@ -27,14 +27,30 @@ const double diffusivity = 0.001;  // diffusivity of the solute
 // Set up the lattice, including the resolution and data/parallelisation method
 using Lattice = LatticeProperties<ParallelX<1>, lx, ly>;
 
-// Function used to define the solid geometry
-// Here we set a solid at the top and bottom, in the conditions that return 1;
-int initSolid(const int k) {
-    int y = computeY(ly, 1, k);
-    if (y <= 1 || y >= ly - 2)
-        return 1;
-    else
-        return 0;
+void unzipGeometry() {
+    if (mpi.rank == 0) {
+        int result = system("unzip -o geometry.zip");
+        if (result != 0) throw std::runtime_error("Failed to unzip geometry");
+    }
+    mpi.barrier();
+}
+
+// Function used to define the geometry
+std::vector<int> initSolid() {
+    // Read in the geometry file
+    unzipGeometry();
+    auto boundaries = loadTxt<int>("geometry.dat");
+    // Define any additional boundaries
+    for (int x = 0; x < lx; x++) {
+        for (int y = 0; y < ly; y++) {
+            int k = x * ly + y;
+            if (boundaries[k] != 0)
+                continue;
+            else if (y <= 1 || y >= ly - 2)
+                boundaries[k] = 1;
+        }
+    }
+    return boundaries;
 }
 
 // Function used to define the fluid
@@ -50,14 +66,6 @@ double initSolute(int k) {
         return 1.0;
     else
         return 0;
-}
-
-void unzipGeometry() {
-    if (mpi.rank == 0) {
-        int result = system("unzip -o geometry.zip");
-        if (result != 0) throw std::runtime_error("Failed to unzip geometry");
-    }
-    mpi.barrier();
 }
 
 int main(int argc, char **argv) {
@@ -96,9 +104,7 @@ int main(int argc, char **argv) {
     componentSeparationModel.getProcessor<ChemicalPotentialCalculatorBinary>().setKappa(binaryKappa);
 
     // Define the solid boundaries
-    unzipGeometry();
-    Geometry<Lattice>::importLabels("geometry.dat");
-    Geometry<Lattice>::initialiseBoundaries(initSolid);
+    Geometry<Lattice>::initialiseBoundaries(initSolid());
 
     flowFieldModel.getBoundary<BounceBack>().setNodeID(1);
     componentSeparationModel.getBoundary<BounceBack>().setNodeID(1);

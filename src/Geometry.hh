@@ -106,13 +106,6 @@ class Geometry {
     static inline void initialiseBoundaries(std::vector<int> indices, int fluidval = 0);
 
     /**
-     * \brief Imports the geometry from a text file, placed in the working directory.
-     * The file includes the geometry labels for each lattice point in a signle column.
-     * \param filename The name of the file to import, e.g. "geometry.dat".
-     */
-    static inline void importLabels(std::string filename);
-
-    /**
      * \brief Returns the boundary index at the given lattice index.
      * \param k Lattice index.
      */
@@ -147,15 +140,10 @@ class Geometry {
         }
         return true;
     }
-
-    static std::vector<int> geometryLabelsFromFile;
 };
 
 template <class TLattice>
 std::vector<int> Geometry<TLattice>::mFluidVals;
-
-template <class TLattice>
-std::vector<int> Geometry<TLattice>::geometryLabelsFromFile(TLattice::N, 0);
 
 /**
  * \details This function iterates through all velocity directions and then iterates through the fluid boundary indices.
@@ -200,8 +188,6 @@ inline void Geometry<TLattice>::initialiseBoundaries(std::function<int(const int
         int solidval;
         if (isBulkSolid(condition, neighbors, fluidvals, k)) {
             solidval = -1;
-        } else if (geometryLabelsFromFile[k] != 0) {
-            solidval = geometryLabelsFromFile[k];
         } else {
             solidval = condition(k);
         }
@@ -266,34 +252,6 @@ inline bool Geometry<TLattice>::isCorner(int k) {
 template <class TLattice>
 inline bool Geometry<TLattice>::isBulkSolid(int k) {
     return (BoundaryLabels<TLattice::NDIM>::template get<TLattice>(k).Id == -1);
-}
-
-/**
- * \details This function reads the geometry from a text file and stores the labels in the
- * geometryLabelsFromFile vector.
- */
-template <class TLattice>
-inline void Geometry<TLattice>::importLabels(std::string filename) {
-    std::cout << "Reading the geometry from " << filename << " ..." << std::endl;
-
-    std::ifstream file(filename);
-    int label;
-
-    if (file.is_open()) {
-        // Clear the vector and initialize with size TLattice::N and default value 0
-        geometryLabelsFromFile.clear();
-
-        // Read labels into the vector
-        for (int i = 0; i < TLattice::N; ++i) {
-            file >> label;
-            geometryLabelsFromFile.push_back(label);
-        }
-        file.close();
-    } else {
-        std::cerr << "Unable to open file: " << filename << std::endl;
-    }
-
-    std::cout << "Reading the geometry from " << filename << " ... done!" << std::endl;
 }
 
 /**

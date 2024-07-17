@@ -14,33 +14,42 @@ const double diffusivity = 0.001;  // diffusivity of the solute
 // Set up the lattice, including the resolution and data/parallelisation method
 using Lattice = LatticeProperties<ParallelX<1>, lx, ly>;
 
-// Function used to define the solid geometry
-// Here we set a solid at the top and bottom
-int initSolid(const int k) {
-    int x = computeXGlobal<Lattice>(k);
-    int y = computeY(ly, 1, k);
-    if (y <= 1 || y >= ly - 2) return 1;
-    if (x <= 1 || x >= lx - 2)
-        return 1;
-    else if (x == 2)
-        return 3;
-    else if (x == lx - 3)
-        return 4;
-    return 0;
-}
-
-double initSolute(int k) {
-    int x = computeXGlobal<Lattice>(k);
-    if (x == 2) return inletC;
-    return 0.0;
-}
-
 void unzipGeometry() {
     if (mpi.rank == 0) {
         int result = system("unzip -o geometry.zip");
         if (result != 0) throw std::runtime_error("Failed to unzip geometry");
     }
     mpi.barrier();
+}
+
+// Function used to define the geometry
+std::vector<int> initSolid() {
+    // Read in the geometry file
+    unzipGeometry();
+    auto boundaries = loadTxt<int>("geometry.dat");
+    // Define any additional boundaries
+    for (int x = 0; x < lx; x++) {
+        for (int y = 0; y < ly; y++) {
+            int k = x * ly + y;
+            if (boundaries[k] != 0)
+                continue;
+            else if (y <= 1 || y >= ly - 2)
+                boundaries[k] = 1;
+            else if (x <= 1 || x >= lx - 2)
+                boundaries[k] = 1;
+            else if (x == 2)
+                boundaries[k] = 3;
+            else if (x == lx - 3)
+                boundaries[k] = 4;
+        }
+    }
+    return boundaries;
+}
+
+double initSolute(int k) {
+    int x = computeXGlobal<Lattice>(k);
+    if (x == 2) return inletC;
+    return 0.0;
 }
 
 using ConvectSolute = ConvectParameterBoundary<Solute<>, SoluteOld<>>;
@@ -64,9 +73,7 @@ int main(int argc, char **argv) {
     ADModel.setDiffusivity(diffusivity);
 
     // Define the solid boundaries
-    unzipGeometry();
-    Geometry<Lattice>::importLabels("geometry.dat");
-    Geometry<Lattice>::initialiseBoundaries(initSolid);
+    Geometry<Lattice>::initialiseBoundaries(initSolid());
     flowFieldModel.getBoundary<BounceBack>().setNodeID(1);
     ADModel.getBoundary<BounceBack>().setNodeID(1);
 
