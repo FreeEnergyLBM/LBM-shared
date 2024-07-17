@@ -77,7 +77,7 @@ core.workflow(
     mode = 'CHANGE_REQUEST',
     set_rev_id = False,
     transformations = [
-        metadata.squash_notes("${GITHUB_PR_BODY}\n\nChanges:\n", oldest_first=True, show_ref=False, show_author=False),
+        metadata.squash_notes("${GITHUB_PR_BODY}\n\nChanges:\n", compact=False, oldest_first=True, show_ref=False),
         metadata.expose_label("GITHUB_PR_NUMBER", new_name="GITHUB_PUBLIC_PR_NUMBER"),
         metadata.save_author("ORIGINAL_AUTHOR"),
     ],
