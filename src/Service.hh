@@ -1,7 +1,9 @@
 #pragma once
 
 #include <array>
+#include <fstream>
 #include <iostream>
+#include <stdexcept>
 #include <vector>
 
 #include "Global.hh"
@@ -112,6 +114,13 @@ inline int computeKFromGlobal(int x, int y, int z) {
     if (zProc < 0) zProc += TLattice::LZ;
     if (xProc >= lxProc || yProc >= lyProc || zProc >= lzProc) return -1;
     return xProc * lyProc * lzProc + yProc * lzProc + zProc;
+}
+
+/// Compute the global index from the local index
+template <class TLattice>
+inline int computeKGlobal(int k) {
+    std::array<int, 3> xyz = computeXYZ<TLattice>(k);
+    return xyz[0] * TLattice::LY * TLattice::LZ + xyz[1] * TLattice::LZ + xyz[2];
 }
 
 template <class TLattice, typename TOut>
@@ -292,6 +301,25 @@ template <typename T, typename... TArgs>
 void printAll(T first, TArgs... args) {
     std::cout << first << " ";
     printAll(args...);
+}
+
+template <typename T>
+std::vector<T> loadTxt(std::string filename, int n = 0) {
+    std::vector<T> output;
+    if (n != 0) output.reserve(n);
+
+    std::ifstream file(filename);
+    if (file.is_open()) {
+        T value;
+        while (file >> value) {
+            output.push_back(value);
+        }
+        file.close();
+    } else {
+        throw std::runtime_error("Unable to open file: " + filename);
+    }
+
+    return output;
 }
 
 struct pair_hash {
