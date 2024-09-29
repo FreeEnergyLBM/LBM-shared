@@ -24,11 +24,12 @@ class CoupledADSinkSource : public ForceBase<TMethod> {
 template <class TMethod>
 template <class TTraits>
 inline double CoupledADSinkSource<TMethod>::compute(int k) const {
-    return MassSink<>::get<typename TTraits::Lattice>(k);
+    return MassSink<>::get<typename TTraits::Lattice>(k) / 2.0;
 }
 
 template <class TMethod>
 template <class TTraits>
 inline double CoupledADSinkSource<TMethod>::computeDensitySource(int k) const {
-    return +0.5 * TTraits::Lattice::DT * MassSink<>::get<typename TTraits::Lattice>(k);
+    // return +0.5 * TTraits::Lattice::DT * MassSink<>::get<typename TTraits::Lattice>(k);
+    return + 0.0;
 }

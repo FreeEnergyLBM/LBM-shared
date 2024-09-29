@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <map>
+#include <cstdint>
 
 #include "Data.hh"
 #include "Parameters.hh"

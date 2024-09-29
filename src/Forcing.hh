@@ -74,6 +74,8 @@ struct SimpleForcing : ForcingBase<Cartesian> {
 struct ADSinkSourceMethod : ForcingBase<Cartesian> {
     double m_Source0D;
 
+    // using Prefactor = GuoPrefactor;
+
     template <class TTraits, class TForce>
     inline void precompute(TForce& f, int k) {
         m_Source0D += f.template compute<TTraits>(k);

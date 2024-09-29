@@ -36,5 +36,6 @@ inline double ADSinkSource<TMethod>::compute(int k) const {
 template <class TMethod>
 template <class TTraits>
 inline double ADSinkSource<TMethod>::computeDensitySource(int k) const {
-    return +0.5 * TTraits::Lattice::DT * mSourceRate;
+    // return + TTraits::Lattice::DT * mSourceRate;
+    return + 0.0;
 }
