@@ -3,7 +3,6 @@
 #include "Bouzidi2.hh"
 #include "Convective.hh"
 #include "Dirichlet.hh"
-#include "DirichletOrderParameter.hh"
 #include "DirichletVariable.hh"
 #include "ExtrapolationOutflow.hh"
 #include "FreeSlip.hh"
