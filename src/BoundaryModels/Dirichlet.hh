@@ -15,7 +15,8 @@ class Dirichlet : public BoundaryBase {
     template <class TTraits, class TDistributionType>
     inline void communicate(TDistributionType& mDistribution);
 
-    // inline void setInterfaceVal(double val) { mInterfaceVal = val; };
+    // No need to use this function if using Eq. 8.53. It is only used for Eq. 8.54.
+    inline void setInterfaceVal(double val) { mInterfaceVal = val; };
 
    private:
     double mInterfaceVal;
