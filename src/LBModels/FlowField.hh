@@ -23,6 +23,11 @@ class FlowField : public CollisionBase<TLattice, typename TTraits::Stencil>,
     static constexpr int mNDIM = TLattice::NDIM;
 
    public:
+    inline void setTau(double val) {
+        mTau = val;
+        mInverseTau = 1.0 / mTau;
+    }
+
     inline void collide() override;  // Collision step
 
     inline void initialise() override;  // Initialisation step
@@ -31,12 +36,14 @@ class FlowField : public CollisionBase<TLattice, typename TTraits::Stencil>,
 
     inline double computeEquilibrium(int k, int idx) override;  // Calculate equilibrium in direction idx
 
+    inline double getTau() { return mTau; }  // Return relaxation time
+
     template <class, class>
     friend class FlowFieldBinary;
 
    private:
-    static constexpr double mTau = 1.0;                // TEMPORARY relaxation time
-    static constexpr double mInverseTau = 1.0 / mTau;  // TEMPORARY inverse relaxation time
+    double mTau = 1.0;                // TEMPORARY relaxation time
+    double mInverseTau = 1.0 / mTau;  // TEMPORARY inverse relaxation time
 
     std::vector<double>& density = Density<>::get<TLattice>();           // Reference to vector of TDensities
     std::vector<double>& velocity = Velocity<>::get<TLattice, mNDIM>();  // Reference to vector of velocities
@@ -281,4 +288,42 @@ template <class TLattice, class TTraits>
 inline double FlowFieldPressure<TLattice, TTraits>::computeEquilibrium(int k, int idx) {
     double velocityFactor = CollisionBase<TLattice, Stencil>::computeVelocityFactor(&velocity[k * mNDIM], idx);
     return Stencil::Weights[idx] * (pressure[k] + density[k] * Stencil::Cs2 * velocityFactor);
+}
+
+// Define a HLBM class for single phase LB simulation that is dervied from the FlowField class; name it PorousFlowField.
+// Based on 10.1103/PhysRevE.66.036304:
+// 1. The trait might need to be updated to include the porosity and permeability of the medium; we name it
+// DefaultTraitPorousFlowField.
+// 2. Equation for the equilibrium distribution function needs to be overriden (eq. 10).
+
+template <class TLattice>
+using DefaultTraitPorousFlowField = DefaultTraitFlowField<TLattice>;
+
+template <class TLattice, class TTraits = DefaultTraitFlowField<TLattice>>
+class PorousFlowField : public FlowField<TLattice, TTraits> {
+    using Stencil = typename TTraits::Stencil;
+    static constexpr int mNDIM = TLattice::NDIM;
+
+   public:
+    inline double computeEquilibrium(int k, int idx) override;
+
+   private:
+    static constexpr double mTau = 1.0;                // TEMPORARY relaxation time
+    static constexpr double mInverseTau = 1.0 / mTau;  // TEMPORARY inverse relaxation time
+
+    std::vector<double>& density = Density<>::get<TLattice>();            // Reference to vector of TDensities
+    std::vector<double>& velocity = Velocity<>::get<TLattice, mNDIM>();   // Reference to vector of velocities
+    std::vector<double>& porosity = Porosity<>::get<TLattice>();          // Reference to vector of TPorosities
+    std::vector<double>& permeability = Permeability<>::get<TLattice>();  // Reference to vector of TPermeabilities
+};
+
+template <class TLattice, class TTraits>
+inline double PorousFlowField<TLattice, TTraits>::computeEquilibrium(int k, int idx) {
+    // See Eq. 10 in 10.1103/PhysRevE.66.036304
+
+    double velocityFactorFirstOrder =
+        CollisionBase<TLattice, Stencil>::computeVelocityFactorFirstOrder(&velocity[k * mNDIM], idx);
+    double velocityFactor = CollisionBase<TLattice, Stencil>::computeVelocityFactor(&velocity[k * mNDIM], idx);
+    return Stencil::Weights[idx] * density[k] *
+           (1 + velocityFactorFirstOrder + 1 / porosity[k] * (velocityFactor - velocityFactorFirstOrder));
 }

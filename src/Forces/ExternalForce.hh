@@ -100,3 +100,123 @@ template <class TTraits>
 inline double BodyForce<TMethod>::computeVelocitySource(int xyz, int k) {
     return +computeXYZ<TTraits>(xyz, k) * TTraits::Lattice::DT / (2.0);
 }
+
+/**
+ * @brief BodyForcePorous is used in HLBM to account for the forces due to the presence of a porous
+ * medium to the other external forces.
+ * See Eq.(2) in 10.1103/PhysRevE.66.036304 for more details.
+ */
+
+template <class TMethod = GuoPorous>
+class BodyForcePorous : public ForceBase<TMethod> {
+   public:
+    //! Set the force vector and, optionally, the fluid component to which it applies
+    inline void setForce(std::vector<double> force, int component = -1);
+
+    inline void setMagnitudeX(double magnitude);  //!< Set the x-component of the force
+    inline void setMagnitudeY(double magnitude);  //!< Set the y-component of the force
+    inline void setMagnitudeZ(double magnitude);  //!< Set the z-component of the force
+
+    //! Return force at lattice point k in direction xyz
+    template <class TTraits>
+    inline double computeXYZ(int xyz, int k);
+
+    //! Return force at lattice point k along lattice direction idx
+    template <class TTraits>
+    inline double computeQ(int idx, int k);
+
+    //! Calculate any possible source/correction term for velocity
+    template <class TTraits>
+    inline double computeVelocitySource(int xyz, int k);
+
+   private:
+    int mComponent = -1;
+    double mMagnitudeX = 0;
+    double mMagnitudeY = 0;
+    double mMagnitudeZ = 0;
+    double darcyPrefactor = 0;
+    double forchheimerPrefactor = 0;
+};
+
+template <class TMethod>
+inline void BodyForcePorous<TMethod>::setForce(std::vector<double> force, int component) {
+    mMagnitudeX = force[0];
+    if (force.size() > 1) mMagnitudeY = force[1];
+    if (force.size() > 2) mMagnitudeZ = force[2];
+    mComponent = component;
+}
+
+template <class TMethod>
+inline void BodyForcePorous<TMethod>::setMagnitudeX(double magnitude) {
+    mMagnitudeX = magnitude;
+}
+
+template <class TMethod>
+inline void BodyForcePorous<TMethod>::setMagnitudeY(double magnitude) {
+    mMagnitudeY = magnitude;
+}
+
+template <class TMethod>
+inline void BodyForcePorous<TMethod>::setMagnitudeZ(double magnitude) {
+    mMagnitudeZ = magnitude;
+}
+
+template <class TMethod>
+template <class TTraits>
+inline double BodyForcePorous<TMethod>::computeXYZ(int xyz, int k) {
+    // Density of fluid being forced
+    double density = 1;
+    double porosity = Porosity<>::get<typename TTraits::Lattice>(k);
+    double permeability = Permeability<>::get<typename TTraits::Lattice>(k);
+    auto lbModel = static_cast<ModelBase<typename TTraits::Lattice, TTraits>*>(this->mModel);
+    double kinematicViscosity = TTraits::Stencil::Cs2 * (lbModel->getTau() - 0.5 * TTraits::Lattice::DT);
+
+    std::vector velocity{0.0, 0.0, 0.0};
+    velocity[0] = Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 0);
+    if constexpr (TTraits::Lattice::NDIM > 1)
+        velocity[1] = Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 1);
+    if constexpr (TTraits::Lattice::NDIM > 2)
+        velocity[2] = Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 2);
+
+    double velocityMagnitude = sqrt(velocity[0] * velocity[0] + velocity[1] * velocity[1] + velocity[2] * velocity[2]);
+
+    // External force term
+    if (this->mComponent >= 0) {
+        auto lbModel = static_cast<ModelBase<typename TTraits::Lattice, TTraits>*>(this->mModel);
+        density = lbModel->computeConcentration(k, this->mComponent);
+    }
+
+    // Darcy Prefactor
+    darcyPrefactor = -porosity * kinematicViscosity / permeability;
+
+    // Forchheimer Prefactor
+    double F_eps = 1.75 / sqrt(150. * porosity * porosity * porosity);
+    forchheimerPrefactor = -porosity * F_eps * velocityMagnitude / sqrt(permeability);
+
+    // total force term
+    if (xyz == 0)
+        return darcyPrefactor * velocity[0] + forchheimerPrefactor * velocity[0] + porosity * mMagnitudeX * density;
+    if (xyz == 1)
+        return darcyPrefactor * velocity[1] + forchheimerPrefactor * velocity[1] + porosity * mMagnitudeY * density;
+    if (xyz == 2)
+        return darcyPrefactor * velocity[2] + forchheimerPrefactor * velocity[2] + porosity * mMagnitudeZ * density;
+    throw std::invalid_argument("Invalid index for force component");
+}
+
+template <class TMethod>
+template <class TTraits>
+inline double BodyForcePorous<TMethod>::computeQ(int idx, int k) {
+    using Lattice = typename TTraits::Lattice;
+    using Stencil = typename TTraits::Stencil;
+
+    double forceCi = computeXYZ(0, k) * Stencil::Ci_xyz(0)[idx];
+    if constexpr (Lattice::NDIM > 1) forceCi += computeXYZ(1, k) * Stencil::Ci_xyz(1)[idx];
+    if constexpr (Lattice::NDIM > 2) forceCi += computeXYZ(2, k) * Stencil::Ci_xyz(2)[idx];
+    return forceCi;
+}
+
+template <class TMethod>
+template <class TTraits>
+inline double BodyForcePorous<TMethod>::computeVelocitySource(int xyz, int k) {
+    return +computeXYZ<TTraits>(xyz, k) * TTraits::Lattice::DT / (2.0);
+}

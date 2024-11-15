@@ -143,6 +143,62 @@ struct Guo : ForcingBase<Cartesian> {
     }
 };
 
+struct GuoPorous : ForcingBase<Cartesian> {
+    // This is Guo forcing with an additional term for the porosity.
+    // See Eq. 14 in 10.1103/PhysRevE.66.036304
+
+
+    std::vector<double> ma_Force;
+
+    using Prefactor = GuoPrefactor;
+
+    template <class TTraits, class TForce>
+    inline void precompute(TForce& f, int k) {
+        if (ma_Force.size() < TTraits::Lattice::NDIM) ma_Force.resize(TTraits::Lattice::NDIM, 0);
+        ma_Force[0] += f.template computeXYZ<TTraits>(0, k);
+        if constexpr (TTraits::Lattice::NDIM >= 2) ma_Force[1] += f.template computeXYZ<TTraits>(1, k);
+        if constexpr (TTraits::Lattice::NDIM == 3) ma_Force[2] += f.template computeXYZ<TTraits>(2, k);
+    }
+
+    template <class TTraits>
+    inline double compute(int idx, int k) {  // Any external forcing
+
+        double prefactor = TTraits::Stencil::Weights[idx];
+        double poro = Porosity<>::get<typename TTraits::Lattice>(k);
+
+        // Calculate the dot product of the discrete velocity vector with the velocity
+        double ci_dot_velocity =
+            (TTraits::Stencil::Ci_x[idx] * Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 0));
+        if constexpr (TTraits::Stencil::D > 1)
+            ci_dot_velocity += (TTraits::Stencil::Ci_y[idx] *
+                                Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 1));
+        if constexpr (TTraits::Stencil::D > 2)
+            ci_dot_velocity += (TTraits::Stencil::Ci_z[idx] *
+                                Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 2));
+
+        // Calculate the dot product of the discrete velocity vector with the force
+        double ci_dot_force = (TTraits::Stencil::Ci_x[idx] * ma_Force[0]);
+        if constexpr (TTraits::Stencil::D > 1) ci_dot_force += (TTraits::Stencil::Ci_y[idx] * ma_Force[1]);
+        if constexpr (TTraits::Stencil::D > 2) ci_dot_force += (TTraits::Stencil::Ci_z[idx] * ma_Force[2]);
+
+        // Calculate the dot product of the velocity with the force
+        double velocity_dot_force = Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 0) * ma_Force[0];
+        if constexpr (TTraits::Stencil::D > 1)
+            velocity_dot_force +=
+                (Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 1)) * ma_Force[1];
+        if constexpr (TTraits::Stencil::D > 2)
+            velocity_dot_force +=
+                (Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 2)) * ma_Force[2];
+
+        double forceterm =
+            prefactor * (ci_dot_force / TTraits::Stencil::Cs2 +
+                         ci_dot_velocity * ci_dot_force / (poro * TTraits::Stencil::Cs2 * TTraits::Stencil::Cs2) -
+                         velocity_dot_force / (poro * TTraits::Stencil::Cs2));
+
+        return forceterm;
+    }
+};
+
 struct WellBalancedForce : ForcingBase<Cartesian> {
     Guo mGuo;
 

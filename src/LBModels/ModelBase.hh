@@ -101,6 +101,11 @@ class ModelBase : public Model {
     inline virtual void stream();
 
     /**
+     * \brief Virtual function to get the relaxation time. May be overriden.
+     */
+    inline virtual double getTau() = 0;
+
+    /**
      * \brief Virtual function which applies all the boundary conditions. May be overriden.
      */
     inline virtual void boundaries();  // Boundary calculation
