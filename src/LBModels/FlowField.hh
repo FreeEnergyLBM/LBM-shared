@@ -290,11 +290,10 @@ inline double FlowFieldPressure<TLattice, TTraits>::computeEquilibrium(int k, in
     return Stencil::Weights[idx] * (pressure[k] + density[k] * Stencil::Cs2 * velocityFactor);
 }
 
-// Define a HLBM class for single phase LB simulation that is dervied from the FlowField class; name it PorousFlowField.
-// Based on 10.1103/PhysRevE.66.036304:
-// 1. The trait might need to be updated to include the porosity and permeability of the medium; we name it
-// DefaultTraitPorousFlowField.
-// 2. Equation for the equilibrium distribution function needs to be overriden (eq. 10).
+/** Define a HLBM class for single phase LB simulation that is dervied from the FlowField class.
+ * Based on 10.1103/PhysRevE.66.036304, the equation for the equilibrium distribution function needs to be overriden
+ * (eq. 10).
+ */
 
 template <class TLattice>
 using DefaultTraitPorousFlowField = DefaultTraitFlowField<TLattice>;
@@ -311,10 +310,9 @@ class PorousFlowField : public FlowField<TLattice, TTraits> {
     static constexpr double mTau = 1.0;                // TEMPORARY relaxation time
     static constexpr double mInverseTau = 1.0 / mTau;  // TEMPORARY inverse relaxation time
 
-    std::vector<double>& density = Density<>::get<TLattice>();            // Reference to vector of TDensities
-    std::vector<double>& velocity = Velocity<>::get<TLattice, mNDIM>();   // Reference to vector of velocities
-    std::vector<double>& porosity = Porosity<>::get<TLattice>();          // Reference to vector of TPorosities
-    std::vector<double>& permeability = Permeability<>::get<TLattice>();  // Reference to vector of TPermeabilities
+    std::vector<double>& density = Density<>::get<TLattice>();           // Reference to vector of TDensities
+    std::vector<double>& velocity = Velocity<>::get<TLattice, mNDIM>();  // Reference to vector of velocities
+    std::vector<double>& porosity = Porosity<>::get<TLattice>();         // Reference to vector of TPorosities
 };
 
 template <class TLattice, class TTraits>
@@ -326,4 +324,110 @@ inline double PorousFlowField<TLattice, TTraits>::computeEquilibrium(int k, int 
     double velocityFactor = CollisionBase<TLattice, Stencil>::computeVelocityFactor(&velocity[k * mNDIM], idx);
     return Stencil::Weights[idx] * density[k] *
            (1 + velocityFactorFirstOrder + 1 / porosity[k] * (velocityFactor - velocityFactorFirstOrder));
+}
+
+/* Define a HLBM class for multiphase LB simulation that is dervied from the FlowField class. The main idea
+ * is to add a saturation field to the model (instead of Density). The evolution of the saturation field is
+ * controlled by the capillary forces.
+ */
+
+template <class TLattice>
+using DefaultTraitMultiphasePorousFlowField = typename DefaultTrait<TLattice, 2>::template SetBoundary<BounceBack>;
+
+template <class TLattice, class TTraits = DefaultTraitMultiphasePorousFlowField<TLattice>>
+class MultiphasePorousFlowField : public FlowField<TLattice, TTraits> {
+    using Stencil = typename TTraits::Stencil;
+    static constexpr int mNDIM = TLattice::NDIM;
+
+   public:
+    inline void initialise() override;  // Initialisation step
+
+    inline void computeMomenta() override;  // Momenta (saturation, velocity) calculation
+
+    inline double computeEquilibrium(int k, int idx) override;  // Calculate equilibrium in direction idx
+
+    inline void setSwIr(double val) { Sw_ir = val; }
+
+   private:
+    double mTau = 1.0;                // TEMPORARY relaxation time
+    double mInverseTau = 1.0 / mTau;  // TEMPORARY inverse relaxation time
+
+    double Sw_ir = 0.0;
+
+    // Saturation field must be initialised in the main.cc and can be non-unity.
+    std::vector<double>& saturation = Saturation<>::get<TLattice>();     // Reference to vector of Saturations
+    std::vector<double>& velocity = Velocity<>::get<TLattice, mNDIM>();  // Reference to vector of Velocities
+    std::vector<double>& porosity = Porosity<>::get<TLattice>();         // Reference to vector of Porosities
+
+    enum { x = 0, y = 1, z = 2 };  // Indices corresponding to x, y, z directions
+};
+
+template <class TLattice, class TTraits>
+inline void MultiphasePorousFlowField<TLattice, TTraits>::initialise() {  // Initialise model
+    this->initialiseProcessors();
+
+    this->mData.generateNeighbors();  // Fill array of neighbor values (See Data.hh)
+    TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this->mt_Forces, mTau, mTau);
+
+#pragma omp parallel for schedule(guided)
+    for (int k = 0; k < TLattice::N; k++) {  // loop over k
+
+        Velocity<>::initialise<TLattice, mNDIM>(0.0, k, x);
+        if constexpr (mNDIM >= 2) Velocity<>::initialise<TLattice, mNDIM>(0.0, k, y);
+        if constexpr (mNDIM == 3) Velocity<>::initialise<TLattice, mNDIM>(0.0, k, z);
+    }
+
+    ModelBase<TLattice, TTraits>::mData.communicate(Velocity<>::getInstance<TLattice, TTraits::Lattice::NDIM>());
+
+#pragma omp parallel for schedule(guided)
+    for (int k = 0; k < TLattice::N; k++) {  // loop over k
+
+        double* distribution = this->mDistribution.getDistributionPointer(k);
+        double* old_distribution = this->mDistribution.getDistributionOldPointer(k);
+
+        for (int idx = 0; idx < Stencil::Q; idx++) {
+            double equilibrium = computeEquilibrium(k, idx);
+            distribution[idx] = equilibrium;  // Set distributions to equillibrium
+            old_distribution[idx] = equilibrium;
+        }
+    }
+}
+
+template <class TLattice, class TTraits>
+inline double MultiphasePorousFlowField<TLattice, TTraits>::computeEquilibrium(int k, int idx) {
+    // See Eq. 10 in 10.1103/PhysRevE.66.036304
+
+    double velocityFactorFirstOrder =
+        CollisionBase<TLattice, Stencil>::computeVelocityFactorFirstOrder(&velocity[k * mNDIM], idx);
+    double velocityFactor = CollisionBase<TLattice, Stencil>::computeVelocityFactor(&velocity[k * mNDIM], idx);
+    return Stencil::Weights[idx] * saturation[k] *
+           (1 + velocityFactorFirstOrder + 1 / (porosity[k]) * (velocityFactor - velocityFactorFirstOrder));
+}
+
+template <class TLattice, class TTraits>
+inline void MultiphasePorousFlowField<TLattice, TTraits>::computeMomenta() {  // Calculate  saturation and Velocity
+
+#pragma omp for schedule(guided)
+    for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) {  // Loop over k
+
+        if (this->isCollisionNode(k)) {
+            double* distribution = this->mDistribution.getDistributionPointer(k);
+
+            velocity[k * Stencil::D + x] = 0.0;
+            if constexpr (mNDIM >= 2) velocity[k * Stencil::D + y] = 0.0;
+            if constexpr (mNDIM == 3) velocity[k * Stencil::D + z] = 0.0;
+
+            if (saturation[k] >= Sw_ir) {
+                velocity[k * Stencil::D + x] =
+                    this->computeVelocity(distribution, this->mt_Forces, saturation[k], x, k);  // Calculate velocities
+                if constexpr (mNDIM >= 2)
+                    velocity[k * Stencil::D + y] =
+                        this->computeVelocity(distribution, this->mt_Forces, saturation[k], y, k);
+                if constexpr (mNDIM == 3)
+                    velocity[k * Stencil::D + z] =
+                        this->computeVelocity(distribution, this->mt_Forces, saturation[k], z, k);
+            }
+            saturation[k] = this->computeDensity(distribution, k);  // Calculate saturation
+        }
+    }
 }

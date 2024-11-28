@@ -14,3 +14,4 @@
 #include "SimpleMassLossCalculator.hh"
 #include "Swapper.hh"
 #include "ViscousStressCalculator.hh"
+#include "UpdateRelPermAndPc.hh"

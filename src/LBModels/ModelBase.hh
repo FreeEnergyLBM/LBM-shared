@@ -414,17 +414,16 @@ inline double ModelBase<TLattice, TTraits>::computeVelocity(const double* distri
     // in each direction plus any source/correction terms
 
     if constexpr (std::tuple_size<typename TTraits::Forces>::value != 0) {
-        return (1. / (Density<>::get<TLattice>(k))) *
+        return (1. / (density)) *
                    CollisionBase<TLattice, typename TTraits::Stencil>::computeFirstMoment(distribution, xyz) +
-               (1. / (Density<>::get<TLattice>(k))) *
-                   std::apply(
-                       [xyz, k](auto&&... forces) mutable {
-                           return (forces.template computeVelocitySource<TTraits>(xyz, k) + ...);
-                       },
-                       forcetuple);
+               (1. / (density)) * std::apply(
+                                      [xyz, k](auto&&... forces) mutable {
+                                          return (forces.template computeVelocitySource<TTraits>(xyz, k) + ...);
+                                      },
+                                      forcetuple);
 
     } else
-        return (1. / (Density<>::get<TLattice>(k))) *
+        return (1. / (density)) *
                CollisionBase<TLattice, typename TTraits::Stencil>::computeFirstMoment(distribution, xyz);
 }
 

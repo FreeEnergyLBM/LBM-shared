@@ -290,6 +290,44 @@ struct DensityOld : public ParameterSingleton<DensityOld<TInstance>, double, TIn
 };  // Density
 
 template <int TInstance = 0>
+struct Porosity : public ParameterSingleton<Porosity<TInstance>, double, TInstance> {
+    static constexpr const char *mName = "Porosity";
+
+};  // Porosity, used for HLBM, see 10.1103/PhysRevE.66.036304 for more information
+
+template <int TInstance = 0>
+struct Permeability : public ParameterSingleton<Permeability<TInstance>, double, TInstance> {
+    static constexpr const char *mName = "Permeability";
+
+};  // Permeability, used for HLBM, see 10.1103/PhysRevE.66.036304 for more information
+
+template <int TInstance = 0>
+struct WettingRelativePermeability
+    : public ParameterSingleton<WettingRelativePermeability<TInstance>, double, TInstance> {
+    static constexpr const char *mName = "WettingRelativePermeability";
+
+};  // Wetting Relative Permeability, used for HLBM, see UpdateRelPermAndPc.hh for more information
+
+template <int TInstance = 0>
+struct NonWettingRelativePermeability
+    : public ParameterSingleton<NonWettingRelativePermeability<TInstance>, double, TInstance> {
+    static constexpr const char *mName = "NonWettingRelativePermeability";
+
+};  // NonWetting Relative Permeability, used for HLBM, see UpdateRelPermAndPc.hh for more information
+
+template <int TInstance = 0>
+struct CapillaryPressure : public ParameterSingleton<CapillaryPressure<TInstance>, double, TInstance> {
+    static constexpr const char *mName = "CapillaryPressure";
+
+};  // CapillaryPressure, used for HLBM, see UpdateRelPermAndPc.hh for more information
+
+template <int TInstance = 0>
+struct Saturation : public ParameterSingleton<Saturation<TInstance>, double, TInstance> {
+    static constexpr const char *mName = "Saturation";
+
+};  // Saturation, used for Multiphase HLBM, see FlowField.hh for more information
+
+template <int TInstance = 0>
 struct Pressure : public ParameterSingleton<Pressure<TInstance>, double, TInstance> {
     static constexpr const char *mName = "Pressure";
 
@@ -299,7 +337,7 @@ template <int TInstance = 0>
 struct PressureOld : public ParameterSingleton<PressureOld<TInstance>, double, TInstance> {
     static constexpr const char *mName = "PressureOld";
 
-};  // Presure
+};  // PresureOld
 
 template <int TInstance = 0>
 struct OrderParameter : public ParameterSingleton<OrderParameter<TInstance>, double, TInstance> {
@@ -331,7 +369,7 @@ struct Humidity : public ParameterSingleton<Humidity<TInstance>> {
 
 template <int TInstance = 0>
 struct Temperature : public ParameterSingleton<Temperature<TInstance>> {
-    static constexpr const char *mName = "Humidity";
+    static constexpr const char *mName = "Temperature";
 };
 
 template <int TInstance = 0>
@@ -409,6 +447,12 @@ struct GradientOrderParameter : public Gradient<OrderParameter<TInstance>> {
     static constexpr const char *mName = "GradientOrderParameter";
 
 };  // Directional first order gradients of the order parameter
+
+template <int TInstance = 0>
+struct GradientCapillaryPressure : public Gradient<CapillaryPressure<TInstance>> {
+    static constexpr const char *mName = "GradientCapillaryPressure";
+
+};  // Directional first order gradients of the capillary pressure
 
 template <int TInstance = 0>
 struct GradientDensity : public Gradient<Density<TInstance>> {
