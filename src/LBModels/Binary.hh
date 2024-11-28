@@ -33,6 +33,10 @@ class Binary : public CollisionBase<TLattice, typename TTraits::Stencil>,
    public:
     inline void setTau1(double val) { mTau1 = val; }
     inline void setTau2(double val) { mTau2 = val; }
+
+    inline double getTau1() { return mTau1; }
+    inline double getTau2() { return mTau2; }
+
     inline void setA(double val) { mA = val; }
 
     inline void collide() override;  // Collision step
