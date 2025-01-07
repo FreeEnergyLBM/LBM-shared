@@ -39,9 +39,6 @@ inline void VelocityInflow::compute(TDistributionType& distribution, int k) {
         distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] =
             distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx), distribution.getOpposite(idx)) -
             2 * TTraits::Stencil::Weights[idx] * cidotmomentum / TTraits::Stencil::Cs2;
-        if (k == 10 && idx == 1)
-            std::cout << "VelocityInflow::compute: "
-                      << distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] << std::endl;
     }
 }
 
