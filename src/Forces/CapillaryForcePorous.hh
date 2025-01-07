@@ -33,10 +33,17 @@ class CapillaryForcePorous : public ForceBase<TMethod> {
     template <class TTraits, int TDirections>
     inline double computeCapillaryForce(int idx, int k);
 
+    template <class TTraits, int TDirections>
+    inline double computeSaturationGradientForce(int idx, int k);
+
+    inline void activateNonDarcy() { nonDarcy = true; }
+    inline void activateCounterBalanceDiffusion() { counterBalanceDiffusion = true; }
+
    private:
     int mComponent = -1;
-    double darcyPrefactor = 0;
-    double forchheimerPrefactor = 0;
+
+    bool nonDarcy = false;
+    bool counterBalanceDiffusion = false;
 
     enum { x = 0, y = 1, z = 2 };  // Indices corresponding to x, y, z directions
 };
@@ -65,27 +72,41 @@ inline double CapillaryForcePorous<TMethod, TGradientType, TParameterScalar, TPa
     if constexpr (TTraits::Lattice::NDIM > 1) localVelocity[y] = velocity[k * TTraits::Stencil::D + y];
     if constexpr (TTraits::Lattice::NDIM > 2) localVelocity[z] = velocity[k * TTraits::Stencil::D + z];
 
-    double localVelocityMagnitude = sqrt(localVelocity[x] * localVelocity[x] + localVelocity[y] * localVelocity[y] +
-                                         localVelocity[z] * localVelocity[z]);
-
     // capillary force term
     double gradPc = 0;
     if constexpr (has_type<Cartesian, typename TMethod::mt_Stencils>::type::value)
         gradPc = computeCapillaryForce<TTraits, TTraits::Lattice::NDIM>(xyz, k);
     double capillaryForce = 1 / saturation * gradPc;
 
-    // TODO: SEPARATE THE DARCYS AND FORCHHEIMERS FORCES.
-    if (localVelocityMagnitude != 0) {
-        // Darcy Prefactor
-        darcyPrefactor = -porosity * kinematicViscosity / (permeability * relativePermeability[k]);
+    // Gradient of the saturation to counterbalance the diffusive term (NOT WORKING CORRECTLY)
+    // TODO for Mehrdad: CHECK IF THIS IS THE CORRECT IMPLEMENTATION
+    double gradS = 0;
 
-        // Forchheimer Prefactor
+    if (counterBalanceDiffusion)
+        if constexpr (has_type<Cartesian, typename TMethod::mt_Stencils>::type::value)
+            gradS = computeSaturationGradientForce<TTraits, TTraits::Lattice::NDIM>(xyz, k);
+
+    double gradSForce = TTraits::Stencil::Cs2 * gradS;
+
+    // TODO: SEPARATE THE DARCYS AND FORCHHEIMERS FORCES FROM ANY OTHER FORCES
+    // Darcy Prefactor
+    double darcyPrefactor = 0;
+    if (relativePermeability[k] != 0) {
+        darcyPrefactor = -porosity * kinematicViscosity / (permeability * relativePermeability[k]);
+    }
+
+    // Forchheimer Prefactor
+    double forchheimerPrefactor = 0;
+    if (nonDarcy && relativePermeability[k] != 0) {
         double F_eps = 1.75 / sqrt(150. * porosity * porosity * porosity);
+        double localVelocityMagnitude = sqrt(localVelocity[x] * localVelocity[x] + localVelocity[y] * localVelocity[y] +
+                                             localVelocity[z] * localVelocity[z]);
         forchheimerPrefactor =
             -porosity * F_eps * localVelocityMagnitude / sqrt(permeability * relativePermeability[k]);
     }
+    return darcyPrefactor * localVelocity[xyz] + forchheimerPrefactor * localVelocity[xyz] + porosity * capillaryForce +
+           gradSForce;
 
-    return darcyPrefactor * localVelocity[xyz] + forchheimerPrefactor * localVelocity[xyz] + porosity * capillaryForce;
     throw std::invalid_argument("Invalid index for force component");
 }
 
@@ -114,6 +135,23 @@ inline double CapillaryForcePorous<TMethod, TGradientType, TParameterScalar, TPa
         double gradPc = getGradientInstance<TGradientType, CapillaryPressure, N - 1, Lattice, TDirections>(
             component)[k * TDirections + idx];
         sum += gradPc;
+    }
+
+    return sum;
+}
+
+template <class TMethod, template <class> class TGradientType, class TParameterScalar, class TParameterVector>
+template <class TTraits, int TDirections>
+inline double CapillaryForcePorous<TMethod, TGradientType, TParameterScalar,
+                                   TParameterVector>::computeSaturationGradientForce(int idx, int k) {
+    using Lattice = typename TTraits::Lattice;
+    constexpr int N = TTraits::NumberOfComponents;
+
+    double sum = 0;
+    for (int component = 0; component < N - 1; component++) {
+        double gradS = getGradientInstance<TGradientType, Saturation, N - 1, Lattice, TDirections>(
+            component)[k * TDirections + idx];
+        sum += gradS;
     }
 
     return sum;

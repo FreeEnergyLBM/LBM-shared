@@ -5,5 +5,6 @@
 #include "CoupledADSinkSource.hh"
 #include "EvaporationSource.hh"
 #include "ExternalForce.hh"
+#include "CapillaryForcePorous.hh"
 #include "ForceBase.hh"
 #include "SoluteRepulsiveForce.hh"
