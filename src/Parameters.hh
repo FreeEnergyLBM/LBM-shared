@@ -328,6 +328,12 @@ struct Saturation : public ParameterSingleton<Saturation<TInstance>, double, TIn
 };  // Saturation, used for Multiphase HLBM, see FlowField.hh for more information
 
 template <int TInstance = 0>
+struct SaturationOld : public ParameterSingleton<SaturationOld<TInstance>, double, TInstance> {
+    static constexpr const char *mName = "SaturationOld";
+
+};  // Saturation, used for Multiphase HLBM, see FlowField.hh for more information
+
+template <int TInstance = 0>
 struct Pressure : public ParameterSingleton<Pressure<TInstance>, double, TInstance> {
     static constexpr const char *mName = "Pressure";
 
@@ -451,6 +457,12 @@ struct GradientOrderParameter : public Gradient<OrderParameter<TInstance>> {
 template <int TInstance = 0>
 struct GradientCapillaryPressure : public Gradient<CapillaryPressure<TInstance>> {
     static constexpr const char *mName = "GradientCapillaryPressure";
+
+};  // Directional first order gradients of the capillary pressure
+
+template <int TInstance = 0>
+struct GradientSaturation : public Gradient<Saturation<TInstance>> {
+    static constexpr const char *mName = "GradientSaturation";
 
 };  // Directional first order gradients of the capillary pressure
 

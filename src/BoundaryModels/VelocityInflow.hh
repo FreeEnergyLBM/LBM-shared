@@ -10,15 +10,17 @@ class VelocityInflow : public BoundaryBase {
     inline void compute(TDistributionType& mDistribution, int k);
 
     template <class TTraits>
-    inline void communicate(){};
+    inline void communicate() {};
 
     template <class TTraits, class TDistributionType>
     inline void communicate(TDistributionType& mDistribution);
 
     inline void setWallVelocity(const std::vector<double>& momentum) { mWallMomentum = momentum; };
+    inline void setWallDensity(double density) { mWallDensity = density; };
 
    private:
     std::vector<double> mWallMomentum;
+    double mWallDensity = 1.0;
 };
 
 template <class TTraits, class TDistributionType>
@@ -32,11 +34,14 @@ inline void VelocityInflow::compute(TDistributionType& distribution, int k) {
 
         double cidotmomentum = 0;
         for (int xyz = 0; xyz < TTraits::Lattice::NDIM; xyz++) {
-            cidotmomentum += TTraits::Stencil::Ci_xyz(xyz)[idx] * mWallMomentum[xyz];
+            cidotmomentum += TTraits::Stencil::Ci_xyz(xyz)[idx] * mWallMomentum[xyz] * mWallDensity;
         }
         distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] =
             distribution.getPostCollisionDistribution(distribution.streamIndex(k, idx), distribution.getOpposite(idx)) -
             2 * TTraits::Stencil::Weights[idx] * cidotmomentum / TTraits::Stencil::Cs2;
+        if (k == 10 && idx == 1)
+            std::cout << "VelocityInflow::compute: "
+                      << distribution.getDistributionPointer(distribution.streamIndex(k, idx))[idx] << std::endl;
     }
 }
 
