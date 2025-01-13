@@ -263,6 +263,12 @@ struct Velocity : public ParameterSingleton<Velocity<TInstance>, double, TInstan
 };  // Velocity, with directions D corresponding to the number of cartesian directions in the stencil
 
 template <int TInstance = 0>
+struct VelocityPorous : public ParameterSingleton<VelocityPorous<TInstance>, double, TInstance> {
+    static constexpr const char *mName = "VelocityPorous";
+
+};  // Velocity, with directions D corresponding to the number of cartesian directions in the stencil
+
+template <int TInstance = 0>
 struct VelocityOld : public ParameterSingleton<VelocityOld<TInstance>, double, TInstance> {
     static constexpr const char *mName = "VelocityOld";
 };
@@ -386,6 +392,11 @@ struct HumidityOld : public ParameterSingleton<HumidityOld<TInstance>> {
 template <int TInstance = 0>
 struct MassSink : public ParameterSingleton<MassSink<TInstance>> {
     static constexpr const char *mName = "MassSink";
+};
+
+template <int TInstance = 0>
+struct MassExchange : public ParameterSingleton<MassExchange<TInstance>> {
+    static constexpr const char *mName = "MassExchange";
 };
 
 template <int TInstance = 0>
