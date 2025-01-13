@@ -417,16 +417,124 @@ inline void MultiphasePorousFlowField<TLattice, TTraits>::computeMomenta() {  //
             if constexpr (mNDIM >= 2) velocity[k * Stencil::D + y] = 0.0;
             if constexpr (mNDIM == 3) velocity[k * Stencil::D + z] = 0.0;
 
-            if (saturation[k] >= Sw_ir) {
-                velocity[k * Stencil::D + x] =
-                    this->computeVelocity(distribution, this->mt_Forces, saturation[k], x, k);  // Calculate velocities
-                if constexpr (mNDIM >= 2)
-                    velocity[k * Stencil::D + y] =
-                        this->computeVelocity(distribution, this->mt_Forces, saturation[k], y, k);
-                if constexpr (mNDIM == 3)
-                    velocity[k * Stencil::D + z] =
-                        this->computeVelocity(distribution, this->mt_Forces, saturation[k], z, k);
-            }
+            // if (saturation[k] >= Sw_ir) {
+            velocity[k * Stencil::D + x] =
+                this->computeVelocity(distribution, this->mt_Forces, saturation[k], x, k);  // Calculate velocities
+            if constexpr (mNDIM >= 2)
+                velocity[k * Stencil::D + y] =
+                    this->computeVelocity(distribution, this->mt_Forces, saturation[k], y, k);
+            if constexpr (mNDIM == 3)
+                velocity[k * Stencil::D + z] =
+                    this->computeVelocity(distribution, this->mt_Forces, saturation[k], z, k);
+            // }
+            saturation[k] = this->computeDensity(distribution, k);  // Calculate saturation
+        }
+    }
+}
+
+// The main difference between the MultiphasePorousFlowField and MultiphasePorousFlowFieldInSalt
+// is that the former uses the BounceBack boundary condition, while the latter uses the BounceBackHLBM
+// boundary condition. Also, for the velocity calculation, the former uses Velocity<>::get<TLattice, mNDIM>()
+// while the latter uses VelocityPorous<>::get<TLattice, mNDIM>().
+
+template <class TLattice>
+using DefaultTraitMultiphasePorousFlowFieldInSalt = typename DefaultTrait<TLattice, 2>::template SetBoundary<BounceBackHLBM>;
+
+template <class TLattice, class TTraits = DefaultTraitMultiphasePorousFlowField<TLattice>>
+class MultiphasePorousFlowFieldInSalt : public FlowField<TLattice, TTraits> {
+    using Stencil = typename TTraits::Stencil;
+    static constexpr int mNDIM = TLattice::NDIM;
+
+   public:
+    inline void initialise() override;  // Initialisation step
+
+    inline void computeMomenta() override;  // Momenta (saturation, velocityPorous) calculation
+
+    inline double computeEquilibrium(int k, int idx) override;  // Calculate equilibrium in direction idx
+
+    inline void setSwIr(double val) { Sw_ir = val; }
+
+   private:
+    double mTau = 1.0;                // TEMPORARY relaxation time
+    double mInverseTau = 1.0 / mTau;  // TEMPORARY inverse relaxation time
+
+    double Sw_ir = 0.0;
+
+    // Saturation field must be initialised in the main.cc and can be non-unity.
+    std::vector<double>& saturation = Saturation<>::get<TLattice>();  // Reference to vector of Saturations
+    std::vector<double>& velocityPorous =
+        VelocityPorous<>::get<TLattice, mNDIM>();                 // Reference to vector of Velocities
+    std::vector<double>& porosity = Porosity<>::get<TLattice>();  // Reference to vector of Porosities
+
+    enum { x = 0, y = 1, z = 2 };  // Indices corresponding to x, y, z directions
+};
+
+template <class TLattice, class TTraits>
+inline void MultiphasePorousFlowFieldInSalt<TLattice, TTraits>::initialise() {  // Initialise model
+    this->initialiseProcessors();
+
+    this->mData.generateNeighbors();  // Fill array of neighbor values (See Data.hh)
+    TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this->mt_Forces, mTau, mTau);
+
+#pragma omp parallel for schedule(guided)
+    for (int k = 0; k < TLattice::N; k++) {  // loop over k
+
+        VelocityPorous<>::initialise<TLattice, mNDIM>(0.0, k, x);
+        if constexpr (mNDIM >= 2) VelocityPorous<>::initialise<TLattice, mNDIM>(0.0, k, y);
+        if constexpr (mNDIM == 3) VelocityPorous<>::initialise<TLattice, mNDIM>(0.0, k, z);
+    }
+
+    ModelBase<TLattice, TTraits>::mData.communicate(VelocityPorous<>::getInstance<TLattice, TTraits::Lattice::NDIM>());
+
+#pragma omp parallel for schedule(guided)
+    for (int k = 0; k < TLattice::N; k++) {  // loop over k
+
+        double* distribution = this->mDistribution.getDistributionPointer(k);
+        double* old_distribution = this->mDistribution.getDistributionOldPointer(k);
+
+        for (int idx = 0; idx < Stencil::Q; idx++) {
+            double equilibrium = computeEquilibrium(k, idx);
+            distribution[idx] = equilibrium;  // Set distributions to equillibrium
+            old_distribution[idx] = equilibrium;
+        }
+    }
+}
+
+template <class TLattice, class TTraits>
+inline double MultiphasePorousFlowFieldInSalt<TLattice, TTraits>::computeEquilibrium(int k, int idx) {
+    // See Eq. 10 in 10.1103/PhysRevE.66.036304
+
+    double velocityFactorFirstOrder =
+        CollisionBase<TLattice, Stencil>::computeVelocityFactorFirstOrder(&velocityPorous[k * mNDIM], idx);
+    double velocityFactor = CollisionBase<TLattice, Stencil>::computeVelocityFactor(&velocityPorous[k * mNDIM], idx);
+    return Stencil::Weights[idx] * saturation[k] *
+           (1 + velocityFactorFirstOrder + 1 / (porosity[k]) * (velocityFactor - velocityFactorFirstOrder));
+}
+
+template <class TLattice, class TTraits>
+inline void
+MultiphasePorousFlowFieldInSalt<TLattice, TTraits>::computeMomenta() {  // Calculate  saturation and velocityPorous
+
+#pragma omp for schedule(guided)
+    for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) {  // Loop over k
+
+        if (this->isCollisionNode(k)) {
+            double* distribution = this->mDistribution.getDistributionPointer(k);
+
+            velocityPorous[k * Stencil::D + x] = 0.0;
+            if constexpr (mNDIM >= 2) velocityPorous[k * Stencil::D + y] = 0.0;
+            if constexpr (mNDIM == 3) velocityPorous[k * Stencil::D + z] = 0.0;
+
+            // if (saturation[k] >= Sw_ir) {
+            velocityPorous[k * Stencil::D + x] =
+                this->computeVelocity(distribution, this->mt_Forces, saturation[k], x, k);  // Calculate velocities
+            if constexpr (mNDIM >= 2)
+                velocityPorous[k * Stencil::D + y] =
+                    this->computeVelocity(distribution, this->mt_Forces, saturation[k], y, k);
+            if constexpr (mNDIM == 3)
+                velocityPorous[k * Stencil::D + z] =
+                    this->computeVelocity(distribution, this->mt_Forces, saturation[k], z, k);
+            // }
             saturation[k] = this->computeDensity(distribution, k);  // Calculate saturation
         }
     }

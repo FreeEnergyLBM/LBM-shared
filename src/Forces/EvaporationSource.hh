@@ -40,6 +40,34 @@ inline double EvaporationPhaseSource<TMethod>::computeDensitySource(int k) const
     return -0.5 * TTraits::Lattice::DT * MassSink<>::get<typename TTraits::Lattice>(k) / mDensity;
 }
 
+// Mehrdad: This is the source term for the mass exchange. Not sure if this is 
+// the correct way to implement this.
+template <class TMethod, class TParameter = Density<>>
+class MassExchangeSource : public ForceBase<TMethod> {
+   public:
+    template <class TTraits>
+    inline double compute(int k) const;
+
+    template <class TTraits>
+    inline double computeDensitySource(int k) const;
+
+   private:
+    double mDensity = 1.0;
+};
+
+// Q for Mehrdad: Should I use mDensity or something else as TParameter? I am not sure what to do here.
+template <class TMethod, class TParameter>
+template <class TTraits>
+inline double MassExchangeSource<TMethod, TParameter>::compute(int k) const {
+    return + MassExchange<>::get<typename TTraits::Lattice>(k) / mDensity;
+}
+
+template <class TMethod, class TParameter>
+template <class TTraits>
+inline double MassExchangeSource<TMethod, TParameter>::computeDensitySource(int k) const {
+    return + 0.5 * TTraits::Lattice::DT * MassExchange<>::get<typename TTraits::Lattice>(k) / mDensity;
+}
+
 template <class TMethod>
 class EvaporationPressureSource : public ForceBase<TMethod> {
    public:
@@ -74,15 +102,15 @@ class EvaporationPressureSource : public ForceBase<TMethod> {
 template <class TMethod>
 template <class TTraits>
 inline double EvaporationPressureSource<TMethod>::compute(int k) const {
-    return TTraits::Stencil::Cs2 *Density<>::get<typename TTraits::Lattice>(k) *
+    return TTraits::Stencil::Cs2 * Density<>::get<typename TTraits::Lattice>(k) *
            MassSink<>::get<typename TTraits::Lattice>(k) * mPrefactor;
 }
 
 template <class TMethod>
 template <class TTraits>
 inline double EvaporationPressureSource<TMethod>::computeDensitySource(int k) const {
-    return TTraits::Lattice::DT * 0.5 * TTraits::Stencil::Cs2 *
-           Density<>::get<typename TTraits::Lattice>(k) * MassSink<>::get<typename TTraits::Lattice>(k) * mPrefactor;// * (1-TTraits::Stencil::Weights[0]);
+    return TTraits::Lattice::DT * 0.5 * TTraits::Stencil::Cs2 * Density<>::get<typename TTraits::Lattice>(k) *
+           MassSink<>::get<typename TTraits::Lattice>(k) * mPrefactor;  // * (1-TTraits::Stencil::Weights[0]);
 }
 
 template <class TMethod>
@@ -138,5 +166,5 @@ inline double EvaporationHumiditySource<TMethod>::computeXYZ(int xyz, int k) con
 template <class TMethod>
 template <class TTraits>
 inline double EvaporationHumiditySource<TMethod>::computeDensitySourceMultiplicative(int k) const {
-    return 1.0/(1 - TTraits::Lattice::DT * 0.5 * MassSink<>::get<typename TTraits::Lattice>(k) * mPrefactor);
+    return 1.0 / (1 - TTraits::Lattice::DT * 0.5 * MassSink<>::get<typename TTraits::Lattice>(k) * mPrefactor);
 }

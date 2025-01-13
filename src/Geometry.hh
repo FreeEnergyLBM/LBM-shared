@@ -126,7 +126,8 @@ class Geometry {
         InletWall = 3,
         OutletWall = 4,
         HumidityInterface = 5,
-        RefillNode = 6
+        RefillNode = 6,
+        SaltCrystal = 7
     };
 
     /**

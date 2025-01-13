@@ -12,6 +12,7 @@
 #include "Precipitation.hh"
 #include "SetParameterOld.hh"
 #include "SimpleMassLossCalculator.hh"
+#include "MassExchangeCalculator.hh"
 #include "Swapper.hh"
 #include "ViscousStressCalculator.hh"
 #include "UpdateRelPermAndPc.hh"

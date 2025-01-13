@@ -201,8 +201,8 @@ struct GuoPorous : ForcingBase<Cartesian> {
 
 struct GuoMultiphasePorous : ForcingBase<Cartesian> {
     /** This is Guo forcing with an additional term for the porosity.
-     * The difference between GuoMultiphasePorous and GuoPorous is that the saturation is 
-     * included here in the prefactor. This is used for the multiphase model.
+     * The difference between GuoMultiphasePorous and GuoPorous is that the VelocityPorous is 
+     * used here instead of Velocity.
      */
 
 
@@ -224,29 +224,29 @@ struct GuoMultiphasePorous : ForcingBase<Cartesian> {
         double prefactor = TTraits::Stencil::Weights[idx] * Saturation<>::get<typename TTraits::Lattice>(k);
         double poro = Porosity<>::get<typename TTraits::Lattice>(k);
 
-        // Calculate the dot product of the discrete velocity vector with the velocity
+        // Calculate the dot product of the discrete velocityPorous vector with the velocity
         double ci_dot_velocity =
-            (TTraits::Stencil::Ci_x[idx] * Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 0));
+            (TTraits::Stencil::Ci_x[idx] * VelocityPorous<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 0));
         if constexpr (TTraits::Stencil::D > 1)
             ci_dot_velocity += (TTraits::Stencil::Ci_y[idx] *
-                                Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 1));
+                                VelocityPorous<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 1));
         if constexpr (TTraits::Stencil::D > 2)
             ci_dot_velocity += (TTraits::Stencil::Ci_z[idx] *
-                                Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 2));
+                                VelocityPorous<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 2));
 
-        // Calculate the dot product of the discrete velocity vector with the force
+        // Calculate the dot product of the discrete VelocityPorous vector with the force
         double ci_dot_force = (TTraits::Stencil::Ci_x[idx] * ma_Force[0]);
         if constexpr (TTraits::Stencil::D > 1) ci_dot_force += (TTraits::Stencil::Ci_y[idx] * ma_Force[1]);
         if constexpr (TTraits::Stencil::D > 2) ci_dot_force += (TTraits::Stencil::Ci_z[idx] * ma_Force[2]);
 
-        // Calculate the dot product of the velocity with the force
-        double velocity_dot_force = Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 0) * ma_Force[0];
+        // Calculate the dot product of the VelocityPorous with the force
+        double velocity_dot_force = VelocityPorous<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 0) * ma_Force[0];
         if constexpr (TTraits::Stencil::D > 1)
             velocity_dot_force +=
-                (Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 1)) * ma_Force[1];
+                (VelocityPorous<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 1)) * ma_Force[1];
         if constexpr (TTraits::Stencil::D > 2)
             velocity_dot_force +=
-                (Velocity<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 2)) * ma_Force[2];
+                (VelocityPorous<>::get<typename TTraits::Lattice, TTraits::Lattice::NDIM>(k, 2)) * ma_Force[2];
 
         double forceterm =
             prefactor * (ci_dot_force / TTraits::Stencil::Cs2 +

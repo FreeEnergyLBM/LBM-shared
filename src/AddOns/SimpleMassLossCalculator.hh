@@ -24,7 +24,7 @@ class SimpleMassLossCalculator : public AddOnBase {
     inline void setGasID(int id) { mGasId = id; }
 
    private:
-    double mEvaporationRate = 1e-4;
+    double mEvaporationRate = 0.0;
     int mLiquidId = 0;
     int mGasId = 0;
     double humidityMax = 1.0;
@@ -83,7 +83,7 @@ class CoupledMassLossCalculator : public AddOnBase {
     inline void setSaturationHumidity(double humidity) { humidityMax = humidity; }
 
    private:
-    double mEvaporationRate = 1e-4;
+    double mEvaporationRate = 0.0;
     int mLiquidId = 0;
     int mGasId = 0;
     double humidityMax = 1.0;

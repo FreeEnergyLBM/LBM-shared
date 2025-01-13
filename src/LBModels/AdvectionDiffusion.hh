@@ -37,6 +37,8 @@ class AdvectionDiffusion
 
     inline double computeEquilibrium(int k, int idx) override;  // Calculate equilibrium in direction idx
 
+    inline double getTau() { return mTau; }
+
     inline void setDiffusivity(double D) {
         mTau = D / Stencil::Cs2 + 0.5 * TLattice::DT;
         mInverseTau = 1.0 / mTau;

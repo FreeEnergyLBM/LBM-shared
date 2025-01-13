@@ -37,6 +37,8 @@ class Binary : public CollisionBase<TLattice, typename TTraits::Stencil>,
     inline double getTau1() { return mTau1; }
     inline double getTau2() { return mTau2; }
 
+    inline double getTau() { return mTau; }
+
     inline void setA(double val) { mA = val; }
 
     inline void collide() override;  // Collision step
@@ -94,6 +96,10 @@ inline void Binary<TLattice, TTraits>::collide() {
 
             equilibriums[0] = orderparameter[k] - sum;
 
+            // Print warning if mInverseTau is not equal to 1
+            if (mInverseTau != 1) {
+                std::cerr << "Warning: mInverseTau is not equal to 1.0." << std::endl;
+            }
             this->collisionQ(equilibriums, old_distribution, mInverseTau, k);
         }
     }
@@ -106,7 +112,11 @@ inline void Binary<TLattice, TTraits>::initialise() {  // Initialise model
     this->initialiseProcessors();
 
     this->mData.generateNeighbors();  // Fill array of neighbor values (See Data.hh)
-    TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this->mt_Forces, mTau1, mTau2);
+    // Print warning if mTau is not equal to 1
+    if (mTau != 1) {
+        std::cerr << "Warning: mTau is not equal to 1.0." << std::endl;
+    }
+    TTraits::template CollisionModel<Stencil>::template initialise<TLattice>(this->mt_Forces, mTau, mTau);
 
 #pragma omp parallel for schedule(guided)
     for (int k = TLattice::HaloSize; k < TLattice::N - TLattice::HaloSize; k++) {  // loop over k
@@ -118,13 +128,14 @@ inline void Binary<TLattice, TTraits>::initialise() {  // Initialise model
 
         OrderParameter<>::initialise<TLattice>(1.0, k);
 
-        // TODO: Decide what this should be
-        // InverseTau = c_1 / tau_1 + c_2 / tau_2; c_1 = 0.5 * (rho + phi), c_2 = 0.5 * (rho - phi)
+        // InverseTau = 0.5 * ((density + orderParameter) * mInverseTau1 + (density - orderParameter) * mInverseTau2)
         double density = Density<>::get<TLattice>(k);
         double orderParameter = OrderParameter<>::get<TLattice>(k);
+
+        double mInverseTau1 = 1.0 / mTau1;
+        double mInverseTau2 = 1.0 / mTau2;
         InverseTau<>::initialise<TLattice>(
-            0.5 * ((density + orderParameter) / mTau1 + (density - orderParameter) / mTau2), k);
-        // InverseTau<>::initialise<TLattice>( 1.0 / (0.5 * (1.0 + orderParameter) * (mTau1 - mTau2) + mTau2), k);
+            0.5 * ((density + orderParameter) * mInverseTau1 + (density - orderParameter) * mInverseTau2), k);
 
         Pressure<>::initialise<TLattice>(density / 3., k);
 
@@ -208,6 +219,9 @@ class FlowFieldBinary : public FlowField<TLattice, TTraits> {  // Inherit from b
    public:
     inline void setTau1(double val) { mTau1 = val; }
     inline void setTau2(double val) { mTau2 = val; }
+
+    inline double getTau1() { return mTau1; }
+    inline double getTau2() { return mTau2; }
 
     inline virtual void collide() override;  // Collision step
 

@@ -40,6 +40,12 @@ inline double SoluteRepulsiveForce<TMethod>::computeXYZ(int xyz, int k) {
 
     double concentration = Solute<>::get<Lattice>(k);
 
+    // TODO for Mehrdad: This is a temporary solution to prevent the force from being applied at the outlet boundary.
+    // This should be replaced with a more general solution.
+    int x = computeXGlobal<Lattice>(k);
+
+    if (x >= Lattice::LX - 7) return 0.0;
+
     double gradOP_x = GradientOrderParameter<>::get<Lattice, Lattice::NDIM>(k, 0);
     double gradOP_y = GradientOrderParameter<>::get<Lattice, Lattice::NDIM>(k, 1);
     double gradOP_z = GradientOrderParameter<>::get<Lattice, Lattice::NDIM>(k, 2);
