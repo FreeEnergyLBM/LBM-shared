@@ -30,24 +30,24 @@ int initSolid(const int k) {
 double initFluid(int k) {
     int x = computeX<Lattice>(k);
     double width = sqrt(8 * binaryKappa / binaryA);
-    return 0.5 * (1 - tanh(2 * (x - x0) / width));
+    return - tanh(2 * (x - x0) / width);
 }
 
 using OrderParameterGradients =
     GradientsMultiStencil<OrderParameter<>, CentralXYZ, CentralQ, MixedXYZ, MixedQ, LaplacianCentralWetting>;
 using ChemicalPotentialGradients = Gradients<ChemicalPotential<>, LaplacianCentralMirrorSolid>;
 using TraitBinary =
-    DefaultTraitBinaryLeeHumidity<Lattice>::SetProcessor<ChemicalPotentialGradients, OrderParameterGradients,
-                                                         ChemicalPotentialCalculatorBinaryLee, SimpleMassLossCalculator,
+    DefaultTraitBinary<Lattice>::SetProcessor<ChemicalPotentialGradients, OrderParameterGradients,
+                                                         ChemicalPotentialCalculatorBinary, SimpleMassLossCalculator,
                                                          NoFluxSolid<OrderParameter<>>>;
 
 int main(int argc, char **argv) {
     mpi.init();
 
     // Define the model
-    BinaryLeeHumidity<Lattice, TraitBinary> binary;
-    binary.getProcessor<ChemicalPotentialCalculatorBinaryLee>().setA(binaryA);
-    binary.getProcessor<ChemicalPotentialCalculatorBinaryLee>().setKappa(binaryKappa);
+    Binary<Lattice, TraitBinary> binary;
+    binary.getProcessor<ChemicalPotentialCalculatorBinary>().setA(binaryA);
+    binary.getProcessor<ChemicalPotentialCalculatorBinary>().setKappa(binaryKappa);
 
     double wettingPrefactor = -cos(contactAngle * M_PI / 180.0) * sqrt(2 * binaryA / binaryKappa);
     binary.getProcessor<OrderParameterGradients>().setWettingPrefactor(wettingPrefactor);
