@@ -21,14 +21,22 @@ class CubicWetting : public AddOnBase {
 
     inline void setAlpha(double alpha);
 
-    // TODO by Mehrdad: This should be written in a more general way to allow for inclusion of y and z directions if
-    // needed!
     /**
      * \brief Set the thickness of the neutral wet layer at the inlet and outlet to avoid
      *       wetting phase towards them.
-     * \param thickness Thickness of the neutral wet layer.
+     * \param dir Direction of the neutral wet layer, typically main flow direction.
+     *            Use x, y, or z to specify the direction.
+     * \param thickness Thickness of the neutral wet layer in lattice units.
+     *                  This value should be a non-negative integer.
+     * \throws std::invalid_argument if the direction is not x, y, or z.
      */
-    inline void setNeutralWetLayerThickness(const int thickness) { neutralWetLayerThickness = thickness; }
+    inline void setNeutralWetLayerThickness(const int dir, const int thickness) {
+        if (dir != x && dir != y && dir != z) {
+            throw std::invalid_argument("Invalid direction. Use x, y, or z.");
+        }
+        neutralWetLayerThickness = thickness;
+        neutralWetLayerDirection = dir;
+    }
 
     template <class TTraits>
     inline void compute(int k);
@@ -36,14 +44,18 @@ class CubicWetting : public AddOnBase {
     template <class TTraits>
     inline void communicate();
 
+    // Set the flag to true when simple or coupled mass loss models are used; othewise, unwanted phase change from
+    // soli-fluid boundary will occur, resulting in the order parameter going beyond (-1, 1).
     bool useSinglePhaseCheck = false;
 
    private:
     double mAlpha = 2;
     double mPrefactor = 0;
     int neutralWetLayerThickness = 0;
+    int neutralWetLayerDirection = 0;
     std::map<int, double> mPrefactorMap;
     std::function<double(std::array<int, 3>, double)> mPrefactorFn;
+    enum { x = 0, y = 1, z = 2 };
 };
 
 template <class TTraits>
@@ -88,8 +100,26 @@ inline void CubicWetting::compute(int k) {
         OrderParameter<>::get<Lattice>(k) = phiAvg;
         return;
     } else if (neutralWetLayerThickness > 0) {
-        int x = computeXGlobal<Lattice>(k);
-        if (x < neutralWetLayerThickness || x >= Lattice::LX - neutralWetLayerThickness) {
+        int coord, maxCoord;
+        auto [coord_x, coord_y, coord_z] = computeXYZ<Lattice>(k);
+        switch (neutralWetLayerDirection) {
+            case x:
+                coord = coord_x;
+                maxCoord = Lattice::LX;
+                break;
+            case y:
+                coord = coord_y;
+                maxCoord = Lattice::LY;
+                break;
+            case z:
+                coord = coord_z;
+                maxCoord = Lattice::LZ;
+                break;
+            default:
+                throw std::invalid_argument("Invalid neutralWetLayerDirection");
+        }
+
+        if (coord < neutralWetLayerThickness || coord >= maxCoord - neutralWetLayerThickness) {
             OrderParameter<>::get<Lattice>(k) = phiAvg;
             return;
         }
