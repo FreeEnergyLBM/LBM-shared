@@ -33,7 +33,7 @@ class SimpleMassLossCalculator : public AddOnBase {
 template <class TTraits>
 inline void SimpleMassLossCalculator::compute(int k) {
     using Lattice = typename TTraits::Lattice;
-    if (Geometry<Lattice>::isBulkSolid(k)) return;
+    if (!this->apply<Lattice>(k)) return;
 
     constexpr int N = TTraits::NumberOfComponents;
     const std::vector<double>& gradLiquid = getInstance<GradientOrderParameter, N, Lattice, Lattice::NDIM>(mLiquidId);
@@ -56,13 +56,8 @@ inline void SimpleMassLossCalculator::compute(int k) {
 
     gradOP = sqrt(gradOP);
 
-    // liquid mass per unit volume
-    // NOTE: c1 is not the liquid content. It is exactly the amount of liquid in a lattice point.
-    // So, it has the unit of LM/LL3.
-    // double c1 = (1.0 + OrderParameter<>::get<typename TTraits::Lattice>(k)) / 2.0;
-
     // Calculate the volumetric mass loss
-    MassSink<>::get<typename TTraits::Lattice>(k) = mEvaporationRate * 1.0 * (gradOP / 1.0) * (humidityMax);
+    MassSink<>::get<typename TTraits::Lattice>(k) = mEvaporationRate * gradOP;
 }
 
 inline void SimpleMassLossCalculator::setEvaporationRate(double rate) { mEvaporationRate = rate; }
@@ -92,7 +87,7 @@ class CoupledMassLossCalculator : public AddOnBase {
 template <class TTraits>
 inline void CoupledMassLossCalculator::compute(int k) {
     using Lattice = typename TTraits::Lattice;
-    if (Geometry<Lattice>::isBulkSolid(k)) return;
+    if (!this->apply<Lattice>(k)) return;
 
     constexpr int N = TTraits::NumberOfComponents;
     const std::vector<double>& gradLiquid = getInstance<GradientOrderParameter, N, Lattice, Lattice::NDIM>(mLiquidId);
