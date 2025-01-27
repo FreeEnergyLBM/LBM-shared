@@ -566,22 +566,24 @@ inline void ModelBase<TLattice, TTraits>::collisionQ(const double* equilibriums,
             // Set distribution at location "mDistribution.streamIndex" equal to the value returned by
             //"computeCollisionQ"
 
-            double collision =
-                TTraits::template CollisionModel<typename TTraits::Stencil>::template collide<
-                    typename TTraits::Lattice>(olddistributions, equilibriums, inversetau, idx) +
-                std::apply(
-                    [&inversetau, &tempTuple, idx, this](auto&... prefactors) mutable {
-                        return (TTraits::template CollisionModel<typename TTraits::Stencil>::template forcing<
-                                    typename TTraits::Lattice, decltype(prefactors)>(
-                                    this->mt_Forces,
-                                    &(std::get<typename ForcingMap::template get<
-                                          typename remove_const_and_reference<decltype(prefactors)>::type>>(tempTuple)
-                                          .val[0]),
-                                    inversetau, idx) +
-                                ...);
-                    },
-                    *tempforceprefactors);
+            double col1 = TTraits::template CollisionModel<typename TTraits::Stencil>::template collide<
+                typename TTraits::Lattice>(olddistributions, equilibriums, inversetau, idx);
 
+            double col2 = std::apply(
+                [&inversetau, &tempTuple, idx, this](auto&... prefactors) mutable {
+                    return (TTraits::template CollisionModel<typename TTraits::Stencil>::template forcing<
+                                typename TTraits::Lattice, decltype(prefactors)>(
+                                this->mt_Forces,
+                                &(std::get<typename ForcingMap::template get<
+                                      typename remove_const_and_reference<decltype(prefactors)>::type>>(tempTuple)
+                                      .val[0]),
+                                inversetau, idx) +
+                            ...);
+                },
+                *tempforceprefactors);
+
+            // Just to enable more sufficient debugging
+            double collision = col1 + col2;
             mDistribution.getPostCollisionDistribution(k, idx) = collision;
         }
     } else {

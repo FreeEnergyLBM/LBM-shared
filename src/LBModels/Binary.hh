@@ -31,8 +31,14 @@ class Binary : public CollisionBase<TLattice, typename TTraits::Stencil>,
     static constexpr int mNDIM = TLattice::NDIM;
 
    public:
-    inline void setTau1(double val) { mTau1 = val; }
-    inline void setTau2(double val) { mTau2 = val; }
+    inline void setTau1(double val) {
+        mTau1 = val;
+        mInverseTau1 = 1 / val;
+    }
+    inline void setTau2(double val) {
+        mTau2 = val;
+        mInverseTau2 = 1 / val;
+    }
 
     inline double getTau1() { return mTau1; }
     inline double getTau2() { return mTau2; }
@@ -68,6 +74,8 @@ class Binary : public CollisionBase<TLattice, typename TTraits::Stencil>,
 
     double mTau1 = 1;
     double mTau2 = 1;
+    double mInverseTau1 = 1 / mTau1;
+    double mInverseTau2 = 1 / mTau2;
 
     double mA;
 
@@ -128,14 +136,17 @@ inline void Binary<TLattice, TTraits>::initialise() {  // Initialise model
 
         OrderParameter<>::initialise<TLattice>(1.0, k);
 
-        // InverseTau = 0.5 * ((density + orderParameter) * mInverseTau1 + (density - orderParameter) * mInverseTau2)
         double density = Density<>::get<TLattice>(k);
         double orderParameter = OrderParameter<>::get<TLattice>(k);
 
-        double mInverseTau1 = 1.0 / mTau1;
-        double mInverseTau2 = 1.0 / mTau2;
-        InverseTau<>::initialise<TLattice>(
-            0.5 * ((density + orderParameter) * mInverseTau1 + (density - orderParameter) * mInverseTau2), k);
+        // Method 1
+        // double itau_init = orderParameter > 0.0 ? mInverseTau1 : mInverseTau2;
+
+        // Method 2
+        double itau_init =
+            0.5 * ((density + orderParameter) * mInverseTau1 + (density - orderParameter) * mInverseTau2);
+
+        InverseTau<>::initialise<TLattice>(itau_init, k);
 
         Pressure<>::initialise<TLattice>(density / 3., k);
 
@@ -172,9 +183,12 @@ inline void Binary<TLattice, TTraits>::computeMomenta() {  // Calculate order pa
 
             double density = Density<>::get<TLattice>(k);
 
-            // TODO: Decide what this should be
-            itau[k] = 0.5 * ((density + orderparameter[k]) / mTau1 + (density - orderparameter[k]) / mTau2);
-            // itau[k] = 1.0 / (0.5 * (1.0 + orderparameter[k]) * (mTau1)-0.5 * (-1.0 + orderparameter[k]) * mTau2);
+            // Method 1
+            // itau[k] = orderparameter[k] > 0.0 ? mInverseTau1 : mInverseTau2;
+
+            // Method 2
+            itau[k] =
+                0.5 * ((density + orderparameter[k]) * mInverseTau1 + (density - orderparameter[k]) * mInverseTau2);
 
             pressure[k] = density / 3 + mA * (-0.5 * pow(orderparameter[k], 2) + 0.75 * pow(orderparameter[k], 4));
         }

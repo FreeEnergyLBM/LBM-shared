@@ -438,7 +438,7 @@ inline void MultiphasePorousFlowField<TLattice, TTraits>::computeMomenta() {  //
 // while the latter uses VelocityPorous<>::get<TLattice, mNDIM>().
 
 template <class TLattice>
-using DefaultTraitMultiphasePorousFlowFieldInSalt = typename DefaultTrait<TLattice, 2>::template SetBoundary<BounceBackHLBM>;
+using DefaultTraitMultiphasePorousFlowFieldInSalt = typename DefaultTrait<TLattice, 2>::template SetBoundary<BounceBack>;
 
 template <class TLattice, class TTraits = DefaultTraitMultiphasePorousFlowField<TLattice>>
 class MultiphasePorousFlowFieldInSalt : public FlowField<TLattice, TTraits> {
