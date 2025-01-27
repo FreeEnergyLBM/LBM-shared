@@ -7,4 +7,5 @@
 #include "ExternalForce.hh"
 #include "CapillaryForcePorous.hh"
 #include "ForceBase.hh"
+#include "HumidityRepulsiveForce.hh"
 #include "SoluteRepulsiveForce.hh"

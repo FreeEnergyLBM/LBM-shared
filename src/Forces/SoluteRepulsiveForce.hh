@@ -28,9 +28,22 @@ class SoluteRepulsiveForce : public ForceBase<TMethod> {
     template <class TTraits>
     inline double computeQ(int idx, int k);
 
+    // It is necessary to avoid imposing the repulsive force close to the outlet in order to avoid blocking the fluid
+    // flow. This function sets the thickness of the region near the outlet where the repulsive force is not applied.
+    inline void setNoRepulsiveForceThickness(const int dir, const int thickness) {
+        if (dir != x && dir != y && dir != z) {
+            throw std::invalid_argument("Invalid direction. Use x, y, or z.");
+        }
+        noRepulsiveForceThickness = thickness;
+        noRepulsiveForceDirection = dir;
+    }
+
    private:
     // Strength of the repulsive force
     int strength = 1.0;
+    int noRepulsiveForceThickness = 0;
+    int noRepulsiveForceDirection = 0;
+    enum { x = 0, y = 1, z = 2 };
 };
 
 template <class TMethod>
@@ -40,19 +53,42 @@ inline double SoluteRepulsiveForce<TMethod>::computeXYZ(int xyz, int k) {
 
     double concentration = Solute<>::get<Lattice>(k);
 
-    // TODO for Mehrdad: This is a temporary solution to prevent the force from being applied at the outlet boundary.
-    // This should be replaced with a more general solution.
-    int x = computeXGlobal<Lattice>(k);
+    if (noRepulsiveForceThickness > 0) {
+        int coord, maxCoord;
 
-    if (x >= Lattice::LX - 7) return 0.0;
+        auto coord_x = computeXGlobal<Lattice>(k);
+        auto coord_y = computeY(Lattice::LY, Lattice::LZ, k);
+        auto coord_z = computeZ(Lattice::LY, Lattice::LZ, k);
 
-    double gradOP_x = GradientOrderParameter<>::get<Lattice, Lattice::NDIM>(k, 0);
-    double gradOP_y = GradientOrderParameter<>::get<Lattice, Lattice::NDIM>(k, 1);
-    double gradOP_z = GradientOrderParameter<>::get<Lattice, Lattice::NDIM>(k, 2);
+        switch (noRepulsiveForceDirection) {
+            case x:
+                coord = coord_x;
+                maxCoord = Lattice::LX;
+                break;
+            case y:
+                coord = coord_y;
+                maxCoord = Lattice::LY;
+                break;
+            case z:
+                coord = coord_z;
+                maxCoord = Lattice::LZ;
+                break;
+            default:
+                throw std::invalid_argument("Invalid neutralWetLayerDirection");
+        }
 
-    if (xyz == 0) return gradOP_x * concentration * strength;
-    if (xyz == 1) return gradOP_y * concentration * strength;
-    if (xyz == 2) return gradOP_z * concentration * strength;
+        if (coord >= maxCoord - noRepulsiveForceThickness) return 0.0;
+    } else {
+        double gradOP_x = GradientOrderParameter<>::get<Lattice, Lattice::NDIM>(k, 0);
+        double gradOP_y = GradientOrderParameter<>::get<Lattice, Lattice::NDIM>(k, 1);
+        double gradOP_z = 0.0;
+        if constexpr (Lattice::NDIM == 3) double gradOP_z = GradientOrderParameter<>::get<Lattice, Lattice::NDIM>(k, 2);
+
+        if (xyz == 0) return gradOP_x * concentration * strength;
+        if (xyz == 1) return gradOP_y * concentration * strength;
+        if (xyz == 2) return gradOP_z * concentration * strength;
+    }
+
     throw std::invalid_argument("Invalid index for force component");
 }
 
