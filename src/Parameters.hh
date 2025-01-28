@@ -1,11 +1,11 @@
 #pragma once
 #include <any>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <string>
 #include <vector>
-#include <cstdint>
 
 #include "Data.hh"
 #include "Global.hh"
@@ -191,7 +191,7 @@ class ParameterSingleton {
     void operator=(ParameterSingleton<TObj, T, TInstance> const &) = delete;
 
    private:
-    ParameterSingleton(){};
+    ParameterSingleton() {};
 };
 
 // Utility function to get a parameter instance at runtime
@@ -408,6 +408,11 @@ struct Solute : public ParameterSingleton<Solute<TInstance>> {
 template <int TInstance = 0>
 struct SoluteOld : public ParameterSingleton<SoluteOld<TInstance>> {
     static constexpr const char *mName = "SoluteOld";
+};
+
+template <int TInstance = 0>
+struct NucleationProbability : public ParameterSingleton<NucleationProbability<TInstance>> {
+    static constexpr const char *mName = "NucleationProbability";
 };
 
 template <class TObj>
