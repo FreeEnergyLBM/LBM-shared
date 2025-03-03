@@ -99,9 +99,6 @@ int main(int argc, char **argv) {
     // Perform the main LBM loop
     for (int timestep = 0; timestep <= timesteps; timestep++) {
         if (timestep % saveInterval == 0) {
-            saver.saveVTK(timestep, Density<>::template getInstance<Lattice>(),
-                          OrderParameter<>::template getInstance<Lattice>(),
-                          Velocity<>::template getInstance<Lattice, Lattice::NDIM>());
 
             saver.saveParameter<OrderParameter<>>(timestep);
             saver.saveParameter<Velocity<>, Lattice::NDIM>(timestep);
